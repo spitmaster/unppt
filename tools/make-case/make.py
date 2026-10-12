@@ -13,7 +13,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-from common import TESTCASES  # noqa: E402
+from common import CACHE, TESTCASES  # noqa: E402
 
 import pythoncom  # noqa: E402
 import win32com.client  # noqa: E402
@@ -596,7 +596,25 @@ def anim_iterate(app):
     return p
 
 
-CASES = [shapes_all, text_sizes, text_align, text_spacing, text_bullets, text_missing_font, shapes_basic, fills_lines, table_basic, group_rotate, anim_basic, anim_auto, charts_basic, pictures, smartart, text_effects, text_layout, table_merge, links, emf_images, anim_advanced, charts_labels, freeform_icons, media_audio, anim_trigger, wmf_images, anim_iterate]
+def picture_transparent(app):
+    """图片"设置透明色"：深色背景上，白底图片（PNG 和 JPEG）的白色变透明"""
+    from PIL import Image
+    png = (TESTCASES / "shapes-basic" / "slide-001.png").resolve()
+    jpg = (CACHE / "make-case" / "white-bg.jpg").resolve()
+    jpg.parent.mkdir(parents=True, exist_ok=True)
+    Image.open(png).convert("RGB").save(jpg, quality=85)
+    p = new_pres(app)
+    s = blank(p)
+    s.FollowMasterBackground = 0
+    s.Background.Fill.ForeColor.RGB = RGB(30, 50, 90)
+    for i, img in enumerate([png, jpg]):
+        pic = s.Shapes.AddPicture(str(img), 0, -1, 20 + i * 470, 120, 450, 253)
+        pic.PictureFormat.TransparencyColor = RGB(255, 255, 255)
+        pic.PictureFormat.TransparentBackground = -1
+    return p
+
+
+CASES = [shapes_all, text_sizes, text_align, text_spacing, text_bullets, text_missing_font, shapes_basic, fills_lines, table_basic, group_rotate, anim_basic, anim_auto, charts_basic, pictures, smartart, text_effects, text_layout, table_merge, links, emf_images, anim_advanced, charts_labels, freeform_icons, media_audio, anim_trigger, wmf_images, anim_iterate, picture_transparent]
 
 
 def main():

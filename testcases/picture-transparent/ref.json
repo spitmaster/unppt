@@ -1,0 +1,43 @@
+{
+ "version": 7,
+ "slideWidthPt": 960.0,
+ "slideHeightPt": 540.0,
+ "imageWidth": 1280,
+ "imageHeight": 720,
+ "slides": [
+  {
+   "index": 0,
+   "hidden": false,
+   "shapes": [
+    {
+     "id": 3,
+     "name": "Picture 2",
+     "type": 13,
+     "x": 20.0,
+     "y": 120.0,
+     "w": 450.0,
+     "h": 253.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1
+    },
+    {
+     "id": 5,
+     "name": "Picture 4",
+     "type": 13,
+     "x": 490.0,
+     "y": 120.0,
+     "w": 450.0,
+     "h": 253.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1
+    }
+   ],
+   "effects": [],
+   "triggerHidden": [],
+   "steps": 0
+  }
+ ],
+ "ok": true
+}
