@@ -12,6 +12,7 @@ import { esc, n2, SvgDoc } from './svg';
 import { renderText, type StyleChain, type TextEnv } from './text';
 import { attr, boolAttr, child, children, expandAlternate, numAttr, path, type XEl } from './xml';
 import { renderTable } from './table';
+import { renderChart } from './chart';
 
 export interface RenderEnv {
   pres: Presentation;
@@ -298,8 +299,11 @@ class SlideRenderer {
       return wrap(await this.diagram(gd, ctx));
     }
     if (uri.endsWith('/chart')) {
-      this.env.pres.warn('图表暂未支持');
-      return '';
+      const rid = attr(child(gd, 'c:chart'), 'r:id');
+      const rel = rid ? await this.env.pres.pkg.rel(ctx.part, rid) : undefined;
+      const xml = rel ? await this.env.pres.pkg.xml(rel.target, false) : undefined;
+      if (!xml) { this.env.pres.warn('图表数据缺失'); return ''; }
+      return wrap(renderChart(xml, box.w, box.h, { colors: ctx.colors, theme: ctx.theme, part: rel!.target, warn: (m) => this.env.pres.warn(m) }));
     }
     if (uri.endsWith('/ole')) {
       const ole = expandAlternate(gd?.children ?? []).find((c) => c.name === 'p:oleObj');
