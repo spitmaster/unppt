@@ -130,7 +130,8 @@ def diagnose_shapes(page, ref, ref_slide, ref_png: Path, ours_png: Path) -> list
             continue
         x0, y0 = max(0, int(s["x"] * k)), max(0, int(s["y"] * k))
         x1, y1 = min(ra.shape[1], int((s["x"] + s["w"]) * k) + 1), min(ra.shape[0], int((s["y"] + s["h"]) * k) + 1)
-        if x1 - x0 < 8 or y1 - y0 < 8:
+        # 太小的区域（< 32 像素）按 8x8 块算相似度会被抗锯齿噪声主导，不计算，避免误导诊断
+        if x1 - x0 < 32 or y1 - y0 < 32:
             region = None
         else:
             region = round(ssim(ra[y0:y1, x0:x1], oa[y0:y1, x0:x1]), 4)

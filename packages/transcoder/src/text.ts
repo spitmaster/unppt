@@ -93,11 +93,19 @@ interface RunStyle {
   caps: 'none' | 'all' | 'small';
   /** 西文字体标记的是东亚字符集（如 GB2312）：缺字体时西文也用东亚字体替代 */
   latinEaCharset: boolean;
+  /** 字体的 PANOSE 字重 ≥ 7（粗体）：缺字体时用替代字体的粗体 */
+  panoseBold: boolean;
   outline?: { color: Rgba; width: number };
   shadow?: XEl;
   grad?: XEl;
   /** 超链接属性（data-link / data-href） */
   link?: string;
+}
+
+/** PANOSE 分类码的第 3 个字节是字重（2~11，8 是粗体） */
+function panoseWeight(p: string | undefined): number {
+  if (!p || p.length < 6) return 0;
+  return parseInt(p.slice(4, 6), 16) || 0;
 }
 
 function textOutline(ln: XEl | undefined, env: TextEnv): RunStyle['outline'] {
@@ -137,6 +145,7 @@ function runStyle(r: XEl, env: TextEnv, scale: number): RunStyle {
     spc: ((numAttr(r, 'spc') ?? 0) / 100) * 96 / 72,
     caps: (attr(r, 'cap') as RunStyle['caps']) ?? 'none',
     latinEaCharset: EA_CHARSETS.has(attr(child(r, 'a:latin'), 'charset') ?? ''),
+    panoseBold: panoseWeight(attr(child(r, 'a:ea'), 'panose') ?? attr(child(r, 'a:latin'), 'panose')) >= 7,
     outline: textOutline(child(r, 'a:ln'), env),
     shadow: child(child(r, 'a:effectLst'), 'a:outerShdw'),
     grad: fill?.name === 'a:gradFill' ? fill : undefined,
@@ -204,8 +213,9 @@ async function makeAtoms(text: string, style: RunStyle, m: Measurer): Promise<At
   const pick = async (family: string, subs: string[]): Promise<[Measured | undefined, string]> => {
     const mm = await m.metrics(family, style.bold, style.italic);
     if (mm) return [mm, family];
+    // 替代字体：原字体是粗体字重（看 PANOSE）时用替代字体的粗体
     for (const sub of subs) {
-      const sm = await m.metrics(sub, style.bold, style.italic, true);
+      const sm = await m.metrics(sub, style.bold || style.panoseBold, style.italic, true);
       if (sm) return [sm, sub];
     }
     return [undefined, family];

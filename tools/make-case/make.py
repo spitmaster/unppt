@@ -491,7 +491,31 @@ def charts_labels(app):
     c.SeriesCollection(1).HasDataLabels = True
     return p
 
-CASES = [shapes_all, text_sizes, text_align, text_spacing, text_bullets, text_missing_font, shapes_basic, fills_lines, table_basic, group_rotate, anim_basic, anim_auto, charts_basic, pictures, smartart, text_effects, text_layout, table_merge, links, emf_images, anim_advanced, charts_labels]
+def freeform_icons(app):
+    """小尺寸线条图标（自由曲线，只有描边、圆头、约 1 磅粗），模拟课件里常见的线条小图标"""
+    p = new_pres(app)
+    s = blank(p)
+    for i in range(24):
+        x, y = 40 + (i % 8) * 110, 60 + (i // 8) * 150
+        size = [6, 10, 14, 20][i % 4]
+        fb = s.Shapes.BuildFreeform(1, x, y)          # msoEditingAuto
+        fb.AddNodes(0, 0, x + size, y + size * 0.3)    # 直线段
+        fb.AddNodes(1, 1, x + size * 1.2, y + size * 0.8, x + size * 0.6, y + size * 1.4, x, y + size)  # 曲线段
+        if i % 3 == 0:
+            fb.AddNodes(0, 0, x, y)                    # 闭合
+        shp = fb.ConvertToShape()
+        shp.Fill.Visible = 0
+        shp.Line.Weight = [0.75, 1, 1.5][i % 3]
+        shp.Line.ForeColor.RGB = RGB(0, 2, 61)
+        try:
+            shp.Line.Style = 1
+            shp.Line.DashStyle = 1
+        except Exception:
+            pass
+    return p
+
+
+CASES = [shapes_all, text_sizes, text_align, text_spacing, text_bullets, text_missing_font, shapes_basic, fills_lines, table_basic, group_rotate, anim_basic, anim_auto, charts_basic, pictures, smartart, text_effects, text_layout, table_merge, links, emf_images, anim_advanced, charts_labels, freeform_icons]
 
 
 def main():
