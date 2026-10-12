@@ -74,7 +74,14 @@ export async function convert(input: InputSource, options: ConvertOptions): Prom
     const total = pres.slides.length;
     let done = 0;
     for (const ref of pres.slides) {
-      const r = await renderSlide(ref, env);
+      let r: Awaited<ReturnType<typeof renderSlide>>;
+      try {
+        r = await renderSlide(ref, env);
+      } catch (e) {
+        // 单页出错不影响整份文件：输出空白页并记录
+        pres.warn(`第 ${ref.index + 1} 页渲染失败：${(e as Error).message}`);
+        r = { svg: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${pres.width} ${pres.height}" width="${pres.width}" height="${pres.height}"><rect width="100%" height="100%" fill="#fff"/></svg>`, hidden: false };
+      }
       done++;
       options.onProgress?.(done, total);
       if (r.hidden) continue;
