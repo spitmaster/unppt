@@ -10,7 +10,10 @@ import { EMU_PER_PX, type Theme } from './model';
 import { esc, n2 } from './svg';
 import { attr, child, children, findAll, numAttr, path, type XEl } from './xml';
 
+interface Labels { val: boolean; pct: boolean; cat: boolean; ser: boolean; pos?: string; fmt?: string; style: TextStyle; }
+
 interface Series {
+  labels?: Labels;
   name: string;
   cats: string[];
   vals: (number | null)[];
@@ -35,6 +38,29 @@ interface Plot {
 interface TextStyle { size: number; color: Rgba; bold: boolean; font: string; }
 
 const ACCENTS = ['accent1', 'accent2', 'accent3', 'accent4', 'accent5', 'accent6'];
+
+function readLabels(d: XEl | undefined, base: Labels | undefined, colors: ColorContext, theme: Theme, text: TextStyle): Labels | undefined {
+  if (!d) return base;
+  if (attr(child(d, 'c:delete'), 'val') === '1') return undefined;
+  const flag = (n: string, def: boolean) => { const v = attr(child(d, `c:${n}`), 'val'); return v === undefined ? def : v === '1'; };
+  const l: Labels = {
+    val: flag('showVal', base?.val ?? false), pct: flag('showPercent', base?.pct ?? false),
+    cat: flag('showCatName', base?.cat ?? false), ser: flag('showSerName', base?.ser ?? false),
+    pos: attr(child(d, 'c:dLblPos'), 'val') ?? base?.pos,
+    fmt: attr(child(d, 'c:numFmt'), 'formatCode') ?? base?.fmt,
+    style: textStyle(child(d, 'c:txPr'), colors, theme, base?.style ?? text),
+  };
+  return l.val || l.pct || l.cat || l.ser ? l : undefined;
+}
+
+function labelText(l: Labels, v: number, total: number, cat: string, ser: string, valFmt: string): string {
+  const parts: string[] = [];
+  if (l.ser) parts.push(ser);
+  if (l.cat) parts.push(cat);
+  if (l.val) parts.push(formatNumber(v, l.fmt && l.fmt !== 'General' ? l.fmt : valFmt));
+  if (l.pct) parts.push(`${Math.round((total ? v / total : 0) * 100)}%`);
+  return parts.join(', ');
+}
 
 function cacheValues(ref: XEl | undefined): { pts: Map<number, string>; count: number; format: string } {
   const cache = findAll(ref, 'c:numCache')[0] ?? findAll(ref, 'c:strCache')[0] ?? findAll(ref, 'c:numLit')[0] ?? findAll(ref, 'c:strLit')[0];
@@ -156,6 +182,7 @@ export function renderChart(space: XEl | undefined, w: number, h: number, env: C
     else if (local.endsWith('Chart')) { env.warn(`图表类型暂未支持：${local}`); continue; }
     else continue;
     const plotMarker = attr(child(p, 'c:marker'), 'val') !== '0';
+    const plotLabels = readLabels(child(p, 'c:dLbls'), undefined, colors, theme, baseText);
     const series: Series[] = children(p, 'c:ser').map((s) => {
       const idx = numAttr(child(s, 'c:idx'), 'val') ?? serialIdx;
       serialIdx++;
@@ -182,6 +209,7 @@ export function renderChart(space: XEl | undefined, w: number, h: number, env: C
       const mk = child(s, 'c:marker');
       const symbol = attr(child(mk, 'c:symbol'), 'val');
       return {
+        labels: readLabels(child(s, 'c:dLbls'), plotLabels, colors, theme, baseText),
         name: findAll(child(s, 'c:tx'), 'c:v')[0]?.text ?? child(child(s, 'c:tx'), 'c:v')?.text ?? `系列 ${idx + 1}`,
         cats, vals,
         fill: fill?.kind === 'solid' ? fill.color : fill?.kind === 'none' ? undefined : accent,
@@ -355,7 +383,8 @@ export function renderChart(space: XEl | undefined, w: number, h: number, env: C
     });
   }
 
-  // ---------------- 系列
+  // ---------------- 系列（数据标签最后画，盖在图形上面）
+  const labelsOut: string[] = [];
   const zeroF = vpos(Math.max(scale.lo, Math.min(scale.hi, 0)));
   for (const p of plots) {
     const nSer = p.series.length;
@@ -381,12 +410,18 @@ export function renderChart(space: XEl | undefined, w: number, h: number, env: C
           const offset = i * band + (band - barW * slots) / 2 + (stacked ? 0 : si * barW * (1 - ov));
           const color = s.pointFills.get(i) ?? s.fill;
           if (!color) continue;
+          const lb = s.labels;
+          const raw = s.vals[i] ?? 0;
+          const text = lb ? labelText(lb, raw, totals[i], s.cats[i] ?? '', s.name, valFmt) : '';
+          const inside = stacked || lb?.pos === 'ctr' || lb?.pos === 'inEnd' || lb?.pos === 'inBase';
           if (!horizontal) {
             const y1 = bottom - Math.max(fa, fb) * ph, y2 = bottom - Math.min(fa, fb) * ph;
             out.push(`<rect x="${n2(left + offset)}" y="${n2(y1)}" width="${n2(barW)}" height="${n2(y2 - y1)}" fill="${css(color)}"/>`);
+            if (text) labelsOut.push(label(text, left + offset + barW / 2, inside ? (y1 + y2) / 2 : y1 - 4 - lb!.style.size * 0.55, lb!.style));
           } else {
             const x1 = left + Math.min(fa, fb) * pw, x2 = left + Math.max(fa, fb) * pw;
             out.push(`<rect x="${n2(x1)}" y="${n2(bottom - offset - barW)}" width="${n2(x2 - x1)}" height="${n2(barW)}" fill="${css(color)}"/>`);
+            if (text) labelsOut.push(label(text, inside ? (x1 + x2) / 2 : x2 + 4, bottom - offset - barW / 2, lb!.style, inside ? 'middle' : 'start'));
           }
         }
       });
@@ -417,6 +452,22 @@ export function renderChart(space: XEl | undefined, w: number, h: number, env: C
           const lc = s.line?.color ?? s.fill;
           if (lc) drawn.push(`<path d="M${pts.map((q) => `${n2(q[0])} ${n2(q[1])}`).join('L')}" fill="none" stroke="${css(lc)}" stroke-width="${n2(s.line?.width ?? 3)}" stroke-linejoin="round" stroke-linecap="round"/>`);
           if (s.marker && lc) for (const q of pts) drawn.push(`<circle cx="${n2(q[0])}" cy="${n2(q[1])}" r="3" fill="${css(lc)}"/>`);
+          const lb = s.labels;
+          if (lb) {
+            let k = 0;
+            for (let i = 0; i < nCat; i++) {
+              const v = s.vals[i];
+              if (v === null || v === undefined) continue;
+              const q = pts[k++];
+              const text = labelText(lb, v, 0, s.cats[i] ?? '', s.name, valFmt);
+              const pos = lb.pos ?? 'r';
+              if (pos === 't') labelsOut.push(label(text, q[0], q[1] - 6 - lb.style.size * 0.5, lb.style));
+              else if (pos === 'b') labelsOut.push(label(text, q[0], q[1] + 6 + lb.style.size * 0.5, lb.style));
+              else if (pos === 'l') labelsOut.push(label(text, q[0] - 6, q[1], lb.style, 'end'));
+              else if (pos === 'ctr') labelsOut.push(label(text, q[0], q[1], lb.style));
+              else labelsOut.push(label(text, q[0] + 6, q[1], lb.style, 'start'));
+            }
+          }
         }
       });
       out.push(...drawn);
@@ -428,6 +479,7 @@ export function renderChart(space: XEl | undefined, w: number, h: number, env: C
     if (!horizontal) out.push(`<line x1="${n2(left)}" y1="${n2(bottom - zeroF * ph)}" x2="${n2(right)}" y2="${n2(bottom - zeroF * ph)}" stroke="${css(catLine.color)}" stroke-width="${n2(catLine.width)}"/>`);
     else out.push(`<line x1="${n2(left + zeroF * pw)}" y1="${n2(top)}" x2="${n2(left + zeroF * pw)}" y2="${n2(bottom)}" stroke="${css(catLine.color)}" stroke-width="${n2(catLine.width)}"/>`);
   }
+  out.push(...labelsOut);
   return out.join('');
 }
 
@@ -450,10 +502,12 @@ function renderPie(p: Plot, x: number, y: number, w: number, h: number, colors: 
   const total = vals.reduce((a, b) => a + b, 0);
   if (!total) return '';
   const cx = x + w / 2, cy = y + h / 2;
-  const r = Math.min(w, h) / 2 * 0.95;
+  // 实测：没有数据标签时饼图直径约为绘图区较短边的 96.5%；有标签时 PowerPoint 会缩小到约 84% 给标签留空间
+  const r = Math.min(w, h) / 2 * (s.labels ? 0.84 : 0.965);
   const ri = p.kind === 'doughnut' ? r * p.holeSize / 100 : 0;
   let ang = (p.firstSliceAng - 90) * Math.PI / 180;
   const out: string[] = [];
+  const labels: string[] = [];
   vals.forEach((v, i) => {
     if (!v) return;
     const a2 = ang + (v / total) * Math.PI * 2;
@@ -471,9 +525,16 @@ function renderPie(p: Plot, x: number, y: number, w: number, h: number, colors: 
       d = `M${n2(cx)} ${n2(cy)}L${n2(p1[0])} ${n2(p1[1])}A${n2(r)} ${n2(r)} 0 ${large} 1 ${n2(p2[0])} ${n2(p2[1])}Z`;
     }
     out.push(`<path d="${d}" fill="${css(color)}" fill-rule="evenodd" stroke="#fff" stroke-width="1.5"/>`);
+    const lb = s.labels;
+    if (lb) {
+      // 默认"最佳位置"：扇形内部靠外边缘；圆环在环的中间
+      const mid = (ang + a2) / 2;
+      const rr = ri ? (r + ri) / 2 : lb.pos === 'ctr' ? r * 0.5 : lb.pos === 'outEnd' ? r + lb.style.size : r * 0.8;
+      labels.push(label(labelText(lb, v, total, s.cats[i] ?? '', s.name, 'General'), cx + rr * Math.cos(mid), cy + rr * Math.sin(mid), lb.style));
+    }
     ang = a2;
   });
-  return out.join('');
+  return out.join('') + labels.join('');
 }
 
 export { EMU_PER_PX };

@@ -467,7 +467,31 @@ def anim_advanced(app):
     return p
 
 
-CASES = [shapes_all, text_sizes, text_align, text_spacing, text_bullets, text_missing_font, shapes_basic, fills_lines, table_basic, group_rotate, anim_basic, anim_auto, charts_basic, pictures, smartart, text_effects, text_layout, table_merge, links, emf_images, anim_advanced]
+def charts_labels(app):
+    """图表数据标签：柱形图显示数值、饼图显示百分比、折线图显示数值"""
+    p = new_pres(app, window=True)
+
+    def add(slide, kind, x, w):
+        ch = slide.Shapes.AddChart2(-1, kind, x, 40, w, 440)
+        try:
+            ch.Chart.ChartData.Workbook.Close()  # 先关掉数据表，才能插下一个图表
+        except Exception:
+            pass
+        return ch.Chart
+
+    s = blank(p)
+    a = add(s, 51, 20, 450)
+    a.SeriesCollection(1).HasDataLabels = True
+    b = add(s, 5, 490, 450)
+    b.SeriesCollection(1).HasDataLabels = True
+    b.SeriesCollection(1).DataLabels().ShowPercentage = True
+    b.SeriesCollection(1).DataLabels().ShowValue = False
+    s2 = blank(p)
+    c = add(s2, 65, 20, 900)
+    c.SeriesCollection(1).HasDataLabels = True
+    return p
+
+CASES = [shapes_all, text_sizes, text_align, text_spacing, text_bullets, text_missing_font, shapes_basic, fills_lines, table_basic, group_rotate, anim_basic, anim_auto, charts_basic, pictures, smartart, text_effects, text_layout, table_merge, links, emf_images, anim_advanced, charts_labels]
 
 
 def main():
