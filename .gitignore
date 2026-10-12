@@ -1,0 +1,19 @@
+# 样本库：可能含客户 PPT，绝对不能进仓库
+/corpus/
+
+# PowerPoint 参考输出、截图、评测报告（由样本生成，同样不能进仓库）
+/.cache/
+
+# 构建与依赖
+node_modules/
+dist/
+.venv/
+__pycache__/
+*.pyc
+
+# 编辑器 / 系统
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+~$*.pptx
