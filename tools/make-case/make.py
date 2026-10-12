@@ -306,7 +306,103 @@ def make_theme_cases(app, names=None):
     return out
 
 
-CASES = [shapes_all, text_sizes, text_align, text_spacing, text_bullets, text_missing_font, shapes_basic, fills_lines, table_basic, group_rotate, anim_basic, anim_auto, charts_basic]
+def pictures(app):
+    """图片：裁剪、旋转、翻转、透明度、裁成圆形、图片填充形状、图片背景"""
+    p = new_pres(app)
+    img = str((TESTCASES / "shapes-basic" / "slide-001.png").resolve())
+    s = blank(p)
+    a = s.Shapes.AddPicture(img, 0, -1, 20, 20, 300, 169)
+    b = s.Shapes.AddPicture(img, 0, -1, 340, 20, 300, 169)
+    b.PictureFormat.CropLeft = 100
+    b.PictureFormat.CropTop = 50
+    c = s.Shapes.AddPicture(img, 0, -1, 660, 20, 280, 158)
+    c.Rotation = 15
+    d = s.Shapes.AddPicture(img, 0, -1, 20, 230, 300, 169)
+    d.Flip(0)
+    e = s.Shapes.AddPicture(img, 0, -1, 340, 230, 300, 169)
+    e.Fill.Transparency = 0.5
+    e.PictureFormat.TransparentBackground = 0
+    f = s.Shapes.AddShape(9, 680, 220, 220, 220)
+    f.Fill.UserPicture(img)
+    s2 = blank(p)
+    s2.FollowMasterBackground = 0
+    s2.Background.Fill.UserPicture(img)
+    t = s2.Shapes.AddTextbox(1, 100, 200, 760, 80)
+    t.TextFrame.TextRange.Text = "图片背景上的文字"
+    t.TextFrame.TextRange.Font.Size = 40
+    return p
+
+
+def smartart(app):
+    """SmartArt 常见布局（文件里自带绘图缓存）"""
+    p = new_pres(app, window=True)
+    layouts = app.SmartArtLayouts
+    for i in (1, 2, 5, 10):
+        try:
+            s = blank(p)
+            sa = s.Shapes.AddSmartArt(layouts(i), 60, 40, 840, 460)
+            nodes = sa.SmartArt.AllNodes
+            for k in range(1, min(nodes.Count, 5) + 1):
+                nodes(k).TextFrame2.TextRange.Text = f"项目 {k}"
+        except Exception as ex:
+            print("SmartArt 布局", i, "失败", ex)
+    return p
+
+
+def text_effects(app):
+    """文字效果：艺术字、描边、阴影、渐变文字、加粗倾斜下划线"""
+    p = new_pres(app)
+    s = blank(p)
+    w = s.Shapes.AddTextEffect(0, "艺术字 WordArt", "Microsoft YaHei", 48, 0, 0, 40, 30)
+    t = textbox(s, 40, 150, 880, 70, "描边文字 Outline", size=40)
+    t.TextFrame2.TextRange.Font.Line.Visible = -1
+    t.TextFrame2.TextRange.Font.Line.ForeColor.RGB = RGB(200, 0, 0)
+    t.TextFrame2.TextRange.Font.Line.Weight = 1
+    t2 = textbox(s, 40, 240, 880, 70, "阴影文字 Shadow", size=40)
+    t2.TextFrame2.TextRange.Font.Shadow.Visible = -1
+    t3 = textbox(s, 40, 330, 880, 70, "渐变文字 Gradient", size=40)
+    t3.TextFrame2.TextRange.Font.Fill.TwoColorGradient(1, 1)
+    t3.TextFrame2.TextRange.Font.Fill.ForeColor.RGB = RGB(255, 0, 0)
+    t3.TextFrame2.TextRange.Font.Fill.BackColor.RGB = RGB(0, 0, 255)
+    t4 = textbox(s, 40, 420, 880, 70, "加粗 倾斜 下划线", size=32)
+    r = t4.TextFrame.TextRange
+    r.Characters(1, 2).Font.Bold = -1
+    r.Characters(4, 2).Font.Italic = -1
+    r.Characters(7, 3).Font.Underline = -1
+    return p
+
+
+def text_layout(app):
+    """文字布局：溢出时缩小、竖排、两栏"""
+    p = new_pres(app)
+    s = blank(p)
+    a = textbox(s, 40, 40, 280, 120, CN * 3, size=24)
+    a.TextFrame2.AutoSize = 2  # 溢出时缩小文字
+    b = textbox(s, 360, 40, 120, 440, "竖排文字测试内容", size=28)
+    b.TextFrame.Orientation = 5  # 竖排（东亚）
+    c = textbox(s, 520, 40, 400, 300, CN * 2, size=16)
+    c.TextFrame2.Column.Number = 2
+    c.TextFrame2.Column.Spacing = 20
+    return p
+
+
+def table_merge(app):
+    """表格：合并单元格、自定义填充和边框、对齐"""
+    p = new_pres(app)
+    s = blank(p)
+    t = s.Shapes.AddTable(4, 4, 60, 60, 840, 300).Table
+    for r in range(1, 5):
+        for c in range(1, 5):
+            t.Cell(r, c).Shape.TextFrame.TextRange.Text = f"{r}-{c}"
+    t.Cell(1, 1).Merge(t.Cell(1, 2))
+    t.Cell(2, 3).Merge(t.Cell(3, 3))
+    t.Cell(4, 4).Shape.Fill.ForeColor.RGB = RGB(255, 200, 0)
+    t.Cell(3, 1).Shape.TextFrame.TextRange.ParagraphFormat.Alignment = 2
+    t.Cell(4, 2).Shape.TextFrame.VerticalAnchor = 4
+    return p
+
+
+CASES = [shapes_all, text_sizes, text_align, text_spacing, text_bullets, text_missing_font, shapes_basic, fills_lines, table_basic, group_rotate, anim_basic, anim_auto, charts_basic, pictures, smartart, text_effects, text_layout, table_merge]
 
 
 def main():
@@ -315,7 +411,8 @@ def main():
     app = win32com.client.DispatchEx("PowerPoint.Application")
     TESTCASES.mkdir(exist_ok=True)
     try:
-        for name, p in make_theme_cases(app, [n for n in names if n.startswith("theme-")] if names else None):
+        theme_names = [n for n in names if n.startswith("theme-")] if names else None
+        for name, p in (make_theme_cases(app, theme_names) if theme_names is None or theme_names else []):
             out = TESTCASES / f"{name}.pptx"
             if out.exists():
                 out.unlink()

@@ -1,0 +1,133 @@
+{
+ "version": 2,
+ "slideWidthPt": 960.0,
+ "slideHeightPt": 540.0,
+ "imageWidth": 1280,
+ "imageHeight": 720,
+ "slides": [
+  {
+   "index": 0,
+   "hidden": false,
+   "shapes": [
+    {
+     "id": 2,
+     "name": "Rectangle 1",
+     "type": 1,
+     "x": 40.0,
+     "y": 30.0,
+     "w": 374.35,
+     "h": 65.433,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 11,
+       "text": "艺术字 WordArt",
+       "x": 49.01,
+       "y": 33.6,
+       "w": 356.335,
+       "h": 57.6
+      }
+     ]
+    },
+    {
+     "id": 3,
+     "name": "TextBox 2",
+     "type": 17,
+     "x": 40.0,
+     "y": 150.0,
+     "w": 880.0,
+     "h": 70.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 12,
+       "text": "描边文字 Outline",
+       "x": 47.2,
+       "y": 153.6,
+       "w": 312.63,
+       "h": 48.0
+      }
+     ]
+    },
+    {
+     "id": 4,
+     "name": "TextBox 3",
+     "type": 17,
+     "x": 40.0,
+     "y": 240.0,
+     "w": 880.0,
+     "h": 70.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 11,
+       "text": "阴影文字 Shadow",
+       "x": 47.2,
+       "y": 243.6,
+       "w": 324.38,
+       "h": 48.0
+      }
+     ]
+    },
+    {
+     "id": 5,
+     "name": "TextBox 4",
+     "type": 17,
+     "x": 40.0,
+     "y": 330.0,
+     "w": 880.0,
+     "h": 70.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 13,
+       "text": "渐变文字 Gradient",
+       "x": 47.2,
+       "y": 333.6,
+       "w": 337.505,
+       "h": 48.0
+      }
+     ]
+    },
+    {
+     "id": 6,
+     "name": "TextBox 5",
+     "type": 17,
+     "x": 40.0,
+     "y": 420.0,
+     "w": 880.0,
+     "h": 70.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 9,
+       "text": "加粗 倾斜 下划线",
+       "x": 47.2,
+       "y": 423.6,
+       "w": 243.005,
+       "h": 38.4
+      }
+     ]
+    }
+   ],
+   "effects": [],
+   "steps": 0
+  }
+ ],
+ "ok": true
+}

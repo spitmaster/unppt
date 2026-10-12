@@ -196,7 +196,7 @@ class SlideRenderer {
     const fontRef = child(style, 'a:fontRef');
     const textEnv: TextEnv = {
       colors, theme: ctx.theme, fonts: this.env.fonts, missingFonts: this.env.missingFonts,
-      fontRefColor: colorIn(fontRef, colors), uid, embed: this.env.embed,
+      fontRefColor: colorIn(fontRef, colors), uid, embed: this.env.embed, doc: this.doc,
     };
     // SmartArt 的文字框有单独的位置（dsp:txXfrm）
     const txXfrm = readXfrm(pc(el, 'txXfrm'));

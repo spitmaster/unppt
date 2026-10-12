@@ -5,7 +5,8 @@
 import { colorIn, css, type ColorContext, type Rgba } from './color';
 import { fallbackAdvance, isWide, type FontFace, type FontLibrary, type FontMetrics } from './font';
 import { EMU_PER_PX, type Theme } from './model';
-import { esc, n2 } from './svg';
+import { esc, n2, type SvgDoc } from './svg';
+import { shadowFilter } from './fill';
 import { attr, child, children, numAttr, type XEl } from './xml';
 
 export interface TextEnv {
@@ -19,6 +20,10 @@ export interface TextEnv {
   uid?: string;
   /** 字体嵌入：记录每个字体用到的字，并给字体起唯一别名 */
   embed?: FontEmbedder;
+  /** 渐变文字、文字阴影需要往 SVG 里加 defs */
+  doc?: SvgDoc;
+  /** 渐变文字铺满的范围（文本框，内部坐标） */
+  gradBox?: { w: number; h: number };
 }
 
 export interface FontEmbedder {
@@ -84,6 +89,16 @@ interface RunStyle {
   caps: 'none' | 'all' | 'small';
   /** 西文字体标记的是东亚字符集（如 GB2312）：缺字体时西文也用东亚字体替代 */
   latinEaCharset: boolean;
+  outline?: { color: Rgba; width: number };
+  shadow?: XEl;
+  grad?: XEl;
+}
+
+function textOutline(ln: XEl | undefined, env: TextEnv): RunStyle['outline'] {
+  if (!ln || child(ln, 'a:noFill')) return undefined;
+  const c = colorIn(child(ln, 'a:solidFill'), env.colors);
+  if (!c) return undefined;
+  return { color: c, width: Math.max(0.5, (numAttr(ln, 'w') ?? 12700) / EMU_PER_PX) };
 }
 
 function runStyle(r: XEl, env: TextEnv, scale: number): RunStyle {
@@ -108,6 +123,9 @@ function runStyle(r: XEl, env: TextEnv, scale: number): RunStyle {
     spc: ((numAttr(r, 'spc') ?? 0) / 100) * 96 / 72,
     caps: (attr(r, 'cap') as RunStyle['caps']) ?? 'none',
     latinEaCharset: EA_CHARSETS.has(attr(child(r, 'a:latin'), 'charset') ?? ''),
+    outline: textOutline(child(r, 'a:ln'), env),
+    shadow: child(child(r, 'a:effectLst'), 'a:outerShdw'),
+    grad: fill?.name === 'a:gradFill' ? fill : undefined,
   };
 }
 
@@ -341,10 +359,19 @@ export async function renderText(
   const norm = child(bp, 'a:normAutofit');
   const fontScale = (numAttr(norm, 'fontScale') ?? 100000) / 100000;
   const lnReduce = (numAttr(norm, 'lnSpcReduction') ?? 0) / 100000;
-  const vertical = vert === 'vert' || vert === 'eaVert' || vert === 'vert270' || vert === 'wordArtVert';
+  const vertical = vert !== 'horz';
+  // 竖排时汉字保持正立（eaVert、mongolianVert、wordArtVert）；vert / vert270 是整体旋转
+  const uprightWide = vert === 'eaVert' || vert === 'mongolianVert' || vert === 'wordArtVert' || vert === 'wordArtVertRtl';
+  const uprightAll = vert === 'wordArtVert' || vert === 'wordArtVertRtl';
+  // 列（行）的排列方向：mongolianVert、vert270 从左往右，其余竖排从右往左
+  const linesLeftToRight = vert === 'mongolianVert';
+  const numCol = vertical ? 1 : Math.max(1, numAttr(bp, 'numCol') ?? 1);
+  const spcCol = (numAttr(bp, 'spcCol') ?? 0) / EMU_PER_PX;
 
   const outer = vertical ? { x: 0, y: 0, w: box.h, h: box.w } : { x: 0, y: 0, w: box.w, h: box.h };
-  const contentW = Math.max(1, outer.w - lIns - rIns);
+  const contentW = Math.max(1, (outer.w - lIns - rIns - (numCol - 1) * spcCol) / numCol);
+  // 实测：渐变文字的渐变铺满整个文本框，而不是文字本身的范围
+  env.gradBox = { w: outer.w, h: outer.h };
   const measurer = makeMeasurer(env);
   const lstStyle = child(txBody, 'a:lstStyle');
   // 形状样式（p:style/a:fontRef）指定的文字颜色：优先级高于默认文字样式，低于形状自己的列表样式和文字属性
@@ -491,7 +518,8 @@ export async function renderText(
   });
   if (out) out.height = total + tIns + bIns;
   const availH = outer.h - tIns - bIns;
-  let y = tIns + (anchor === 'ctr' ? (availH - total) / 2 : anchor === 'b' ? availH - total : 0);
+  let y = tIns + (numCol > 1 ? 0 : anchor === 'ctr' ? (availH - total) / 2 : anchor === 'b' ? availH - total : 0);
+  let col = 0;
 
   const parts: string[] = [];
   for (let i = 0; i < layouts.length; i++) {
@@ -500,14 +528,19 @@ export async function renderText(
     const pParts: string[] = [];
     pl.lines.forEach((line, li) => {
       const lh = lineHeight(line, pl.lineSpc);
+      // 分栏：这一栏放不下就换到下一栏顶部
+      if (numCol > 1 && col < numCol - 1 && y + lh > tIns + availH + 0.5 && y > tIns) { col++; y = tIns; }
+      const colX = col * (contentW + spcCol);
       // 行距大于单倍时，多出的空间加在行的上方
       // PowerPoint 单倍行高 = 1.2 × 字号；基线按字体的上下伸比例放在这 1.2 倍的行框里。
       // 多倍/固定行距多出（或少掉）的高度，实测约 2/3 在文字上方、1/3 在下方。
       const box = line.size * 1.2;
       const natural = line.ascent + line.descent || 1;
       // 行距小于单倍时，减少的高度全部从文字上方扣（实测更接近）
-      const baseline = y + (lh - box) * (lh < box ? 1 : EXTRA_ABOVE) + box * (line.ascent / natural);
-      let x = lIns + line.x0;
+      let baseline = y + (lh - box) * (lh < box ? 1 : EXTRA_ABOVE) + box * (line.ascent / natural);
+      // 列从左往右排的竖排：把行的位置翻过来（行内基线位置不变）
+      if (linesLeftToRight) baseline = outer.h - y - lh + (baseline - y);
+      let x = lIns + colX + line.x0;
       const free = line.avail - line.width;
       if (pl.algn === 'ctr') x += free / 2;
       else if (pl.algn === 'r') x += free;
@@ -518,9 +551,9 @@ export async function renderText(
       }
       if (li === 0 && pl.bullet) {
         const b = pl.bullet;
-        const bx = pl.algn === 'l' || pl.algn === 'just' ? lIns + b.x : x - b.width;
+        const bx = pl.algn === 'l' || pl.algn === 'just' ? lIns + colX + b.x : x - b.width;
         const bAlias = b.face && env.embed ? env.embed.alias(b.face) : undefined;
-        pParts.push(textEl(b.text, bx, baseline, b.style, b.family, true, bAlias));
+        pParts.push(textEl(b.text, bx, baseline, b.style, b.family, true, bAlias, env));
       }
       // 先算每个字的横坐标，再按样式、字体分段输出（两端对齐时在每个间隙处分段）
       const atoms = line.atoms;
@@ -534,7 +567,8 @@ export async function renderText(
       for (let k = 1; k <= atoms.length; k++) {
         const a = atoms[k];
         const p = atoms[k - 1];
-        const boundary = k === atoms.length || a.style !== p.style || a.family !== p.family || a.face !== p.face || (extra > 0 && (p.space || p.wide));
+        const upright = (q: Atom) => (uprightAll || (uprightWide && q.wide)) && !q.space;
+        const boundary = k === atoms.length || a.style !== p.style || a.family !== p.family || a.face !== p.face || (extra > 0 && (p.space || p.wide)) || upright(a) || upright(p);
         if (!boundary) continue;
         const seg = atoms.slice(s0, k);
         const s = seg[0].style;
@@ -542,7 +576,12 @@ export async function renderText(
         const shift = s.baseline ? -s.baseline / 100 * s.size : 0;
         const st = s.baseline ? { ...s, size: s.size * 0.67 } : s;
         const alias = seg[0].face && env.embed ? env.embed.alias(seg[0].face) : undefined;
-        if (txt.trim().length || s.underline || s.strike) pParts.push(textEl(txt, xs[s0], baseline + shift, st, seg[0].family, false, alias));
+        if (seg.length === 1 && upright(seg[0])) {
+          // 竖排里正立的字：以字的中心为轴转回来
+          const cx = xs[s0] + seg[0].width / 2;
+          const cy = baseline - st.size * 0.38;
+          pParts.push(`<g transform="rotate(-90 ${n2(cx)} ${n2(cy)})">${textEl(txt, cx, baseline + shift, st, seg[0].family, false, alias, env, 'middle')}</g>`);
+        } else if (txt.trim().length || s.underline || s.strike) pParts.push(textEl(txt, xs[s0], baseline + shift, st, seg[0].family, false, alias, env));
         s0 = k;
       }
       y += lh;
@@ -572,7 +611,7 @@ function fontList(primary: string, alias?: string): string {
   return `${alias ? `'${alias}',` : ''}'${primary.replace(/'/g, '')}',sans-serif`;
 }
 
-function textEl(txt: string, x: number, y: number, s: RunStyle, family: string, bullet = false, alias?: string): string {
+function textEl(txt: string, x: number, y: number, s: RunStyle, family: string, bullet = false, alias?: string, env?: TextEnv, anchor?: string): string {
   let a = `${bullet ? 'data-bu="1" ' : ''}x="${n2(x)}" y="${n2(y)}" font-family="${esc(fontList(family, alias))}" font-size="${n2(s.size)}" fill="${css(s.color)}"`;
   if (s.color.a < 0.999) a += ` fill-opacity="${n2(s.color.a)}"`;
   if (s.bold) a += ' font-weight="bold"';
@@ -580,5 +619,24 @@ function textEl(txt: string, x: number, y: number, s: RunStyle, family: string, 
   const deco = [s.underline ? 'underline' : '', s.strike ? 'line-through' : ''].filter(Boolean).join(' ');
   if (deco) a += ` text-decoration="${deco}"`;
   if (s.spc) a += ` letter-spacing="${n2(s.spc)}"`;
+  if (anchor) a += ` text-anchor="${anchor}"`;
+  if (s.outline) a += ` stroke="${css(s.outline.color)}" stroke-width="${n2(s.outline.width)}"${s.outline.color.a < 0.999 ? ` stroke-opacity="${n2(s.outline.color.a)}"` : ''} paint-order="stroke"`;
+  const doc = env?.doc;
+  if (doc && s.grad) {
+    const id = doc.id('tg');
+    const ang = ((numAttr(child(s.grad, 'a:lin'), 'ang') ?? 0) / 60000) * Math.PI / 180;
+    const gb = env!.gradBox ?? { w: 1, h: 1 };
+    const dx = Math.cos(ang) / 2, dy = Math.sin(ang) / 2;
+    const stops = children(child(s.grad, 'a:gsLst'), 'a:gs').map((g) => {
+      const c = colorIn(g, env!.colors) ?? { r: 0, g: 0, b: 0, a: 1 };
+      return `<stop offset="${n2((numAttr(g, 'pos') ?? 0) / 100000)}" stop-color="${css(c)}"${c.a < 0.999 ? ` stop-opacity="${n2(c.a)}"` : ''}/>`;
+    }).join('');
+    doc.addDef(`<linearGradient id="${id}" gradientUnits="userSpaceOnUse" x1="${n2((0.5 - dx) * gb.w)}" y1="${n2((0.5 - dy) * gb.h)}" x2="${n2((0.5 + dx) * gb.w)}" y2="${n2((0.5 + dy) * gb.h)}">${stops}</linearGradient>`);
+    a = a.replace(/ fill="[^"]*"( fill-opacity="[^"]*")?/, ` fill="url(#${id})"`);
+  }
+  if (doc && s.shadow && env) {
+    const fid = shadowFilter({ name: 'a:effectLst', attrs: {}, text: '', children: [s.shadow] }, env.colors, doc);
+    if (fid) a += ` filter="url(#${fid})"`;
+  }
   return `<text ${a} xml:space="preserve">${esc(txt)}</text>`;
 }
