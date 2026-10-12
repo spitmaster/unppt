@@ -11,8 +11,61 @@ export type Fill =
   | { kind: 'none' }
   | { kind: 'solid'; color: Rgba }
   | { kind: 'grad'; stops: { pos: number; color: Rgba }[]; angle: number; path?: string; rect?: { l: number; t: number; r: number; b: number } }
-  | { kind: 'image'; rid: string; part: string; alpha: number; tile: boolean; srcRect?: { l: number; t: number; r: number; b: number } }
+  | { kind: 'image'; rid: string; part: string; alpha: number; tile: boolean; srcRect?: { l: number; t: number; r: number; b: number }; effects?: BlipEffects }
   | { kind: 'pattern'; fg: Rgba; bg: Rgba };
+
+/** 图片调整：双色调、灰度、亮度对比度、某种颜色变透明 */
+export interface BlipEffects {
+  duotone?: [Rgba, Rgba];
+  grayscale?: boolean;
+  bright?: number;     // -1..1
+  contrast?: number;   // -1..1
+  clrChange?: Rgba;    // 变透明的颜色
+}
+
+export function parseBlipEffects(blip: XEl | undefined, ctx: ColorContext): BlipEffects | undefined {
+  if (!blip) return undefined;
+  const e: BlipEffects = {};
+  const duo = child(blip, 'a:duotone');
+  if (duo) {
+    const cs = duo.children.map((c) => parseColorEl(c, ctx)).filter((c): c is Rgba => !!c);
+    if (cs.length >= 2) e.duotone = [cs[0], cs[1]];
+  }
+  if (child(blip, 'a:grayscl')) e.grayscale = true;
+  const lum = child(blip, 'a:lum');
+  if (lum) {
+    e.bright = (numAttr(lum, 'bright') ?? 0) / 100000;
+    e.contrast = (numAttr(lum, 'contrast') ?? 0) / 100000;
+  }
+  const cc = child(blip, 'a:clrChange');
+  if (cc) e.clrChange = colorIn(child(cc, 'a:clrFrom'), ctx);
+  return Object.keys(e).length ? e : undefined;
+}
+
+const f01 = (v: number) => (Math.round(v / 255 * 1000) / 1000).toString();
+
+/** 图片调整 -> SVG filter，返回 filter id */
+export function blipFilter(e: BlipEffects | undefined, doc: SvgDoc): string | undefined {
+  if (!e) return undefined;
+  const parts: string[] = [];
+  // clrChange（某种颜色变透明）暂未实现：需要按颜色距离生成透明度，SVG 滤镜表达较复杂
+  if (e.grayscale || e.duotone) {
+    parts.push('<feColorMatrix type="matrix" values="0.2126 0.7152 0.0722 0 0 0.2126 0.7152 0.0722 0 0 0.2126 0.7152 0.0722 0 0 0 0 0 1 0"/>');
+  }
+  if (e.duotone) {
+    const [a, b] = e.duotone;
+    parts.push(`<feComponentTransfer><feFuncR type="table" tableValues="${f01(a.r)} ${f01(b.r)}"/><feFuncG type="table" tableValues="${f01(a.g)} ${f01(b.g)}"/><feFuncB type="table" tableValues="${f01(a.b)} ${f01(b.b)}"/></feComponentTransfer>`);
+  }
+  if (e.bright || e.contrast) {
+    const k = 1 + (e.contrast ?? 0);
+    const off = (e.bright ?? 0) + (1 - k) / 2;
+    parts.push(`<feComponentTransfer><feFuncR type="linear" slope="${k}" intercept="${off}"/><feFuncG type="linear" slope="${k}" intercept="${off}"/><feFuncB type="linear" slope="${k}" intercept="${off}"/></feComponentTransfer>`);
+  }
+  if (!parts.length) return undefined;
+  const id = doc.id('b');
+  doc.addDef(`<filter id="${id}" color-interpolation-filters="sRGB" x="0" y="0" width="100%" height="100%">${parts.join('')}</filter>`);
+  return id;
+}
 
 const FILL_NAMES = new Set(['a:noFill', 'a:solidFill', 'a:gradFill', 'a:blipFill', 'a:pattFill', 'a:grpFill']);
 
@@ -54,6 +107,7 @@ export function parseFill(f: XEl | undefined, ctx: ColorContext, part: string, g
       const sr = child(f, 'a:srcRect');
       return {
         kind: 'image', rid, part, alpha: (numAttr(amf, 'amt') ?? 100000) / 100000, tile: !!child(f, 'a:tile'),
+        effects: parseBlipEffects(blip, ctx),
         srcRect: sr ? {
           l: (numAttr(sr, 'l') ?? 0) / 100000, t: (numAttr(sr, 't') ?? 0) / 100000,
           r: (numAttr(sr, 'r') ?? 0) / 100000, b: (numAttr(sr, 'b') ?? 0) / 100000,
@@ -146,7 +200,8 @@ export async function fillAttrs(fill: Fill | undefined, doc: SvgDoc, w: number, 
   const sr = fill.srcRect ?? { l: 0, t: 0, r: 0, b: 0 };
   const iw = w / Math.max(0.0001, 1 - sr.l - sr.r);
   const ih = h / Math.max(0.0001, 1 - sr.t - sr.b);
-  doc.addDef(`<pattern id="${id}" patternUnits="userSpaceOnUse" width="${n2(w)}" height="${n2(h)}"><image href="${esc(href)}" x="${n2(-sr.l * iw)}" y="${n2(-sr.t * ih)}" width="${n2(iw)}" height="${n2(ih)}" preserveAspectRatio="none"${fill.alpha < 1 ? ` opacity="${n2(fill.alpha)}"` : ''}/></pattern>`);
+  const fid = blipFilter(fill.effects, doc);
+  doc.addDef(`<pattern id="${id}" patternUnits="userSpaceOnUse" width="${n2(w)}" height="${n2(h)}"><image href="${esc(href)}" x="${n2(-sr.l * iw)}" y="${n2(-sr.t * ih)}" width="${n2(iw)}" height="${n2(ih)}" preserveAspectRatio="none"${fill.alpha < 1 ? ` opacity="${n2(fill.alpha)}"` : ''}${fid ? ` filter="url(#${fid})"` : ''}/></pattern>`);
   return ` fill="url(#${id})"`;
 }
 

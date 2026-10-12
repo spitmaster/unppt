@@ -468,8 +468,9 @@ export async function renderText(
     const refH = (lines[0].ascent + lines[0].descent) * 1.2;
     layouts.push({
       lines,
-      spcBef: toPx(spc(pPr.children.find((c) => c.name === 'a:spcBef')), refH) * (1 - lnReduce),
-      spcAft: toPx(spc(pPr.children.find((c) => c.name === 'a:spcAft')), refH) * (1 - lnReduce),
+      // 实测：自动缩小（lnSpcReduction）只减行距，不减段前段后
+      spcBef: toPx(spc(pPr.children.find((c) => c.name === 'a:spcBef')), refH),
+      spcAft: toPx(spc(pPr.children.find((c) => c.name === 'a:spcAft')), refH),
       lineSpc: ls,
       algn,
       bullet,
@@ -502,7 +503,8 @@ export async function renderText(
       // 多倍/固定行距多出（或少掉）的高度，实测约 2/3 在文字上方、1/3 在下方。
       const box = line.size * 1.2;
       const natural = line.ascent + line.descent || 1;
-      const baseline = y + (lh - box) * EXTRA_ABOVE + box * (line.ascent / natural);
+      // 行距小于单倍时，减少的高度全部从文字上方扣（实测更接近）
+      const baseline = y + (lh - box) * (lh < box ? 1 : EXTRA_ABOVE) + box * (line.ascent / natural);
       let x = lIns + line.x0;
       const free = line.avail - line.width;
       if (pl.algn === 'ctr') x += free / 2;

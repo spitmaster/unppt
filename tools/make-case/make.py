@@ -276,6 +276,36 @@ def charts_basic(app):
     return p
 
 
+THEME_DIR = Path("C:/Program Files/Microsoft Office/root/Document Themes 16")
+
+
+def make_theme_cases(app, names=None):
+    """Office 自带的设计主题：每套主题一个文件，各放 4 种常用版式（背景、母版装饰、占位符样式都很丰富）"""
+    out = []
+    for thmx in sorted(THEME_DIR.glob("*.thmx")):
+        name = "theme-" + thmx.stem.lower().replace(" ", "-").replace("---", "-")
+        if names and name not in names:
+            continue
+        p = new_pres(app, window=True)
+        p.ApplyTheme(str(thmx))
+        layouts = p.SlideMaster.CustomLayouts
+        for li in range(1, min(5, layouts.Count + 1)):
+            s = p.Slides.AddSlide(p.Slides.Count + 1, layouts(li))
+            for ph in s.Shapes.Placeholders:
+                try:
+                    t = ph.PlaceholderFormat.Type
+                    if t in (1, 3):      # 标题、居中标题
+                        ph.TextFrame.TextRange.Text = "演示文稿标题 Title"
+                    elif t == 4:         # 副标题
+                        ph.TextFrame.TextRange.Text = "副标题文字 Subtitle"
+                    elif t in (2, 7):    # 正文、对象
+                        ph.TextFrame.TextRange.Text = "第一条要点内容" + chr(13) + "第二条要点，文字稍长一些用来观察换行" + chr(13) + "第三条要点"
+                except Exception:
+                    pass
+        out.append((name, p))
+    return out
+
+
 CASES = [shapes_all, text_sizes, text_align, text_spacing, text_bullets, text_missing_font, shapes_basic, fills_lines, table_basic, group_rotate, anim_basic, anim_auto, charts_basic]
 
 
@@ -285,6 +315,13 @@ def main():
     app = win32com.client.DispatchEx("PowerPoint.Application")
     TESTCASES.mkdir(exist_ok=True)
     try:
+        for name, p in make_theme_cases(app, [n for n in names if n.startswith("theme-")] if names else None):
+            out = TESTCASES / f"{name}.pptx"
+            if out.exists():
+                out.unlink()
+            p.SaveAs(str(out.resolve()))
+            p.Close()
+            print("生成", out.name)
         for fn in CASES:
             name = fn.__name__.replace("_", "-")
             if names and name not in names:
