@@ -25,6 +25,7 @@ export interface RenderEnv {
 
 export interface RenderedSlide {
   svg: string;
+  colors?: import('./color').ColorContext;
   timing?: XEl;
   transition?: XEl;
   hidden: boolean;
@@ -408,6 +409,7 @@ export async function renderSlide(ref: SlideRef, env: RenderEnv): Promise<Render
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}">${r.doc.defsXml()}${parts.join('')}</svg>`;
   return {
     svg,
+    colors,
     timing: child(xml, 'p:timing'),
     transition: expandAlternate(xml.children).find((c) => c.name === 'p:transition'),
     hidden: attr(xml, 'show') === '0',

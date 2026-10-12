@@ -48,6 +48,23 @@ export interface AnimAction {
   delay: number;
   /** 飞入等效果的方向：l/r/t/b */
   from?: 'l' | 'r' | 't' | 'b';
+  /** 强调、路径动画结束后保持的状态（累加到元素当前状态上） */
+  to?: AnimTarget;
+}
+
+export interface AnimTarget {
+  /** 缩放倍数（相对当前） */
+  scale?: [number, number];
+  /** 旋转角度（度，相对当前） */
+  rotate?: number;
+  /** 移动距离（像素，相对当前） */
+  move?: [number, number];
+  /** 新的填充颜色 */
+  fill?: string;
+  /** 新的文字颜色 */
+  color?: string;
+  /** 新的透明度 0~1 */
+  opacity?: number;
 }
 
 export interface SlideTransition {

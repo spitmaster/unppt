@@ -30,7 +30,7 @@ from common import REF, ROOT, read_json, testcase_index, update_index, write_jso
 
 EXPORT_WIDTH = 1280
 TIMEOUT_SEC = 600
-VERSION = 2  # 输出格式变化时加 1，会触发重新导出
+VERSION = 5  # 输出格式变化时加 1，会触发重新导出（5：只有段落/强调/路径动画才用放映截图）
 
 # PowerPoint / Office 常量
 PP_SAVE_AS_PPTX = 24
@@ -153,6 +153,121 @@ def _is_entrance(e):
     return True
 
 
+# ---------------------------------------------------------------- 放映截图（动画步骤的标准答案）
+
+def _ppt_pids():
+    r = subprocess.run(["tasklist", "/FI", "IMAGENAME eq POWERPNT.EXE", "/FO", "CSV", "/NH"], capture_output=True, text=True)
+    out = set()
+    for line in r.stdout.splitlines():
+        parts = [x.strip('"') for x in line.split('","')]
+        if len(parts) > 1 and parts[1].isdigit():
+            out.add(int(parts[1]))
+    return out
+
+
+def _show_window():
+    import win32gui
+    import win32process
+    pids = _ppt_pids()
+    found = []
+
+    def cb(h, _):
+        _, pid = win32process.GetWindowThreadProcessId(h)
+        if pid in pids and win32gui.IsWindowVisible(h) and win32gui.GetClassName(h) == "PPTFrameClass" and "放映" in win32gui.GetWindowText(h) + "Slide Show":
+            found.append(h)
+    win32gui.EnumWindows(cb, None)
+    return found[0] if found else None
+
+
+def _grab(hwnd, width: int, height: int):
+    """截取放映窗口，裁掉四周黑边，缩放到参考图尺寸"""
+    import numpy as np
+    import win32gui
+    import win32ui
+    from ctypes import windll
+    from PIL import Image
+    l, t, r, b = win32gui.GetClientRect(hwnd)
+    w, h = r - l, b - t
+    hdc = win32gui.GetWindowDC(hwnd)
+    mdc = win32ui.CreateDCFromHandle(hdc)
+    sdc = mdc.CreateCompatibleDC()
+    bmp = win32ui.CreateBitmap()
+    bmp.CreateCompatibleBitmap(mdc, w, h)
+    sdc.SelectObject(bmp)
+    windll.user32.PrintWindow(hwnd, sdc.GetSafeHdc(), 3)
+    info = bmp.GetInfo()
+    im = Image.frombuffer("RGB", (info["bmWidth"], info["bmHeight"]), bmp.GetBitmapBits(True), "raw", "BGRX", 0, 1)
+    win32gui.DeleteObject(bmp.GetHandle())
+    sdc.DeleteDC()
+    mdc.DeleteDC()
+    win32gui.ReleaseDC(hwnd, hdc)
+    # 幻灯片在放映窗口里居中显示、四周可能有黑边：先找出非黑色的画面范围
+    ratio = width / height
+    a = np.asarray(im.convert("L"))
+    rows = np.where(a.max(axis=1) > 24)[0]
+    cols = np.where(a.max(axis=0) > 24)[0]
+    if len(rows) and len(cols):
+        bx0, bx1, by0, by1 = cols[0], cols[-1] + 1, rows[0], rows[-1] + 1
+        if abs((bx1 - bx0) / max(1, by1 - by0) - ratio) / ratio < 0.02:
+            return im.crop((bx0, by0, bx1, by1)).resize((width, height), Image.LANCZOS)
+    # 检测不出来（比如幻灯片本身是黑底）：按宽高比居中裁剪
+    if w / h > ratio:
+        sw, sh = round(h * ratio), h
+    else:
+        sw, sh = w, round(w / ratio)
+    x0, y0 = (w - sw) // 2, (h - sh) // 2
+    return im.crop((x0, y0, x0 + sw, y0 + sh)).resize((width, height), Image.LANCZOS)
+
+
+def _group_wait(effects) -> float:
+    """估算一组动画播完需要的秒数（偏保守）"""
+    total = 0.0
+    for e in effects:
+        total += (e.get("dur") or 0.5) + (e.get("delay") or 0)
+    return (min(total, 15) + 0.6) * float(os.environ.get("UNPPT_WAIT_SCALE", "1"))
+
+
+def needs_slideshow(effects) -> bool:
+    """只有"显示/隐藏"模拟不了的动画才用放映截图：段落动画、强调效果、路径动画。
+    放映截图和静态导出之间有几个像素的错位，普通进入/退出动画用静态导出更准。"""
+    # MsoAnimEffect：54 以后是强调效果和路径动画（进入/退出效果都在 54 以前）
+    return any(e.get("paragraph") or (e.get("type") or 0) >= 54 for e in effects)
+
+
+def capture_steps(pres, slides_info, out: Path, width: int, height: int):
+    """真正放映，逐步点击并截图：段落动画、强调效果、路径动画的最终状态都能准确记录"""
+    ss = pres.SlideShowSettings
+    ss.ShowType = 2  # 窗口模式
+    win = ss.Run()
+    try:
+        win.Width, win.Height = 1000, 600
+    except Exception:
+        pass
+    time.sleep(1.5)
+    hwnd = _show_window()
+    if not hwnd:
+        raise RuntimeError("找不到放映窗口")
+    view = win.View
+    for info in slides_info:
+        if not needs_slideshow(info["effects"]):
+            continue
+        n = info["index"] + 1
+        groups = _click_groups(info["effects"])
+        view.GotoSlide(n)
+        # 等页面切换效果和进入页面时的自动动画播完
+        time.sleep(1.2 * float(os.environ.get("UNPPT_WAIT_SCALE", "1")) + _group_wait(groups[0]))
+        _grab(hwnd, width, height).save(out / f"slide-{n:03d}-step-00.png")
+        for k in range(1, len(groups)):
+            view.Next()
+            time.sleep(_group_wait(groups[k]))
+            _grab(hwnd, width, height).save(out / f"slide-{n:03d}-step-{k:02d}.png")
+        info["stepSource"] = "slideshow"
+    try:
+        view.Exit()
+    except Exception:
+        pass
+
+
 def export_one(src: Path, out: Path) -> dict:
     import pythoncom
     import win32com.client
@@ -204,9 +319,18 @@ def export_one(src: Path, out: Path) -> dict:
                     if shp is not None:
                         shp.Visible = v
             result["slides"].append(info)
+        # 有动画的页：用放映截图覆盖上面"显示/隐藏"模拟出来的步骤图（更准确）
+        if any(needs_slideshow(si["effects"]) for si in result["slides"]) and os.environ.get("UNPPT_NO_SLIDESHOW") != "1":
+            try:
+                capture_steps(pres, result["slides"], out, width, height)
+            except Exception as e:  # 放映截图失败时保留模拟的步骤图
+                result["slideshowError"] = str(e)[:200]
         result["ok"] = True
     finally:
-        pres.Close()
+        try:
+            pres.Close()  # 退出放映时 PowerPoint 可能已经把它关掉了
+        except Exception:
+            pass
         try:
             if app.Presentations.Count == 0:
                 app.Quit()
