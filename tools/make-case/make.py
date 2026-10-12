@@ -515,7 +515,34 @@ def freeform_icons(app):
     return p
 
 
-CASES = [shapes_all, text_sizes, text_align, text_spacing, text_bullets, text_missing_font, shapes_basic, fills_lines, table_basic, group_rotate, anim_basic, anim_auto, charts_basic, pictures, smartart, text_effects, text_layout, table_merge, links, emf_images, anim_advanced, charts_labels, freeform_icons]
+def make_tone(path: Path, seconds=2.0, freq=440):
+    """生成一段正弦波 WAV（测试用的中性音频）"""
+    import math, struct, wave
+    with wave.open(str(path), "wb") as w:
+        w.setnchannels(1); w.setsampwidth(2); w.setframerate(16000)
+        frames = b"".join(struct.pack("<h", int(8000 * math.sin(2 * math.pi * freq * i / 16000))) for i in range(int(16000 * seconds)))
+        w.writeframes(frames)
+
+
+def media_audio(app):
+    """音频：第 1 页进入时自动播放并隐藏图标；第 2 页点击播放"""
+    tmp = TESTCASES.parent / ".cache" / "media"
+    tmp.mkdir(parents=True, exist_ok=True)
+    wav = tmp / "tone.wav"
+    make_tone(wav)
+    p = new_pres(app, window=True)
+    s1 = blank(p)
+    textbox(s1, 60, 60, 600, 60, "进入页面自动播放音频", size=28)
+    a = s1.Shapes.AddMediaObject2(str(wav.resolve()), 0, -1, 800, 420, 48, 48)
+    a.AnimationSettings.PlaySettings.PlayOnEntry = -1
+    a.AnimationSettings.PlaySettings.HideWhileNotPlaying = -1
+    s2 = blank(p)
+    textbox(s2, 60, 60, 600, 60, "点击播放音频", size=28)
+    b = s2.Shapes.AddMediaObject2(str(wav.resolve()), 0, -1, 400, 240, 48, 48)
+    return p
+
+
+CASES = [shapes_all, text_sizes, text_align, text_spacing, text_bullets, text_missing_font, shapes_basic, fills_lines, table_basic, group_rotate, anim_basic, anim_auto, charts_basic, pictures, smartart, text_effects, text_layout, table_merge, links, emf_images, anim_advanced, charts_labels, freeform_icons, media_audio]
 
 
 def main():

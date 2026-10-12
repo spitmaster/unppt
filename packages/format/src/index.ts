@@ -36,7 +36,7 @@ export interface DeckSlide {
 
 export type AnimEffect =
   | 'appear' | 'fade' | 'fly' | 'wipe' | 'zoom' | 'split' | 'float' | 'wheel' | 'random'
-  | 'emphasis' | 'path';
+  | 'emphasis' | 'path' | 'media';
 
 export interface AnimAction {
   uid: string;
@@ -50,6 +50,9 @@ export interface AnimAction {
   from?: 'l' | 'r' | 't' | 'b';
   /** 强调、路径动画结束后保持的状态（累加到元素当前状态上） */
   to?: AnimTarget;
+  /** 媒体命令：播放（从 start 秒开始）、暂停、停止 */
+  media?: 'play' | 'pause' | 'stop' | 'toggle';
+  start?: number;
 }
 
 export interface AnimTarget {

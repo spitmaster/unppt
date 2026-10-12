@@ -1,13 +1,15 @@
 {
- "date": "2026-10-12 21:51",
+ "date": "2026-10-12 21:59",
  "set": "testcases",
- "files": 34,
+ "files": 35,
  "failedToConvert": 0,
- "pages": 105,
- "passed": 90,
- "passRate": 0.8571,
- "meanSsim": 0.9728,
+ "pages": 108,
+ "passed": 93,
+ "passRate": 0.8611,
+ "meanSsim": 0.9732,
  "passLine": 0.95,
- "issues": {},
+ "issues": {
+  "触发器动画暂未支持": 1
+ },
  "missingFontCount": 9
 }

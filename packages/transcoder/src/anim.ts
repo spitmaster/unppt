@@ -104,6 +104,14 @@ function effectAction(eff: XEl, base: number, ctx: AnimContext): AnimAction | un
     if (d && d !== 'indefinite') dur = Math.max(dur, Number(d) + delayOf(b));
   }
   const id = numAttr(cTn, 'presetID') ?? 0;
+  if (cls === 'mediacall') {
+    // 媒体命令：playFrom(秒) / pause / stop / togglePause
+    const cmd = attr(findAll(cTn, 'p:cmd')[0], 'cmd') ?? '';
+    const m = /playFrom\(([\d.]+)\)/.exec(cmd);
+    const media: AnimAction['media'] = m || cmd === 'play' ? 'play' : cmd === 'pause' ? 'pause' : cmd === 'stop' ? 'stop' : cmd === 'togglePause' ? 'toggle' : undefined;
+    if (!media) return undefined;
+    return { uid, effect: 'media', dir: 'emph', dur: 0, delay: base + delayOf(cTn), media, ...(m ? { start: Number(m[1]) } : {}) };
+  }
   const dir: AnimAction['dir'] = cls === 'entr' ? 'in' : cls === 'exit' ? 'out' : 'emph';
   let effect: AnimEffect = cls === 'emph' ? 'emphasis' : cls === 'path' ? 'path' : EFFECT_BY_ID[id] ?? 'fade';
   if (dir !== 'emph' && id === 1) dur = 0;
@@ -152,6 +160,12 @@ export function compileTiming(timing: XEl | undefined, existing: Set<string>, ct
     }
   }
   for (const [uid, a] of firstSeen) if (a.dir === 'in') result.hidden.push(uid);
+  // 放映时隐藏的音频/视频图标（showWhenStopped="0"）
+  for (const node of findAll(timing, 'p:cMediaNode')) {
+    if (attr(node, 'showWhenStopped') !== '0') continue;
+    const spid = attr(findAll(node, 'p:spTgt')[0], 'spid');
+    if (spid && existing.has(`s${spid}`) && !result.hidden.includes(`s${spid}`)) result.hidden.push(`s${spid}`);
+  }
   return result;
 }
 

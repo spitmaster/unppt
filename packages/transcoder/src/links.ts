@@ -12,6 +12,7 @@ export function linkAttr(h: XEl | undefined, rels: Rel[]): string {
   if (!h) return '';
   const action = attr(h, 'action') ?? '';
   const rid = attr(h, 'r:id');
+  if (action === 'ppaction://media') return ' data-link="media"';
   if (action.startsWith('ppaction://hlinkshowjump')) {
     const jump = /jump=(\w+)/.exec(action)?.[1] ?? '';
     const map: Record<string, string> = { nextslide: 'next', previousslide: 'prev', firstslide: 'first', lastslide: 'last', endshow: 'last', lastslideviewed: 'prev' };
