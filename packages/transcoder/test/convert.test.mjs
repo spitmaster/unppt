@@ -92,3 +92,9 @@ test('只输出数据模式：deck.json 结构完整', async () => {
 test('损坏的文件给出明确错误', async () => {
   await assert.rejects(convert(new Uint8Array([1, 2, 3, 4]), { write: async () => {} }), /pptx/);
 });
+
+test('老格式 .ppt 给出明确提示', async () => {
+  const ole = new Uint8Array(4096);
+  ole.set([0xd0, 0xcf, 0x11, 0xe0, 0xa1, 0xb1, 0x1a, 0xe1]);
+  await assert.rejects(convert(ole, { write: async () => {} }), /老格式/);
+});

@@ -45,7 +45,13 @@ export class ZipReader {
     for (let i = tail.length - 22; i >= 0; i--) {
       if (u32(tail, i) === SIG_EOCD) { eocd = i; break; }
     }
-    if (eocd < 0) throw new Error('不是有效的 pptx 文件（找不到 zip 目录）');
+    if (eocd < 0) {
+      const head = await src.read(0, 8);
+      if (head[0] === 0xd0 && head[1] === 0xcf && head[2] === 0x11 && head[3] === 0xe0) {
+        throw new Error('这是老格式的 .ppt 文件（或加密的 pptx），暂不支持，请用 PowerPoint 另存为 .pptx 后再转码');
+      }
+      throw new Error('不是有效的 pptx 文件（找不到 zip 目录）');
+    }
     let count = u16(tail, eocd + 10);
     let cdSize = u32(tail, eocd + 12);
     let cdOffset = u32(tail, eocd + 16);
