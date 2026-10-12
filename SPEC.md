@@ -20,13 +20,18 @@
 | # | 决策 | 原因 |
 |---|------|------|
 | D1 | 产品代码（转码器、播放器）**纯自研、零第三方运行时依赖**：不用 npm 库、WASM、原生库、外部程序，只用 JS 内置能力 | 拿来就用，不依赖任何环境，完全可控 |
-| D2 | 转码器是纯函数：`convert(pptx: Uint8Array, { fonts?: Uint8Array[] })`，不读写磁盘、不联网 | 同上；文件从哪来由调用方或命令行处理 |
+| D2 | 转码器是纯函数，不自己读写磁盘、不联网：`convert(input, { write, fonts? })`。`input` 可以是 `Uint8Array`，也可以是 `{ size, read(offset, length) }`（按位置读片段，适合大文件）；输出通过 `write(路径, 数据或数据流)` 交给调用方 | 文件从哪来、写到哪去由调用方或命令行处理；见 D13 |
 | D3 | 字体只接收字节。转码时测量用的字体，就是产物里嵌入、播放时显示用的字体 | 保证换行位置在任何浏览器里都一致 |
 | D4 | 转码器和播放器只通过**产物格式**耦合，格式带版本号 | 两部分能拆开，各自独立使用和升级 |
 | D5 | 正确性的唯一标准是本机 **Microsoft PowerPoint**（COM 自动化）的输出 | 目标就是"和 PPT 一样" |
 | D6 | 第三方渲染项目**只允许在评测中作为对比**，不进产品、不当依赖、不复制代码 | 保持纯自研 |
 | D7 | 样本库放在仓库根目录的 `samples/`，已加入 `.gitignore` | 客户 PPT 绝对不能外泄，见第 4 节 |
 | D8 | 产品代码用 TypeScript；开发评测工具用 Python（调用 PowerPoint COM 需要 pywin32）+ Playwright | 评测工具只在开发机运行，不受 D1 约束 |
+| D9 | 版本号：在流程完整跑通、真正可用之前，一律保持 **0.0.1** | 用户指定 |
+| D10 | 转码产物默认是**一个自包含的 HTML 文件**：页面、图片、字体、播放器全部内联，不发任何网络请求（不用 fetch/XHR）。唯一例外是 D13 的大媒体文件，放在 HTML 旁边的 `media/` 目录里用相对路径引用 | 拿到就能播；`file://` 打开、任意域名托管、WebView 本地加载都不会遇到跨域问题 |
+| D11 | 播放器支持 Chrome、Firefox、移动端各种 WebView（Android WebView、iOS WKWebView、小程序 web-view 等）；Safari 先不重点兼容 | 用户指定；开发机是 Windows |
+| D13 | **大文件、小内存**：1GB、几百页、带视频的 PPT 也要能在小内存下转码。转码器不一次性读入整个文件（调用方提供"按位置读取片段"的函数），逐页处理、处理完即释放；超过阈值（默认 2MB）的视频、音频、图片以流的方式原样拷贝成 HTML 旁边的单独文件（`media/` 目录，相对路径引用），不内联；输出也通过调用方提供的写入函数边生成边写出 | 用户生产中常见超大课件；相对路径引用的媒体文件不涉及跨域 |
+| D12 | 外部控制统一走一套 **JS bridge** 协议（见 F2），同一套指令支持三种宿主：同页 JS、iframe 父页面（postMessage，天然跨域）、原生 App 的 WebView | 避免跨域问题，一套协议覆盖所有容器 |
 
 ---
 
@@ -34,15 +39,58 @@
 
 ### F1 转码器
 
-- 输入 pptx 字节和可选的字体字节，输出产物：`manifest.json`、每页一个 SVG、`animations.json`、媒体、子集化字体；
-- 缺字体不报错，在字体报告里列出缺失项；
-- 附带一个薄的命令行：`unppt convert in.pptx -o out/ --fonts ./fonts/`。
+- 输入 pptx 字节和可选的字体字节，输出：
+  - **默认**：一个自包含的 HTML 文件（内嵌演示数据 + 播放器），双击就能播放；
+  - **可选**：只输出演示数据 `deck.json`，交给单独部署的播放器（转码和播放拆开用）；
+- 演示数据 `deck.json`（格式 v1）：
+
+  ```jsonc
+  {
+    "format": "unppt-deck", "version": 1, "generator": "unppt 0.0.1",
+    "width": 1280, "height": 720,            // 幻灯片尺寸（像素，96dpi）
+    "slides": [{
+      "svg": "<svg>…</svg>",                 // 这一页的静态内容，元素带 data-uid
+      "steps": [                             // 每次点击执行的动作
+        [{ "uid": "s5", "effect": "fade", "dir": "in", "dur": 500, "delay": 0 }]
+      ],
+      "hidden": ["s5"]                       // 第 0 步时隐藏的元素（有进入动画的）
+    }],
+    "fonts": [{ "family": "…", "data": "base64…" }],
+    "report": { "missingFonts": [], "warnings": [] }
+  }
+  ```
+- 缺字体不报错，在 `report` 里列出缺失项；
+- 附带一个薄的命令行：`unppt convert in.pptx -o out.html [--fonts 目录] [--data]`。
+- 老格式 `.ppt` 第一版不支持（开发工具会用 PowerPoint 把样本里的 `.ppt` 另存为 `.pptx` 再测）。
 
 ### F2 播放器
 
-- 加载产物，按页显示，适配容器尺寸；
-- 外部控制：JS API（`next` / `prev` / `goto(页, 步)` / `getState`）+ iframe postMessage，播放器推送事件（`ready` / `slidechange` / `stepchange` / `end`）；
-- `goto` 必须是确定性的：直接跳到目标页、目标步骤的最终状态，不依赖之前播放过什么。
+- 加载演示数据，按页显示，按比例适配容器（留黑边），支持键盘、点击、触屏滑动翻页；
+- `goto` 必须是确定性的：直接跳到目标页、目标步骤的最终状态，不依赖之前播放过什么；
+- **JS bridge 协议**：
+
+  | 指令 | 参数 | 返回 |
+  |---|---|---|
+  | `next` / `prev` | 无 | 新状态 |
+  | `goto` | `{ slide, step }`（从 0 开始） | 新状态 |
+  | `getState` | 无 | `{ slide, step, slideCount, stepCount }` |
+
+  | 事件 | 数据 |
+  |---|---|
+  | `ready` | 状态 |
+  | `change` | 状态（翻页或走步骤后都会发） |
+  | `end` | 状态（已经在最后一页最后一步还继续 next） |
+
+- **三种宿主，同一套协议**：
+
+  | 宿主 | 发指令 | 收事件 / 返回值 |
+  |---|---|---|
+  | 同页 JS | `window.unppt.goto({slide:3, step:0})`，返回 Promise | `window.unppt.on('change', fn)` |
+  | iframe 父页面（可跨域） | `iframe.contentWindow.postMessage({unppt:1, id:7, cmd:'goto', args:{slide:3}}, '*')` | 播放器回 `{unppt:1, re:7, ok:true, result}`；事件 `{unppt:1, event:'change', data}` |
+  | 原生 App WebView | 调 `window.unppt.handle('<上面的 JSON>')`（evaluateJavascript） | 播放器自动探测并调用 `window.webkit.messageHandlers.unppt`（iOS）、`window.UnpptNative.postMessage`（Android）、`window.ReactNativeWebView.postMessage`（RN），发同样的 JSON 字符串 |
+
+- iframe 场景下，可以用 URL 参数 `?origin=https://a.com,https://b.com` 限制只接受这些来源的指令；不传时接受所有来源；
+- 支持 URL 参数 `?slide=3&step=1` 直接打开到指定位置（深链接，也方便比对工具稳定截图）；`?ui=0` 隐藏播放器自带的翻页按钮，完全由宿主控制。
 
 ### F3 评测与自动优化机制（当前重点）
 

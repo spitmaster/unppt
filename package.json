@@ -1,0 +1,21 @@
+{
+  "name": "unppt-monorepo",
+  "version": "0.0.1",
+  "private": true,
+  "description": "PPTX to self-contained HTML player",
+  "license": "Apache-2.0",
+  "type": "module",
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "test": "node --test packages/*/test/*.test.mjs",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.5",
+    "esbuild": "^0.28.2",
+    "typescript": "^5.9.3"
+  }
+}

@@ -1,0 +1,103 @@
+{
+ "version": 2,
+ "slideWidthPt": 960.0,
+ "slideHeightPt": 540.0,
+ "imageWidth": 1280,
+ "imageHeight": 720,
+ "slides": [
+  {
+   "index": 0,
+   "hidden": false,
+   "shapes": [
+    {
+     "id": 4,
+     "name": "Group 3",
+     "type": 6,
+     "x": 100.0,
+     "y": 100.0,
+     "w": 200.0,
+     "h": 150.0,
+     "rot": 20.0,
+     "visible": true,
+     "autoShapeType": -2,
+     "children": [
+      {
+       "id": 2,
+       "name": "Rectangle 1",
+       "type": 1,
+       "x": 113.478,
+       "y": 93.56,
+       "w": 150.0,
+       "h": 80.0,
+       "rot": 20.0,
+       "visible": true,
+       "autoShapeType": 1
+      },
+      {
+       "id": 3,
+       "name": "Oval 2",
+       "type": 1,
+       "x": 188.434,
+       "y": 165.593,
+       "w": 100.0,
+       "h": 100.0,
+       "rot": 20.0,
+       "visible": true,
+       "autoShapeType": 9
+      }
+     ]
+    },
+    {
+     "id": 5,
+     "name": "Right Arrow 4",
+     "type": 1,
+     "x": 500.0,
+     "y": 100.0,
+     "w": 200.0,
+     "h": 100.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 33
+    },
+    {
+     "id": 6,
+     "name": "Isosceles Triangle 5",
+     "type": 1,
+     "x": 500.0,
+     "y": 300.0,
+     "w": 150.0,
+     "h": 120.0,
+     "rot": 45.0,
+     "visible": true,
+     "autoShapeType": 7
+    },
+    {
+     "id": 7,
+     "name": "TextBox 6",
+     "type": 17,
+     "x": 100.0,
+     "y": 350.0,
+     "w": 300.0,
+     "h": 60.0,
+     "rot": 345.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 6,
+       "text": "旋转的文本框",
+       "x": 105.233,
+       "y": 360.399,
+       "w": 122.128,
+       "h": 54.242
+      }
+     ]
+    }
+   ],
+   "effects": [],
+   "steps": 0
+  }
+ ],
+ "ok": true
+}
