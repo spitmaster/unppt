@@ -29,8 +29,14 @@ export function base64(bytes: Uint8Array): string {
   return btoa(s);
 }
 
+/** 页面里引用共享图片的写法：unppt:asset/编号，播放器显示前替换成真正的数据 */
+export const ASSET_PREFIX = 'unppt:asset/';
+
 export class MediaStore {
   private hrefs = new Map<string, Promise<string | undefined>>();
+  private nextAsset = 0;
+  /** 新产生、还没写进输出的共享图片 */
+  pending: { id: number; uri: string }[] = [];
 
   constructor(private pres: Presentation, private pkg: OpcPackage, private write: WriteFn, private inlineLimit: number) {}
 
@@ -68,8 +74,12 @@ export class MediaStore {
     }
     const mime = MIME[ext] ?? 'application/octet-stream';
     if (isImage && entry.size <= this.inlineLimit) {
+      // 同一张图片只存一份（母版上的 logo、背景每页都会用到）
       const bytes = await this.pkg.zip.read(target);
-      return bytes ? `data:${mime};base64,${base64(bytes)}` : undefined;
+      if (!bytes) return undefined;
+      const id = this.nextAsset++;
+      this.pending.push({ id, uri: `data:${mime};base64,${base64(bytes)}` });
+      return `${ASSET_PREFIX}${id}`;
     }
     const name = `media/${target.slice(target.lastIndexOf('/') + 1)}`;
     await this.write(name, this.pkg.zip.stream(entry));

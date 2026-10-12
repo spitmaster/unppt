@@ -22,7 +22,7 @@ unppt：把 .pptx 转成静态产物（SVG + JSON + 资源），由一个可 ifr
 
 ## 不可违反的规则（[MUST]）
 
-1. **样本安全**：`samples/` 里可能有客户 PPT。样本及其衍生物（参考图、截图、报告、提取的文字、文件名）**绝不能**进仓库、提交信息、文档、`testcases/`，也不能发到任何网络服务。报告里样本用内容哈希表示。要把问题固定成测试用例，只能用 PowerPoint 重新合成中性内容的用例。完整规则见 SPEC 第 4 节。
+1. **样本安全**：`samples/` 里可能有客户 PPT。样本及其衍生物（参考图、截图、报告、提取的文字、文件名）**绝不能**进仓库、提交信息、文档、`testcases/`，也不能发到任何网络服务。报告里样本用内容哈希表示。**调试时不看样本的截图和文字（会经过 AI 接口），只看数字诊断**；要看图就合成中性用例。要把问题固定成测试用例，只能用 PowerPoint 重新合成中性内容的用例。完整规则见 SPEC 第 4 节。
 2. **产品代码零依赖**：`packages/` 下不引入任何第三方运行时依赖（npm 库、WASM、原生库、外部程序），只用 JS 内置能力。开发工具（`tools/`）不受这条限制。
 3. **纯自研**：第三方渲染项目只能在评测里作为对比，不能当依赖，也不能复制代码。
 4. **转码器是纯函数**：字节进、文件出，不读写磁盘、不联网；字体只接收字节。
@@ -73,9 +73,15 @@ unppt：把 .pptx 转成静态产物（SVG + JSON + 资源），由一个可 ifr
 ## 测试 / 评测
 
 ```bash
-# 单元测试（建立后补充）
-# 比对：tools/compare run --set testcases | daily | all（M0 完成后可用）
+npm run build                                         # 构建
+npm test                                              # 单元测试
+.venv/Scripts/python tools/compare/run.py --set testcases   # 合成用例比对（可以看图）
+.venv/Scripts/python tools/compare/run.py --set all         # 样本比对（只看数字）
+.venv/Scripts/python tools/compare/offsets.py 编号          # 逐行位置偏差（数字）
+.venv/Scripts/python tools/check-player.py [firefox]        # 播放器端到端测试
 ```
+
+新增或修改测试用例：`tools/make-case/make.py` 加函数 → `make.py 用例名` → `tools/powerpoint/export.py run --set testcases --only 用例名`。
 
 ---
 

@@ -3,7 +3,7 @@
 2. 同页 JS：window.unppt；
 3. 原生 App WebView：模拟 Android 注入的 window.UnpptNative。
 
-用法：python tools/check-player.py
+用法：python tools/check-player.py [chromium|firefox|webkit]
 """
 from __future__ import annotations
 
@@ -22,6 +22,7 @@ from common import CACHE, ROOT  # noqa: E402
 from playwright.sync_api import sync_playwright  # noqa: E402
 
 OUT = CACHE / "player-test"
+BROWSER = sys.argv[1] if len(sys.argv) > 1 else "chromium"
 
 
 def serve(directory: Path):
@@ -58,7 +59,8 @@ def main():
     s2, host_url = serve(host_dir)
 
     with sync_playwright() as p:
-        b = p.chromium.launch()
+        b = getattr(p, BROWSER).launch()
+        print(f"浏览器：{BROWSER}")
         # ---------------- 1. 跨域 iframe
         page = b.new_page()
         page.goto(f"{host_url}/index.html?src={player_url}/index.html")
@@ -104,7 +106,8 @@ def main():
         check(not bad["ok"], "非法指令返回错误而不是崩溃")
 
         # ---------------- 移动端视口
-        page3 = b.new_page(viewport={"width": 390, "height": 844}, is_mobile=True, has_touch=True)
+        mobile = {"is_mobile": True} if BROWSER != "firefox" else {}
+        page3 = b.new_page(viewport={"width": 390, "height": 844}, has_touch=True, **mobile)
         page3.goto(f"{player_url}/index.html")
         page3.wait_for_function("window.unppt !== undefined")
         box = page3.evaluate("(() => { const r = document.querySelector('.unppt-slide').getBoundingClientRect(); return [r.width, r.height]; })()")

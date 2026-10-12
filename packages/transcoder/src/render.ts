@@ -218,8 +218,10 @@ class SlideRenderer {
     const blipFill = pc(el, 'blipFill');
     const fill = parseFill(blipFill ? { ...blipFill, name: 'a:blipFill' } : undefined, ctx.colors, ctx.part);
     const parts: string[] = [];
+    let poster: string | undefined;
     if (fill && fill.kind === 'image') {
       const href = await this.images.image(ctx.part, fill.rid);
+      poster = href;
       if (href) {
         const sr = fill.srcRect ?? { l: 0, t: 0, r: 0, b: 0 };
         const iw = box.w / Math.max(0.0001, 1 - sr.l - sr.r);
@@ -249,7 +251,7 @@ class SlideRenderer {
       const href = rid ? await this.env.media.media(ctx.part, rid) : undefined;
       if (href) {
         const tag = audio && !video ? 'audio' : 'video';
-        parts.push(`<foreignObject x="0" y="0" width="${n2(box.w)}" height="${n2(box.h)}"><${tag} xmlns="http://www.w3.org/1999/xhtml" data-media="1" src="${esc(href)}" controls="" playsinline="" preload="metadata" style="width:100%;height:100%;object-fit:contain"></${tag}></foreignObject>`);
+        parts.push(`<foreignObject x="0" y="0" width="${n2(box.w)}" height="${n2(box.h)}"><${tag} xmlns="http://www.w3.org/1999/xhtml" data-media="1" src="${esc(href)}" controls="" playsinline="" preload="metadata"${poster ? ` poster="${esc(poster)}"` : ''} style="width:100%;height:100%;object-fit:contain"></${tag}></foreignObject>`);
       }
     }
     const line = parseLine([child(spPr, 'a:ln')], [ctx.colors], ctx.part);

@@ -44,6 +44,4 @@ await build({
   target: ['node20'],
   define,
 });
-await writeFile('packages/transcoder/dist/package.json', '{"type":"module"}\n');
-await writeFile('packages/player/dist/package.json', '{"type":"module"}\n');
 console.log(`构建完成（播放器 ${(player.length / 1024).toFixed(1)} KB）`);
