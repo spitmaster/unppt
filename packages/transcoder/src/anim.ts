@@ -98,7 +98,8 @@ function effectAction(eff: XEl, base: number, ctx: AnimContext): AnimAction | un
   const spid = attr(spTgt, 'spid');
   if (!spid || !/^\d{1,10}$/.test(spid)) return undefined;
   const pRg = child(child(spTgt, 'p:txEl'), 'p:pRg');
-  const uid = pRg ? `s${spid}p${attr(pRg, 'st') ?? '0'}` : `s${spid}`;
+  const st = attr(pRg, 'st') ?? '0';
+  const uid = pRg && /^\d{1,6}$/.test(st) ? `s${spid}p${st}` : `s${spid}`;
   let dur = 0;
   for (const b of findAll(cTn, 'p:cTn')) {
     const d = attr(b, 'dur');
