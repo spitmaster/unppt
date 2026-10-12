@@ -8,6 +8,7 @@ import { buildGeometry, parseGeomXml, presetGeometry } from './geometry';
 import { colorIn } from './color';
 import type { FontLibrary } from './font';
 import type { MediaStore } from './media';
+import { linkAttr } from './links';
 import { esc, n2, SvgDoc } from './svg';
 import { renderText, type FontEmbedder, type StyleChain, type TextEnv } from './text';
 import { attr, boolAttr, child, children, expandAlternate, numAttr, path, type XEl } from './xml';
@@ -115,14 +116,22 @@ class SlideRenderer {
 
   async element(el: XEl, ctx: SlideContext, groupFill?: Fill): Promise<string> {
     const local = el.name.slice(el.name.indexOf(':') + 1);
+    let out = '';
     switch (local) {
-      case 'sp': return this.shape(el, ctx, groupFill);
-      case 'cxnSp': return this.shape(el, ctx, groupFill);
-      case 'pic': return this.picture(el, ctx);
-      case 'grpSp': return this.group(el, ctx, groupFill);
-      case 'graphicFrame': return this.frame(el, ctx);
+      case 'sp': out = await this.shape(el, ctx, groupFill); break;
+      case 'cxnSp': out = await this.shape(el, ctx, groupFill); break;
+      case 'pic': out = await this.picture(el, ctx); break;
+      case 'grpSp': out = await this.group(el, ctx, groupFill); break;
+      case 'graphicFrame': out = await this.frame(el, ctx); break;
       default: return '';
     }
+    // 形状上的超链接 / 动作按钮
+    const h = child(nvProps(el), 'a:hlinkClick');
+    if (out && h) {
+      const link = linkAttr(h, await this.env.pres.pkg.rels(ctx.part));
+      if (link) out = `<g${link} style="cursor:pointer">${out}</g>`;
+    }
+    return out;
   }
 
   uidOf(el: XEl, ctx: SlideContext): string | undefined {
@@ -197,6 +206,7 @@ class SlideRenderer {
     const textEnv: TextEnv = {
       colors, theme: ctx.theme, fonts: this.env.fonts, missingFonts: this.env.missingFonts,
       fontRefColor: colorIn(fontRef, colors), uid, embed: this.env.embed, doc: this.doc,
+      rels: await this.env.pres.pkg.rels(ctx.part),
     };
     // SmartArt 的文字框有单独的位置（dsp:txXfrm）
     const txXfrm = readXfrm(pc(el, 'txXfrm'));

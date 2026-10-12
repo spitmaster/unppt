@@ -7,6 +7,8 @@ import { fallbackAdvance, isWide, type FontFace, type FontLibrary, type FontMetr
 import { EMU_PER_PX, type Theme } from './model';
 import { esc, n2, type SvgDoc } from './svg';
 import { shadowFilter } from './fill';
+import type { Rel } from './package';
+import { linkAttr } from './links';
 import { attr, child, children, numAttr, type XEl } from './xml';
 
 export interface TextEnv {
@@ -24,6 +26,8 @@ export interface TextEnv {
   doc?: SvgDoc;
   /** 渐变文字铺满的范围（文本框，内部坐标） */
   gradBox?: { w: number; h: number };
+  /** 当前部件的关系，用来解析文字上的超链接 */
+  rels?: Rel[];
 }
 
 export interface FontEmbedder {
@@ -92,6 +96,8 @@ interface RunStyle {
   outline?: { color: Rgba; width: number };
   shadow?: XEl;
   grad?: XEl;
+  /** 超链接属性（data-link / data-href） */
+  link?: string;
 }
 
 function textOutline(ln: XEl | undefined, env: TextEnv): RunStyle['outline'] {
@@ -110,7 +116,15 @@ function runStyle(r: XEl, env: TextEnv, scale: number): RunStyle {
   if (fill?.name === 'a:solidFill') color = colorIn(fill, env.colors) ?? color;
   else if (fill?.name === 'a:gradFill') color = colorIn(child(child(fill, 'a:gsLst'), 'a:gs'), env.colors) ?? color;
   else if (fill?.name === 'a:noFill') color = { ...color, a: 0 };
-  const u = attr(r, 'u');
+  let u = attr(r, 'u');
+  // 带超链接的文字：PowerPoint 用主题的超链接颜色并加下划线
+  const h = child(r, 'a:hlinkClick');
+  const link = h && env.rels ? linkAttr(h, env.rels) : '';
+  if (link) {
+    const hl = colorIn({ name: 'x', attrs: {}, text: '', children: [{ name: 'a:schemeClr', attrs: { val: 'hlink' }, text: '', children: [] }] }, env.colors);
+    if (hl) color = hl;
+    if (!u || u === 'none') u = 'sng';
+  }
   return {
     size: sz * scale * 96 / 72,
     latin, ea,
@@ -126,6 +140,7 @@ function runStyle(r: XEl, env: TextEnv, scale: number): RunStyle {
     outline: textOutline(child(r, 'a:ln'), env),
     shadow: child(child(r, 'a:effectLst'), 'a:outerShdw'),
     grad: fill?.name === 'a:gradFill' ? fill : undefined,
+    link: link || undefined,
   };
 }
 
@@ -620,6 +635,7 @@ function textEl(txt: string, x: number, y: number, s: RunStyle, family: string, 
   if (deco) a += ` text-decoration="${deco}"`;
   if (s.spc) a += ` letter-spacing="${n2(s.spc)}"`;
   if (anchor) a += ` text-anchor="${anchor}"`;
+  if (s.link) a += `${s.link} style="cursor:pointer"`;
   if (s.outline) a += ` stroke="${css(s.outline.color)}" stroke-width="${n2(s.outline.width)}"${s.outline.color.a < 0.999 ? ` stroke-opacity="${n2(s.outline.color.a)}"` : ''} paint-order="stroke"`;
   const doc = env?.doc;
   if (doc && s.grad) {

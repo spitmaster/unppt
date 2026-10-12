@@ -76,7 +76,8 @@ await convert(source, { write });
 ```js
 iframe.contentWindow.postMessage({ unppt: 1, id: 1, cmd: 'goto', args: { slide: 3, step: 0 } }, '*');
 // 播放器回复：{ unppt: 1, re: 1, ok: true, result: { slide, step, slideCount, stepCount } }
-// 播放器事件：{ unppt: 1, event: 'ready' | 'change' | 'end', data: { ... } }
+// 播放器事件：{ unppt: 1, event: 'ready' | 'change' | 'end' | 'link', data: { ... } }
+// link：点击了课件里的外部网址，data.url 是网址（播放器默认也会在新窗口打开）
 ```
 
 ### 同页 JS

@@ -1,0 +1,149 @@
+{
+ "version": 2,
+ "slideWidthPt": 960.0,
+ "slideHeightPt": 540.0,
+ "imageWidth": 1280,
+ "imageHeight": 720,
+ "slides": [
+  {
+   "index": 0,
+   "hidden": false,
+   "shapes": [
+    {
+     "id": 2,
+     "name": "Rectangle 1",
+     "type": 1,
+     "x": 60.0,
+     "y": 60.0,
+     "w": 260.0,
+     "h": 80.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 7,
+       "text": "跳到第 3 页",
+       "x": 144.375,
+       "y": 89.2,
+       "w": 91.255,
+       "h": 21.6
+      }
+     ]
+    },
+    {
+     "id": 3,
+     "name": "Rectangle 2",
+     "type": 1,
+     "x": 360.0,
+     "y": 60.0,
+     "w": 260.0,
+     "h": 80.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 3,
+       "text": "下一页",
+       "x": 463.0,
+       "y": 89.2,
+       "w": 54.005,
+       "h": 21.6
+      }
+     ]
+    },
+    {
+     "id": 4,
+     "name": "TextBox 3",
+     "type": 17,
+     "x": 60.0,
+     "y": 200.0,
+     "w": 600.0,
+     "h": 60.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 18,
+       "text": "访问示例网址 example.com",
+       "x": 67.2,
+       "y": 203.6,
+       "w": 303.505,
+       "h": 28.8
+      }
+     ]
+    }
+   ],
+   "effects": [],
+   "steps": 0
+  },
+  {
+   "index": 1,
+   "hidden": false,
+   "shapes": [
+    {
+     "id": 2,
+     "name": "TextBox 1",
+     "type": 17,
+     "x": 60.0,
+     "y": 60.0,
+     "w": 600.0,
+     "h": 60.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 5,
+       "text": "第 2 页",
+       "x": 67.2,
+       "y": 63.6,
+       "w": 127.255,
+       "h": 48.0
+      }
+     ]
+    }
+   ],
+   "effects": [],
+   "steps": 0
+  },
+  {
+   "index": 2,
+   "hidden": false,
+   "shapes": [
+    {
+     "id": 2,
+     "name": "TextBox 1",
+     "type": 17,
+     "x": 60.0,
+     "y": 60.0,
+     "w": 600.0,
+     "h": 60.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 5,
+       "text": "第 3 页",
+       "x": 67.2,
+       "y": 63.6,
+       "w": 127.255,
+       "h": 48.0
+      }
+     ]
+    }
+   ],
+   "effects": [],
+   "steps": 0
+  }
+ ],
+ "ok": true
+}
