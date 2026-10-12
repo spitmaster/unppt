@@ -6,6 +6,7 @@ import { colorIn, css, type ColorContext } from './color';
 import { attr, child, children, findAll, numAttr, path, type XEl } from './xml';
 
 export interface CompiledAnim {
+  triggers: { uid: string; steps: AnimAction[][] }[];
   steps: AnimAction[][];
   auto: AnimAction[];
   hidden: string[];
@@ -125,16 +126,12 @@ function effectAction(eff: XEl, base: number, ctx: AnimContext): AnimAction | un
 }
 
 export function compileTiming(timing: XEl | undefined, existing: Set<string>, ctx: AnimContext): CompiledAnim {
-  const result: CompiledAnim = { steps: [], auto: [], hidden: [], warnings: [] };
+  const result: CompiledAnim = { steps: [], auto: [], hidden: [], warnings: [], triggers: [] };
   if (!timing) return result;
   const seqs = findAll(timing, 'p:seq');
   const main = seqs.find((s) => attr(child(s, 'p:cTn'), 'nodeType') === 'mainSeq');
-  if (seqs.some((s) => attr(child(s, 'p:cTn'), 'nodeType') === 'interactiveSeq')) result.warnings.push('触发器动画暂未支持');
-  if (!main) return result;
   const firstSeen = new Map<string, AnimAction>();
-  const groups = children(child(child(main, 'p:cTn'), 'p:childTnLst'), 'p:par');
-  for (const g of groups) {
-    const gTn = child(g, 'p:cTn');
+  const groupActions = (gTn: XEl | undefined): AnimAction[] => {
     const actions: AnimAction[] = [];
     for (const sub of children(child(gTn, 'p:childTnLst'), 'p:par')) {
       const sTn = child(sub, 'p:cTn');
@@ -152,6 +149,26 @@ export function compileTiming(timing: XEl | undefined, existing: Set<string>, ct
         actions.push(a);
       }
     }
+    return actions;
+  };
+  // 触发器序列：点击某个形状时依次播放
+  for (const seq of seqs) {
+    const sTn = child(seq, 'p:cTn');
+    if (attr(sTn, 'nodeType') !== 'interactiveSeq') continue;
+    const cond = children(child(sTn, 'p:stCondLst'), 'p:cond').find((c) => attr(c, 'evt') === 'onClick');
+    const spid = attr(findAll(cond, 'p:spTgt')[0], 'spid');
+    if (!spid) continue;
+    const steps = children(child(sTn, 'p:childTnLst'), 'p:par').map((g) => groupActions(child(g, 'p:cTn'))).filter((x) => x.length);
+    if (steps.length) result.triggers.push({ uid: `s${spid}`, steps });
+  }
+  if (!main) {
+    for (const [uid, a] of firstSeen) if (a.dir === 'in') result.hidden.push(uid);
+    return result;
+  }
+  const groups = children(child(child(main, 'p:cTn'), 'p:childTnLst'), 'p:par');
+  for (const g of groups) {
+    const gTn = child(g, 'p:cTn');
+    const actions = groupActions(gTn);
     if (isClick(gTn) || result.steps.length > 0) {
       if (isClick(gTn)) result.steps.push(actions);
       else result.steps[result.steps.length - 1].push(...actions.map((a) => ({ ...a, delay: a.delay + 1 })));

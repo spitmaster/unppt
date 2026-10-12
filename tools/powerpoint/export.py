@@ -30,7 +30,7 @@ from common import REF, ROOT, read_json, testcase_index, update_index, write_jso
 
 EXPORT_WIDTH = 1280
 TIMEOUT_SEC = 600
-VERSION = 6  # 输出格式变化时加 1，会触发重新导出（5：只有段落/强调/路径动画才用放映截图）
+VERSION = 7  # 输出格式变化时加 1，会触发重新导出（5：只有段落/强调/路径动画才用放映截图）
 
 # PowerPoint / Office 常量
 PP_SAVE_AS_PPTX = 24
@@ -91,6 +91,27 @@ def _shape_info(shape):
         if lines:
             info["lines"] = lines
     return info
+
+
+def _interactive_hidden(slide):
+    """触发器动画里先出现的形状：放映开始时是隐藏的"""
+    out = set()
+    try:
+        seqs = slide.TimeLine.InteractiveSequences
+        for k in range(1, seqs.Count + 1):
+            seq = seqs.Item(k)
+            seen = set()
+            for i in range(1, seq.Count + 1):
+                e = seq.Item(i)
+                sid = e.Shape.Id
+                if sid in seen:
+                    continue
+                seen.add(sid)
+                if not e.Exit:
+                    out.add(sid)
+    except Exception:
+        pass
+    return out
 
 
 def _timeline(slide):
@@ -301,6 +322,12 @@ def export_one(src: Path, out: Path) -> dict:
                     "shapes": [_shape_info(s) for s in slide.Shapes]}
             effects = _timeline(slide)
             info["effects"] = effects
+            hidden_by_trigger = _interactive_hidden(slide)
+            info["triggerHidden"] = sorted(hidden_by_trigger)
+            if hidden_by_trigger and not effects:
+                # 只有触发器动画的页：第 0 步是"触发器形状还没出现"的画面
+                effects = [{"index": 0, "type": 0, "exit": False, "trigger": 2, "dur": 0, "delay": 0, "shapeId": None, "paragraph": 0}]
+                info["effects"] = effects
             groups = _click_groups(effects)
             info["steps"] = len(groups) - 1
             if effects:
@@ -308,6 +335,8 @@ def export_one(src: Path, out: Path) -> dict:
                 info["approxSteps"] = any(e.get("paragraph") for e in effects)
                 saved = {}
                 for k, state in enumerate(states):
+                    for sid in hidden_by_trigger:
+                        state.setdefault(sid, False)
                     for sid, vis in state.items():
                         shp = _find_shape(slide, sid)
                         if shp is None:

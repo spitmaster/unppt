@@ -30,6 +30,8 @@ export interface DeckSlide {
   auto: AnimAction[];
   /** 第 0 步时隐藏的元素（有进入动画的） */
   hidden: string[];
+  /** 触发器动画：点击某个元素时依次播放的动作（每点一次播一组），不影响普通的点击顺序 */
+  triggers?: { uid: string; steps: AnimAction[][] }[];
   /** 页面切换效果 */
   transition?: SlideTransition;
 }

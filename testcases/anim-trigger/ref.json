@@ -1,0 +1,114 @@
+{
+ "version": 7,
+ "slideWidthPt": 960.0,
+ "slideHeightPt": 540.0,
+ "imageWidth": 1280,
+ "imageHeight": 720,
+ "slides": [
+  {
+   "index": 0,
+   "hidden": false,
+   "shapes": [
+    {
+     "id": 2,
+     "name": "TextBox 1",
+     "type": 17,
+     "x": 60.0,
+     "y": 60.0,
+     "w": 700.0,
+     "h": 60.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 10,
+       "text": "问题：一加一等于几？",
+       "x": 67.2,
+       "y": 63.6,
+       "w": 280.005,
+       "h": 33.6
+      }
+     ]
+    },
+    {
+     "id": 3,
+     "name": "Rounded Rectangle 2",
+     "type": 1,
+     "x": 60.0,
+     "y": 200.0,
+     "w": 200.0,
+     "h": 70.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 5,
+     "lines": [
+      {
+       "start": 0,
+       "len": 4,
+       "text": "显示答案",
+       "x": 124.0,
+       "y": 224.2,
+       "w": 72.005,
+       "h": 21.6
+      }
+     ]
+    },
+    {
+     "id": 4,
+     "name": "TextBox 3",
+     "type": 17,
+     "x": 320.0,
+     "y": 200.0,
+     "w": 400.0,
+     "h": 70.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 4,
+       "text": "答案：二",
+       "x": 327.2,
+       "y": 203.6,
+       "w": 112.005,
+       "h": 33.6
+      }
+     ]
+    },
+    {
+     "id": 5,
+     "name": "Oval 4",
+     "type": 1,
+     "x": 760.0,
+     "y": 300.0,
+     "w": 120.0,
+     "h": 120.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 9
+    }
+   ],
+   "effects": [
+    {
+     "index": 1,
+     "type": 10,
+     "exit": false,
+     "trigger": 1,
+     "dur": 0.5,
+     "delay": 0.0,
+     "shapeId": 5,
+     "paragraph": 0
+    }
+   ],
+   "triggerHidden": [
+    4
+   ],
+   "steps": 1,
+   "approxSteps": false
+  }
+ ],
+ "ok": true
+}

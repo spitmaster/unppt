@@ -1,5 +1,5 @@
 {
- "version": 6,
+ "version": 7,
  "slideWidthPt": 960.0,
  "slideHeightPt": 540.0,
  "imageWidth": 1280,
@@ -57,6 +57,7 @@
      "paragraph": 0
     }
    ],
+   "triggerHidden": [],
    "steps": 1,
    "approxSteps": false
   },
@@ -100,8 +101,23 @@
      "autoShapeType": 1
     }
    ],
-   "effects": [],
-   "steps": 0
+   "effects": [
+    {
+     "index": 0,
+     "type": 0,
+     "exit": false,
+     "trigger": 2,
+     "dur": 0,
+     "delay": 0,
+     "shapeId": null,
+     "paragraph": 0
+    }
+   ],
+   "triggerHidden": [
+    3
+   ],
+   "steps": 0,
+   "approxSteps": false
   }
  ],
  "ok": true
