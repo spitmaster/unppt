@@ -7,7 +7,9 @@ import { PRESETS } from './presets';
 
 export interface GeomCmd { op: 'M' | 'L' | 'A' | 'C' | 'Q' | 'Z'; args: string[]; }
 export interface GeomPath { w?: number; h?: number; fill: 'norm' | 'none' | 'lighten' | 'darken' | 'lightenLess' | 'darkenLess'; stroke: boolean; cmds: GeomCmd[]; }
-export interface GeomDef { av: [string, string][]; gd: [string, string][]; paths: GeomPath[]; }
+export interface GeomDef { av: [string, string][]; gd: [string, string][]; paths: GeomPath[]; rect?: [string, string, string, string]; }
+
+export interface Geometry { paths: SvgPath[]; text: { x: number; y: number; w: number; h: number }; }
 
 export interface SvgPath { d: string; fill: GeomPath['fill']; stroke: boolean; }
 
@@ -84,7 +86,9 @@ export function parseGeomXml(el: XEl): GeomDef {
       cmds,
     };
   });
-  return { av: gdList('a:avLst'), gd: gdList('a:gdLst'), paths };
+  const r = child(el, 'a:rect');
+  const rect = r ? [attr(r, 'l') ?? 'l', attr(r, 't') ?? 't', attr(r, 'r') ?? 'r', attr(r, 'b') ?? 'b'] as [string, string, string, string] : undefined;
+  return { av: gdList('a:avLst'), gd: gdList('a:gdLst'), paths, rect };
 }
 
 const fmt = (n: number) => (Math.round(n * 100) / 100).toString();
@@ -93,7 +97,7 @@ const fmt = (n: number) => (Math.round(n * 100) / 100).toString();
  * 计算几何，返回 SVG path 列表（坐标单位与传入的 w、h 相同，原点在形状左上角）。
  * overrides 是形状自己 a:avLst 里覆盖的调整值。
  */
-export function buildGeometry(def: GeomDef, w: number, h: number, overrides: Map<string, string> = new Map()): SvgPath[] {
+export function buildGeometry(def: GeomDef, w: number, h: number, overrides: Map<string, string> = new Map()): Geometry {
   const vars = builtins(w, h);
   const v = (s: string): number => {
     const n = Number(s);
@@ -104,7 +108,7 @@ export function buildGeometry(def: GeomDef, w: number, h: number, overrides: Map
   for (const [name, f] of overrides) if (!vars.has(name)) vars.set(name, evalFormula(f, v));
   for (const [name, f] of def.gd) vars.set(name, evalFormula(f, v));
 
-  return def.paths.map((p) => {
+  const paths = def.paths.map((p) => {
     const sx = p.w ? w / p.w : 1;
     const sy = p.h ? h / p.h : 1;
     let cx = 0, cy = 0;
@@ -150,6 +154,13 @@ export function buildGeometry(def: GeomDef, w: number, h: number, overrides: Map
     }
     return { d: out.join(''), fill: p.fill, stroke: p.stroke };
   });
+  // 文字区域（标准里每个预设形状都定义了，例如椭圆的文字框比外框小）
+  let text = { x: 0, y: 0, w, h };
+  if (def.rect) {
+    const [l, t, r, b] = def.rect.map(v);
+    if (r > l && b > t) text = { x: l, y: t, w: r - l, h: b - t };
+  }
+  return { paths, text };
 }
 
 export function presetGeometry(name: string): GeomDef | undefined {

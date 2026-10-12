@@ -1,16 +1,13 @@
 {
- "date": "2026-10-12 19:47",
+ "date": "2026-10-12 19:58",
  "set": "testcases",
- "files": 10,
+ "files": 12,
  "failedToConvert": 0,
- "pages": 18,
- "passed": 13,
- "passRate": 0.7222,
- "meanSsim": 0.9669,
+ "pages": 28,
+ "passed": 23,
+ "passRate": 0.8214,
+ "meanSsim": 0.9742,
  "passLine": 0.95,
- "issues": {
-  "未支持的预设形状：round2DiagRect": 1,
-  "未支持的预设形状：snip2DiagRect": 1
- },
- "missingFontCount": 1
+ "issues": {},
+ "missingFontCount": 4
 }

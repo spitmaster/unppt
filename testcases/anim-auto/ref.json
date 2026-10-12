@@ -1,0 +1,86 @@
+{
+ "version": 2,
+ "slideWidthPt": 960.0,
+ "slideHeightPt": 540.0,
+ "imageWidth": 1280,
+ "imageHeight": 720,
+ "slides": [
+  {
+   "index": 0,
+   "hidden": false,
+   "shapes": [
+    {
+     "id": 2,
+     "name": "Rounded Rectangle 1",
+     "type": 1,
+     "x": 60.0,
+     "y": 120.0,
+     "w": 250.0,
+     "h": 150.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 5
+    },
+    {
+     "id": 3,
+     "name": "Oval 2",
+     "type": 1,
+     "x": 360.0,
+     "y": 120.0,
+     "w": 250.0,
+     "h": 150.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 9
+    },
+    {
+     "id": 4,
+     "name": "Rectangle 3",
+     "type": 1,
+     "x": 660.0,
+     "y": 120.0,
+     "w": 250.0,
+     "h": 150.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1
+    }
+   ],
+   "effects": [
+    {
+     "index": 1,
+     "type": 10,
+     "exit": false,
+     "trigger": 3,
+     "dur": 0.5,
+     "delay": 0.0,
+     "shapeId": 2,
+     "paragraph": 0
+    },
+    {
+     "index": 2,
+     "type": 10,
+     "exit": false,
+     "trigger": 2,
+     "dur": 0.5,
+     "delay": 0.0,
+     "shapeId": 3,
+     "paragraph": 0
+    },
+    {
+     "index": 3,
+     "type": 10,
+     "exit": false,
+     "trigger": 1,
+     "dur": 0.5,
+     "delay": 0.0,
+     "shapeId": 4,
+     "paragraph": 0
+    }
+   ],
+   "steps": 1,
+   "approxSteps": false
+  }
+ ],
+ "ok": true
+}

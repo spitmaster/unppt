@@ -123,6 +123,75 @@
        "h": 28.8
       }
      ]
+    },
+    {
+     "id": 7,
+     "name": "TextBox 6",
+     "type": 17,
+     "x": 20.0,
+     "y": 420.0,
+     "w": 440.0,
+     "h": 50.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 21,
+       "text": "缺失字体测试 中文 English 123",
+       "x": 27.2,
+       "y": 423.6,
+       "w": 235.255,
+       "h": 21.6
+      }
+     ]
+    },
+    {
+     "id": 8,
+     "name": "TextBox 7",
+     "type": 17,
+     "x": 480.0,
+     "y": 420.0,
+     "w": 440.0,
+     "h": 50.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 21,
+       "text": "缺失字体测试 中文 English 123",
+       "x": 487.2,
+       "y": 423.6,
+       "w": 235.255,
+       "h": 21.6
+      }
+     ]
+    },
+    {
+     "id": 9,
+     "name": "TextBox 8",
+     "type": 17,
+     "x": 20.0,
+     "y": 480.0,
+     "w": 440.0,
+     "h": 50.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 21,
+       "text": "缺失字体测试 中文 English 123",
+       "x": 27.2,
+       "y": 483.6,
+       "w": 235.255,
+       "h": 21.6
+      }
+     ]
     }
    ],
    "effects": [],

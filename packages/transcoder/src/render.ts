@@ -173,7 +173,8 @@ class SlideRenderer {
     }
     const av = new Map<string, string>();
     for (const g of children(child(prst ?? cust, 'a:avLst'), 'a:gd')) av.set(attr(g, 'name') ?? '', attr(g, 'fmla') ?? '');
-    const paths = buildGeometry(def, box.w, box.h, av);
+    const geo = buildGeometry(def, box.w, box.h, av);
+    const paths = geo.paths;
     const effect = child(spPr, 'a:effectLst') ?? child(lSpPr, 'a:effectLst');
     const filter = shadowFilter(effect, colors, this.doc);
     for (const p of paths) {
@@ -197,7 +198,7 @@ class SlideRenderer {
     };
     // SmartArt 的文字框有单独的位置（dsp:txXfrm）
     const txXfrm = readXfrm(pc(el, 'txXfrm'));
-    const textBox = txXfrm ? { x: txXfrm.x - box.x, y: txXfrm.y - box.y, w: txXfrm.w, h: txXfrm.h } : { x: 0, y: 0, w: box.w, h: box.h };
+    const textBox = txXfrm ? { x: txXfrm.x - box.x, y: txXfrm.y - box.y, w: txXfrm.w, h: txXfrm.h } : geo.text;
     const text = await renderText(
       txBody, this.textChain(ctx, ph, layoutPh, masterPh),
       [path(masterPh, 'p:txBody', 'a:bodyPr'), path(layoutPh, 'p:txBody', 'a:bodyPr')],
@@ -229,7 +230,7 @@ class SlideRenderer {
         if (needsClip) {
           const def = presetGeometry(prst) ?? presetGeometry('rect')!;
           const id = this.doc.id('c');
-          const d = buildGeometry(def, box.w, box.h).map((p) => p.d).join('');
+          const d = buildGeometry(def, box.w, box.h).paths.map((p) => p.d).join('');
           this.doc.addDef(`<clipPath id="${id}"><path d="${d}"/></clipPath>`);
           clip = ` clip-path="url(#${id})"`;
         }
