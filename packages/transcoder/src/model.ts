@@ -9,6 +9,7 @@ import { attr, child, children, expandAlternate, numAttr, path, type XEl } from 
 export const EMU_PER_PX = 9525;
 
 export interface Theme {
+  part: string;
   colors: Record<string, string>;
   majorLatin: string; minorLatin: string;
   majorEa: string; minorEa: string;
@@ -50,7 +51,7 @@ function readClrMap(el: XEl | undefined): Record<string, string> | undefined {
   return { ...DEFAULT_CLRMAP, ...el.attrs };
 }
 
-function readTheme(xml: XEl | undefined): Theme {
+function readTheme(xml: XEl | undefined, part: string): Theme {
   const el = path(xml, 'a:themeElements');
   const colors: Record<string, string> = {};
   for (const c of children(child(el, 'a:clrScheme'))) {
@@ -71,6 +72,7 @@ function readTheme(xml: XEl | undefined): Theme {
   };
   const fmt = child(el, 'a:fmtScheme');
   return {
+    part,
     colors,
     majorLatin: fontOf('a:majorFont', 'a:latin'), minorLatin: fontOf('a:minorFont', 'a:latin'),
     majorEa: fontOf('a:majorFont', 'a:ea'), minorEa: fontOf('a:minorFont', 'a:ea'),
@@ -159,7 +161,7 @@ export class Presentation {
   async theme(part: string): Promise<Theme> {
     let t = this.themes.get(part);
     if (!t) {
-      t = readTheme(await this.pkg.xml(part));
+      t = readTheme(await this.pkg.xml(part), part);
       this.themes.set(part, t);
     }
     return t;

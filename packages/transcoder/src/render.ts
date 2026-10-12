@@ -3,7 +3,7 @@
  * 顺序：背景 -> 母版元素 -> 版式元素 -> 幻灯片元素。占位符的属性沿 幻灯片 -> 版式 -> 母版 继承。
  */
 import { colorContext, matchPlaceholder, phInfo, EMU_PER_PX, type Layout, type Master, type Presentation, type SlideContext, type SlideRef } from './model';
-import { bgStyle, fillAttrs, findFillEl, parseFill, parseLine, shadowFilter, strokeAttrs, styleRef, type Fill, type ImageResolver } from './fill';
+import { bgStyle, blipFilter, fillAttrs, findFillEl, parseFill, parseLine, shadowFilter, strokeAttrs, styleRef, type Fill, type ImageResolver } from './fill';
 import { buildGeometry, parseGeomXml, presetGeometry } from './geometry';
 import { colorIn } from './color';
 import type { FontLibrary } from './font';
@@ -154,7 +154,7 @@ class SlideRenderer {
       const ref = styleRef(child(style, 'a:fillRef'), [], colors);
       const idx = numAttr(child(style, 'a:fillRef'), 'idx') ?? 0;
       const sEl = bgStyle(ctx.theme, idx);
-      fill = parseFill(sEl, ref.ctx, ctx.part);
+      fill = parseFill(sEl, ref.ctx, ctx.theme.part);
     }
     // 线条：主题样式 -> 母版 -> 版式 -> 形状
     const lnRef = child(style, 'a:lnRef');
@@ -238,7 +238,8 @@ class SlideRenderer {
           this.doc.addDef(`<clipPath id="${id}"><path d="${d}"/></clipPath>`);
           clip = ` clip-path="url(#${id})"`;
         }
-        parts.push(`<g${clip}><image href="${esc(href)}" x="${n2(-sr.l * iw)}" y="${n2(-sr.t * ih)}" width="${n2(iw)}" height="${n2(ih)}" preserveAspectRatio="none"${fill.alpha < 1 ? ` opacity="${n2(fill.alpha)}"` : ''}/></g>`);
+        const fid = blipFilter(fill.effects, this.doc);
+        parts.push(`<g${clip}><image href="${esc(href)}" x="${n2(-sr.l * iw)}" y="${n2(-sr.t * ih)}" width="${n2(iw)}" height="${n2(ih)}" preserveAspectRatio="none"${fill.alpha < 1 ? ` opacity="${n2(fill.alpha)}"` : ''}${fid ? ` filter="url(#${fid})"` : ''}/></g>`);
       } else {
         this.env.pres.warn('图片无法显示（格式不支持或缺失）');
       }
@@ -356,7 +357,7 @@ class SlideRenderer {
       const ref = child(bg, 'p:bgRef');
       if (ref) {
         const r = styleRef(ref, [], ctx.colors);
-        fill = parseFill(bgStyle(ctx.theme, numAttr(ref, 'idx') ?? 0), r.ctx, ctx.part);
+        fill = parseFill(bgStyle(ctx.theme, numAttr(ref, 'idx') ?? 0), r.ctx, ctx.theme.part);
       }
       if (fill) return `<rect width="${w}" height="${h}"${await fillAttrs(fill, this.doc, w, h, 'norm', this.images)}/>`;
     }
