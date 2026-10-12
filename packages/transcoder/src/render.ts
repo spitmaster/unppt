@@ -9,7 +9,7 @@ import { colorIn } from './color';
 import type { FontLibrary } from './font';
 import type { MediaStore } from './media';
 import { esc, n2, SvgDoc } from './svg';
-import { renderText, type StyleChain, type TextEnv } from './text';
+import { renderText, type FontEmbedder, type StyleChain, type TextEnv } from './text';
 import { attr, boolAttr, child, children, expandAlternate, numAttr, path, type XEl } from './xml';
 import { renderTable } from './table';
 import { renderChart } from './chart';
@@ -19,6 +19,7 @@ export interface RenderEnv {
   fonts: FontLibrary;
   missingFonts: Set<string>;
   media: MediaStore;
+  embed?: FontEmbedder;
 }
 
 export interface RenderedSlide {
@@ -195,7 +196,7 @@ class SlideRenderer {
     const fontRef = child(style, 'a:fontRef');
     const textEnv: TextEnv = {
       colors, theme: ctx.theme, fonts: this.env.fonts, missingFonts: this.env.missingFonts,
-      fontRefColor: colorIn(fontRef, colors), uid,
+      fontRefColor: colorIn(fontRef, colors), uid, embed: this.env.embed,
     };
     // SmartArt 的文字框有单独的位置（dsp:txXfrm）
     const txXfrm = readXfrm(pc(el, 'txXfrm'));

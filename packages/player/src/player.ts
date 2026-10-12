@@ -476,9 +476,30 @@ function checkFormat(meta: { format?: string; version?: number }) {
 }
 
 /** 单独部署时使用：mount(元素, deck 对象) */
-export function mount(el: HTMLElement, deck: { format: string; version: number; width: number; height: number; slides: DeckSlide[]; title?: string }, opts: MountOptions = {}): Player {
+export function mount(el: HTMLElement, deck: { format: string; version: number; width: number; height: number; slides: DeckSlide[]; title?: string; fonts?: { family: string; weight?: string; style?: string; url?: string }[] }, opts: MountOptions & { baseUrl?: string } = {}): Player {
   checkFormat(deck);
+  // 只输出数据时，字体和媒体是相对 deck.json 的路径
+  const base = opts.baseUrl ?? '';
+  loadFonts(el.ownerDocument, (deck.fonts ?? []).filter((f) => f.url).map((f) => ({ family: f.family, weight: f.weight, style: f.style, src: base + f.url })));
   return new Player(el, { ...deck, slideCount: deck.slides.length, slide: (i) => deck.slides[i] }, opts);
+}
+
+/** 注册嵌入的字体（文字位置在转码时已经算好，字体加载完成后浏览器会自动重绘，不需要重新排版） */
+function loadFonts(doc: Document, fonts: { family: string; weight?: string; style?: string; src: string }[]) {
+  const FF = (doc.defaultView as unknown as { FontFace?: typeof FontFace }).FontFace;
+  for (const f of fonts) {
+    try {
+      if (FF && doc.fonts) {
+        const face = new FF(f.family, `url(${f.src})`, { weight: f.weight ?? 'normal', style: f.style ?? 'normal' });
+        doc.fonts.add(face);
+        face.load().catch(() => {});
+      } else {
+        const st = doc.createElement('style');
+        st.textContent = `@font-face{font-family:'${f.family}';src:url(${f.src});font-weight:${f.weight ?? 'normal'};font-style:${f.style ?? 'normal'}}`;
+        doc.head.appendChild(st);
+      }
+    } catch { /* 字体加载失败时用回退字体显示 */ }
+  }
 }
 
 function readParams(win: Window) {
@@ -533,6 +554,13 @@ function autoBoot() {
         return s;
       },
     };
+    const fontEls = Array.from(doc.querySelectorAll('script.unppt-font'));
+    const metaFonts: { family: string; weight?: string; style?: string }[] = meta.fonts ?? [];
+    loadFonts(doc, fontEls.map((el) => {
+      const family = el.getAttribute('data-family') ?? '';
+      const m = metaFonts.find((f) => f.family === family);
+      return { family, weight: m?.weight, style: m?.style, src: `data:font/woff;base64,${JSON.parse(el.textContent ?? '""')}` };
+    }));
     const p = readParams(win);
     const player = new Player(host, deck, { slide: p.slide, step: p.step, ui: p.ui });
     const api = installBridge(win, player, p.origins);

@@ -54,10 +54,15 @@ export interface SlideTransition {
 }
 
 export interface DeckFont {
+  /** 嵌入后使用的字体名（唯一别名，例如 unppt-f0） */
   family: string;
-  /** base64 编码的字体文件 */
-  data: string;
-  format: 'truetype' | 'opentype' | 'woff';
+  /** 原来的字体名 */
+  source: string;
+  weight: 'normal' | 'bold';
+  style: 'normal' | 'italic';
+  format: 'woff';
+  /** 只输出数据（deck.json）时：字体文件的相对路径。HTML 模式下字体数据在 script.unppt-font 里 */
+  url?: string;
 }
 
 export interface DeckReport {
