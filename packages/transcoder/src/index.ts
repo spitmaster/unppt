@@ -94,6 +94,7 @@ export async function convert(input: InputSource, options: ConvertOptions): Prom
   const title = await readTitle(pkg);
 
   let count = 0;
+  const slideParts: string[] = [];
   const report: DeckReport = { missingFonts: [], warnings: [] };
 
   async function* slides(): AsyncGenerator<DeckSlide> {
@@ -116,6 +117,7 @@ export async function convert(input: InputSource, options: ConvertOptions): Prom
       const anim = compileTiming(r.timing, uids);
       for (const w of anim.warnings) pres.warn(w);
       count++;
+      slideParts.push(ref.part);
       yield { svg: r.svg, steps: anim.steps, auto: anim.auto, hidden: anim.hidden, transition: compileTransition(r.transition) };
     }
   }
@@ -126,7 +128,7 @@ export async function convert(input: InputSource, options: ConvertOptions): Prom
   };
   const meta = () => ({
     format: DECK_FORMAT, version: DECK_FORMAT_VERSION, generator: `unppt ${UNPPT_VERSION}`,
-    width: pres.width, height: pres.height, title, fonts: deckFonts, report,
+    width: pres.width, height: pres.height, title, fonts: deckFonts, report, slideParts,
   });
 
   async function* html(): AsyncGenerator<Uint8Array> {

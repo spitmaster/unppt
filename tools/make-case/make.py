@@ -402,7 +402,27 @@ def table_merge(app):
     return p
 
 
-CASES = [shapes_all, text_sizes, text_align, text_spacing, text_bullets, text_missing_font, shapes_basic, fills_lines, table_basic, group_rotate, anim_basic, anim_auto, charts_basic, pictures, smartart, text_effects, text_layout, table_merge]
+def links(app):
+    """超链接与动作按钮：跳到指定页、下一页、外部网址、文字链接"""
+    p = new_pres(app)
+    s1 = blank(p)
+    s2 = blank(p)
+    s3 = blank(p)
+    b = s1.Shapes.AddShape(1, 60, 60, 260, 80)
+    b.TextFrame.TextRange.Text = "跳到第 3 页"
+    b.ActionSettings(1).Action = 7  # ppActionHyperlink
+    b.ActionSettings(1).Hyperlink.SubAddress = f"{s3.SlideID},{s3.SlideIndex},"
+    n = s1.Shapes.AddShape(1, 360, 60, 260, 80)
+    n.TextFrame.TextRange.Text = "下一页"
+    n.ActionSettings(1).Action = 1  # ppActionNextSlide
+    t = textbox(s1, 60, 200, 600, 60, "访问示例网址 example.com", size=24)
+    t.TextFrame.TextRange.Characters(1, 6).ActionSettings(1).Hyperlink.Address = "https://example.com/"
+    textbox(s2, 60, 60, 600, 60, "第 2 页", size=40)
+    textbox(s3, 60, 60, 600, 60, "第 3 页", size=40)
+    return p
+
+
+CASES = [shapes_all, text_sizes, text_align, text_spacing, text_bullets, text_missing_font, shapes_basic, fills_lines, table_basic, group_rotate, anim_basic, anim_auto, charts_basic, pictures, smartart, text_effects, text_layout, table_merge, links]
 
 
 def main():

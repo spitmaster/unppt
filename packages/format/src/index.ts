@@ -17,6 +17,8 @@ export interface Deck {
   slides: DeckSlide[];
   fonts: DeckFont[];
   report: DeckReport;
+  /** 每个输出页对应的 pptx 内部部件路径（解析 data-link="slide:..." 用） */
+  slideParts?: string[];
 }
 
 export interface DeckSlide {
@@ -99,6 +101,7 @@ export interface BridgeReply {
 /** bridge 消息：播放器发给宿主（事件） */
 export interface BridgeEvent {
   unppt: 1;
-  event: 'ready' | 'change' | 'end';
-  data: PlayerState;
+  event: 'ready' | 'change' | 'end' | 'link';
+  /** link 事件额外带 url：点击了外部链接 */
+  data: PlayerState & { url?: string };
 }

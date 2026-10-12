@@ -11,6 +11,7 @@ import type { AnimAction, BridgeCommand, BridgeEvent, BridgeReply, DeckSlide, Pl
 import { DECK_FORMAT, DECK_FORMAT_VERSION } from '../../format/src/index';
 
 interface DeckLike {
+  slideParts?: string[];
   format: string;
   version: number;
   width: number;
@@ -30,6 +31,8 @@ export interface MountOptions {
   clickToNext?: boolean;
   /** 键盘翻页，默认开启 */
   keyboard?: boolean;
+  /** 点击外部链接时是否自动在新窗口打开，默认是（同时都会发出 link 事件） */
+  openLinks?: boolean;
 }
 
 type Listener = (s: PlayerState) => void;
@@ -185,6 +188,25 @@ export class Player {
 
   // ---------------- 内部
 
+  /** 跟随超链接：站内跳转直接翻页；外部网址发 link 事件，并（默认）在新窗口打开 */
+  private follow(el: Element) {
+    const href = el.getAttribute('data-href');
+    if (href) {
+      this.emit('link', href);
+      if (this.opts.openLinks !== false) this.root.ownerDocument.defaultView?.open(href, '_blank', 'noopener');
+      return;
+    }
+    const link = el.getAttribute('data-link') ?? '';
+    if (link === 'next') this.goto(Math.min(this.slideIdx + 1, this.deck.slideCount - 1), 0);
+    else if (link === 'prev') this.goto(Math.max(this.slideIdx - 1, 0), 0);
+    else if (link === 'first') this.goto(0, 0);
+    else if (link === 'last') this.goto(this.deck.slideCount - 1, 0);
+    else if (link.startsWith('slide:')) {
+      const i = (this.deck.slideParts ?? []).indexOf(link.slice(6));
+      if (i >= 0) this.goto(i, 0);
+    }
+  }
+
   private steps(): AnimAction[][] {
     return this.deck.slide(this.slideIdx).steps;
   }
@@ -193,8 +215,8 @@ export class Player {
     return Math.max(0, Math.min(this.deck.slideCount - 1, Math.floor(Number(i) || 0)));
   }
 
-  private emit(event: 'ready' | 'change' | 'end') {
-    const s = this.getState();
+  private emit(event: 'ready' | 'change' | 'end' | 'link', url?: string) {
+    const s: PlayerState & { url?: string } = url ? { ...this.getState(), url } : this.getState();
     this.updateUi();
     for (const fn of this.listeners.get(event) ?? []) {
       try { fn(s); } catch (e) { console.error(e); }
@@ -345,6 +367,8 @@ export class Player {
       this.root.addEventListener('click', (e) => {
         const t = e.target as Element;
         if (t.closest('video,audio,a,button')) return;
+        const link = t.closest('[data-link],[data-href]');
+        if (link) { this.follow(link); return; }
         this.next();
       });
     }
@@ -427,6 +451,7 @@ export function installBridge(win: Window, player: Player, allowedOrigins: strin
   };
   player.on('change', (s) => sendEvent('change', s));
   player.on('end', (s) => sendEvent('end', s));
+  player.on('link', (s) => sendEvent('link', s));
 
   const exec = (cmd: BridgeCommand): BridgeReply => {
     try {
