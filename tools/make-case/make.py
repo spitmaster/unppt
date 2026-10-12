@@ -557,7 +557,25 @@ def anim_trigger(app):
     return p
 
 
-CASES = [shapes_all, text_sizes, text_align, text_spacing, text_bullets, text_missing_font, shapes_basic, fills_lines, table_basic, group_rotate, anim_basic, anim_auto, charts_basic, pictures, smartart, text_effects, text_layout, table_merge, links, emf_images, anim_advanced, charts_labels, freeform_icons, media_audio, anim_trigger]
+def wmf_images(app):
+    """WMF 矢量图片（更老的格式）：把几页幻灯片导出成 WMF 再插入"""
+    tmp = TESTCASES.parent / ".cache" / "wmf"
+    tmp.mkdir(parents=True, exist_ok=True)
+    files = []
+    for name in ("shapes-basic", "text-sizes"):
+        src = app.Presentations.Open(str((TESTCASES / f"{name}.pptx").resolve()), True, False, False)
+        out = tmp / f"{name}.wmf"
+        src.Slides(1).Export(str(out.resolve()), "WMF")
+        src.Close()
+        files.append(out)
+    p = new_pres(app)
+    s = blank(p)
+    for i, f in enumerate(files):
+        s.Shapes.AddPicture(str(f.resolve()), 0, -1, 20 + i * 470, 120, 450, 253)
+    return p
+
+
+CASES = [shapes_all, text_sizes, text_align, text_spacing, text_bullets, text_missing_font, shapes_basic, fills_lines, table_basic, group_rotate, anim_basic, anim_auto, charts_basic, pictures, smartart, text_effects, text_layout, table_merge, links, emf_images, anim_advanced, charts_labels, freeform_icons, media_audio, anim_trigger, wmf_images]
 
 
 def main():
