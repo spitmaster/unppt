@@ -422,7 +422,26 @@ def links(app):
     return p
 
 
-CASES = [shapes_all, text_sizes, text_align, text_spacing, text_bullets, text_missing_font, shapes_basic, fills_lines, table_basic, group_rotate, anim_basic, anim_auto, charts_basic, pictures, smartart, text_effects, text_layout, table_merge, links]
+def emf_images(app):
+    """EMF 矢量图片：把几页幻灯片导出成 EMF，再作为图片插入（老课件里从 Office 粘贴的图形常是这种格式）"""
+    tmp = TESTCASES.parent / ".cache" / "emf"
+    tmp.mkdir(parents=True, exist_ok=True)
+    files = []
+    for name in ("shapes-basic", "text-sizes", "charts-basic", "table-basic"):
+        src = app.Presentations.Open(str((TESTCASES / f"{name}.pptx").resolve()), True, False, False)
+        out = tmp / f"{name}.emf"
+        src.Slides(1).Export(str(out.resolve()), "EMF")
+        src.Close()
+        files.append(out)
+    p = new_pres(app)
+    for i, f in enumerate(files):
+        if i % 2 == 0:
+            s = blank(p)
+        s.Shapes.AddPicture(str(f.resolve()), 0, -1, 20 + (i % 2) * 470, 120, 450, 253)
+    return p
+
+
+CASES = [shapes_all, text_sizes, text_align, text_spacing, text_bullets, text_missing_font, shapes_basic, fills_lines, table_basic, group_rotate, anim_basic, anim_auto, charts_basic, pictures, smartart, text_effects, text_layout, table_merge, links, emf_images]
 
 
 def main():

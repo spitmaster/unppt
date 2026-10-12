@@ -3,6 +3,7 @@
  */
 import type { OpcPackage } from './package';
 import type { Presentation } from './model';
+import { emfToSvg } from './emf';
 
 export type WriteData = Uint8Array | string | AsyncIterable<Uint8Array>;
 export type WriteFn = (path: string, data: WriteData) => Promise<void>;
@@ -68,6 +69,15 @@ export class MediaStore {
     const entry = this.pkg.zip.entry(target);
     if (!entry) return undefined;
     const ext = extOf(target);
+    if (isImage && ext === 'emf') {
+      // EMF 矢量图：转成 SVG（同一张只转一次）
+      const bytes = await this.pkg.zip.read(target);
+      const svg = bytes ? emfToSvg(bytes) : undefined;
+      if (!svg) { this.pres.warn('EMF 图片无法解析'); return undefined; }
+      const id = this.nextAsset++;
+      this.pending.push({ id, uri: `data:image/svg+xml;base64,${base64(new TextEncoder().encode(svg))}` });
+      return `${ASSET_PREFIX}${id}`;
+    }
     if (isImage && !BROWSER_IMAGES.has(ext)) {
       this.pres.warn(`不支持的图片格式：${ext}`);
       return undefined;
