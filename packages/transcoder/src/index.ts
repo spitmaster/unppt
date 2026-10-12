@@ -114,7 +114,7 @@ export async function convert(input: InputSource, options: ConvertOptions): Prom
       if (r.hidden) continue;
       const uids = new Set<string>();
       for (const m of r.svg.matchAll(/data-uid="([^"]+)"/g)) uids.add(m[1]);
-      const anim = compileTiming(r.timing, uids);
+      const anim = compileTiming(r.timing, uids, { width: pres.width, height: pres.height, colors: r.colors ?? { scheme: {}, map: {} } });
       for (const w of anim.warnings) pres.warn(w);
       count++;
       slideParts.push(ref.part);

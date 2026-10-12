@@ -441,7 +441,33 @@ def emf_images(app):
     return p
 
 
-CASES = [shapes_all, text_sizes, text_align, text_spacing, text_bullets, text_missing_font, shapes_basic, fills_lines, table_basic, group_rotate, anim_basic, anim_auto, charts_basic, pictures, smartart, text_effects, text_layout, table_merge, links, emf_images]
+def anim_advanced(app):
+    """复杂动画：段落逐条出现、强调（放大/旋转/变色）、路径动画、各方向飞入、擦除、缩放"""
+    p = new_pres(app)
+    s = blank(p)
+    seq = s.TimeLine.MainSequence
+    t = textbox(s, 40, 40, 420, 200, chr(10).join(["第一条要点", "第二条要点", "第三条要点"]), size=24)
+    seq.AddEffect(t, 10, 2, 1)  # 淡入，按段落（msoAnimateTextByFirstLevel=2）
+    a = s.Shapes.AddShape(1, 520, 40, 160, 100)
+    e = seq.AddEffect(a, 59, 0, 1)  # 放大/缩小（msoAnimEffectGrowShrink）
+    b = s.Shapes.AddShape(5, 720, 40, 160, 100)
+    seq.AddEffect(b, 61, 0, 1)  # 陀螺旋（msoAnimEffectSpin）
+    c = s.Shapes.AddShape(9, 520, 200, 120, 120)
+    seq.AddEffect(c, 54, 0, 1)  # 改变填充颜色（msoAnimEffectChangeFillColor）
+    d = s.Shapes.AddShape(4, 40, 380, 100, 100)
+    seq.AddEffect(d, 41, 0, 1)  # 直线路径（msoAnimEffectPathRight 之类）
+    f = s.Shapes.AddShape(1, 700, 380, 200, 100)
+    ef = seq.AddEffect(f, 2, 0, 1)  # 飞入
+    ef.EffectParameters.Direction = 4  # 从左
+    g = s.Shapes.AddShape(1, 300, 380, 200, 100)
+    eg = seq.AddEffect(g, 22, 0, 1)  # 擦除
+    eg.EffectParameters.Direction = 1  # 从上
+    h = s.Shapes.AddShape(9, 720, 220, 120, 120)
+    seq.AddEffect(h, 53, 0, 1)  # 缩放
+    return p
+
+
+CASES = [shapes_all, text_sizes, text_align, text_spacing, text_bullets, text_missing_font, shapes_basic, fills_lines, table_basic, group_rotate, anim_basic, anim_auto, charts_basic, pictures, smartart, text_effects, text_layout, table_merge, links, emf_images, anim_advanced]
 
 
 def main():

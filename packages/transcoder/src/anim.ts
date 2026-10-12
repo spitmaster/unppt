@@ -1,8 +1,9 @@
 /**
  * 动画编译：p:timing（主序列）-> 每次点击要执行的动作；p:transition -> 页面切换效果。
  */
-import type { AnimAction, AnimEffect, SlideTransition } from '../../format/src/index';
-import { attr, child, children, findAll, numAttr, type XEl } from './xml';
+import type { AnimAction, AnimEffect, AnimTarget, SlideTransition } from '../../format/src/index';
+import { colorIn, css, type ColorContext } from './color';
+import { attr, child, children, findAll, numAttr, path, type XEl } from './xml';
 
 export interface CompiledAnim {
   steps: AnimAction[][];
@@ -46,7 +47,49 @@ function isClick(cTn: XEl | undefined): boolean {
   return conds.some((c) => attr(c, 'delay') === 'indefinite');
 }
 
-function effectAction(eff: XEl, base: number): AnimAction | undefined {
+export interface AnimContext { width: number; height: number; colors: ColorContext }
+
+/** 强调和路径动画结束后保持的状态 */
+function finalState(cTn: XEl | undefined, ctx: AnimContext): AnimTarget | undefined {
+  const t: AnimTarget = {};
+  for (const sc of findAll(cTn, 'p:animScale')) {
+    const by = child(sc, 'p:by');
+    if (by) t.scale = [(numAttr(by, 'x') ?? 100000) / 100000, (numAttr(by, 'y') ?? 100000) / 100000];
+  }
+  for (const r of findAll(cTn, 'p:animRot')) {
+    const by = numAttr(r, 'by');
+    if (by !== undefined) t.rotate = (t.rotate ?? 0) + by / 60000;
+  }
+  for (const m of findAll(cTn, 'p:animMotion')) {
+    // 路径坐标是幻灯片宽高的比例，取终点
+    const nums = (attr(m, 'path') ?? '').match(/-?\d*\.?\d+(e-?\d+)?/gi)?.map(Number) ?? [];
+    if (nums.length >= 2) t.move = [nums[nums.length - 2] * ctx.width, nums[nums.length - 1] * ctx.height];
+  }
+  for (const c of findAll(cTn, 'p:animClr')) {
+    const names = findAll(c, 'p:attrName').map((a) => a.text.trim());
+    const col = colorIn(child(c, 'p:to'), ctx.colors);
+    if (!col) continue;
+    if (names.some((n) => n === 'fillcolor' || n === 'fill.color')) t.fill = css(col);
+    else if (names.some((n) => n === 'style.color')) t.color = css(col);
+  }
+  for (const a of findAll(cTn, 'p:anim')) {
+    const names = findAll(a, 'p:attrName').map((x) => x.text.trim());
+    if (!names.includes('style.opacity')) continue;
+    const tav = findAll(a, 'p:tav');
+    const last = tav[tav.length - 1];
+    const v = attr(child(child(last, 'p:val'), 'p:fltVal'), 'val');
+    if (v !== undefined) t.opacity = Number(v);
+  }
+  for (const st of findAll(cTn, 'p:set')) {
+    const names = findAll(st, 'p:attrName').map((x) => x.text.trim());
+    if (!names.includes('style.opacity')) continue;
+    const v = attr(path(st, 'p:to', 'p:strVal'), 'val');
+    if (v !== undefined && !isNaN(Number(v))) t.opacity = Number(v);
+  }
+  return Object.keys(t).length ? t : undefined;
+}
+
+function effectAction(eff: XEl, base: number, ctx: AnimContext): AnimAction | undefined {
   const cTn = child(eff, 'p:cTn');
   const cls = attr(cTn, 'presetClass');
   if (!cls) return undefined;
@@ -65,13 +108,15 @@ function effectAction(eff: XEl, base: number): AnimAction | undefined {
   let effect: AnimEffect = cls === 'emph' ? 'emphasis' : cls === 'path' ? 'path' : EFFECT_BY_ID[id] ?? 'fade';
   if (dir !== 'emph' && id === 1) dur = 0;
   if (effect === 'appear') dur = 0;
+  const to = dir === 'emph' ? finalState(cTn, ctx) : undefined;
   return {
     uid, effect, dir, dur: dur || (effect === 'appear' ? 0 : 500), delay: base + delayOf(cTn),
     from: effect === 'fly' || effect === 'wipe' ? dirFromSubtype(numAttr(cTn, 'presetSubtype')) : undefined,
+    ...(to ? { to } : {}),
   };
 }
 
-export function compileTiming(timing: XEl | undefined, existing: Set<string>): CompiledAnim {
+export function compileTiming(timing: XEl | undefined, existing: Set<string>, ctx: AnimContext): CompiledAnim {
   const result: CompiledAnim = { steps: [], auto: [], hidden: [], warnings: [] };
   if (!timing) return result;
   const seqs = findAll(timing, 'p:seq');
@@ -87,7 +132,7 @@ export function compileTiming(timing: XEl | undefined, existing: Set<string>): C
       const sTn = child(sub, 'p:cTn');
       const base = delayOf(sTn);
       for (const eff of children(child(sTn, 'p:childTnLst'), 'p:par')) {
-        const a = effectAction(eff, base);
+        const a = effectAction(eff, base, ctx);
         if (!a) continue;
         if (!existing.has(a.uid)) {
           // 段落动画的目标如果不存在（比如段落是空的），退回到整个形状

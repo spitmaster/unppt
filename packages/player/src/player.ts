@@ -7,7 +7,7 @@
  *
  * 外部控制（JS bridge）见 SPEC F2：同页 JS（window.unppt）、iframe postMessage、原生 App WebView。
  */
-import type { AnimAction, BridgeCommand, BridgeEvent, BridgeReply, DeckSlide, PlayerState, SlideTransition } from '../../format/src/index';
+import type { AnimAction, AnimTarget, BridgeCommand, BridgeEvent, BridgeReply, DeckSlide, PlayerState, SlideTransition } from '../../format/src/index';
 import { DECK_FORMAT, DECK_FORMAT_VERSION } from '../../format/src/index';
 
 interface DeckLike {
@@ -240,6 +240,7 @@ export class Player {
     const el = doc.createElement('div');
     el.className = 'unppt-slide';
     el.innerHTML = data.svg;
+    this.states = new Map();
     const old = this.current;
     if (old) for (const m of old.querySelectorAll('video,audio')) (m as HTMLMediaElement).pause();
     this.stage.appendChild(el);
@@ -295,6 +296,7 @@ export class Player {
       if (!el) continue;
       if (a.dir === 'in') el.classList.remove('unppt-hide');
       else if (a.dir === 'out') el.classList.add('unppt-hide');
+      if (a.to) this.applyTarget(el, a.to, false, 0, 0);
     }
   }
 
@@ -302,6 +304,7 @@ export class Player {
     for (const a of actions) {
       const el = this.find(a.uid);
       if (!el) continue;
+      if (a.to) { this.applyTarget(el, a.to, true, a.dur, a.delay); continue; }
       if (a.dir === 'in') el.classList.remove('unppt-hide');
       // 没有时长、或者浏览器太老不支持 Web Animations（老版本 Android WebView）：直接显示结果
       if ((!a.dur && !a.delay) || typeof (el as HTMLElement).animate !== 'function') {
@@ -326,6 +329,47 @@ export class Player {
   }
 
   private pendingCleanups: (() => void)[] = [];
+
+  /** 每个元素累计的强调/路径状态（跳转时从头重算，保证确定性） */
+  private states = new Map<Element, { tx: number; ty: number; sx: number; sy: number; rot: number }>();
+
+  private transformOf(st: { tx: number; ty: number; sx: number; sy: number; rot: number }) {
+    return `translate(${st.tx}px,${st.ty}px) rotate(${st.rot}deg) scale(${st.sx},${st.sy})`;
+  }
+
+  /** 应用强调动画的最终状态；animate 为真时做过渡 */
+  private applyTarget(el: Element, to: AnimTarget, animate: boolean, dur: number, delay: number) {
+    const cur = this.states.get(el) ?? { tx: 0, ty: 0, sx: 1, sy: 1, rot: 0 };
+    const next = { ...cur };
+    if (to.move) { next.tx += to.move[0]; next.ty += to.move[1]; }
+    if (to.scale) { next.sx *= to.scale[0]; next.sy *= to.scale[1]; }
+    if (to.rotate) next.rot += to.rotate;
+    this.states.set(el, next);
+    const h = el as HTMLElement;
+    const canAnimate = animate && typeof h.animate === 'function' && dur > 0;
+    if (to.move || to.scale || to.rotate) {
+      const from = this.transformOf(cur), end = this.transformOf(next);
+      h.style.transform = end;
+      if (canAnimate) this.running.push(h.animate([{ transform: from }, { transform: end }], { duration: dur, delay, easing: 'ease-in-out', fill: 'backwards' }));
+    }
+    if (to.opacity !== undefined) {
+      const from = h.style.opacity || '1';
+      h.style.opacity = String(to.opacity);
+      if (canAnimate) this.running.push(h.animate([{ opacity: from }, { opacity: String(to.opacity) }], { duration: dur, delay, fill: 'backwards' }));
+    }
+    const recolor = (sel: string, color: string) => {
+      for (const node of Array.from(el.querySelectorAll(sel))) {
+        const n = node as SVGElement;
+        const f = n.getAttribute('fill');
+        if (!f || f === 'none' || f.startsWith('url(')) continue;
+        const from = n.style.fill || f;
+        n.style.fill = color;
+        if (canAnimate && typeof n.animate === 'function') this.running.push(n.animate([{ fill: from }, { fill: color }], { duration: dur, delay, fill: 'backwards' }));
+      }
+    };
+    if (to.fill) recolor('path,rect,ellipse,circle,polygon', to.fill);
+    if (to.color) recolor('text', to.color);
+  }
 
   private cleanupLater(fn: () => void) {
     this.pendingCleanups.push(fn);
