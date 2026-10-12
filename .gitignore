@@ -1,5 +1,5 @@
 # 样本库：可能含客户 PPT，绝对不能进仓库
-/corpus/
+/samples/
 
 # PowerPoint 参考输出、截图、评测报告（由样本生成，同样不能进仓库）
 /.cache/
