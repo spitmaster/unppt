@@ -55,6 +55,8 @@ export interface AnimAction {
   /** 媒体命令：播放（从 start 秒开始）、暂停、停止 */
   media?: 'play' | 'pause' | 'stop' | 'toggle';
   start?: number;
+  /** 文字逐字（letter）/ 逐词（word）播放：每个字（词）各自播 dur，相邻两个间隔 gap 毫秒 */
+  iterate?: { by: 'letter' | 'word'; gap: number };
 }
 
 export interface AnimTarget {

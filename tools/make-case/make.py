@@ -575,7 +575,28 @@ def wmf_images(app):
     return p
 
 
-CASES = [shapes_all, text_sizes, text_align, text_spacing, text_bullets, text_missing_font, shapes_basic, fills_lines, table_basic, group_rotate, anim_basic, anim_auto, charts_basic, pictures, smartart, text_effects, text_layout, table_merge, links, emf_images, anim_advanced, charts_labels, freeform_icons, media_audio, anim_trigger, wmf_images]
+def anim_iterate(app):
+    """文字逐字/逐词动画：逐字淡入、逐词出现、逐字飞入、逐字退出"""
+    p = new_pres(app)
+    s = blank(p)
+    seq = s.TimeLine.MainSequence
+    texts = ["逐字淡入 Letter by letter", "逐词出现 Word by word", "逐字飞入 Fly letters", "逐字退出 Exit letters"]
+    shapes = []
+    for i, t in enumerate(texts):
+        sh = s.Shapes.AddTextbox(1, 60, 60 + i * 110, 800, 80)
+        sh.TextFrame.TextRange.Text = t
+        sh.TextFrame.TextRange.Font.Size = 32
+        shapes.append(sh)
+    for sh, eff, unit in [(shapes[0], 10, 1), (shapes[1], 1, 2), (shapes[2], 2, 1)]:
+        e = seq.AddEffect(sh, eff, 0, 1)
+        seq.ConvertToTextUnitEffect(e, unit)
+    e = seq.AddEffect(shapes[3], 10, 0, 1)
+    e.Exit = -1
+    seq.ConvertToTextUnitEffect(e, 1)
+    return p
+
+
+CASES = [shapes_all, text_sizes, text_align, text_spacing, text_bullets, text_missing_font, shapes_basic, fills_lines, table_basic, group_rotate, anim_basic, anim_auto, charts_basic, pictures, smartart, text_effects, text_layout, table_merge, links, emf_images, anim_advanced, charts_labels, freeform_icons, media_audio, anim_trigger, wmf_images, anim_iterate]
 
 
 def main():

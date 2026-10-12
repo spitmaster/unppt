@@ -55,6 +55,7 @@ def main():
     subprocess.run(["node", "packages/transcoder/dist/cli.js", "convert", "testcases/anim-basic.pptx", "-o", str(player_dir / "index.html"), "-q", "--system-fonts"], cwd=ROOT, check=True)
     shutil.copy(ROOT / "examples/iframe-host.html", host_dir / "index.html")
     shutil.copy(ROOT / "packages/player/dist/host.js", host_dir / "host.js")
+    subprocess.run(["node", "packages/transcoder/dist/cli.js", "convert", "testcases/anim-iterate.pptx", "-o", str(player_dir / "iterate.html"), "-q"], cwd=ROOT, check=True)
     s1, player_url = serve(player_dir)
     s2, host_url = serve(host_dir)
 
@@ -104,6 +105,31 @@ def main():
         check("ready" in kinds and "change" in kinds and "reply" in kinds, f"原生端收到消息：{kinds}")
         bad = json.loads(page2.evaluate("window.unppt.handle('not json')"))
         check(not bad["ok"], "非法指令返回错误而不是崩溃")
+
+        # ---------------- 4. 文字逐字动画
+        page4 = b.new_page()
+        page4.goto(f"{player_url}/iterate.html")
+        page4.wait_for_function("window.unppt !== undefined")
+        page4.evaluate("window.unppt.next()")
+        page4.wait_for_timeout(200)
+        js = """(() => { const el = document.querySelector('.unppt-slide [data-uid]:not(.unppt-hide) text')?.closest('[data-uid]');
+          const ts = Array.from(el ? el.querySelectorAll('tspan') : []).filter(t => t.textContent.trim());
+          const op = ts.map(t => Number(getComputedStyle(t).fillOpacity));
+          return [ts.length, op.filter(o => o > 0.01).length, op.filter(o => o < 0.01).length]; })()"""
+        n, shown, hidden_ = page4.evaluate(js)
+        check(n > 10 and shown > 0 and hidden_ > 0, f"逐字淡入播到一半：{n} 个字，已开始出现 {shown}，未出现 {hidden_}")
+        page4.wait_for_timeout(3000)
+        n, shown, hidden_ = page4.evaluate(js)
+        check(n > 10 and shown == n, f"逐字淡入播完全部出现：{n} 个字，已出现 {shown}")
+        page4.evaluate("window.unppt.goto(0, 3)")
+        page4.evaluate("window.unppt.next()")
+        page4.wait_for_timeout(4000)
+        hidden = page4.locator("[data-uid].unppt-hide").count()
+        check(hidden == 1, f"逐字退出播完后整个形状隐藏：{hidden}")
+        st = page4.evaluate("window.unppt.prev()")
+        page4.wait_for_timeout(100)
+        hidden = page4.locator("[data-uid].unppt-hide").count()
+        check(hidden == 0, f"退回上一步后全部可见：{hidden}")
 
         # ---------------- 移动端视口
         mobile = {"is_mobile": True} if BROWSER != "firefox" else {}

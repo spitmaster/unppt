@@ -119,11 +119,24 @@ function effectAction(eff: XEl, base: number, ctx: AnimContext): AnimAction | un
   if (dir !== 'emph' && id === 1) dur = 0;
   if (effect === 'appear') dur = 0;
   const to = dir === 'emph' ? finalState(cTn, ctx) : undefined;
+  const iterate = iterateOf(cTn, dur);
   return {
     uid, effect, dir, dur: dur || (effect === 'appear' ? 0 : 500), delay: base + delayOf(cTn),
     from: effect === 'fly' || effect === 'wipe' ? dirFromSubtype(numAttr(cTn, 'presetSubtype')) : undefined,
     ...(to ? { to } : {}),
+    ...(iterate ? { iterate } : {}),
   };
+}
+
+/** 逐字/逐词：间隔是 tmAbs（毫秒）或 tmPct（单个字时长的百分比，单位 1/1000 %） */
+function iterateOf(cTn: XEl | undefined, dur: number): AnimAction['iterate'] {
+  const it = child(cTn, 'p:iterate');
+  const type = attr(it, 'type');
+  if (type !== 'lt' && type !== 'wd') return undefined;
+  const abs = numAttr(child(it, 'p:tmAbs'), 'val');
+  const pct = numAttr(child(it, 'p:tmPct'), 'val');
+  const gap = abs ?? ((pct ?? 0) / 100000) * dur;
+  return { by: type === 'lt' ? 'letter' : 'word', gap: Math.max(0, Math.min(gap, 10000)) };
 }
 
 export function compileTiming(timing: XEl | undefined, existing: Set<string>, ctx: AnimContext): CompiledAnim {
