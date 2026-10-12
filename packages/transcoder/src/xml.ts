@@ -90,20 +90,23 @@ export function parseXml(src: string): XEl {
       const top = stack[stack.length - 1];
       top.text += decodeEntities(src.slice(i, lt));
     }
-    if (src.startsWith('<?', lt)) { i = src.indexOf('?>', lt) + 2; continue; }
-    if (src.startsWith('<!--', lt)) { i = src.indexOf('-->', lt) + 3; continue; }
+    // 找不到结尾（文件被截断）时直接结束，不能把 -1 当位置用，否则会死循环
+    const skipTo = (token: string, from: number) => {
+      const k = src.indexOf(token, from);
+      return k < 0 ? n : k + token.length;
+    };
+    if (src.startsWith('<?', lt)) { i = skipTo('?>', lt); continue; }
+    if (src.startsWith('<!--', lt)) { i = skipTo('-->', lt); continue; }
     if (src.startsWith('<![CDATA[', lt)) {
       const end = src.indexOf(']]>', lt);
-      stack[stack.length - 1].text += src.slice(lt + 9, end);
-      i = end + 3;
+      stack[stack.length - 1].text += src.slice(lt + 9, end < 0 ? n : end);
+      i = end < 0 ? n : end + 3;
       continue;
     }
-    if (src.startsWith('<!', lt)) { i = src.indexOf('>', lt) + 1; continue; }
+    if (src.startsWith('<!', lt)) { i = skipTo('>', lt); continue; }
     if (src[lt + 1] === '/') {
-      const gt = src.indexOf('>', lt);
-      stack.pop();
-      scopes.pop();
-      i = gt + 1;
+      if (stack.length > 1) { stack.pop(); scopes.pop(); }
+      i = skipTo('>', lt);
       continue;
     }
     // 开始标签：找到真正的 '>'（属性值里可能有 '>'）
