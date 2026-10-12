@@ -75,6 +75,8 @@ interface RunStyle {
   baseline: number;       // 上下标，百分比（正数上标）
   spc: number;            // 字间距，像素
   caps: 'none' | 'all' | 'small';
+  /** 西文字体标记的是东亚字符集（如 GB2312）：缺字体时西文也用东亚字体替代 */
+  latinEaCharset: boolean;
 }
 
 function runStyle(r: XEl, env: TextEnv, scale: number): RunStyle {
@@ -98,6 +100,7 @@ function runStyle(r: XEl, env: TextEnv, scale: number): RunStyle {
     baseline: (numAttr(r, 'baseline') ?? 0) / 1000,
     spc: ((numAttr(r, 'spc') ?? 0) / 100) * 96 / 72,
     caps: (attr(r, 'cap') as RunStyle['caps']) ?? 'none',
+    latinEaCharset: EA_CHARSETS.has(attr(child(r, 'a:latin'), 'charset') ?? ''),
   };
 }
 
@@ -143,12 +146,16 @@ const NO_END = new Set([...'（［｛「『〔〈《【〘〖〝‘“｟«([{']
 /** 行距多出的高度放在文字上方的比例（用 PowerPoint 实测校准） */
 const EXTRA_ABOVE = 2 / 3;
 
+/** 东亚字符集：GB2312、Big5、Shift-JIS、韩文（XML 里是有符号数） */
+const EA_CHARSETS = new Set(['-122', '-120', '-128', '-127', '134', '136', '128', '129']);
+
 const LATIN_SUBS = ['Calibri', 'Arial', 'Liberation Sans', 'Helvetica'];
-const EA_SUBS = ['DengXian', '等线', 'Microsoft YaHei', '微软雅黑', 'PingFang SC', 'Noto Sans CJK SC', 'Source Han Sans SC'];
+// 实测：字体标了中文字符集且本机缺失时，PowerPoint 用微软雅黑替代（样本换行 40/40 一致）
+const EA_SUBS = ['Microsoft YaHei', '微软雅黑', 'DengXian', '等线', 'PingFang SC', 'Noto Sans CJK SC', 'Source Han Sans SC'];
 
 async function makeAtoms(text: string, style: RunStyle, m: Measurer): Promise<Atom[]> {
   const out: Atom[] = [];
-  // 缺字体时按 PowerPoint 的做法替代：西文用 Calibri，中文用等线（再不行用雅黑）
+  // 缺字体时按 PowerPoint 的做法替代：西文用 Calibri（字体标了东亚字符集时也用雅黑），中文用雅黑
   const pick = async (family: string, subs: string[]): Promise<[FontMetrics | undefined, string]> => {
     const mm = await m.metrics(family, style.bold, style.italic);
     if (mm) return [mm, family];
@@ -158,7 +165,7 @@ async function makeAtoms(text: string, style: RunStyle, m: Measurer): Promise<At
     }
     return [undefined, family];
   };
-  const [latinM, latinFam] = await pick(style.latin, LATIN_SUBS);
+  const [latinM, latinFam] = await pick(style.latin, style.latinEaCharset ? EA_SUBS : LATIN_SUBS);
   const [eaM, eaFam] = style.ea === style.latin ? [latinM, latinFam] : await pick(style.ea, EA_SUBS);
   let src = text;
   if (style.caps === 'all') src = src.toUpperCase();

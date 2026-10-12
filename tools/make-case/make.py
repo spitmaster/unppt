@@ -132,6 +132,10 @@ def text_missing_font(app):
     textbox(s, 20, 180, 900, 60, "缺失字体测试 中文 English 123", font="DengXian", size=24)
     textbox(s, 20, 260, 900, 60, "缺失字体测试 中文 English 123", font="SimSun", size=24)
     textbox(s, 20, 340, 900, 60, "缺失字体测试 中文 English 123", font="Arial", size=24)
+    # 字体名带中文的缺失字体
+    textbox(s, 20, 420, 440, 50, "缺失字体测试 中文 English 123", font="思源黑体 CN Light", size=18)
+    textbox(s, 480, 420, 440, 50, "缺失字体测试 中文 English 123", font="思源黑体 CN Bold", size=18)
+    textbox(s, 20, 480, 440, 50, "缺失字体测试 中文 English 123", font="某某黑体", size=18)
     return p
 
 
@@ -220,7 +224,43 @@ def anim_basic(app):
     return p
 
 
-CASES = [text_sizes, text_align, text_spacing, text_bullets, text_missing_font, shapes_basic, fills_lines, table_basic, group_rotate, anim_basic]
+def shapes_all(app):
+    """PowerPoint 能画的全部预设形状（每页 24 个），用来逐个验证几何"""
+    p = new_pres(app)
+    slide = None
+    n = 0
+    for t in range(1, 190):
+        if n % 24 == 0:
+            slide = blank(p)
+        x, y = 20 + (n % 8) * 116, 20 + ((n % 24) // 8) * 170
+        try:
+            sh = slide.Shapes.AddShape(t, x, y, 100, 130)
+        except Exception:
+            continue
+        try:
+            sh.Fill.ForeColor.RGB = RGB(90, 140, 210)
+            sh.Line.ForeColor.RGB = RGB(30, 50, 90)
+        except Exception:
+            pass  # 线条类形状没有填充
+        n += 1
+    return p
+
+
+def anim_auto(app):
+    """页面一开始就自动播放的动画（上一动画之后 / 与上一动画同时），之后再接点击动画"""
+    p = new_pres(app)
+    s = blank(p)
+    seq = s.TimeLine.MainSequence
+    a = s.Shapes.AddShape(5, 60, 120, 250, 150)
+    b = s.Shapes.AddShape(9, 360, 120, 250, 150)
+    c = s.Shapes.AddShape(1, 660, 120, 250, 150)
+    seq.AddEffect(a, 10, 0, 3)  # 上一动画之后
+    seq.AddEffect(b, 10, 0, 2)  # 与上一动画同时
+    seq.AddEffect(c, 10, 0, 1)  # 单击
+    return p
+
+
+CASES = [shapes_all, text_sizes, text_align, text_spacing, text_bullets, text_missing_font, shapes_basic, fills_lines, table_basic, group_rotate, anim_basic, anim_auto]
 
 
 def main():

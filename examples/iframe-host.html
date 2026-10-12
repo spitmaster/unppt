@@ -1,0 +1,55 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>unppt iframe 嵌入示例</title>
+<style>
+  body { font: 14px system-ui, sans-serif; margin: 16px; }
+  .frame { width: 100%; max-width: 960px; aspect-ratio: 16 / 9; border: 1px solid #ccc; }
+  iframe { width: 100%; height: 100%; border: 0; }
+  .bar { margin: 8px 0; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  #log { font: 12px monospace; white-space: pre; background: #f6f6f6; padding: 8px; height: 160px; overflow: auto; }
+</style>
+</head>
+<body>
+<h3>unppt iframe 嵌入示例（宿主页面通过 postMessage 控制播放器，可跨域）</h3>
+<div class="bar">
+  播放器地址 <input id="src" size="60" placeholder="转码出来的 index.html 地址，例如 http://localhost:8001/index.html">
+  <button id="load">加载</button>
+</div>
+<div class="frame"><iframe id="player" allow="autoplay; fullscreen"></iframe></div>
+<div class="bar">
+  <button id="prev">上一步</button>
+  <button id="next">下一步</button>
+  第 <input id="slide" type="number" value="1" min="1" style="width:60px"> 页
+  第 <input id="step" type="number" value="0" min="0" style="width:60px"> 步
+  <button id="goto">跳转</button>
+  <span id="state"></span>
+</div>
+<div id="log"></div>
+<script type="module">
+  import { UnpptFrame } from './host.js';
+  const $ = (id) => document.getElementById(id);
+  const log = (m) => { $('log').textContent += m + '\n'; $('log').scrollTop = 1e9; };
+  let deck;
+  function load() {
+    deck?.destroy();
+    const url = new URL($('src').value, location.href);
+    url.searchParams.set('ui', '0');
+    $('player').src = url.toString();
+    deck = new UnpptFrame($('player'));
+    window.deck = deck;
+    deck.ready.then((s) => log('ready ' + JSON.stringify(s)));
+    deck.on('change', (s) => { $('state').textContent = `第 ${s.slide + 1}/${s.slideCount} 页，第 ${s.step}/${s.stepCount} 步`; log('change ' + JSON.stringify(s)); });
+    deck.on('end', () => log('end'));
+  }
+  $('load').onclick = load;
+  $('prev').onclick = () => deck.prev();
+  $('next').onclick = () => deck.next();
+  $('goto').onclick = () => deck.goto(Number($('slide').value) - 1, Number($('step').value));
+  const q = new URLSearchParams(location.search).get('src');
+  if (q) { $('src').value = q; load(); }
+</script>
+</body>
+</html>

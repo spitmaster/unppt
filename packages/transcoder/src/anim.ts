@@ -36,8 +36,14 @@ function delayOf(cTn: XEl | undefined): number {
   return Number.isFinite(n) ? n : 0;
 }
 
+/**
+ * 这一组是否要等点击。注意：页面一开始就自动播放的组，PowerPoint 会同时写
+ * delay="indefinite" 和 evt="onBegin" 两个条件，后者表示随序列开始自动触发。
+ */
 function isClick(cTn: XEl | undefined): boolean {
-  return children(child(cTn, 'p:stCondLst'), 'p:cond').some((c) => attr(c, 'delay') === 'indefinite');
+  const conds = children(child(cTn, 'p:stCondLst'), 'p:cond');
+  if (conds.some((c) => attr(c, 'evt') === 'onBegin')) return false;
+  return conds.some((c) => attr(c, 'delay') === 'indefinite');
 }
 
 function effectAction(eff: XEl, base: number): AnimAction | undefined {
