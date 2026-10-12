@@ -112,7 +112,7 @@ export async function renderTable(tbl: XEl | undefined, _w: number, _h: number, 
       const w = colX[Math.min(nC, ci + span)] - colX[ci];
       const out = { height: 0 };
       const rPrDefaults: XEl = { name: 'a:lvl1pPr', attrs: {}, text: '', children: [{ name: 'a:defRPr', attrs: style.bold ? { b: '1' } : {}, text: '', children: style.color ? style.color.children.filter((c) => c.name.endsWith('Clr') || c.name === 'a:fontRef').map((c) => c.name === 'a:fontRef' ? { name: 'a:solidFill', attrs: {}, text: '', children: c.children } : { name: 'a:solidFill', attrs: {}, text: '', children: [c] }) : [] }] };
-      const env: TextEnv = { colors, theme: ctx.theme, fonts: r.env.fonts, missingFonts: r.env.missingFonts, embed: r.env.embed };
+      const env: TextEnv = { colors, theme: ctx.theme, fonts: r.env.fonts, missingFonts: r.env.missingFonts, embed: r.env.embed, doc: r.doc };
       const bodyPr: XEl = {
         name: 'a:bodyPr', text: '', children: [],
         attrs: {
@@ -144,7 +144,7 @@ export async function renderTable(tbl: XEl | undefined, _w: number, _h: number, 
     if (c.text) {
       // 重新排版到最终高度（垂直对齐需要）
       const out = { height: 0 };
-      const env: TextEnv = { colors, theme: ctx.theme, fonts: r.env.fonts, missingFonts: r.env.missingFonts, embed: r.env.embed };
+      const env: TextEnv = { colors, theme: ctx.theme, fonts: r.env.fonts, missingFonts: r.env.missingFonts, embed: r.env.embed, doc: r.doc };
       const rPrDefaults: XEl = { name: 'a:lvl1pPr', attrs: {}, text: '', children: [{ name: 'a:defRPr', attrs: c.style.bold ? { b: '1' } : {}, text: '', children: c.style.color ? c.style.color.children.filter((k) => k.name.endsWith('Clr') || k.name === 'a:fontRef').map((k) => k.name === 'a:fontRef' ? { name: 'a:solidFill', attrs: {}, text: '', children: k.children } : { name: 'a:solidFill', attrs: {}, text: '', children: [k] }) : [] }] };
       const bodyPr: XEl = {
         name: 'a:bodyPr', text: '', children: [],

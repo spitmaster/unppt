@@ -1,0 +1,121 @@
+{
+ "version": 2,
+ "slideWidthPt": 960.0,
+ "slideHeightPt": 540.0,
+ "imageWidth": 1280,
+ "imageHeight": 720,
+ "slides": [
+  {
+   "index": 0,
+   "hidden": false,
+   "shapes": [
+    {
+     "id": 3,
+     "name": "Picture 2",
+     "type": 13,
+     "x": 20.0,
+     "y": 20.0,
+     "w": 300.0,
+     "h": 169.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1
+    },
+    {
+     "id": 5,
+     "name": "Picture 4",
+     "type": 13,
+     "x": 371.246,
+     "y": 35.646,
+     "w": 268.754,
+     "h": 153.354,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1
+    },
+    {
+     "id": 7,
+     "name": "Picture 6",
+     "type": 13,
+     "x": 660.0,
+     "y": 20.0,
+     "w": 280.0,
+     "h": 158.0,
+     "rot": 15.0,
+     "visible": true,
+     "autoShapeType": 1
+    },
+    {
+     "id": 9,
+     "name": "Picture 8",
+     "type": 13,
+     "x": 20.0,
+     "y": 230.0,
+     "w": 300.0,
+     "h": 169.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1
+    },
+    {
+     "id": 11,
+     "name": "Picture 10",
+     "type": 13,
+     "x": 340.0,
+     "y": 230.0,
+     "w": 300.0,
+     "h": 169.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1
+    },
+    {
+     "id": 12,
+     "name": "Oval 11",
+     "type": 1,
+     "x": 680.0,
+     "y": 220.0,
+     "w": 220.0,
+     "h": 220.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 9
+    }
+   ],
+   "effects": [],
+   "steps": 0
+  },
+  {
+   "index": 1,
+   "hidden": false,
+   "shapes": [
+    {
+     "id": 2,
+     "name": "TextBox 1",
+     "type": 17,
+     "x": 100.0,
+     "y": 200.0,
+     "w": 760.0,
+     "h": 55.739,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 8,
+       "text": "图片背景上的文字",
+       "x": 107.2,
+       "y": 203.6,
+       "w": 320.005,
+       "h": 48.0
+      }
+     ]
+    }
+   ],
+   "effects": [],
+   "steps": 0
+  }
+ ],
+ "ok": true
+}
