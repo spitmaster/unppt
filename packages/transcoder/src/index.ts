@@ -118,7 +118,7 @@ export async function convert(input: InputSource, options: ConvertOptions): Prom
       for (const w of anim.warnings) pres.warn(w);
       count++;
       slideParts.push(ref.part);
-      yield { svg: r.svg, steps: anim.steps, auto: anim.auto, hidden: anim.hidden, transition: compileTransition(r.transition) };
+      yield { svg: r.svg, steps: anim.steps, auto: anim.auto, hidden: anim.hidden, transition: compileTransition(r.transition), ...(anim.triggers.length ? { triggers: anim.triggers } : {}) };
     }
   }
 

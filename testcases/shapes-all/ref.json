@@ -1,5 +1,5 @@
 {
- "version": 6,
+ "version": 7,
  "slideWidthPt": 960.0,
  "slideHeightPt": 540.0,
  "imageWidth": 1280,
@@ -299,6 +299,7 @@
     }
    ],
    "effects": [],
+   "triggerHidden": [],
    "steps": 0
   },
   {
@@ -595,6 +596,7 @@
     }
    ],
    "effects": [],
+   "triggerHidden": [],
    "steps": 0
   },
   {
@@ -891,6 +893,7 @@
     }
    ],
    "effects": [],
+   "triggerHidden": [],
    "steps": 0
   },
   {
@@ -1187,6 +1190,7 @@
     }
    ],
    "effects": [],
+   "triggerHidden": [],
    "steps": 0
   },
   {
@@ -1483,6 +1487,7 @@
     }
    ],
    "effects": [],
+   "triggerHidden": [],
    "steps": 0
   },
   {
@@ -1779,6 +1784,7 @@
     }
    ],
    "effects": [],
+   "triggerHidden": [],
    "steps": 0
   },
   {
@@ -2075,6 +2081,7 @@
     }
    ],
    "effects": [],
+   "triggerHidden": [],
    "steps": 0
   },
   {
@@ -2251,6 +2258,7 @@
     }
    ],
    "effects": [],
+   "triggerHidden": [],
    "steps": 0
   }
  ],

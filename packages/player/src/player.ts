@@ -44,6 +44,7 @@ const CSS = `
 .unppt-slide>svg{display:block;width:100%;height:100%}
 .unppt-slide [data-uid]{transform-box:fill-box;transform-origin:center}
 .unppt-hide{visibility:hidden}
+.unppt-trigger{cursor:pointer}
 .unppt-ui{position:absolute;right:12px;bottom:12px;display:flex;gap:6px;align-items:center;opacity:0;transition:opacity .3s;font:13px/1 system-ui,sans-serif;z-index:2}
 .unppt-root:hover .unppt-ui,.unppt-ui.unppt-show{opacity:1}
 .unppt-ui button{border:0;border-radius:4px;background:rgba(0,0,0,.55);color:#fff;width:34px;height:30px;font-size:16px;cursor:pointer}
@@ -208,6 +209,27 @@ export class Player {
     }
   }
 
+  /** 每个触发器已经播到第几组（换页时清零） */
+  private triggerIdx = new Map<string, number>();
+
+  /** 点击的是触发器形状：播放它的下一组动作 */
+  private fireTrigger(target: Element): boolean {
+    const triggers = this.deck.slide(this.slideIdx).triggers;
+    if (!triggers || !triggers.length) return false;
+    for (let el: Element | null = target; el && el !== this.root; el = el.parentElement) {
+      const uid = el.getAttribute('data-uid');
+      const tr = uid ? triggers.find((x) => x.uid === uid) : undefined;
+      if (!tr) continue;
+      const i = this.triggerIdx.get(tr.uid) ?? 0;
+      if (i >= tr.steps.length) return true;
+      this.finishRunning();
+      this.play(tr.steps[i]);
+      this.triggerIdx.set(tr.uid, i + 1);
+      return true;
+    }
+    return false;
+  }
+
   /** 对元素里的音频/视频执行命令 */
   private mediaCommand(el: Element, cmd: NonNullable<AnimAction['media']>, start?: number) {
     const m = el.querySelector('audio,video') as HTMLMediaElement | null;
@@ -254,6 +276,7 @@ export class Player {
     el.className = 'unppt-slide';
     el.innerHTML = data.svg;
     this.states = new Map();
+    this.triggerIdx = new Map();
     const old = this.current;
     if (old) for (const m of Array.from(old.querySelectorAll('video,audio'))) (m as HTMLMediaElement).pause();
     this.stage.appendChild(el);
@@ -262,6 +285,7 @@ export class Player {
     this.stepIdx = Math.max(0, Math.min(data.steps.length, Math.floor(Number(step) || 0)));
     // 初始状态
     for (const uid of data.hidden) this.find(uid)?.classList.add('unppt-hide');
+    for (const tr of data.triggers ?? []) this.find(tr.uid)?.classList.add('unppt-trigger');
     if (animated) {
       this.play(data.auto);
     } else {
@@ -431,6 +455,7 @@ export class Player {
       this.root.addEventListener('click', (e) => {
         const t = e.target as Element;
         if (t.closest('video,audio,a,button')) return;
+        if (this.fireTrigger(t)) return;
         const link = t.closest('[data-link],[data-href]');
         if (link) { this.follow(link); return; }
         this.next();

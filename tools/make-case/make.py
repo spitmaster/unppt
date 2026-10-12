@@ -542,7 +542,22 @@ def media_audio(app):
     return p
 
 
-CASES = [shapes_all, text_sizes, text_align, text_spacing, text_bullets, text_missing_font, shapes_basic, fills_lines, table_basic, group_rotate, anim_basic, anim_auto, charts_basic, pictures, smartart, text_effects, text_layout, table_merge, links, emf_images, anim_advanced, charts_labels, freeform_icons, media_audio]
+def anim_trigger(app):
+    """触发器动画：点击"显示答案"按钮，答案淡入；普通点击动画照常按顺序"""
+    p = new_pres(app)
+    s = blank(p)
+    q = textbox(s, 60, 60, 700, 60, "问题：一加一等于几？", size=28)
+    btn = s.Shapes.AddShape(5, 60, 200, 200, 70)
+    btn.TextFrame.TextRange.Text = "显示答案"
+    ans = textbox(s, 320, 200, 400, 70, "答案：二", size=28)
+    seq = s.TimeLine.InteractiveSequences.Add()
+    seq.AddTriggerEffect(ans, 10, 4, btn)  # 淡入，触发器：单击 btn
+    other = s.Shapes.AddShape(9, 760, 300, 120, 120)
+    s.TimeLine.MainSequence.AddEffect(other, 10, 0, 1)
+    return p
+
+
+CASES = [shapes_all, text_sizes, text_align, text_spacing, text_bullets, text_missing_font, shapes_basic, fills_lines, table_basic, group_rotate, anim_basic, anim_auto, charts_basic, pictures, smartart, text_effects, text_layout, table_merge, links, emf_images, anim_advanced, charts_labels, freeform_icons, media_audio, anim_trigger]
 
 
 def main():
