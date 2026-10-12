@@ -22,7 +22,7 @@ unppt：把 .pptx 转成静态产物（SVG + JSON + 资源），由一个可 ifr
 
 ## 不可违反的规则（[MUST]）
 
-1. **样本安全**：`samples/` 里可能有客户 PPT。样本及其衍生物（参考图、截图、报告、提取的文字、文件名）**绝不能**进仓库、提交信息、文档、`fixtures/`，也不能发到任何网络服务。报告里样本用内容哈希表示。要把问题固定成测试用例，只能用 PowerPoint 重新合成中性内容的用例。完整规则见 SPEC 第 4 节。
+1. **样本安全**：`samples/` 里可能有客户 PPT。样本及其衍生物（参考图、截图、报告、提取的文字、文件名）**绝不能**进仓库、提交信息、文档、`testcases/`，也不能发到任何网络服务。报告里样本用内容哈希表示。要把问题固定成测试用例，只能用 PowerPoint 重新合成中性内容的用例。完整规则见 SPEC 第 4 节。
 2. **产品代码零依赖**：`packages/` 下不引入任何第三方运行时依赖（npm 库、WASM、原生库、外部程序），只用 JS 内置能力。开发工具（`tools/`）不受这条限制。
 3. **纯自研**：第三方渲染项目只能在评测里作为对比，不能当依赖，也不能复制代码。
 4. **转码器是纯函数**：字节进、文件出，不读写磁盘、不联网；字体只接收字节。
@@ -37,11 +37,11 @@ unppt：把 .pptx 转成静态产物（SVG + JSON + 资源），由一个可 ifr
 | `packages/format` | 产物格式规范（类型 + Schema + 版本号） |
 | `packages/transcoder` | 转码器（TS，零依赖） |
 | `packages/player` | 播放器（TS，零依赖） |
-| `tools/oracle` | 调本机 PowerPoint 生成参考结果（Python + pywin32） |
-| `tools/synth` | 用 PowerPoint 生成合成测试用例 |
-| `tools/eval` | 截图、比对、报告、特征统计（Python + Playwright） |
-| `fixtures/` | 合成测试用例 + 参考图（无客户内容，可提交） |
-| `eval/baseline.json` | 按特征汇总的分数基线（可提交） |
+| `tools/powerpoint` | 调本机 PowerPoint 导出参考图（Python + pywin32） |
+| `tools/make-case` | 用 PowerPoint 生成合成测试用例 |
+| `tools/compare` | 截图、比对、打分、出报告（Python + Playwright） |
+| `testcases/` | 测试用例 + 参考图（无客户内容，可提交） |
+| `scores/summary.json` | 按特征汇总的分数（可提交） |
 | `samples/` | 样本库（gitignore，只在本机） |
 | `.cache/` | 参考结果、截图、报告（gitignore） |
 | `docs/` | SDD 方法论与流程文档 |
@@ -50,7 +50,7 @@ unppt：把 .pptx 转成静态产物（SVG + JSON + 资源），由一个可 ifr
 
 ## 自动优化循环
 
-按 SPEC 5.4 执行：跑评测 → 选影响最大的一类失败 → 合成中性复现用例 → 修产品代码 → 验收（新用例通过、fixtures 全过、dev 集无回归）→ 提交并更新基线。连续 3 轮没有进展，或者需要改评测工具、阈值、产物格式时，停下来找人。
+按 SPEC 5.4 执行：跑评测 → 选影响最大的一类失败 → 合成中性复现用例 → 修产品代码 → 验收（新用例通过、testcases 全过、daily 集无回归）→ 提交并更新分数汇总。连续 3 轮没有进展，或者需要改评测工具、阈值、产物格式时，停下来找人。
 
 ---
 
@@ -74,7 +74,7 @@ unppt：把 .pptx 转成静态产物（SVG + JSON + 资源），由一个可 ifr
 
 ```bash
 # 单元测试（建立后补充）
-# 评测：tools/eval run --set fixtures | dev | full（M0 完成后可用）
+# 比对：tools/compare run --set testcases | daily | all（M0 完成后可用）
 ```
 
 ---
