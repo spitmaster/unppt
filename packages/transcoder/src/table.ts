@@ -96,6 +96,24 @@ export async function renderTable(tbl: XEl | undefined, _w: number, _h: number, 
 
   // 第一遍：排文字，算行高
   interface Cell { ri: number; ci: number; span: number; rowSpan: number; tc: XEl; style: CellStyle; text?: string; textH: number; }
+  const env: TextEnv = { colors, theme: ctx.theme, fonts: r.env.fonts, missingFonts: r.env.missingFonts, embed: r.env.embed, doc: r.doc };
+  /** 排一个单元格的文字：表格样式的加粗和文字颜色作为最底层的默认值，单元格边距来自 tcPr */
+  const cellText = (c: Cell, box: { x: number; y: number; w: number; h: number }, out?: { height: number }) => {
+    const tcPr = child(c.tc, 'a:tcPr');
+    const colorEls = (c.style.color?.children ?? [])
+      .filter((k) => k.name.endsWith('Clr') || k.name === 'a:fontRef')
+      .map((k): XEl => ({ name: 'a:solidFill', attrs: {}, text: '', children: k.name === 'a:fontRef' ? k.children : [k] }));
+    const defaults: XEl = { name: 'x', attrs: {}, text: '', children: [{ name: 'a:lvl1pPr', attrs: {}, text: '', children: [{ name: 'a:defRPr', attrs: c.style.bold ? { b: '1' } : {}, text: '', children: colorEls }] }] };
+    const bodyPr: XEl = {
+      name: 'a:bodyPr', text: '', children: [],
+      attrs: {
+        lIns: attr(tcPr, 'marL') ?? '91440', rIns: attr(tcPr, 'marR') ?? '91440',
+        tIns: attr(tcPr, 'marT') ?? '45720', bIns: attr(tcPr, 'marB') ?? '45720',
+        anchor: attr(tcPr, 'anchor') ?? 't',
+      },
+    };
+    return renderText(child(c.tc, 'a:txBody'), [r.env.pres.defaultTextStyle, defaults], [bodyPr], box, env, out);
+  };
   const cells: Cell[] = [];
   const rowH = rows.map((tr) => px(numAttr(tr, 'h')));
   for (let ri = 0; ri < nR; ri++) {
@@ -108,20 +126,9 @@ export async function renderTable(tbl: XEl | undefined, _w: number, _h: number, 
       const style = cellStyle(ri, ci);
       const cell: Cell = { ri, ci, span, rowSpan, tc, style, textH: 0 };
       cells.push(cell);
-      const tcPr = child(tc, 'a:tcPr');
       const w = colX[Math.min(nC, ci + span)] - colX[ci];
       const out = { height: 0 };
-      const rPrDefaults: XEl = { name: 'a:lvl1pPr', attrs: {}, text: '', children: [{ name: 'a:defRPr', attrs: style.bold ? { b: '1' } : {}, text: '', children: style.color ? style.color.children.filter((c) => c.name.endsWith('Clr') || c.name === 'a:fontRef').map((c) => c.name === 'a:fontRef' ? { name: 'a:solidFill', attrs: {}, text: '', children: c.children } : { name: 'a:solidFill', attrs: {}, text: '', children: [c] }) : [] }] };
-      const env: TextEnv = { colors, theme: ctx.theme, fonts: r.env.fonts, missingFonts: r.env.missingFonts, embed: r.env.embed, doc: r.doc };
-      const bodyPr: XEl = {
-        name: 'a:bodyPr', text: '', children: [],
-        attrs: {
-          lIns: attr(tcPr, 'marL') ?? '91440', rIns: attr(tcPr, 'marR') ?? '91440',
-          tIns: attr(tcPr, 'marT') ?? '45720', bIns: attr(tcPr, 'marB') ?? '45720',
-          anchor: attr(tcPr, 'anchor') ?? 't',
-        },
-      };
-      cell.text = await renderText(child(tc, 'a:txBody'), [r.env.pres.defaultTextStyle, { name: 'x', attrs: {}, text: '', children: [rPrDefaults] }], [bodyPr], { x: 0, y: 0, w, h: rowH[ri] }, env, out);
+      cell.text = await cellText(cell, { x: 0, y: 0, w, h: rowH[ri] }, out);
       cell.textH = out.height;
       if (rowSpan === 1 && out.height > rowH[ri]) rowH[ri] = out.height;
     }
@@ -141,21 +148,8 @@ export async function renderTable(tbl: XEl | undefined, _w: number, _h: number, 
     const own = parseFill(findFillEl(tcPr), colors, ctx.part);
     const fill = own ?? c.style.fill;
     if (fill && fill.kind !== 'none') fills.push(`<rect x="${n2(x)}" y="${n2(y)}" width="${n2(w)}" height="${n2(h)}"${await fillAttrs(fill, r.doc, w, h, 'norm', r.images)}/>`);
-    if (c.text) {
-      // 重新排版到最终高度（垂直对齐需要）
-      const out = { height: 0 };
-      const env: TextEnv = { colors, theme: ctx.theme, fonts: r.env.fonts, missingFonts: r.env.missingFonts, embed: r.env.embed, doc: r.doc };
-      const rPrDefaults: XEl = { name: 'a:lvl1pPr', attrs: {}, text: '', children: [{ name: 'a:defRPr', attrs: c.style.bold ? { b: '1' } : {}, text: '', children: c.style.color ? c.style.color.children.filter((k) => k.name.endsWith('Clr') || k.name === 'a:fontRef').map((k) => k.name === 'a:fontRef' ? { name: 'a:solidFill', attrs: {}, text: '', children: k.children } : { name: 'a:solidFill', attrs: {}, text: '', children: [k] }) : [] }] };
-      const bodyPr: XEl = {
-        name: 'a:bodyPr', text: '', children: [],
-        attrs: {
-          lIns: attr(tcPr, 'marL') ?? '91440', rIns: attr(tcPr, 'marR') ?? '91440',
-          tIns: attr(tcPr, 'marT') ?? '45720', bIns: attr(tcPr, 'marB') ?? '45720',
-          anchor: attr(tcPr, 'anchor') ?? 't',
-        },
-      };
-      texts.push(await renderText(child(c.tc, 'a:txBody'), [r.env.pres.defaultTextStyle, { name: 'x', attrs: {}, text: '', children: [rPrDefaults] }], [bodyPr], { x, y, w, h }, env, out));
-    }
+    // 文字：行高可能被撑高了，按最终高度重排（垂直对齐需要）
+    if (c.text) texts.push(await cellText(c, { x, y, w, h }));
     // 边框：单元格自己的 lnL/lnR/lnT/lnB 优先，否则用表格样式
     const side = (own: string, styleSide: Line | undefined) => {
       const ln = child(tcPr, own);
