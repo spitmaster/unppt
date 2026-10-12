@@ -1,0 +1,91 @@
+# CLAUDE.md
+
+> 给 Claude Code:**先读 [docs/](docs/) 再动手**。本仓库的设计文档是真相源。
+> 本项目遵循 SDD (Specification-Driven Development) 规范。
+
+---
+
+## 第零步:看当前进度
+
+分支 → 文件发现协议(完整规则见 `~/.claude/CLAUDE.md` §5):
+
+1. `git branch --show-current` 拿到分支名
+2. 推导 `docs/milestones/<branch>.md`(当前里程碑,`/` → `_`)
+3. 推导 `docs/todo/<branch>.md`(当前待办)
+4. 项目已有根目录 `SPEC.md`(草案,含"已确认的决策"和"仍待定的事项"两节,动手前先看这两节避免踩到还没定的地方),但还没有 `docs/milestones/`、`docs/todo/` 目录——说明尚未正式进入某个功能的开发周期。如果被要求开发具体功能,先确认 `SPEC.md` 是否已覆盖,不够再补充,再视规模(见 `~/.claude/CLAUDE.md` §6)决定要不要建 milestones/todo。
+5. 当前分支是 `main`,不进入 milestone 上下文——如果用户要求直接在 `main` 上开发新功能,主动确认是否要先切分支。
+
+---
+
+## 第一步:读设计文档
+
+- `docs/README.md` — 文档索引
+- `docs/01-使用说明.md` — 快速开始
+- `docs/02-SDD方法论.md` — SDD 核心概念(SPEC.md 是需求真相源)
+- `docs/03-工作流程.md` — 开发流程详解
+- `docs/07-小程序指南.md` — 小程序专项规范
+- `docs/Git分支与版本规范.md` — 分支与提交规范
+
+---
+
+## 项目一句话定位
+
+[项目简介 - 这是什么 + 关键架构选择]
+
+---
+
+## 不可违反的架构不变量([MUST])
+
+1. [架构约束 1 - 为什么不能破坏]
+2. [架构约束 2 - 为什么不能破坏]
+3. [架构约束 3 - 为什么不能破坏]
+
+---
+
+## 关键目录速查
+
+| 目录 | 职责 |
+|------|------|
+| `[pages/]` | [页面目录] |
+| `[components/]` | [组件目录] |
+| `[services/]` | [业务逻辑服务] |
+| `[utils/]` | [工具函数] |
+| `docs/` | 设计文档(真相源) |
+
+---
+
+## 开发规范
+
+### Git Commit
+
+- **不要频繁 commit** - 完成一个完整功能后再 commit
+- **Commit message 格式**:`feat:` `fix:` `docs:` `refactor:` `test:`
+- **测试通过后再 commit**
+
+### 代码规范
+
+- 新增功能先更新 SPEC.md,再动手
+- 保持代码简洁,不过度工程化
+
+---
+
+## 测试 / 健康检查
+
+```bash
+# 运行测试(如有)
+npm test
+
+# 构建检查(如有)
+npm run build
+```
+
+---
+
+## 沟通约定
+
+- 语言:中文
+- Commit message:遵循 `feat:` `fix:` `docs:` `refactor:` `test:` 前缀;完成一个完整功能后一次性提交,不要频繁 commit(见 `docs/Git分支与版本规范.md`)
+
+---
+
+*本文件由 sdd-starter 脚手架生成(基于 `docs/ai-config/for-claude.md`);脚手架已更新至 v1.3.0。*
