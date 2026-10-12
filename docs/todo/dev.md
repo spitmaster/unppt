@@ -11,6 +11,8 @@ npm install && npm run build
 node packages/transcoder/dist/cli.js convert 你的文件.pptx -o out/index.html --system-fonts
 ```
 
+**最快的看法**：运行 `.venv/Scripts/python tools/demo.py --samples`，然后双击打开 `.cache/demo/index.html`。左边是所有测试用例和你的样本，右边是播放器，下面的按钮就是通过跨 iframe 控制接口在操作播放器。
+
 双击 `out/index.html` 就能播放：点击、方向键、空格、手机左右滑动都能翻页，动画能分步播放。嵌入和外部控制的用法见 [README](../../README.md)，可以直接打开 [examples/iframe-host.html](../../examples/iframe-host.html) 试跨域控制。
 
 ## 二、做了什么

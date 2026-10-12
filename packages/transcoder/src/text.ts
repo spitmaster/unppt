@@ -347,7 +347,9 @@ export async function renderText(
   const contentW = Math.max(1, outer.w - lIns - rIns);
   const measurer = makeMeasurer(env);
   const lstStyle = child(txBody, 'a:lstStyle');
-  const fullChain: StyleChain = [...chain, lstStyle];
+  // 形状样式（p:style/a:fontRef）指定的文字颜色：优先级高于默认文字样式，低于形状自己的列表样式和文字属性
+  const fontRefStyle = env.fontRefColor ? fontRefLevels(env.fontRefColor) : undefined;
+  const fullChain: StyleChain = [...chain, fontRefStyle, lstStyle];
 
   interface PLayout { lines: Line[]; spcBef: number; spcAft: number; lineSpc: { pct?: number; pts?: number }; algn: string; bullet?: { text: string; style: RunStyle; x: number; width: number; family: string; face?: FontFace }; uid?: string; }
   const layouts: PLayout[] = [];
@@ -557,6 +559,15 @@ export async function renderText(
 }
 
 /** 只写测量时实际用的字体：保证浏览器显示的字宽和转码时算的一致 */
+function fontRefLevels(c: Rgba): XEl {
+  const hex = [c.r, c.g, c.b].map((v) => v.toString(16).padStart(2, '0')).join('');
+  const clr: XEl = { name: 'a:srgbClr', attrs: { val: hex }, text: '', children: c.a < 1 ? [{ name: 'a:alpha', attrs: { val: String(Math.round(c.a * 100000)) }, text: '', children: [] }] : [] };
+  const defRPr: XEl = { name: 'a:defRPr', attrs: {}, text: '', children: [{ name: 'a:solidFill', attrs: {}, text: '', children: [clr] }] };
+  const levels: XEl[] = [];
+  for (let i = 1; i <= 9; i++) levels.push({ name: `a:lvl${i}pPr`, attrs: {}, text: '', children: [defRPr] });
+  return { name: 'a:lstStyle', attrs: {}, text: '', children: levels };
+}
+
 function fontList(primary: string, alias?: string): string {
   return `${alias ? `'${alias}',` : ''}'${primary.replace(/'/g, '')}',sans-serif`;
 }
