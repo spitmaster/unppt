@@ -138,7 +138,8 @@ class SlideRenderer {
   uidOf(el: XEl, ctx: SlideContext): string | undefined {
     if (!ctx.ownSlide) return undefined;
     const id = attr(nvProps(el), 'id');
-    return id ? `s${id}` : undefined;
+    // 只接受纯数字：编号会拼进 HTML 属性，防止恶意文件注入代码
+    return id && /^\d{1,10}$/.test(id) ? `s${id}` : undefined;
   }
 
   async shape(el: XEl, ctx: SlideContext, groupFill?: Fill): Promise<string> {
