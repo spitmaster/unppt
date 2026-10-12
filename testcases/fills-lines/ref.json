@@ -1,0 +1,138 @@
+{
+ "version": 2,
+ "slideWidthPt": 960.0,
+ "slideHeightPt": 540.0,
+ "imageWidth": 1280,
+ "imageHeight": 720,
+ "slides": [
+  {
+   "index": 0,
+   "hidden": false,
+   "shapes": [
+    {
+     "id": 2,
+     "name": "Rectangle 1",
+     "type": 1,
+     "x": 20.0,
+     "y": 20.0,
+     "w": 200.0,
+     "h": 120.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1
+    },
+    {
+     "id": 3,
+     "name": "Rectangle 2",
+     "type": 1,
+     "x": 250.0,
+     "y": 20.0,
+     "w": 200.0,
+     "h": 120.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1
+    },
+    {
+     "id": 4,
+     "name": "Rectangle 3",
+     "type": 1,
+     "x": 480.0,
+     "y": 20.0,
+     "w": 200.0,
+     "h": 120.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1
+    },
+    {
+     "id": 5,
+     "name": "Rectangle 4",
+     "type": 1,
+     "x": 710.0,
+     "y": 20.0,
+     "w": 200.0,
+     "h": 120.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1
+    },
+    {
+     "id": 6,
+     "name": "Oval 5",
+     "type": 1,
+     "x": 20.0,
+     "y": 170.0,
+     "w": 200.0,
+     "h": 120.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 9
+    },
+    {
+     "id": 7,
+     "name": "Straight Connector 6",
+     "type": 9,
+     "x": 260.0,
+     "y": 180.0,
+     "w": 640.0,
+     "h": 0.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": -2
+    },
+    {
+     "id": 8,
+     "name": "Straight Connector 7",
+     "type": 9,
+     "x": 260.0,
+     "y": 210.0,
+     "w": 640.0,
+     "h": 0.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": -2
+    },
+    {
+     "id": 9,
+     "name": "Straight Connector 8",
+     "type": 9,
+     "x": 260.0,
+     "y": 240.0,
+     "w": 640.0,
+     "h": 0.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": -2
+    },
+    {
+     "id": 10,
+     "name": "Straight Connector 9",
+     "type": 9,
+     "x": 260.0,
+     "y": 270.0,
+     "w": 640.0,
+     "h": 0.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": -2
+    },
+    {
+     "id": 11,
+     "name": "Straight Connector 10",
+     "type": 9,
+     "x": 260.0,
+     "y": 320.0,
+     "w": 640.0,
+     "h": 100.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": -2
+    }
+   ],
+   "effects": [],
+   "steps": 0
+  }
+ ],
+ "ok": true
+}

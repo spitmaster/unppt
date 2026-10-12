@@ -1,0 +1,125 @@
+#!/usr/bin/env node
+/**
+ * 命令行：unppt convert <输入.pptx> [-o 输出.html] [--fonts 目录]... [--system-fonts] [--data] [--inline-limit 字节]
+ *
+ * 这一层负责读写文件；转码本身（convert）不碰文件系统。
+ */
+import { open, mkdir, readdir, stat } from 'node:fs/promises';
+import { createWriteStream } from 'node:fs';
+import { basename, dirname, extname, join, resolve } from 'node:path';
+import { homedir, platform } from 'node:os';
+import { convert, UNPPT_VERSION, type RandomAccessSource, type WriteData } from './index';
+
+function fileSource(path: string, size: number): RandomAccessSource {
+  let fh: Promise<import('node:fs/promises').FileHandle> | undefined;
+  return {
+    size,
+    async read(offset, length) {
+      fh ??= open(path, 'r');
+      const h = await fh;
+      const buf = new Uint8Array(Math.max(0, Math.min(length, size - offset)));
+      let got = 0;
+      while (got < buf.length) {
+        const { bytesRead } = await h.read(buf, got, buf.length - got, offset + got);
+        if (!bytesRead) break;
+        got += bytesRead;
+      }
+      return got === buf.length ? buf : buf.subarray(0, got);
+    },
+  };
+}
+
+async function listFonts(dir: string, out: string[] = []): Promise<string[]> {
+  let entries;
+  try { entries = await readdir(dir, { withFileTypes: true }); } catch { return out; }
+  for (const e of entries) {
+    const p = join(dir, e.name);
+    if (e.isDirectory()) await listFonts(p, out);
+    else if (/\.(ttf|otf|ttc)$/i.test(e.name)) out.push(p);
+  }
+  return out;
+}
+
+function systemFontDirs(): string[] {
+  switch (platform()) {
+    case 'win32': return [join(process.env.WINDIR ?? 'C:\\Windows', 'Fonts'), join(process.env.LOCALAPPDATA ?? '', 'Microsoft', 'Windows', 'Fonts')];
+    case 'darwin': return ['/System/Library/Fonts', '/Library/Fonts', join(homedir(), 'Library/Fonts')];
+    default: return ['/usr/share/fonts', '/usr/local/share/fonts', join(homedir(), '.fonts'), join(homedir(), '.local/share/fonts')];
+  }
+}
+
+async function writeTo(base: string, rel: string, data: WriteData) {
+  const target = resolve(base, rel);
+  await mkdir(dirname(target), { recursive: true });
+  const ws = createWriteStream(target);
+  const done = new Promise<void>((ok, fail) => { ws.on('finish', () => ok()); ws.on('error', fail); });
+  const put = (chunk: Uint8Array | string) => new Promise<void>((ok, fail) => {
+    if (ws.write(chunk)) ok(); else ws.once('drain', ok);
+    ws.once('error', fail);
+  });
+  if (typeof data === 'string' || data instanceof Uint8Array) await put(data);
+  else for await (const c of data) await put(c);
+  ws.end();
+  await done;
+}
+
+function usage(): never {
+  console.log(`unppt ${UNPPT_VERSION}
+用法：unppt convert <输入.pptx> [-o 输出.html] [选项]
+
+选项：
+  -o, --out <文件>        输出文件，默认和输入同名的 .html（--data 时为 .json）
+  --fonts <目录>          字体目录（可以写多次），用来按真实字宽排版
+  --system-fonts          使用本机系统字体目录
+  --data                  只输出演示数据 deck.json，交给单独部署的播放器
+  --inline-limit <字节>   小于这个大小的图片内联进 HTML，默认 2097152
+  -q, --quiet             不显示进度`);
+  process.exit(1);
+}
+
+async function main() {
+  const args = process.argv.slice(2);
+  if (args[0] !== 'convert' || !args[1]) usage();
+  const input = resolve(args[1]);
+  let out = '';
+  const fontDirs: string[] = [];
+  let dataOnly = false;
+  let inlineLimit: number | undefined;
+  let quiet = false;
+  for (let i = 2; i < args.length; i++) {
+    const a = args[i];
+    if (a === '-o' || a === '--out') out = args[++i];
+    else if (a === '--fonts') fontDirs.push(args[++i]);
+    else if (a === '--system-fonts') fontDirs.push(...systemFontDirs());
+    else if (a === '--data') dataOnly = true;
+    else if (a === '--inline-limit') inlineLimit = Number(args[++i]);
+    else if (a === '-q' || a === '--quiet') quiet = true;
+    else usage();
+  }
+  if (!out) out = join(dirname(input), basename(input, extname(input)) + (dataOnly ? '.json' : '.html'));
+  out = resolve(out);
+
+  const st = await stat(input);
+  const fontFiles = (await Promise.all(fontDirs.map((d) => listFonts(d)))).flat();
+  const fonts = await Promise.all(fontFiles.map(async (f) => fileSource(f, (await stat(f)).size)));
+  const t0 = Date.now();
+  const result = await convert(fileSource(input, st.size), {
+    write: (rel, data) => writeTo(dirname(out), rel === 'index.html' || rel === 'deck.json' ? basename(out) : rel, data),
+    fonts,
+    output: dataOnly ? 'data' : 'html',
+    fileName: dataOnly ? 'deck.json' : 'index.html',
+    inlineLimit,
+    onProgress: quiet ? undefined : (d, t) => process.stderr.write(`\r转码中 ${d}/${t} 页`),
+  });
+  if (!quiet) {
+    process.stderr.write('\n');
+    console.log(`完成：${result.slides} 页，用时 ${((Date.now() - t0) / 1000).toFixed(1)} 秒 -> ${out}`);
+    if (result.report.missingFonts.length) console.log(`缺少字体：${result.report.missingFonts.join('、')}`);
+    for (const w of result.report.warnings) console.log(`提示：${w}`);
+  }
+}
+
+main().catch((e) => {
+  console.error(e instanceof Error ? e.message : e);
+  process.exit(1);
+});

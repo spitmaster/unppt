@@ -1,0 +1,258 @@
+/**
+ * 字体：自己解析 TrueType / OpenType / TTC，只读排版需要的表：
+ *   name（字体名，中英文都收录）、cmap（字符 -> 字形）、hmtx/hhea（字宽）、head、OS/2（行高）。
+ * 字体通过 RandomAccessSource 懒加载：建索引时只读表目录和 name 表，真正用到才读字宽数据。
+ */
+import { toSource, type InputSource, type RandomAccessSource } from './source';
+
+export interface FontFace {
+  families: string[];          // 所有语言的字体名（小写）
+  displayFamily: string;       // 首选显示名（英文名优先）
+  bold: boolean;
+  italic: boolean;
+  weight: number;
+  load(): Promise<FontMetrics>;
+}
+
+export interface FontMetrics {
+  unitsPerEm: number;
+  ascent: number;   // 正数，单位 em
+  descent: number;  // 正数，单位 em
+  lineGap: number;
+  /** 返回字符宽度（单位 em）；字体里没有这个字时返回 undefined */
+  advance(codePoint: number): number | undefined;
+}
+
+const be16 = (b: Uint8Array, o: number) => (b[o] << 8) | b[o + 1];
+const bes16 = (b: Uint8Array, o: number) => { const v = be16(b, o); return v & 0x8000 ? v - 0x10000 : v; };
+const be32 = (b: Uint8Array, o: number) => (b[o] * 0x1000000) + ((b[o + 1] << 16) | (b[o + 2] << 8) | b[o + 3]);
+const tag = (b: Uint8Array, o: number) => String.fromCharCode(b[o], b[o + 1], b[o + 2], b[o + 3]);
+
+interface TableRec { offset: number; length: number; }
+
+async function readTables(src: RandomAccessSource, faceOffset: number): Promise<Map<string, TableRec>> {
+  const head = await src.read(faceOffset, 12);
+  const num = be16(head, 4);
+  const dir = await src.read(faceOffset + 12, num * 16);
+  const out = new Map<string, TableRec>();
+  for (let i = 0; i < num; i++) {
+    out.set(tag(dir, i * 16), { offset: be32(dir, i * 16 + 8), length: be32(dir, i * 16 + 12) });
+  }
+  return out;
+}
+
+function decodeUtf16be(b: Uint8Array): string {
+  let s = '';
+  for (let i = 0; i + 1 < b.length; i += 2) s += String.fromCharCode(be16(b, i));
+  return s;
+}
+
+async function readNames(src: RandomAccessSource, rec: TableRec) {
+  const t = await src.read(rec.offset, rec.length);
+  const count = be16(t, 2);
+  const strOff = be16(t, 4);
+  const fam = new Set<string>();
+  let english = '';
+  let typoEnglish = '';
+  for (let i = 0; i < count; i++) {
+    const r = 6 + i * 12;
+    const platform = be16(t, r), lang = be16(t, r + 4), nameId = be16(t, r + 6);
+    const len = be16(t, r + 8), off = be16(t, r + 10);
+    if (nameId !== 1 && nameId !== 4 && nameId !== 16) continue;
+    const raw = t.subarray(strOff + off, strOff + off + len);
+    let s: string;
+    if (platform === 3 || platform === 0) s = decodeUtf16be(raw);
+    else if (platform === 1 && lang === 0) s = String.fromCharCode(...raw);
+    else continue;
+    s = s.trim();
+    if (!s) continue;
+    if (nameId !== 4) fam.add(s.toLowerCase());
+    if (platform === 3 && lang === 0x409 && nameId === 1) english = s;
+    if (platform === 3 && lang === 0x409 && nameId === 16) typoEnglish = s;
+    if (nameId === 4) fam.add(s.toLowerCase()); // 全名也可匹配，例如 "Arial Bold"
+  }
+  return { families: [...fam], display: typoEnglish || english || [...fam][0] || '' };
+}
+
+async function makeFace(src: RandomAccessSource, faceOffset: number): Promise<FontFace | undefined> {
+  const tables = await readTables(src, faceOffset);
+  const nameRec = tables.get('name');
+  if (!nameRec || !tables.get('cmap') || !tables.get('hmtx')) return undefined;
+  const { families, display } = await readNames(src, nameRec);
+  let bold = false, italic = false, weight = 400;
+  const os2 = tables.get('OS/2');
+  let os2b: Uint8Array | undefined;
+  if (os2) {
+    os2b = await src.read(os2.offset, Math.min(os2.length, 96));
+    weight = be16(os2b, 4);
+    const fsSel = be16(os2b, 62);
+    italic = (fsSel & 1) !== 0;
+    bold = (fsSel & 32) !== 0 || weight >= 600;
+  }
+  let metrics: Promise<FontMetrics> | undefined;
+  return {
+    families, displayFamily: display, bold, italic, weight,
+    load() {
+      metrics ??= loadMetrics(src, tables, os2b);
+      return metrics;
+    },
+  };
+}
+
+async function loadMetrics(src: RandomAccessSource, tables: Map<string, TableRec>, os2b?: Uint8Array): Promise<FontMetrics> {
+  const get = async (t: string) => { const r = tables.get(t)!; return src.read(r.offset, r.length); };
+  const head = await get('head');
+  const upem = be16(head, 18);
+  const hhea = await get('hhea');
+  const numHMetrics = be16(hhea, 34);
+  let ascent = bes16(hhea, 4) / upem, descent = -bes16(hhea, 6) / upem, lineGap = bes16(hhea, 8) / upem;
+  if (os2b && os2b.length >= 78) {
+    // Windows 上 PowerPoint 用 usWinAscent / usWinDescent
+    ascent = be16(os2b, 74) / upem;
+    descent = be16(os2b, 76) / upem;
+    lineGap = 0;
+  }
+  const hmtx = await get('hmtx');
+  const cmap = await get('cmap');
+  const lookup = buildCmap(cmap);
+  const cache = new Map<number, number | undefined>();
+  return {
+    unitsPerEm: upem, ascent, descent, lineGap,
+    advance(cp) {
+      if (cache.has(cp)) return cache.get(cp);
+      const gid = lookup(cp);
+      let w: number | undefined;
+      if (gid) {
+        const i = Math.min(gid, numHMetrics - 1);
+        w = be16(hmtx, i * 4) / upem;
+      }
+      cache.set(cp, w);
+      return w;
+    },
+  };
+}
+
+/** 解析 cmap，支持 format 4（基本平面）和 format 12（全部 Unicode） */
+function buildCmap(t: Uint8Array): (cp: number) => number {
+  const num = be16(t, 2);
+  let best = -1, bestFmt = 0;
+  for (let i = 0; i < num; i++) {
+    const p = be16(t, 4 + i * 8), e = be16(t, 6 + i * 8), off = be32(t, 8 + i * 8);
+    const fmt = be16(t, off);
+    const unicode = (p === 3 && (e === 1 || e === 10)) || p === 0;
+    if (!unicode) continue;
+    if (fmt === 12 && bestFmt !== 12) { best = off; bestFmt = 12; }
+    else if (fmt === 4 && bestFmt === 0) { best = off; bestFmt = 4; }
+  }
+  if (best < 0) return () => 0;
+  if (bestFmt === 12) {
+    const groups = be32(t, best + 12);
+    return (cp) => {
+      let lo = 0, hi = groups - 1;
+      while (lo <= hi) {
+        const mid = (lo + hi) >> 1;
+        const g = best + 16 + mid * 12;
+        const start = be32(t, g), end = be32(t, g + 4);
+        if (cp < start) hi = mid - 1;
+        else if (cp > end) lo = mid + 1;
+        else return be32(t, g + 8) + (cp - start);
+      }
+      return 0;
+    };
+  }
+  const segX2 = be16(t, best + 6);
+  const ends = best + 14, starts = ends + segX2 + 2, deltas = starts + segX2, ranges = deltas + segX2;
+  return (cp) => {
+    if (cp > 0xffff) return 0;
+    let lo = 0, hi = segX2 / 2 - 1;
+    while (lo <= hi) {
+      const mid = (lo + hi) >> 1;
+      const end = be16(t, ends + mid * 2);
+      const start = be16(t, starts + mid * 2);
+      if (cp > end) lo = mid + 1;
+      else if (cp < start) hi = mid - 1;
+      else {
+        const delta = be16(t, deltas + mid * 2);
+        const ro = be16(t, ranges + mid * 2);
+        if (ro === 0) return (cp + delta) & 0xffff;
+        const gi = be16(t, ranges + mid * 2 + ro + (cp - start) * 2);
+        return gi === 0 ? 0 : (gi + delta) & 0xffff;
+      }
+    }
+    return 0;
+  };
+}
+
+/** 从一个字体文件（可能是 TTC 合集）读出所有字形 */
+export async function loadFontFile(input: InputSource): Promise<FontFace[]> {
+  const src = toSource(input);
+  if (src.size < 12) return [];
+  const head = await src.read(0, 12);
+  const sig = tag(head, 0);
+  const faces: FontFace[] = [];
+  try {
+    if (sig === 'ttcf') {
+      const n = be32(head, 8);
+      const offs = await src.read(12, n * 4);
+      for (let i = 0; i < n; i++) {
+        const f = await makeFace(src, be32(offs, i * 4));
+        if (f) faces.push(f);
+      }
+    } else if (sig === '\0\x01\0\0' || sig === 'OTTO' || sig === 'true') {
+      const f = await makeFace(src, 0);
+      if (f) faces.push(f);
+    }
+  } catch {
+    // 损坏或不支持的字体文件直接忽略
+  }
+  return faces;
+}
+
+// ---------------------------------------------------------------- 字体库与测量
+
+export class FontLibrary {
+  private byFamily = new Map<string, FontFace[]>();
+  readonly missing = new Set<string>();
+
+  add(faces: FontFace[]) {
+    for (const f of faces) {
+      for (const fam of f.families) {
+        const list = this.byFamily.get(fam) ?? [];
+        list.push(f);
+        this.byFamily.set(fam, list);
+      }
+    }
+  }
+
+  find(family: string, bold: boolean, italic: boolean): FontFace | undefined {
+    const list = this.byFamily.get(family.toLowerCase().trim());
+    if (!list) return undefined;
+    let best = list[0], bestScore = -1;
+    for (const f of list) {
+      const score = (f.bold === bold ? 2 : 0) + (f.italic === italic ? 1 : 0) + (f.weight === 400 ? 0.1 : 0);
+      if (score > bestScore) { best = f; bestScore = score; }
+    }
+    return best;
+  }
+
+  has(family: string): boolean {
+    return this.byFamily.has(family.toLowerCase().trim());
+  }
+}
+
+/** 没有字体文件时的估算字宽（单位 em） */
+export function fallbackAdvance(cp: number): number {
+  if (isWide(cp)) return 1;
+  if (cp === 0x20) return 0.25;
+  if (cp >= 0x30 && cp <= 0x39) return 0.55;
+  if ('ilI.,:;\'!|'.includes(String.fromCodePoint(cp))) return 0.25;
+  if ('mwMW'.includes(String.fromCodePoint(cp))) return 0.85;
+  if (cp >= 0x41 && cp <= 0x5a) return 0.65;
+  return 0.5;
+}
+
+export function isWide(cp: number): boolean {
+  return (cp >= 0x1100 && cp <= 0x115f) || (cp >= 0x2e80 && cp <= 0xa4cf) || (cp >= 0xac00 && cp <= 0xd7a3)
+    || (cp >= 0xf900 && cp <= 0xfaff) || (cp >= 0xfe30 && cp <= 0xfe4f) || (cp >= 0xff00 && cp <= 0xff60)
+    || (cp >= 0xffe0 && cp <= 0xffe6) || (cp >= 0x20000 && cp <= 0x3fffd);
+}
