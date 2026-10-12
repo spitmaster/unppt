@@ -30,8 +30,9 @@ CN = "演示文字排版测试，包含中文与 English words 混排的一段�
 EN = "The quick brown fox jumps over the lazy dog. Pack my box with five dozen liquor jugs."
 
 
-def new_pres(app, w=960, h=540):
-    p = app.Presentations.Add(0)
+def new_pres(app, w=960, h=540, window=False):
+    # 插入图表必须在有窗口的模式下（无窗口时 AddChart2 会报错）
+    p = app.Presentations.Add(-1 if window else 0)
     p.PageSetup.SlideWidth = w
     p.PageSetup.SlideHeight = h
     return p
@@ -260,7 +261,22 @@ def anim_auto(app):
     return p
 
 
-CASES = [shapes_all, text_sizes, text_align, text_spacing, text_bullets, text_missing_font, shapes_basic, fills_lines, table_basic, group_rotate, anim_basic, anim_auto]
+def charts_basic(app):
+    """常见图表：簇状柱形、条形、折线、饼图、圆环、面积、堆积柱形（PowerPoint 默认示例数据）"""
+    p = new_pres(app, window=True)
+    kinds = [(51, "簇状柱形"), (57, "条形"), (4, "折线"), (65, "带标记折线"), (5, "饼图"), (-4120, "圆环"), (1, "面积"), (52, "堆积柱形")]
+    for i, (kind, _name) in enumerate(kinds):
+        if i % 2 == 0:
+            s = blank(p)
+        ch = s.Shapes.AddChart2(-1, kind, 20 + (i % 2) * 470, 40, 450, 440)
+        try:
+            ch.Chart.ChartData.Workbook.Close()
+        except Exception:
+            pass
+    return p
+
+
+CASES = [shapes_all, text_sizes, text_align, text_spacing, text_bullets, text_missing_font, shapes_basic, fills_lines, table_basic, group_rotate, anim_basic, anim_auto, charts_basic]
 
 
 def main():
