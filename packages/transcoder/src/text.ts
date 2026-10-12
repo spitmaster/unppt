@@ -3,7 +3,7 @@
  * 这样换行位置固定，不依赖观看者浏览器的排版。
  */
 import { colorIn, css, type ColorContext, type Rgba } from './color';
-import { fallbackAdvance, isWide, type FontLibrary, type FontMetrics } from './font';
+import { fallbackAdvance, isWide, type FontFace, type FontLibrary, type FontMetrics } from './font';
 import { EMU_PER_PX, type Theme } from './model';
 import { esc, n2 } from './svg';
 import { attr, child, children, numAttr, type XEl } from './xml';
@@ -17,6 +17,13 @@ export interface TextEnv {
   fontRefColor?: Rgba;
   /** 动画用的元素编号前缀（形状的 uid），段落会追加 p0、p1… */
   uid?: string;
+  /** 字体嵌入：记录每个字体用到的字，并给字体起唯一别名 */
+  embed?: FontEmbedder;
+}
+
+export interface FontEmbedder {
+  use(face: FontFace, cp: number): void;
+  alias(face: FontFace): string;
 }
 
 /** 从一般到具体排列的列表样式（每个都可能含 a:lvl1pPr … a:lvl9pPr） */
@@ -106,20 +113,24 @@ function runStyle(r: XEl, env: TextEnv, scale: number): RunStyle {
 
 // ---------------------------------------------------------------- 测量
 
+interface Measured { metrics: FontMetrics; face: FontFace; }
+
 interface Measurer {
-  metrics(family: string, bold: boolean, italic: boolean, quiet?: boolean): Promise<FontMetrics | undefined>;
+  metrics(family: string, bold: boolean, italic: boolean, quiet?: boolean): Promise<Measured | undefined>;
+  embed?: FontEmbedder;
 }
 
 function makeMeasurer(env: TextEnv): Measurer {
-  const cache = new Map<string, Promise<FontMetrics | undefined>>();
+  const cache = new Map<string, Promise<Measured | undefined>>();
   return {
+    embed: env.embed,
     metrics(family, bold, italic, quiet) {
       const key = `${family}|${bold}|${italic}`;
       let p = cache.get(key);
       if (!p) {
         const face = env.fonts.find(family, bold, italic);
         if (!face && !quiet) env.missingFonts.add(family);
-        p = face ? face.load() : Promise.resolve(undefined);
+        p = face ? face.load().then((metrics) => ({ metrics, face })) : Promise.resolve(undefined);
         cache.set(key, p);
       }
       return p;
@@ -133,6 +144,7 @@ interface Atom {
   width: number;
   style: RunStyle;
   family: string;
+  face?: FontFace;
   ascent: number;
   descent: number;
   space: boolean;
@@ -156,7 +168,7 @@ const EA_SUBS = ['Microsoft YaHei', '微软雅黑', 'DengXian', '等线', 'PingF
 async function makeAtoms(text: string, style: RunStyle, m: Measurer): Promise<Atom[]> {
   const out: Atom[] = [];
   // 缺字体时按 PowerPoint 的做法替代：西文用 Calibri（字体标了东亚字符集时也用雅黑），中文用雅黑
-  const pick = async (family: string, subs: string[]): Promise<[FontMetrics | undefined, string]> => {
+  const pick = async (family: string, subs: string[]): Promise<[Measured | undefined, string]> => {
     const mm = await m.metrics(family, style.bold, style.italic);
     if (mm) return [mm, family];
     for (const sub of subs) {
@@ -174,17 +186,19 @@ async function makeAtoms(text: string, style: RunStyle, m: Measurer): Promise<At
     const wide = isWide(cp);
     const primary = wide ? eaM : latinM;
     const secondary = wide ? latinM : eaM;
-    let adv = primary?.advance(cp);
-    let used = primary;
+    let adv = primary?.metrics.advance(cp);
+    let usedM = primary;
     let family = wide ? eaFam : latinFam;
     if (adv === undefined && secondary) {
-      adv = secondary.advance(cp);
-      if (adv !== undefined) { used = secondary; family = wide ? latinFam : eaFam; }
+      adv = secondary.metrics.advance(cp);
+      if (adv !== undefined) { usedM = secondary; family = wide ? latinFam : eaFam; }
     }
+    const used = usedM?.metrics;
+    if (usedM && adv !== undefined && m.embed && cp > 0x20) m.embed.use(usedM.face, cp);
     const size = style.baseline ? style.size * 0.67 : style.size;
     const width = (adv ?? fallbackAdvance(cp)) * size + style.spc;
     out.push({
-      text: ch, cp, width, style, family,
+      text: ch, cp, width, style, family, face: adv !== undefined ? usedM?.face : undefined,
       ascent: (used?.ascent ?? 0.92) * style.size,
       descent: (used?.descent ?? 0.24) * style.size,
       space: ch === ' ' || ch === '　', wide, tab: ch === '\t',
@@ -335,7 +349,7 @@ export async function renderText(
   const lstStyle = child(txBody, 'a:lstStyle');
   const fullChain: StyleChain = [...chain, lstStyle];
 
-  interface PLayout { lines: Line[]; spcBef: number; spcAft: number; lineSpc: { pct?: number; pts?: number }; algn: string; bullet?: { text: string; style: RunStyle; x: number; width: number }; uid?: string; }
+  interface PLayout { lines: Line[]; spcBef: number; spcAft: number; lineSpc: { pct?: number; pts?: number }; algn: string; bullet?: { text: string; style: RunStyle; x: number; width: number; family: string; face?: FontFace }; uid?: string; }
   const layouts: PLayout[] = [];
   const autoNumCounters = new Map<string, number>();
   let prevLvl = -1;
@@ -364,8 +378,8 @@ export async function renderText(
     }
     const endStyle = runStyle(merge([defRPr, child(p, 'a:endParaRPr')]), env, fontScale);
     const baseStyle = firstStyle ?? endStyle;
-    const baseM = await measurer.metrics(baseStyle.latin, baseStyle.bold, baseStyle.italic)
-      ?? await measurer.metrics(baseStyle.ea, baseStyle.bold, baseStyle.italic);
+    const baseM = (await measurer.metrics(baseStyle.latin, baseStyle.bold, baseStyle.italic, true)
+      ?? await measurer.metrics(baseStyle.ea, baseStyle.bold, baseStyle.italic, true))?.metrics;
     const emptyAsc = (baseM?.ascent ?? 0.92) * endStyle.size;
     const emptyDesc = (baseM?.descent ?? 0.24) * endStyle.size;
 
@@ -404,7 +418,7 @@ export async function renderText(
       const style: RunStyle = { ...baseStyle, size, latin: font, ea: font, color: buClr ? (colorIn(buClr, env.colors) ?? baseStyle.color) : baseStyle.color, underline: false, strike: false, spc: 0 };
       const ba = await makeAtoms(text, style, measurer);
       const width = ba.reduce((s, a) => s + a.width, 0);
-      bullet = { text, style, x: marL + indent, width };
+      bullet = { text, style, x: marL + indent, width, family: ba[0]?.family ?? style.latin, face: ba[0]?.face };
     } else if (lvl === prevLvl || !bu) {
       // 非编号段落会打断同级编号
       if (!bu || bu.name !== 'a:buAutoNum') for (const k of [...autoNumCounters.keys()]) if (k.startsWith(`${lvl}|`)) autoNumCounters.delete(k);
@@ -501,7 +515,8 @@ export async function renderText(
       if (li === 0 && pl.bullet) {
         const b = pl.bullet;
         const bx = pl.algn === 'l' || pl.algn === 'just' ? lIns + b.x : x - b.width;
-        pParts.push(textEl(b.text, bx, baseline, b.style, b.style.latin, true));
+        const bAlias = b.face && env.embed ? env.embed.alias(b.face) : undefined;
+        pParts.push(textEl(b.text, bx, baseline, b.style, b.family, true, bAlias));
       }
       // 先算每个字的横坐标，再按样式、字体分段输出（两端对齐时在每个间隙处分段）
       const atoms = line.atoms;
@@ -515,14 +530,15 @@ export async function renderText(
       for (let k = 1; k <= atoms.length; k++) {
         const a = atoms[k];
         const p = atoms[k - 1];
-        const boundary = k === atoms.length || a.style !== p.style || a.family !== p.family || (extra > 0 && (p.space || p.wide));
+        const boundary = k === atoms.length || a.style !== p.style || a.family !== p.family || a.face !== p.face || (extra > 0 && (p.space || p.wide));
         if (!boundary) continue;
         const seg = atoms.slice(s0, k);
         const s = seg[0].style;
         const txt = seg.map((q) => (q.tab ? ' ' : q.text)).join('');
         const shift = s.baseline ? -s.baseline / 100 * s.size : 0;
         const st = s.baseline ? { ...s, size: s.size * 0.67 } : s;
-        if (txt.trim().length || s.underline || s.strike) pParts.push(textEl(txt, xs[s0], baseline + shift, st, seg[0].family));
+        const alias = seg[0].face && env.embed ? env.embed.alias(seg[0].face) : undefined;
+        if (txt.trim().length || s.underline || s.strike) pParts.push(textEl(txt, xs[s0], baseline + shift, st, seg[0].family, false, alias));
         s0 = k;
       }
       y += lh;
@@ -539,12 +555,12 @@ export async function renderText(
 }
 
 /** 只写测量时实际用的字体：保证浏览器显示的字宽和转码时算的一致 */
-function fontList(primary: string, _s: RunStyle): string {
-  return `'${primary.replace(/'/g, '')}',sans-serif`;
+function fontList(primary: string, alias?: string): string {
+  return `${alias ? `'${alias}',` : ''}'${primary.replace(/'/g, '')}',sans-serif`;
 }
 
-function textEl(txt: string, x: number, y: number, s: RunStyle, family: string, bullet = false): string {
-  let a = `${bullet ? 'data-bu="1" ' : ''}x="${n2(x)}" y="${n2(y)}" font-family="${esc(fontList(family, s))}" font-size="${n2(s.size)}" fill="${css(s.color)}"`;
+function textEl(txt: string, x: number, y: number, s: RunStyle, family: string, bullet = false, alias?: string): string {
+  let a = `${bullet ? 'data-bu="1" ' : ''}x="${n2(x)}" y="${n2(y)}" font-family="${esc(fontList(family, alias))}" font-size="${n2(s.size)}" fill="${css(s.color)}"`;
   if (s.color.a < 0.999) a += ` fill-opacity="${n2(s.color.a)}"`;
   if (s.bold) a += ' font-weight="bold"';
   if (s.italic) a += ' font-style="italic"';

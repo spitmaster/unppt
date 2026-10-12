@@ -10,7 +10,10 @@
  */
 import { DECK_FORMAT, DECK_FORMAT_VERSION, UNPPT_VERSION, type DeckReport, type DeckSlide } from '../../format/src/index';
 import { compileTiming, compileTransition } from './anim';
-import { FontLibrary, loadFontFile } from './font';
+import { FontLibrary, loadFontFile, type FontFace } from './font';
+import { subsetFont } from './subset';
+import { base64 } from './media';
+import type { DeckFont } from '../../format/src/index';
 import { MediaStore, type WriteData, type WriteFn } from './media';
 import { Presentation } from './model';
 import { OpcPackage } from './package';
@@ -35,6 +38,11 @@ export interface ConvertOptions {
   fileName?: string;
   /** 小于这个字节数的图片内联进 HTML，默认 2MB；视频音频总是单独输出 */
   inlineLimit?: number;
+  /**
+   * 把用到的字做成字体子集嵌入产物（默认关闭）。嵌入后观看端不需要安装字体，显示与转码时一致。
+   * 注意：商业字体的分发需要相应授权。
+   */
+  embedFonts?: boolean;
   /** 每处理完一页回调一次 */
   onProgress?: (done: number, total: number) => void;
 }
@@ -62,7 +70,25 @@ export async function convert(input: InputSource, options: ConvertOptions): Prom
   // 只输出演示数据时，图片一律写成单独文件（不在内存里攒）
   const inlineLimit = (options.output ?? 'html') === 'data' ? -1 : options.inlineLimit ?? 2 * 1024 * 1024;
   const media = new MediaStore(pres, pkg, options.write, inlineLimit);
-  const env = { pres, fonts, missingFonts, media };
+  // 字体嵌入：记录每个字体用到的字，每个字体一个唯一别名
+  const usage = new Map<FontFace, { alias: string; cps: Set<number> }>();
+  const entry = (face: FontFace) => {
+    let u = usage.get(face);
+    if (!u) { u = { alias: `unppt-f${usage.size}`, cps: new Set() }; usage.set(face, u); }
+    return u;
+  };
+  const embed = options.embedFonts ? { use: (face: FontFace, cp: number) => { entry(face).cps.add(cp); }, alias: (face: FontFace) => entry(face).alias } : undefined;
+  const env = { pres, fonts, missingFonts, media, embed };
+  const deckFonts: DeckFont[] = [];
+  async function* fontFiles(): AsyncGenerator<{ font: DeckFont; data: Uint8Array }> {
+    for (const [face, u] of usage) {
+      const data = await subsetFont(face.source, face.offset, u.cps, u.alias);
+      if (!data) { pres.warn(`字体暂不能嵌入（不是 TrueType 轮廓）：${face.displayFamily}`); continue; }
+      const font: DeckFont = { family: u.alias, source: face.displayFamily, weight: face.bold ? 'bold' : 'normal', style: face.italic ? 'italic' : 'normal', format: 'woff' };
+      deckFonts.push(font);
+      yield { font, data };
+    }
+  }
   const output = options.output ?? 'html';
   const fileName = options.fileName ?? (output === 'html' ? 'index.html' : 'deck.json');
   const title = await readTitle(pkg);
@@ -100,7 +126,7 @@ export async function convert(input: InputSource, options: ConvertOptions): Prom
   };
   const meta = () => ({
     format: DECK_FORMAT, version: DECK_FORMAT_VERSION, generator: `unppt ${UNPPT_VERSION}`,
-    width: pres.width, height: pres.height, title, fonts: [], report,
+    width: pres.width, height: pres.height, title, fonts: deckFonts, report,
   });
 
   async function* html(): AsyncGenerator<Uint8Array> {
@@ -114,6 +140,9 @@ export async function convert(input: InputSource, options: ConvertOptions): Prom
       media.pending = [];
       yield enc.encode(`<script type="application/json" class="unppt-slide">${jsonForHtml(s)}</script>\n`);
     }
+    for await (const f of fontFiles()) {
+      yield enc.encode(`<script type="application/json" class="unppt-font" data-family="${f.font.family}">${jsonForHtml(base64(f.data))}</script>\n`);
+    }
     finishReport();
     yield enc.encode(`<script type="application/json" id="unppt-meta">${jsonForHtml(meta())}</script>\n<script>${__UNPPT_PLAYER__}</script></body></html>\n`);
   }
@@ -125,6 +154,10 @@ export async function convert(input: InputSource, options: ConvertOptions): Prom
     for await (const s of slides()) {
       yield enc.encode((first ? '' : ',') + JSON.stringify(s));
       first = false;
+    }
+    for await (const f of fontFiles()) {
+      f.font.url = `fonts/${f.font.family}.woff`;
+      await options.write(f.font.url, f.data);
     }
     finishReport();
     const m = JSON.stringify(meta());

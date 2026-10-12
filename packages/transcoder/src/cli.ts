@@ -83,6 +83,7 @@ function usage(): never {
   -o, --out <文件>        输出文件，默认和输入同名的 .html（--data 时为 .json）
   --fonts <目录>          字体目录（可以写多次），用来按真实字宽排版
   --system-fonts          使用本机系统字体目录
+  --embed-fonts           把用到的字做成字体子集嵌入（观看端无需安装字体；商业字体注意授权）
   --data                  只输出演示数据 deck.json，交给单独部署的播放器
   --inline-limit <字节>   小于这个大小的图片内联进 HTML，默认 2097152
   --stats                 结束时显示用时和峰值内存
@@ -97,6 +98,7 @@ async function main() {
   let out = '';
   const fontDirs: string[] = [];
   let dataOnly = false;
+  let embedFonts = false;
   let inlineLimit: number | undefined;
   let quiet = false;
   let stats = false;
@@ -106,6 +108,7 @@ async function main() {
     else if (a === '--fonts') fontDirs.push(args[++i]);
     else if (a === '--system-fonts') fontDirs.push(...systemFontDirs());
     else if (a === '--data') dataOnly = true;
+    else if (a === '--embed-fonts') embedFonts = true;
     else if (a === '--inline-limit') inlineLimit = Number(args[++i]);
     else if (a === '-q' || a === '--quiet') quiet = true;
     else if (a === '--stats') stats = true;
@@ -125,6 +128,7 @@ async function main() {
     write: (rel, data) => writeTo(dirname(out), rel === 'index.html' || rel === 'deck.json' ? basename(out) : rel, data),
     fonts,
     output: dataOnly ? 'data' : 'html',
+    embedFonts,
     fileName: dataOnly ? 'deck.json' : 'index.html',
     inlineLimit,
     onProgress: quiet ? undefined : (d, t) => process.stderr.write(`\r转码中 ${d}/${t} 页`),

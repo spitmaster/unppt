@@ -159,10 +159,13 @@ def build():
         sys.exit(1)
 
 
+EXTRA_ARGS: list[str] = []
+
+
 def convert(src: Path, out: Path) -> dict:
     out.parent.mkdir(parents=True, exist_ok=True)
     t0 = time.time()
-    r = subprocess.run(["node", "packages/transcoder/dist/cli.js", "convert", str(src), "-o", str(out), "--system-fonts"],
+    r = subprocess.run(["node", "packages/transcoder/dist/cli.js", "convert", str(src), "-o", str(out), "--system-fonts", *EXTRA_ARGS],
                        cwd=ROOT, capture_output=True, text=True, encoding="utf-8", errors="replace")
     lines = [l.strip() for l in (r.stdout or "").splitlines()]
     return {
@@ -341,7 +344,10 @@ def main():
     ap.add_argument("--set", default="daily", choices=["testcases", "daily", "all"])
     ap.add_argument("--only", default=None)
     ap.add_argument("--no-build", action="store_true")
+    ap.add_argument("--embed-fonts", action="store_true", help="转码时嵌入字体子集")
     a = ap.parse_args()
+    if a.embed_fonts:
+        EXTRA_ARGS.append("--embed-fonts")
     run(a.set, a.only, not a.no_build)
 
 

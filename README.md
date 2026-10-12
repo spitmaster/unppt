@@ -25,6 +25,7 @@ node packages/transcoder/dist/cli.js convert 演示文稿.pptx -o out/index.html
 | `-o, --out <文件>` | 输出文件，默认与输入同名的 `.html` |
 | `--fonts <目录>` | 字体目录（可写多次），转码时按真实字宽排版 |
 | `--system-fonts` | 使用本机系统字体目录 |
+| `--embed-fonts` | 把用到的字做成字体子集嵌入（观看端不需要安装字体，显示与转码时一致；商业字体请注意分发授权） |
 | `--data` | 只输出演示数据 `deck.json`，交给单独部署的播放器 |
 | `--inline-limit <字节>` | 小于这个大小的图片内联进 HTML，默认 2MB；视频音频总是单独输出到 `media/` |
 | `--stats` | 结束时显示用时和峰值内存 |
@@ -39,6 +40,7 @@ const result = await convert(pptxBytes, {
   // 输出交给你写：index.html，以及大媒体文件 media/xxx.mp4
   write: async (path, data) => { /* data 可能是字符串、Uint8Array 或数据流（AsyncIterable） */ },
   fonts: [fontBytes1, fontBytes2],   // 可选：字体文件内容
+  embedFonts: true,                  // 可选：嵌入字体子集（默认关闭）
 });
 console.log(result.slides, result.report.missingFonts, result.report.warnings);
 ```

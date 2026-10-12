@@ -11,6 +11,9 @@ export interface FontFace {
   bold: boolean;
   italic: boolean;
   weight: number;
+  /** 字体文件来源和这个字形在文件里的偏移（TTC 合集里不为 0），子集化时用 */
+  source: RandomAccessSource;
+  offset: number;
   load(): Promise<FontMetrics>;
 }
 
@@ -91,7 +94,7 @@ async function makeFace(src: RandomAccessSource, faceOffset: number): Promise<Fo
   }
   let metrics: Promise<FontMetrics> | undefined;
   return {
-    families, displayFamily: display, bold, italic, weight,
+    families, displayFamily: display, bold, italic, weight, source: src, offset: faceOffset,
     load() {
       metrics ??= loadMetrics(src, tables, os2b);
       return metrics;
