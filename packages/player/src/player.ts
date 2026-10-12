@@ -505,6 +505,17 @@ function autoBoot() {
     const meta = JSON.parse(metaEl.textContent ?? '{}');
     checkFormat(meta);
     const scripts = Array.from(doc.querySelectorAll('script.unppt-slide'));
+    const assetEls = new Map<string, Element>();
+    for (const el of Array.from(doc.querySelectorAll('script.unppt-asset'))) assetEls.set(el.getAttribute('data-id') ?? '', el);
+    const assetCache = new Map<string, string>();
+    const asset = (id: string) => {
+      let v = assetCache.get(id);
+      if (v === undefined) {
+        v = JSON.parse(assetEls.get(id)?.textContent ?? '""') as string;
+        assetCache.set(id, v);
+      }
+      return v;
+    };
     const cache = new Map<number, DeckSlide>();
     const deck: DeckLike = {
       ...meta,
@@ -513,6 +524,8 @@ function autoBoot() {
         let s = cache.get(i);
         if (!s) {
           s = JSON.parse(scripts[i].textContent ?? '{}') as DeckSlide;
+          // 共享图片：把 unppt:asset/编号 换成真正的数据
+          s.svg = s.svg.replace(/unppt:asset\/(\d+)/g, (_m, id: string) => asset(id));
           // 只缓存附近几页，几百页的大文件也不会占太多内存
           if (cache.size > 8) cache.delete(cache.keys().next().value as number);
           cache.set(i, s);

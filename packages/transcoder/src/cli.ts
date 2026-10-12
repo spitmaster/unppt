@@ -10,12 +10,19 @@ import { basename, dirname, extname, join, resolve } from 'node:path';
 import { homedir, platform } from 'node:os';
 import { convert, UNPPT_VERSION, type RandomAccessSource, type WriteData } from './index';
 
+/** 打开过的文件句柄统一登记，结束时显式关闭（Node 不允许句柄被垃圾回收时自动关闭） */
+const openHandles: Promise<import('node:fs/promises').FileHandle>[] = [];
+
+async function closeAll() {
+  await Promise.all(openHandles.map(async (h) => (await h).close().catch(() => {})));
+}
+
 function fileSource(path: string, size: number): RandomAccessSource {
   let fh: Promise<import('node:fs/promises').FileHandle> | undefined;
   return {
     size,
     async read(offset, length) {
-      fh ??= open(path, 'r');
+      if (!fh) { fh = open(path, 'r'); openHandles.push(fh); }
       const h = await fh;
       const buf = new Uint8Array(Math.max(0, Math.min(length, size - offset)));
       let got = 0;
@@ -52,11 +59,16 @@ async function writeTo(base: string, rel: string, data: WriteData) {
   const target = resolve(base, rel);
   await mkdir(dirname(target), { recursive: true });
   const ws = createWriteStream(target);
-  const done = new Promise<void>((ok, fail) => { ws.on('finish', () => ok()); ws.on('error', fail); });
-  const put = (chunk: Uint8Array | string) => new Promise<void>((ok, fail) => {
-    if (ws.write(chunk)) ok(); else ws.once('drain', ok);
-    ws.once('error', fail);
+  let failed: Error | undefined;
+  const done = new Promise<void>((ok, fail) => {
+    ws.on('finish', () => ok());
+    ws.on('error', (e) => { failed = e; fail(e); });
   });
+  done.catch(() => {});
+  const put = async (chunk: Uint8Array | string) => {
+    if (failed) throw failed;
+    if (!ws.write(chunk)) await new Promise<void>((ok) => ws.once('drain', ok));
+  };
   if (typeof data === 'string' || data instanceof Uint8Array) await put(data);
   else for await (const c of data) await put(c);
   ws.end();
@@ -73,6 +85,7 @@ function usage(): never {
   --system-fonts          使用本机系统字体目录
   --data                  只输出演示数据 deck.json，交给单独部署的播放器
   --inline-limit <字节>   小于这个大小的图片内联进 HTML，默认 2097152
+  --stats                 结束时显示用时和峰值内存
   -q, --quiet             不显示进度`);
   process.exit(1);
 }
@@ -86,6 +99,7 @@ async function main() {
   let dataOnly = false;
   let inlineLimit: number | undefined;
   let quiet = false;
+  let stats = false;
   for (let i = 2; i < args.length; i++) {
     const a = args[i];
     if (a === '-o' || a === '--out') out = args[++i];
@@ -94,6 +108,7 @@ async function main() {
     else if (a === '--data') dataOnly = true;
     else if (a === '--inline-limit') inlineLimit = Number(args[++i]);
     else if (a === '-q' || a === '--quiet') quiet = true;
+    else if (a === '--stats') stats = true;
     else usage();
   }
   if (!out) out = join(dirname(input), basename(input, extname(input)) + (dataOnly ? '.json' : '.html'));
@@ -103,6 +118,9 @@ async function main() {
   const fontFiles = (await Promise.all(fontDirs.map((d) => listFonts(d)))).flat();
   const fonts = await Promise.all(fontFiles.map(async (f) => fileSource(f, (await stat(f)).size)));
   const t0 = Date.now();
+  let peak = 0;
+  const sample = () => { peak = Math.max(peak, process.memoryUsage().rss); };
+  const timer = stats ? setInterval(sample, 20) : undefined;
   const result = await convert(fileSource(input, st.size), {
     write: (rel, data) => writeTo(dirname(out), rel === 'index.html' || rel === 'deck.json' ? basename(out) : rel, data),
     fonts,
@@ -111,6 +129,11 @@ async function main() {
     inlineLimit,
     onProgress: quiet ? undefined : (d, t) => process.stderr.write(`\r转码中 ${d}/${t} 页`),
   });
+  if (timer) {
+    clearInterval(timer);
+    sample();
+    console.log(`统计：${result.slides} 页，用时 ${((Date.now() - t0) / 1000).toFixed(1)} 秒，峰值内存 ${(peak / 1024 / 1024).toFixed(0)} MB`);
+  }
   if (!quiet) {
     process.stderr.write('\n');
     console.log(`完成：${result.slides} 页，用时 ${((Date.now() - t0) / 1000).toFixed(1)} 秒 -> ${out}`);
@@ -119,7 +142,8 @@ async function main() {
   }
 }
 
-main().catch((e) => {
+main().then(closeAll, async (e) => {
+  await closeAll();
   console.error(e instanceof Error ? e.message : e);
   process.exit(1);
 });

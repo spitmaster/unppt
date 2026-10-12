@@ -59,7 +59,9 @@ export async function convert(input: InputSource, options: ConvertOptions): Prom
   const fonts = new FontLibrary();
   for (const f of options.fonts ?? []) fonts.add(await loadFontFile(f));
   const missingFonts = new Set<string>();
-  const media = new MediaStore(pres, pkg, options.write, options.inlineLimit ?? 2 * 1024 * 1024);
+  // 只输出演示数据时，图片一律写成单独文件（不在内存里攒）
+  const inlineLimit = (options.output ?? 'html') === 'data' ? -1 : options.inlineLimit ?? 2 * 1024 * 1024;
+  const media = new MediaStore(pres, pkg, options.write, inlineLimit);
   const env = { pres, fonts, missingFonts, media };
   const output = options.output ?? 'html';
   const fileName = options.fileName ?? (output === 'html' ? 'index.html' : 'deck.json');
@@ -98,6 +100,11 @@ export async function convert(input: InputSource, options: ConvertOptions): Prom
     const enc = new TextEncoder();
     yield enc.encode(`<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"><meta name="generator" content="unppt ${UNPPT_VERSION}"><title>${escHtml(title || 'unppt')}</title></head><body><div id="unppt"></div>\n`);
     for await (const s of slides()) {
+      // 这一页新用到的共享图片先写出去，然后才是页面本身
+      for (const a of media.pending) {
+        yield enc.encode(`<script type="application/json" class="unppt-asset" data-id="${a.id}">${jsonForHtml(a.uri)}</script>\n`);
+      }
+      media.pending = [];
       yield enc.encode(`<script type="application/json" class="unppt-slide">${jsonForHtml(s)}</script>\n`);
     }
     finishReport();

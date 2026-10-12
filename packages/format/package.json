@@ -1,0 +1,10 @@
+{
+  "name": "@unppt/format",
+  "version": "0.0.1",
+  "description": "unppt 演示数据格式与 bridge 协议的类型定义",
+  "license": "Apache-2.0",
+  "type": "module",
+  "types": "./src/index.ts",
+  "files": ["src"],
+  "repository": { "type": "git", "url": "git+https://github.com/spitmaster/unppt.git" }
+}
