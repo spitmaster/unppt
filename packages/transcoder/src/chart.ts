@@ -206,7 +206,8 @@ export function renderChart(space: XEl | undefined, w: number, h: number, env: C
   const isPie = plots[0].kind === 'pie' || plots[0].kind === 'doughnut';
 
   // ---------------- 标题
-  const PAD = 9;
+  // 实测：图表区四周留白约 11 磅
+  const PAD = 11 * 96 / 72;
   let top = PAD, bottom = h - PAD, left = PAD, right = w - PAD;
   const titleEl = child(chart, 'c:title');
   const autoDeleted = attr(child(chart, 'c:autoTitleDeleted'), 'val') === '1';
@@ -252,7 +253,7 @@ export function renderChart(space: XEl | undefined, w: number, h: number, env: C
         out.push(label(e.name, x + (e.line ? ks * 3 : ks) + 4, y, legendText, 'start'));
         x += itemW[i];
       });
-      if (legendPos === 'b') bottom -= legendText.size * 1.2 + 8;
+      if (legendPos === 'b') bottom -= legendText.size * 1.2 + 11;
       else top += legendText.size * 1.2 + 8;
     } else {
       const lw = Math.max(...itemW);
@@ -318,12 +319,11 @@ export function renderChart(space: XEl | undefined, w: number, h: number, env: C
   // 留出坐标轴标签的空间
   if (!horizontal) {
     if (!valDeleted) left += Math.max(...tickLabels.map((t) => textWidth(t, valStyle.size))) + 6;
-    if (!catDeleted) bottom -= catStyle.size * 1.2 + 4;
+    if (!catDeleted) bottom -= catStyle.size * 1.2 + 8;
   } else {
     if (!catDeleted) left += Math.max(...cats.map((c) => textWidth(c, catStyle.size))) + 8;
     if (!valDeleted) bottom -= valStyle.size * 1.2 + 4;
   }
-  top += valStyle.size * 0.6;
   const pw = Math.max(1, right - left), ph = Math.max(1, bottom - top);
 
   const vpos = (v: number) => (v - scale.lo) / (scale.hi - scale.lo);
