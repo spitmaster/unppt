@@ -262,6 +262,7 @@ export class Player {
   }
 
   private transition(old: HTMLElement, el: HTMLElement, t: SlideTransition) {
+    if (typeof el.animate !== 'function') { old.remove(); return; }
     const dur = Math.max(100, Math.min(3000, t.dur));
     let a: Animation;
     switch (t.type) {
@@ -302,7 +303,8 @@ export class Player {
       const el = this.find(a.uid);
       if (!el) continue;
       if (a.dir === 'in') el.classList.remove('unppt-hide');
-      if (!a.dur && !a.delay) {
+      // 没有时长、或者浏览器太老不支持 Web Animations（老版本 Android WebView）：直接显示结果
+      if ((!a.dur && !a.delay) || typeof (el as HTMLElement).animate !== 'function') {
         if (a.dir === 'out') el.classList.add('unppt-hide');
         continue;
       }
