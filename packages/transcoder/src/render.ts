@@ -256,6 +256,7 @@ class SlideRenderer {
       }
     }
     // 视频 / 音频
+    let mediaLink = false;
     const nvPr = path(pc(el, 'nvPicPr'), 'p:nvPr');
     const video = child(nvPr, 'a:videoFile');
     const audio = child(nvPr, 'a:audioFile');
@@ -264,8 +265,15 @@ class SlideRenderer {
       const rid = attr(p14, 'r:embed') ?? attr(video ?? audio, 'r:link') ?? '';
       const href = rid ? await this.env.media.media(ctx.part, rid) : undefined;
       if (href) {
-        const tag = audio && !video ? 'audio' : 'video';
-        parts.push(`<foreignObject x="0" y="0" width="${n2(box.w)}" height="${n2(box.h)}"><${tag} xmlns="http://www.w3.org/1999/xhtml" data-media="1" src="${esc(href)}" controls="" playsinline="" preload="metadata"${poster ? ` poster="${esc(poster)}"` : ''} style="width:100%;height:100%;object-fit:contain"></${tag}></foreignObject>`);
+        const isAudio = !!audio && !video;
+        if (isAudio) {
+          // 音频：显示 PowerPoint 的图标，音频元素本身不显示，由时间线或点击图标控制播放
+          parts.push(`<foreignObject x="0" y="0" width="1" height="1"><audio xmlns="http://www.w3.org/1999/xhtml" data-media="1" src="${esc(href)}" preload="metadata" style="display:none"></audio></foreignObject>`);
+        } else {
+          // 视频：显示封面帧，不用浏览器自带控件，点击播放/暂停
+          parts.push(`<foreignObject x="0" y="0" width="${n2(box.w)}" height="${n2(box.h)}"><video xmlns="http://www.w3.org/1999/xhtml" data-media="1" src="${esc(href)}" playsinline="" preload="metadata"${poster ? ` poster="${esc(poster)}"` : ''} style="width:100%;height:100%;object-fit:fill"></video></foreignObject>`);
+        }
+        mediaLink = true;
       }
     }
     const line = parseLine([child(spPr, 'a:ln')], [ctx.colors], ctx.part);
@@ -273,7 +281,9 @@ class SlideRenderer {
     if (!parts.length) return '';
     let inner = parts.join('');
     if (box.flipH || box.flipV) inner = `<g${flipTransform(box)}>${inner}</g>`;
-    return withUid(uid, `<g transform="${boxTransform(box)}">${inner}</g>`);
+    // 媒体：点击切换播放（形状本身没有写点击动作时也加上）
+    const clickable = mediaLink && !child(nvProps(el), 'a:hlinkClick') ? ' data-link="media" style="cursor:pointer"' : '';
+    return withUid(uid, `<g${clickable} transform="${boxTransform(box)}">${inner}</g>`);
   }
 
   async group(el: XEl, ctx: SlideContext, parentFill?: Fill): Promise<string> {

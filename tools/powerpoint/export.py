@@ -30,7 +30,7 @@ from common import REF, ROOT, read_json, testcase_index, update_index, write_jso
 
 EXPORT_WIDTH = 1280
 TIMEOUT_SEC = 600
-VERSION = 5  # 输出格式变化时加 1，会触发重新导出（5：只有段落/强调/路径动画才用放映截图）
+VERSION = 6  # 输出格式变化时加 1，会触发重新导出（5：只有段落/强调/路径动画才用放映截图）
 
 # PowerPoint / Office 常量
 PP_SAVE_AS_PPTX = 24
@@ -231,7 +231,8 @@ def needs_slideshow(effects) -> bool:
     """只有"显示/隐藏"模拟不了的动画才用放映截图：段落动画、强调效果、路径动画。
     放映截图和静态导出之间有几个像素的错位，普通进入/退出动画用静态导出更准。"""
     # MsoAnimEffect：54 以后是强调效果和路径动画（进入/退出效果都在 54 以前）
-    return any(e.get("paragraph") or (e.get("type") or 0) >= 54 for e in effects)
+    # 83~85 是媒体播放/暂停/停止，画面不变，不需要放映
+    return any(e.get("paragraph") or ((e.get("type") or 0) >= 54 and (e.get("type") or 0) not in (83, 84, 85)) for e in effects)
 
 
 def capture_steps(pres, slides_info, out: Path, width: int, height: int):

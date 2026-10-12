@@ -197,6 +197,7 @@ export class Player {
       return;
     }
     const link = el.getAttribute('data-link') ?? '';
+    if (link === 'media') { this.mediaCommand(el, 'toggle'); return; }
     if (link === 'next') this.goto(Math.min(this.slideIdx + 1, this.deck.slideCount - 1), 0);
     else if (link === 'prev') this.goto(Math.max(this.slideIdx - 1, 0), 0);
     else if (link === 'first') this.goto(0, 0);
@@ -205,6 +206,18 @@ export class Player {
       const i = (this.deck.slideParts ?? []).indexOf(link.slice(6));
       if (i >= 0) this.goto(i, 0);
     }
+  }
+
+  /** 对元素里的音频/视频执行命令 */
+  private mediaCommand(el: Element, cmd: NonNullable<AnimAction['media']>, start?: number) {
+    const m = el.querySelector('audio,video') as HTMLMediaElement | null;
+    if (!m) return;
+    try {
+      if (cmd === 'play') { if (start !== undefined) m.currentTime = start; void m.play().catch(() => {}); }
+      else if (cmd === 'pause') m.pause();
+      else if (cmd === 'stop') { m.pause(); m.currentTime = 0; }
+      else if (m.paused) void m.play().catch(() => {}); else m.pause();
+    } catch { /* 浏览器可能阻止自动播放 */ }
   }
 
   private steps(): AnimAction[][] {
@@ -242,7 +255,7 @@ export class Player {
     el.innerHTML = data.svg;
     this.states = new Map();
     const old = this.current;
-    if (old) for (const m of old.querySelectorAll('video,audio')) (m as HTMLMediaElement).pause();
+    if (old) for (const m of Array.from(old.querySelectorAll('video,audio'))) (m as HTMLMediaElement).pause();
     this.stage.appendChild(el);
     this.current = el;
     this.slideIdx = slideIdx;
@@ -305,6 +318,11 @@ export class Player {
       const el = this.find(a.uid);
       if (!el) continue;
       if (a.to) { this.applyTarget(el, a.to, true, a.dur, a.delay); continue; }
+      if (a.media) {
+        const run = () => this.mediaCommand(el, a.media!, a.start);
+        if (a.delay) { const t = setTimeout(run, a.delay); this.cleanupLater(() => clearTimeout(t)); } else run();
+        continue;
+      }
       if (a.dir === 'in') el.classList.remove('unppt-hide');
       // 没有时长、或者浏览器太老不支持 Web Animations（老版本 Android WebView）：直接显示结果
       if ((!a.dur && !a.delay) || typeof (el as HTMLElement).animate !== 'function') {

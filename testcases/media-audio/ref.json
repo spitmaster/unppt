@@ -1,0 +1,108 @@
+{
+ "version": 6,
+ "slideWidthPt": 960.0,
+ "slideHeightPt": 540.0,
+ "imageWidth": 1280,
+ "imageHeight": 720,
+ "slides": [
+  {
+   "index": 0,
+   "hidden": false,
+   "shapes": [
+    {
+     "id": 2,
+     "name": "TextBox 1",
+     "type": 17,
+     "x": 60.0,
+     "y": 60.0,
+     "w": 600.0,
+     "h": 60.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 10,
+       "text": "进入页面自动播放音频",
+       "x": 67.2,
+       "y": 63.6,
+       "w": 280.005,
+       "h": 33.6
+      }
+     ]
+    },
+    {
+     "id": 3,
+     "name": "tone",
+     "type": 16,
+     "x": 800.0,
+     "y": 420.0,
+     "w": 48.0,
+     "h": 48.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1
+    }
+   ],
+   "effects": [
+    {
+     "index": 1,
+     "type": 83,
+     "exit": false,
+     "trigger": 1,
+     "dur": 2.0,
+     "delay": 0.0,
+     "shapeId": 3,
+     "paragraph": 0
+    }
+   ],
+   "steps": 1,
+   "approxSteps": false
+  },
+  {
+   "index": 1,
+   "hidden": false,
+   "shapes": [
+    {
+     "id": 2,
+     "name": "TextBox 1",
+     "type": 17,
+     "x": 60.0,
+     "y": 60.0,
+     "w": 600.0,
+     "h": 60.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 6,
+       "text": "点击播放音频",
+       "x": 67.2,
+       "y": 63.6,
+       "w": 168.005,
+       "h": 33.6
+      }
+     ]
+    },
+    {
+     "id": 3,
+     "name": "tone",
+     "type": 16,
+     "x": 400.0,
+     "y": 240.0,
+     "w": 48.0,
+     "h": 48.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1
+    }
+   ],
+   "effects": [],
+   "steps": 0
+  }
+ ],
+ "ok": true
+}
