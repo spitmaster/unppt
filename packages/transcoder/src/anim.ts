@@ -96,7 +96,7 @@ function effectAction(eff: XEl, base: number, ctx: AnimContext): AnimAction | un
   if (!cls) return undefined;
   const spTgt = findAll(cTn, 'p:spTgt')[0];
   const spid = attr(spTgt, 'spid');
-  if (!spid) return undefined;
+  if (!spid || !/^\d{1,10}$/.test(spid)) return undefined;
   const pRg = child(child(spTgt, 'p:txEl'), 'p:pRg');
   const uid = pRg ? `s${spid}p${attr(pRg, 'st') ?? '0'}` : `s${spid}`;
   let dur = 0;
@@ -157,7 +157,7 @@ export function compileTiming(timing: XEl | undefined, existing: Set<string>, ct
     if (attr(sTn, 'nodeType') !== 'interactiveSeq') continue;
     const cond = children(child(sTn, 'p:stCondLst'), 'p:cond').find((c) => attr(c, 'evt') === 'onClick');
     const spid = attr(findAll(cond, 'p:spTgt')[0], 'spid');
-    if (!spid) continue;
+    if (!spid || !/^\d{1,10}$/.test(spid)) continue;
     const steps = children(child(sTn, 'p:childTnLst'), 'p:par').map((g) => groupActions(child(g, 'p:cTn'))).filter((x) => x.length);
     if (steps.length) result.triggers.push({ uid: `s${spid}`, steps });
   }

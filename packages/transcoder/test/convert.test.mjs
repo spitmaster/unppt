@@ -98,3 +98,62 @@ test('老格式 .ppt 给出明确提示', async () => {
   ole.set([0xd0, 0xcf, 0x11, 0xe0, 0xa1, 0xb1, 0x1a, 0xe1]);
   await assert.rejects(convert(ole, { write: async () => {} }), /老格式/);
 });
+
+test('恶意文件不能往页面里注入代码', async () => {
+  // 把测试用例里的形状编号、文字、超链接改成注入代码，转码结果里不能出现可执行的属性或标签
+  const src = await readFile(new URL('links.pptx', TC));
+  const { inflateRawSync, deflateRawSync } = await import('node:zlib');
+  // 简单的 zip 改写：找到 slide1.xml，替换内容后重新打包（只用于测试）
+  const entries = readZip(src, inflateRawSync);
+  const evil = '1&quot; onmouseover=&quot;alert(1)';
+  let xml = entries.get('ppt/slides/slide1.xml').toString('utf8');
+  xml = xml.replace(/<p:cNvPr id="\d+"/, `<p:cNvPr id="${evil}"`).replace(/<a:t>[^<]*<\/a:t>/, '<a:t>&lt;img src=x onerror=alert(1)&gt;</a:t>');
+  entries.set('ppt/slides/slide1.xml', Buffer.from(xml, 'utf8'));
+  let rels = entries.get('ppt/slides/_rels/slide1.xml.rels').toString('utf8');
+  rels = rels.replace(/Target="https:\/\/example.com\/"/, 'Target="javascript:alert(1)"');
+  entries.set('ppt/slides/_rels/slide1.xml.rels', Buffer.from(rels, 'utf8'));
+  const w = memoryWriter();
+  await convert(writeZip(entries, deflateRawSync), { write: w.write });
+  const html = w.files.get('index.html').toString('utf8');
+  const slides = slidesOf(html).map((s) => s.svg).join('');
+  // 危险的形式：作为属性出现的事件处理器、javascript: 链接、未转义的标签（作为普通文字显示是安全的）
+  assert.ok(!/\son\w+\s*=\s*["']/i.test(slides), '出现了事件处理属性');
+  assert.ok(!/javascript:/i.test(slides), '出现了 javascript: 链接');
+  assert.ok(!/<img|<script/i.test(slides), '文字没有转义');
+});
+
+function readZip(buf, inflate) {
+  const out = new Map();
+  let eocd = buf.length - 22;
+  while (buf.readUInt32LE(eocd) !== 0x06054b50) eocd--;
+  const n = buf.readUInt16LE(eocd + 10);
+  let p = buf.readUInt32LE(eocd + 16);
+  for (let i = 0; i < n; i++) {
+    const method = buf.readUInt16LE(p + 10), csize = buf.readUInt32LE(p + 20), nl = buf.readUInt16LE(p + 28), el = buf.readUInt16LE(p + 30), cl = buf.readUInt16LE(p + 32), off = buf.readUInt32LE(p + 42);
+    const name = buf.subarray(p + 46, p + 46 + nl).toString('utf8');
+    const ds = off + 30 + buf.readUInt16LE(off + 26) + buf.readUInt16LE(off + 28);
+    const data = buf.subarray(ds, ds + csize);
+    out.set(name, method === 8 ? inflate(data) : Buffer.from(data));
+    p += 46 + nl + el + cl;
+  }
+  return out;
+}
+
+function writeZip(entries, deflate) {
+  const parts = [], central = [];
+  let off = 0;
+  for (const [name, data] of entries) {
+    const nb = Buffer.from(name, 'utf8'), comp = deflate(data);
+    const h = Buffer.alloc(30); h.writeUInt32LE(0x04034b50, 0); h.writeUInt16LE(20, 4); h.writeUInt16LE(8, 8);
+    h.writeUInt32LE(comp.length, 18); h.writeUInt32LE(data.length, 22); h.writeUInt16LE(nb.length, 26);
+    parts.push(h, nb, comp);
+    const c = Buffer.alloc(46); c.writeUInt32LE(0x02014b50, 0); c.writeUInt16LE(20, 4); c.writeUInt16LE(20, 6); c.writeUInt16LE(8, 10);
+    c.writeUInt32LE(comp.length, 20); c.writeUInt32LE(data.length, 24); c.writeUInt16LE(nb.length, 28); c.writeUInt32LE(off, 42);
+    central.push(c, nb);
+    off += 30 + nb.length + comp.length;
+  }
+  const cd = Buffer.concat(central);
+  const e = Buffer.alloc(22); e.writeUInt32LE(0x06054b50, 0); e.writeUInt16LE(entries.size, 8); e.writeUInt16LE(entries.size, 10);
+  e.writeUInt32LE(cd.length, 12); e.writeUInt32LE(off, 16);
+  return new Uint8Array(Buffer.concat([...parts, cd, e]));
+}
