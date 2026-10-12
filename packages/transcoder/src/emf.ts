@@ -1,0 +1,366 @@
+/**
+ * EMF（增强型图元文件）-> SVG。零依赖，按 [MS-EMF] 规范解析常用的 GDI 记录。
+ * Office 生成的"双格式"EMF 里同时有 EMF+ 记录（在 GDI 注释里）和 GDI 记录，这里只画 GDI 部分。
+ */
+
+interface Pen { color: string; width: number; none: boolean; cap: string; join: string; dash?: string }
+interface Brush { color: string; none: boolean }
+interface Font { height: number; weight: number; italic: boolean; underline: boolean; strike: boolean; face: string; escapement: number }
+
+interface State {
+  xf: [number, number, number, number, number, number];   // 世界变换 m11 m12 m21 m22 dx dy
+  winOrg: [number, number]; winExt: [number, number];
+  vpOrg: [number, number]; vpExt: [number, number];
+  mapMode: number;
+  pen: Pen; brush: Brush; font?: Font;
+  textColor: string; bkMode: number; textAlign: number; polyFill: number;
+  cur: [number, number];
+  clip?: string;                                           // 当前裁剪的 clipPath id
+}
+
+const STOCK: Record<number, Pen | Brush | Font> = {
+  0: { color: '#ffffff', none: false } as Brush,
+  1: { color: '#c0c0c0', none: false } as Brush,
+  2: { color: '#808080', none: false } as Brush,
+  3: { color: '#404040', none: false } as Brush,
+  4: { color: '#000000', none: false } as Brush,
+  5: { color: '#000000', none: true } as Brush,
+  6: { color: '#ffffff', width: 1, none: false, cap: 'round', join: 'round' } as Pen,
+  7: { color: '#000000', width: 1, none: false, cap: 'round', join: 'round' } as Pen,
+  8: { color: '#000000', width: 1, none: true, cap: 'round', join: 'round' } as Pen,
+};
+
+const hex = (n: number) => n.toString(16).padStart(2, '0');
+const colorRef = (v: number) => `#${hex(v & 255)}${hex((v >> 8) & 255)}${hex((v >> 16) & 255)}`;
+const f2 = (v: number) => (Math.round(v * 100) / 100).toString();
+const escXml = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+
+function base64(bytes: Uint8Array): string {
+  let s = '';
+  for (let i = 0; i < bytes.length; i += 0x8000) s += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000) as unknown as number[]);
+  return btoa(s);
+}
+
+/** DIB（BITMAPINFO + 像素）-> BMP 文件的 data URI，浏览器能直接显示 */
+function dibToBmp(d: DataView, offBmi: number, cbBmi: number, offBits: number, cbBits: number): string | undefined {
+  if (!cbBmi || !cbBits) return undefined;
+  const total = 14 + cbBmi + cbBits;
+  const out = new Uint8Array(total);
+  const v = new DataView(out.buffer);
+  out[0] = 0x42; out[1] = 0x4d;
+  v.setUint32(2, total, true);
+  v.setUint32(10, 14 + cbBmi, true);
+  out.set(new Uint8Array(d.buffer, d.byteOffset + offBmi, cbBmi), 14);
+  out.set(new Uint8Array(d.buffer, d.byteOffset + offBits, cbBits), 14 + cbBmi);
+  return `data:image/bmp;base64,${base64(out)}`;
+}
+
+export function emfToSvg(bytes: Uint8Array): string | undefined {
+  const d = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+  if (bytes.length < 88 || d.getUint32(0, true) !== 1 || d.getUint32(40, true) !== 0x464d4520) return undefined;
+  const i32 = (o: number) => d.getInt32(o, true);
+  const u32 = (o: number) => d.getUint32(o, true);
+  const i16 = (o: number) => d.getInt16(o, true);
+  const f32 = (o: number) => d.getFloat32(o, true);
+
+  // 画面范围：用 Frame（0.01 毫米）按设备分辨率换算成设备单位
+  const devW = i32(72), devH = i32(76), mmW = i32(80), mmH = i32(84);
+  const fx0 = i32(24), fy0 = i32(28), fx1 = i32(32), fy1 = i32(36);
+  const kx = mmW ? devW / (mmW * 100) : 1, ky = mmH ? devH / (mmH * 100) : 1;
+  const vb = [fx0 * kx, fy0 * ky, (fx1 - fx0) * kx, (fy1 - fy0) * ky];
+  if (!(vb[2] > 0 && vb[3] > 0)) {
+    vb[0] = i32(8); vb[1] = i32(12); vb[2] = i32(16) - i32(8) + 1; vb[3] = i32(20) - i32(12) + 1;
+  }
+
+  const out: string[] = [];
+  const defs: string[] = [];
+  let idn = 0;
+  const objects = new Map<number, Pen | Brush | Font>();
+  let st: State = {
+    xf: [1, 0, 0, 1, 0, 0], winOrg: [0, 0], winExt: [1, 1], vpOrg: [0, 0], vpExt: [1, 1], mapMode: 1,
+    pen: STOCK[7] as Pen, brush: STOCK[0] as Brush, textColor: '#000000', bkMode: 2, textAlign: 0, polyFill: 1, cur: [0, 0],
+  };
+  const stack: State[] = [];
+  let path: string[] | undefined;
+
+  // 逻辑坐标 -> 设备坐标：先世界变换，再页面变换（窗口/视口）
+  const scale = () => (st.mapMode === 7 || st.mapMode === 8)
+    ? [st.vpExt[0] / (st.winExt[0] || 1), st.vpExt[1] / (st.winExt[1] || 1)] : [1, 1];
+  const tp = (x: number, y: number): [number, number] => {
+    const [a, b, c, dd, e, f] = st.xf;
+    const wx = a * x + c * y + e, wy = b * x + dd * y + f;
+    const [sx, sy] = scale();
+    return [(wx - st.winOrg[0]) * sx + st.vpOrg[0], (wy - st.winOrg[1]) * sy + st.vpOrg[1]];
+  };
+  const tlen = (v: number) => {
+    const [sx] = scale();
+    return Math.abs(v * Math.hypot(st.xf[0], st.xf[1]) * sx);
+  };
+  const pts = (list: [number, number][]) => list.map(([x, y]) => tp(x, y)).map(([x, y]) => `${f2(x)} ${f2(y)}`);
+
+  const strokeAttr = () => {
+    const p = st.pen;
+    if (p.none) return ' stroke="none"';
+    return ` stroke="${p.color}" stroke-width="${f2(Math.max(tlen(p.width), 0.5))}" stroke-linecap="${p.cap}" stroke-linejoin="${p.join}"${p.dash ? ` stroke-dasharray="${p.dash}"` : ''}`;
+  };
+  const fillAttr = () => (st.brush.none ? ' fill="none"' : ` fill="${st.brush.color}"${st.polyFill === 1 ? ' fill-rule="evenodd"' : ''}`);
+  const clipAttr = () => (st.clip ? ` clip-path="url(#${st.clip})"` : '');
+  const emit = (el: string) => out.push(el);
+  const shape = (d: string, fill: boolean, stroke: boolean) => {
+    emit(`<path d="${d}"${fill ? fillAttr() : ' fill="none"'}${stroke ? strokeAttr() : ' stroke="none"'}${clipAttr()}/>`);
+  };
+
+  let p = 0;
+  while (p + 8 <= bytes.length) {
+    const type = u32(p), size = u32(p + 4);
+    if (size < 8 || p + size > bytes.length) break;
+    const r = p + 8;
+    try {
+    switch (type) {
+      case 9: st.winExt = [i32(r), i32(r + 4)]; break;
+      case 10: st.winOrg = [i32(r), i32(r + 4)]; break;
+      case 11: st.vpExt = [i32(r), i32(r + 4)]; break;
+      case 12: st.vpOrg = [i32(r), i32(r + 4)]; break;
+      case 17: st.mapMode = u32(r); break;
+      case 18: st.bkMode = u32(r); break;
+      case 19: st.polyFill = u32(r); break;
+      case 22: st.textAlign = u32(r); break;
+      case 24: st.textColor = colorRef(u32(r)); break;
+      case 27: st.cur = [i32(r), i32(r + 4)]; if (path) path.push(`M${pts([st.cur])[0]}`); break;
+      case 33: stack.push({ ...st, xf: [...st.xf] as State['xf'] }); break;
+      case 34: {
+        const n = i32(r);
+        const idx = n < 0 ? stack.length + n : n - 1;
+        if (idx >= 0 && idx < stack.length) { st = stack[idx]; stack.length = idx; }
+        break;
+      }
+      case 35: st.xf = [f32(r), f32(r + 4), f32(r + 8), f32(r + 12), f32(r + 16), f32(r + 20)]; break;
+      case 36: {
+        const m: State['xf'] = [f32(r), f32(r + 4), f32(r + 8), f32(r + 12), f32(r + 16), f32(r + 20)];
+        const mode = u32(r + 24);
+        if (mode === 1) st.xf = [1, 0, 0, 1, 0, 0];
+        else {
+          const [a, b, c, dd, e, f] = st.xf;
+          const [ma, mb, mc, md, me, mf] = m;
+          // 2 = 左乘（新变换先作用），3 = 右乘，4 = 直接设置
+          if (mode === 2) st.xf = [ma * a + mb * c, ma * b + mb * dd, mc * a + md * c, mc * b + md * dd, me * a + mf * c + e, me * b + mf * dd + f];
+          else if (mode === 3) st.xf = [a * ma + b * mc, a * mb + b * md, c * ma + dd * mc, c * mb + dd * md, e * ma + f * mc + me, e * mb + f * md + mf];
+          else if (mode === 4) st.xf = m;
+        }
+        break;
+      }
+      case 37: {
+        const ih = u32(r);
+        const o = ih & 0x80000000 ? STOCK[ih & 0x7fffffff] : objects.get(ih);
+        if (o) {
+          if ('face' in o) st.font = o;
+          else if ('cap' in o) st.pen = o as Pen;
+          else st.brush = o as Brush;
+        }
+        break;
+      }
+      case 38: { // CREATEPEN
+        const style = u32(r + 4);
+        objects.set(u32(r), { color: colorRef(u32(r + 16)), width: Math.max(i32(r + 8), 1), none: (style & 0xf) === 5, cap: 'round', join: 'round' });
+        break;
+      }
+      case 95: { // EXTCREATEPEN
+        const style = u32(r + 20);
+        const width = u32(r + 24);
+        const brushStyle = u32(r + 28);
+        const caps = (style >> 8) & 0xf, joins = (style >> 12) & 0xf;
+        const t = style & 0xf;
+        const w = Math.max(width, 1);
+        const dash = t === 1 ? `${w * 3} ${w}` : t === 2 ? `${w} ${w}` : t === 3 ? `${w * 3} ${w} ${w} ${w}` : undefined;
+        objects.set(u32(r), {
+          color: colorRef(u32(r + 32)), width, none: t === 5 || brushStyle === 1,
+          cap: caps === 1 ? 'square' : caps === 2 ? 'butt' : 'round', join: joins === 1 ? 'bevel' : joins === 2 ? 'miter' : 'round', dash,
+        });
+        break;
+      }
+      case 39: { // CREATEBRUSHINDIRECT
+        const style = u32(r + 4);
+        objects.set(u32(r), { color: colorRef(u32(r + 8)), none: style === 1 });
+        break;
+      }
+      case 94: case 93: objects.set(u32(r), { color: '#808080', none: false }); break; // 图案画刷：用灰色近似
+      case 40: objects.delete(u32(r)); break;
+      case 82: { // EXTCREATEFONTINDIRECTW
+        const lf = r + 4;
+        let face = '';
+        for (let k = 0; k < 32; k++) { const c = d.getUint16(lf + 28 + k * 2, true); if (!c) break; face += String.fromCharCode(c); }
+        objects.set(u32(r), {
+          height: i32(lf), escapement: i32(lf + 8), weight: i32(lf + 16), italic: bytes[lf + 20] !== 0,
+          underline: bytes[lf + 21] !== 0, strike: bytes[lf + 22] !== 0, face,
+        });
+        break;
+      }
+      // ---------------- 路径
+      case 59: path = []; break;
+      case 60: break;
+      case 61: if (path) path.push('Z'); break;
+      case 62: case 63: case 64: {
+        if (path && path.length) shape(path.join(''), type !== 64, type !== 62);
+        path = undefined;
+        break;
+      }
+      case 67: { // SELECTCLIPPATH：用当前路径做裁剪
+        if (path && path.length) {
+          const id = `c${idn++}`;
+          defs.push(`<clipPath id="${id}"><path d="${path.join('')}"/></clipPath>`);
+          st.clip = id;
+        }
+        path = undefined;
+        break;
+      }
+      case 30: { // INTERSECTCLIPRECT
+        const [x0, y0] = tp(i32(r), i32(r + 4)), [x1, y1] = tp(i32(r + 8), i32(r + 12));
+        const id = `c${idn++}`;
+        defs.push(`<clipPath id="${id}"${st.clip ? ` clip-path="url(#${st.clip})"` : ''}><rect x="${f2(Math.min(x0, x1))}" y="${f2(Math.min(y0, y1))}" width="${f2(Math.abs(x1 - x0))}" height="${f2(Math.abs(y1 - y0))}"/></clipPath>`);
+        st.clip = id;
+        break;
+      }
+      case 75: { // EXTSELECTCLIPRGN：区域由若干矩形组成（设备坐标）
+        const cb = u32(r), mode = u32(r + 4);
+        if (!cb) { st.clip = undefined; break; }
+        const rh = r + 8;
+        const n = u32(rh + 8);
+        const rects: string[] = [];
+        for (let k = 0; k < n; k++) {
+          const q = rh + 32 + k * 16;
+          rects.push(`<rect x="${i32(q)}" y="${i32(q + 4)}" width="${i32(q + 8) - i32(q)}" height="${i32(q + 12) - i32(q + 4)}"/>`);
+        }
+        const id = `c${idn++}`;
+        defs.push(`<clipPath id="${id}"${mode === 1 && st.clip ? ` clip-path="url(#${st.clip})"` : ''}>${rects.join('')}</clipPath>`);
+        st.clip = id;
+        break;
+      }
+      // ---------------- 图形
+      case 2: case 3: case 4: case 5: case 6: case 85: case 86: case 87: case 88: case 89: {
+        const small = type >= 85;
+        const n = u32(r + 16);
+        const list: [number, number][] = [];
+        for (let k = 0; k < n; k++) list.push(small ? [i16(r + 20 + k * 4), i16(r + 22 + k * 4)] : [i32(r + 20 + k * 8), i32(r + 24 + k * 8)]);
+        const P = pts(list);
+        if (!P.length) break;
+        const base = small ? type - 83 : type;
+        if (base === 5 || base === 6) {
+          // ...TO：从当前点接着画
+          const seg = base === 5 ? bez(P) : `L${P.join('L')}`;
+          if (path) path.push(seg);
+          else shape(`M${pts([st.cur])[0]}${seg}`, false, true);
+          st.cur = list[list.length - 1];
+          break;
+        }
+        const dd = base === 2 ? `M${P[0]}${bez(P.slice(1))}` : `M${P.join('L')}${base === 3 ? 'Z' : ''}`;
+        if (path) path.push(dd);
+        else shape(dd, base === 3, true);
+        break;
+      }
+      case 7: case 8: case 90: case 91: { // POLYPOLYLINE / POLYPOLYGON
+        const small = type >= 90;
+        const nPolys = u32(r + 16);
+        let q = r + 24 + nPolys * 4;
+        const parts: string[] = [];
+        for (let k = 0; k < nPolys; k++) {
+          const c = u32(r + 24 + k * 4);
+          const list: [number, number][] = [];
+          for (let j = 0; j < c; j++) { list.push(small ? [i16(q), i16(q + 2)] : [i32(q), i32(q + 4)]); q += small ? 4 : 8; }
+          const P = pts(list);
+          if (P.length) parts.push(`M${P.join('L')}${type === 8 || type === 91 ? 'Z' : ''}`);
+        }
+        const polygon = type === 8 || type === 91;
+        if (path) path.push(parts.join(''));
+        else if (parts.length) shape(parts.join(''), polygon, true);
+        break;
+      }
+      case 54: { // LINETO
+        const to: [number, number] = [i32(r), i32(r + 4)];
+        if (path) path.push(`L${pts([to])[0]}`);
+        else shape(`M${pts([st.cur])[0]}L${pts([to])[0]}`, false, true);
+        st.cur = to;
+        break;
+      }
+      case 42: case 43: case 44: { // ELLIPSE / RECTANGLE / ROUNDRECT
+        const [x0, y0] = tp(i32(r), i32(r + 4)), [x1, y1] = tp(i32(r + 8), i32(r + 12));
+        const x = Math.min(x0, x1), y = Math.min(y0, y1), w = Math.abs(x1 - x0), h = Math.abs(y1 - y0);
+        let dd: string;
+        if (type === 42) dd = `M${f2(x)} ${f2(y + h / 2)}A${f2(w / 2)} ${f2(h / 2)} 0 1 1 ${f2(x + w)} ${f2(y + h / 2)}A${f2(w / 2)} ${f2(h / 2)} 0 1 1 ${f2(x)} ${f2(y + h / 2)}Z`;
+        else if (type === 44) {
+          const rx = Math.min(w / 2, tlen(i32(r + 16)) / 2), ry = Math.min(h / 2, tlen(i32(r + 20)) / 2);
+          dd = `M${f2(x + rx)} ${f2(y)}H${f2(x + w - rx)}A${f2(rx)} ${f2(ry)} 0 0 1 ${f2(x + w)} ${f2(y + ry)}V${f2(y + h - ry)}A${f2(rx)} ${f2(ry)} 0 0 1 ${f2(x + w - rx)} ${f2(y + h)}H${f2(x + rx)}A${f2(rx)} ${f2(ry)} 0 0 1 ${f2(x)} ${f2(y + h - ry)}V${f2(y + ry)}A${f2(rx)} ${f2(ry)} 0 0 1 ${f2(x + rx)} ${f2(y)}Z`;
+        } else dd = `M${f2(x)} ${f2(y)}H${f2(x + w)}V${f2(y + h)}H${f2(x)}Z`;
+        if (path) path.push(dd); else shape(dd, true, true);
+        break;
+      }
+      // ---------------- 文字
+      case 84: case 83: {
+        const wide = type === 84;
+        const t = r + 28;
+        // EMRTEXT：参考点、字数、字符串偏移、选项、[矩形（选项含 ETO_NO_RECT 时省略）]、间距数组偏移
+        const options = u32(t + 16);
+        const refX = i32(t), refY = i32(t + 4), n = u32(t + 8), offStr = u32(t + 12);
+        const offDx = u32(t + (options & 0x100 ? 20 : 36));
+        let str = '';
+        for (let k = 0; k < n; k++) str += wide ? String.fromCharCode(d.getUint16(p + offStr + k * 2, true)) : String.fromCharCode(bytes[p + offStr + k]);
+        if (!str.trim() || !st.font) break;
+        const f = st.font;
+        const ta = st.textAlign;
+        const [x0, y0] = tp(refX, refY);
+        const em = tlen(Math.abs(f.height)) * (f.height > 0 ? 0.82 : 1);
+        // 每个字的位置：用记录里的间距数组（逻辑单位）
+        const xs: number[] = [];
+        let acc = refX;
+        for (let k = 0; k < n; k++) {
+          xs.push(tp(acc, refY)[0]);
+          acc += offDx ? i32(p + offDx + k * 4) : 0;
+        }
+        const anchor = (ta & 6) === 6 ? 'middle' : (ta & 6) === 2 ? 'end' : 'start';
+        const vbase = (ta & 24) === 24 ? '' : (ta & 8) === 8 ? ' dominant-baseline="text-after-edge"' : ' dominant-baseline="text-before-edge"';
+        const rot = f.escapement ? ` transform="rotate(${f2(-f.escapement / 10)} ${f2(x0)} ${f2(y0)})"` : '';
+        const xAttr = offDx && anchor === 'start' ? xs.map(f2).join(' ') : f2(x0);
+        const deco = [f.underline ? 'underline' : '', f.strike ? 'line-through' : ''].filter(Boolean).join(' ');
+        emit(`<text x="${xAttr}" y="${f2(y0)}" font-family="'${escXml(f.face)}',sans-serif" font-size="${f2(em)}" fill="${st.textColor}"${f.weight >= 600 ? ' font-weight="bold"' : ''}${f.italic ? ' font-style="italic"' : ''}${deco ? ` text-decoration="${deco}"` : ''} text-anchor="${anchor}"${vbase}${rot}${clipAttr()} xml:space="preserve">${escXml(str)}</text>`);
+        break;
+      }
+      // ---------------- 位图
+      case 76: case 77: case 81: {
+        let x: number, y: number, w: number, h: number, offBmi: number, cbBmi: number, offBits: number, cbBits: number;
+        if (type === 81) {
+          x = i32(r + 16); y = i32(r + 20);
+          offBmi = u32(r + 40); cbBmi = u32(r + 44); offBits = u32(r + 48); cbBits = u32(r + 52);
+          w = i32(r + 64); h = i32(r + 68);
+        } else {
+          x = i32(r + 16); y = i32(r + 20); w = i32(r + 24); h = i32(r + 28);
+          offBmi = u32(r + 76); cbBmi = u32(r + 80); offBits = u32(r + 84); cbBits = u32(r + 88);
+        }
+        const [ax, ay] = tp(x, y), [bx, by] = tp(x + w, y + h);
+        const X = Math.min(ax, bx), Y = Math.min(ay, by), W = Math.abs(bx - ax), H = Math.abs(by - ay);
+        const href = cbBmi ? dibToBmp(d, p + offBmi, cbBmi, p + offBits, cbBits) : undefined;
+        if (href) emit(`<image href="${href}" x="${f2(X)}" y="${f2(Y)}" width="${f2(W)}" height="${f2(H)}" preserveAspectRatio="none"${clipAttr()}/>`);
+        else if (type === 76 && !st.brush.none) {
+          // 没有源位图的 BitBlt：用当前画刷填充（常见于背景）
+          const rop = u32(r + 32);
+          if (rop === 0x00f00021 || rop === 0x00000042 || rop === 0x00ff0062) {
+            const color = rop === 0x00000042 ? '#000000' : rop === 0x00ff0062 ? '#ffffff' : st.brush.color;
+            emit(`<rect x="${f2(X)}" y="${f2(Y)}" width="${f2(W)}" height="${f2(H)}" fill="${color}"${clipAttr()}/>`);
+          }
+        }
+        break;
+      }
+      case 14: p = bytes.length; continue;
+      default: break;
+    }
+    } catch {
+      // 单条记录解析失败（数据不完整等）：跳过，继续画后面的
+    }
+    p += size;
+  }
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${vb.map(f2).join(' ')}" preserveAspectRatio="none">${defs.length ? `<defs>${defs.join('')}</defs>` : ''}${out.join('')}</svg>`;
+}
+
+function bez(P: string[]): string {
+  let s = '';
+  for (let k = 0; k + 2 < P.length; k += 3) s += `C${P[k]} ${P[k + 1]} ${P[k + 2]}`;
+  return s;
+}
