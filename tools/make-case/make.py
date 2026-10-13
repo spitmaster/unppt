@@ -856,7 +856,22 @@ def anim_entrance(app):
     return p
 
 
-CASES = [shapes_all, text_sizes, text_align, text_spacing, text_bullets, text_missing_font, shapes_basic, fills_lines, table_basic, group_rotate, anim_basic, anim_auto, charts_basic, pictures, smartart, text_effects, text_layout, table_merge, links, emf_images, anim_advanced, charts_labels, freeform_icons, media_audio, anim_trigger, wmf_images, anim_iterate, picture_transparent, charts_more, shape_effects, equations, anim_path, anim_emphasis, transitions, fills_patterns, text_decoration, anim_entrance]
+def svg_images(app):
+    """SVG 图片（PowerPoint 同时存 PNG 备用图和原始 SVG）：小图和放大的图"""
+    svg = (CACHE / "make-case" / "icon.svg").resolve()
+    svg.parent.mkdir(parents=True, exist_ok=True)
+    svg.write_text('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="40" fill="#2e75b6"/>'
+                   '<path d="M30 52 L45 66 L72 36" fill="none" stroke="#fff" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/>'
+                   '<rect x="8" y="8" width="20" height="20" fill="#c00000"/></svg>', encoding="utf-8")
+    p = new_pres(app)
+    s = blank(p)
+    s.Shapes.AddPicture(str(svg), 0, -1, 40, 60, 60, 60)
+    s.Shapes.AddPicture(str(svg), 0, -1, 140, 60, 420, 420)
+    s.Shapes.AddPicture(str(svg), 0, -1, 600, 100, 300, 200)
+    return p
+
+
+CASES = [shapes_all, text_sizes, text_align, text_spacing, text_bullets, text_missing_font, shapes_basic, fills_lines, table_basic, group_rotate, anim_basic, anim_auto, charts_basic, pictures, smartart, text_effects, text_layout, table_merge, links, emf_images, anim_advanced, charts_labels, freeform_icons, media_audio, anim_trigger, wmf_images, anim_iterate, picture_transparent, charts_more, shape_effects, equations, anim_path, anim_emphasis, transitions, fills_patterns, text_decoration, anim_entrance, svg_images]
 
 
 def main():
