@@ -6,7 +6,7 @@ import { colorIn, css, type ColorContext, type Rgba } from '../model/color';
 import { fallbackAdvance, isWide, type FontFace, type FontLibrary, type FontMetrics } from '../font/font';
 import { EMU_PER_PX, type Theme } from '../model/model';
 import { esc, n2, type SvgDoc } from '../common/svg';
-import { shadowFilter } from '../style/fill';
+import { shadowFilter } from '../effects/text-shadow';
 import type { Rel } from '../io/package';
 import { linkAttr } from '../common/links';
 import { attr, child, children, numAttr, type XEl } from '../io/xml';

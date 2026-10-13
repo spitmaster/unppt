@@ -80,7 +80,7 @@ flowchart TB
 | `chart.ts`（约 740 行） | 一个巨型函数，图表类型靠 if/else | 单一职责、开闭 |
 | `text.ts`（约 690 行） | 字体替代、测量、断行、SVG 输出混在一起 | 单一职责 |
 | `render.ts` | 表格 / 图表 / SmartArt / OLE 分派写死；和 `table.ts` 循环依赖 | 开闭、依赖倒置 |
-| `fill.ts` | 填充、线条、图片调整、形状效果混在一起 | 单一职责 |
+| ~~`fill.ts`~~ | ~~填充、线条、图片调整、形状效果混在一起~~ → 已拆成 `style/fill.ts`、`style/line.ts`、`style/blip.ts` 和 `effects/` | 单一职责 |
 | ~~`media.ts`~~ | ~~图片格式写死~~ → 已改为 `ImageDecoder` 注册表 | 开闭 |
 
 ## 3. 目标结构（重构进行中）
@@ -102,7 +102,7 @@ flowchart TB
 | 扩展点 | 接口 | 怎么加一个新的 |
 |---|---|---|
 | 图片格式 | `ImageDecoder`（`media/image-decoder.ts`） | 新建 `media/xxx.ts` 导出一个 `ImageDecoder`，在 `media/decoders.ts` 加一行。例：`emf.ts`、`wmf.ts` |
-| 形状效果 | `ShapeEffect` | 待实现 |
+| 形状效果 | `ShapeEffect`（`effects/shape-effect.ts`） | 新建 `effects/xxx.ts` 导出一个 `ShapeEffect`（返回一层滤镜：画在形状下面 / 替换形状 / 盖在上面），在 `effects/effects.ts` 按叠放顺序加一行。例：`glow.ts`、`soft-edge.ts`、`outer-shadow.ts`、`inner-shadow.ts` |
 | graphicFrame 内容 | `FrameHandler` | 待实现 |
 | 图表类型 | `ChartType` | 待实现 |
 | 页面切换 | `Transition` | 待实现 |
