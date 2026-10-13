@@ -19,6 +19,8 @@ export interface Series {
   /** 渐变填充的 SVG 写法 url(#…)：每个柱子、扇区各自铺满一遍（objectBoundingBox） */
   paint?: string;
   pointPaints?: Map<number, string>;
+  /** 单个数据点的边框（c:dPt 的 a:ln）；null 是"无线条" */
+  pointLines?: Map<number, Line | null>;
   labels?: Labels;
   name: string;
   cats: string[];

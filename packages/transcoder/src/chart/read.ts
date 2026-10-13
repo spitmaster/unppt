@@ -1,7 +1,7 @@
 /** 从 c:plotArea 读出所有图（plot）和系列 */
 import { colorIn, type ColorContext, type Rgba } from '../model/color';
 import { findFillEl, parseFill } from '../style/fill';
-import { parseLine } from '../style/line';
+import { parseLine, type Line } from '../style/line';
 import { attr, child, children, findAll, numAttr, type XEl } from '../io/xml';
 import { ACCENTS, textStyle } from './draw';
 import { cacheValues, formatNumber } from './format';
@@ -74,10 +74,13 @@ export function readPlots(plotArea: XEl | undefined, colors: ColorContext, part:
       }
       const pointFills = new Map<number, Rgba>();
       const pointGrads = new Map<number, GradFill>();
+      const pointLines = new Map<number, Line | null>();
       const explode = new Map<number, number>();
       for (const d of children(s, 'c:dPt')) {
         const at = numAttr(child(d, 'c:idx'), 'val') ?? 0;
         const f = parseFill(findFillEl(child(d, 'c:spPr')), colors, part);
+        const dl = child(child(d, 'c:spPr'), 'a:ln');
+        if (dl) pointLines.set(at, child(dl, 'a:noFill') ? null : parseLine([dl], [colors], part) ?? null);
         if (f?.kind === 'solid') pointFills.set(at, f.color);
         // 渐变：代表色取第一个色标（图例、标签等用），线性渐变另外留下
         if (f?.kind === 'grad' && f.stops.length) {
@@ -105,6 +108,7 @@ export function readPlots(plotArea: XEl | undefined, colors: ColorContext, part:
         fill: fill?.kind === 'solid' ? fill.color : fill?.kind === 'none' ? undefined : fill?.kind === 'grad' && fill.stops.length ? fill.stops[0].color : accent,
         ...(fill?.kind === 'grad' && fill.stops.length && !fill.path ? { grad: { stops: fill.stops, angle: fill.angle } } : {}),
         ...(pointGrads.size ? { pointGrads } : {}),
+        ...(pointLines.size ? { pointLines } : {}),
         // 线条写了"无线条"（散点图只画点）时不画线
         line: child(child(spPr, 'a:ln'), 'a:noFill') ? undefined : line ?? (hasLine ? { color: accent, width: 2.25 * 96 / 72, cap: 'round', join: 'round' } : undefined),
         ...(child(child(spPr, 'a:ln'), 'a:noFill') ? { noLine: true } : {}),
