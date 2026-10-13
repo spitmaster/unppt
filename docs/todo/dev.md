@@ -15,6 +15,17 @@ node packages/transcoder/dist/cli.js convert 你的文件.pptx -o out/index.html
 
 双击 `out/index.html` 就能播放：点击、方向键、空格、手机左右滑动都能翻页，动画能分步播放。嵌入和外部控制的用法见 [README](../../README.md)，可以直接打开 [examples/iframe-host.html](../../examples/iframe-host.html) 试跨域控制。
 
+## 〇、按你的要求做的架构整理（10/13）
+
+按 SOLID 重新组织了代码，目标是多人开发时很少改到同一个文件：
+
+- **架构图**：[docs/architecture.md](../architecture.md)（总体、转码器分层、播放器内部、扩展点、开发闭环），以后改结构就在同一个提交里更新它；
+- **6 个扩展点**：图片格式、形状效果、graphicFrame 内容（表格/图表/SmartArt/OLE）、图表类型、动画效果、页面切换——加一种 = 加一个文件 + 注册表加一行；
+- **大文件拆分**：播放器 800 行、图表 740 行、文字排版 690 行、渲染 476 行、填充 391 行、动画编译 344 行都按职责拆开了（现在单个文件基本在 200 行以内）；
+- **自动守门**：`npm test` 会检查循环依赖和分层规则（下层不能依赖上层），违反就失败；tsconfig 打开了"不允许无用变量/参数"；
+- **重构安全网**：`scripts/golden.mjs` 记录全部测试用例的输出，这次所有重构都验证了**输出逐字节不变**（播放器的行为由 Chrome、Firefox 端到端测试保证）；
+- **贡献指南**：[CONTRIBUTING.md](../../CONTRIBUTING.md)，写清楚扩展点在哪、重构和行为改动分别怎么验收。
+
 ## 二、做了什么
 
 | 部分 | 内容 | 验证 |
