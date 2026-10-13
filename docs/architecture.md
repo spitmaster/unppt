@@ -73,7 +73,7 @@ flowchart TB
   entry["player.ts 入口<br/>导出 mount / Player / installBridge，自动启动"]
   boot["boot.ts<br/>从 HTML 读数据（按需解析、只缓存附近几页）/ mount"]
   bridge["bridge.ts<br/>window.unppt、postMessage、原生 WebView"]
-  core["core/player.ts<br/>翻页状态、显示页面、事件、超链接、触发器"]
+  core["core/player.ts<br/>翻页状态、显示页面、事件、超链接、触发器<br/>autoplay.ts 按计时自动放映"]
   engine["anim/engine.ts<br/>播放 / 瞬时应用 / 结束正在播的动画"]
   effects["anim/effects/<br/>← AnimEffect 扩展点"]
   target["anim/target.ts<br/>强调、路径（沿路径、往返关键帧）<br/>repeat.ts 重复、自动翻转"]

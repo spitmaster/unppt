@@ -129,6 +129,8 @@ export class Presentation {
   height = 0;
   slides: SlideRef[] = [];
   embeddedFonts: EmbeddedFontRef[] = [];
+  /** 放映设置（presProps.xml 的 p:showPr）：循环放映、是否使用计时；都是默认值时为 undefined */
+  show?: { loop?: boolean; useTimings?: boolean };
   defaultTextStyle?: XEl;
   presPart = '';
   private masters = new Map<string, Master>();
@@ -160,6 +162,10 @@ export class Presentation {
       if (!rel) continue;
       this.slides.push({ part: rel.target, index: i++, hidden: false });
     }
+    const propsRel = rels.find((r) => r.type === 'presProps');
+    const showPr = child(propsRel ? await this.pkg.xml(propsRel.target) : undefined, 'p:showPr');
+    const on = (k: string) => { const v = attr(showPr, k); return v === undefined ? undefined : v === '1' || v === 'true'; };
+    if (on('loop') || on('useTimings') === false) this.show = { ...(on('loop') ? { loop: true } : {}), ...(on('useTimings') === false ? { useTimings: false } : {}) };
     const slots: [string, boolean, boolean][] = [['p:regular', false, false], ['p:bold', true, false], ['p:italic', false, true], ['p:boldItalic', true, true]];
     for (const ef of children(child(pres, 'p:embeddedFontLst'), 'p:embeddedFont')) {
       const typeface = attr(child(ef, 'p:font'), 'typeface');

@@ -1,5 +1,5 @@
 /** 页面切换（p:transition）-> SlideTransition */
-import type { SlideTransition } from '../../../format/src/index';
+import type { DeckSlide, SlideTransition } from '../../../format/src/index';
 import { attr, numAttr, type XEl } from '../io/xml';
 
 export function compileTransition(tr: XEl | undefined): SlideTransition | undefined {
@@ -22,4 +22,12 @@ export function compileTransition(tr: XEl | undefined): SlideTransition | undefi
     out.inOut = dir === 'in' ? 'in' : 'out';
   }
   return out;
+}
+
+/** 换片方式：p:transition 上的 advTm（自动换片时间，毫秒）、advClick（单击是否换片，默认是） */
+export function compileAdvance(tr: XEl | undefined): DeckSlide['advance'] {
+  const after = numAttr(tr, 'advTm');
+  const noClick = attr(tr, 'advClick') === '0' || attr(tr, 'advClick') === 'false';
+  if (after === undefined && !noClick) return undefined;
+  return { ...(after !== undefined && after >= 0 ? { after: Math.min(after, 86400000) } : {}), ...(noClick ? { click: false as const } : {}) };
 }

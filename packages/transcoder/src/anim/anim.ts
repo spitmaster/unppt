@@ -9,7 +9,7 @@ import { effectAction } from './effect';
 import { delayOf, isClick } from './timing-util';
 
 export type { AnimContext } from './emphasis';
-export { compileTransition } from './transition';
+export { compileAdvance, compileTransition } from './transition';
 
 export interface CompiledAnim {
   triggers: { uid: string; steps: AnimAction[][] }[];

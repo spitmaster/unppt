@@ -1,0 +1,208 @@
+{
+ "version": 7,
+ "slideWidthPt": 960.0,
+ "slideHeightPt": 540.0,
+ "imageWidth": 1280,
+ "imageHeight": 720,
+ "slides": [
+  {
+   "index": 0,
+   "hidden": false,
+   "shapes": [
+    {
+     "id": 2,
+     "name": "TextBox 1",
+     "type": 17,
+     "x": 60.0,
+     "y": 40.0,
+     "w": 800.0,
+     "h": 46.045,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 14,
+       "text": "第 1 页：3 秒后自动换片",
+       "x": 67.2,
+       "y": 43.6,
+       "w": 348.005,
+       "h": 38.4
+      }
+     ]
+    }
+   ],
+   "effects": [],
+   "triggerHidden": [],
+   "steps": 0
+  },
+  {
+   "index": 1,
+   "hidden": false,
+   "shapes": [
+    {
+     "id": 2,
+     "name": "TextBox 1",
+     "type": 17,
+     "x": 60.0,
+     "y": 40.0,
+     "w": 800.0,
+     "h": 46.045,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 22,
+       "text": "第 2 页：2 秒换片，两个单击动画自动播放",
+       "x": 67.2,
+       "y": 43.6,
+       "w": 604.005,
+       "h": 38.4
+      }
+     ]
+    },
+    {
+     "id": 3,
+     "name": "Rectangle 2",
+     "type": 1,
+     "x": 100.0,
+     "y": 220.0,
+     "w": 200.0,
+     "h": 120.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1
+    },
+    {
+     "id": 4,
+     "name": "Rectangle 3",
+     "type": 1,
+     "x": 350.0,
+     "y": 220.0,
+     "w": 200.0,
+     "h": 120.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1
+    }
+   ],
+   "effects": [
+    {
+     "index": 1,
+     "type": 10,
+     "exit": false,
+     "trigger": 1,
+     "dur": 0.5,
+     "delay": 0.0,
+     "shapeId": 3,
+     "paragraph": 0
+    },
+    {
+     "index": 2,
+     "type": 10,
+     "exit": false,
+     "trigger": 1,
+     "dur": 0.5,
+     "delay": 0.0,
+     "shapeId": 4,
+     "paragraph": 0
+    }
+   ],
+   "triggerHidden": [],
+   "steps": 2,
+   "approxSteps": false
+  },
+  {
+   "index": 2,
+   "hidden": false,
+   "shapes": [
+    {
+     "id": 2,
+     "name": "TextBox 1",
+     "type": 17,
+     "x": 60.0,
+     "y": 40.0,
+     "w": 800.0,
+     "h": 46.045,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 17,
+       "text": "第 3 页：动画 2.5 秒才播完",
+       "x": 67.2,
+       "y": 43.6,
+       "w": 380.63,
+       "h": 38.4
+      }
+     ]
+    },
+    {
+     "id": 3,
+     "name": "Oval 2",
+     "type": 1,
+     "x": 100.0,
+     "y": 220.0,
+     "w": 200.0,
+     "h": 200.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 9
+    }
+   ],
+   "effects": [
+    {
+     "index": 1,
+     "type": 10,
+     "exit": false,
+     "trigger": 3,
+     "dur": 1.0,
+     "delay": 1.5,
+     "shapeId": 3,
+     "paragraph": 0
+    }
+   ],
+   "triggerHidden": [],
+   "steps": 0,
+   "approxSteps": false
+  },
+  {
+   "index": 3,
+   "hidden": false,
+   "shapes": [
+    {
+     "id": 2,
+     "name": "TextBox 1",
+     "type": 17,
+     "x": 60.0,
+     "y": 40.0,
+     "w": 800.0,
+     "h": 46.045,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 11,
+       "text": "第 4 页：单击不换片",
+       "x": 67.2,
+       "y": 43.6,
+       "w": 290.38,
+       "h": 38.4
+      }
+     ]
+    }
+   ],
+   "effects": [],
+   "triggerHidden": [],
+   "steps": 0
+  }
+ ],
+ "ok": true
+}

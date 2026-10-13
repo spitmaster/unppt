@@ -10,6 +10,7 @@ import { MediaPlayer, mediaCommand } from '../media';
 import { runTransition } from '../transitions/transitions';
 import { Controls } from '../ui/controls';
 import { bindInput, type InputOptions } from '../ui/input';
+import { AutoPlay, playTime } from './autoplay';
 import { Emitter, type Listener } from './emitter';
 
 export interface MountOptions extends InputOptions {
@@ -20,6 +21,8 @@ export interface MountOptions extends InputOptions {
   ui?: boolean;
   /** 点击外部链接时是否自动在新窗口打开，默认是（同时都会发出 link 事件） */
   openLinks?: boolean;
+  /** 是否按演示文稿里设置的自动换片时间自动放映，默认是 */
+  timings?: boolean;
 }
 
 export class Player {
@@ -36,6 +39,8 @@ export class Player {
   private media: MediaPlayer;
   /** 每个触发器已经播到第几组（换页时清零） */
   private triggerIdx = new Map<string, number>();
+  /** 按计时自动放映 */
+  private auto: AutoPlay;
 
   constructor(host: HTMLElement, private deck: DeckLike, private opts: MountOptions = {}) {
     injectCss(host.ownerDocument);
@@ -52,6 +57,12 @@ export class Player {
     this.root.appendChild(keep);
     this.media = new MediaPlayer(keep, () => this.slideIdx);
     this.engine = new AnimationEngine({ find: (uid) => this.find(uid), width: deck.width, height: deck.height }, this.media);
+    this.auto = new AutoPlay({
+      slide: () => this.deck.slide(this.slideIdx),
+      stepIndex: () => this.stepIdx,
+      stepCount: () => this.steps().length,
+      next: () => this.next(),
+    }, opts.timings !== false && deck.show?.useTimings !== false);
     if (opts.ui !== false) this.controls = new Controls(this.root, () => this.prev(), () => this.next());
     this.cleanup.push(...bindInput(this.root, opts, {
       click: (t) => this.click(t),
@@ -96,10 +107,11 @@ export class Player {
     if (this.stepIdx < steps.length) {
       this.engine.play(steps[this.stepIdx]);
       this.stepIdx++;
+      this.auto.played(steps[this.stepIdx - 1]);
       this.emit('change');
     } else {
-      // 顺序放映跳过隐藏的页（从隐藏页继续往后也一样）
-      const next = this.visibleFrom(this.slideIdx + 1, 1);
+      // 顺序放映跳过隐藏的页（从隐藏页继续往后也一样）；循环放映时最后一页之后回到第一页
+      const next = this.visibleFrom(this.slideIdx + 1, 1) ?? (this.deck.show?.loop ? this.visibleFrom(0, 1) : undefined);
       if (next !== undefined) this.show(next, 0, true);
       else this.emit('end');
     }
@@ -124,6 +136,7 @@ export class Player {
   }
 
   destroy() {
+    this.auto.stop();
     this.engine.finishRunning();
     this.media.stopAll();
     for (const c of this.cleanup) c();
@@ -137,6 +150,8 @@ export class Player {
     if (this.fireTrigger(t)) return;
     const link = t.closest('[data-link],[data-href]');
     if (link) { this.follow(link); return; }
+    // 设置了"单击鼠标时不换片"的页：单击画面不往下走（键盘和接口照常）
+    if (this.deck.slide(this.slideIdx).advance?.click === false) return;
     this.next();
   }
 
@@ -233,6 +248,7 @@ export class Player {
         if (a) this.engine.track(a);
       } else old.remove();
     }
+    this.auto.entered(animated ? Math.max(playTime(data.auto), data.transition?.dur ?? 0) : 0);
     this.emit('change');
   }
 

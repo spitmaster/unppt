@@ -19,6 +19,8 @@ export interface Deck {
   report: DeckReport;
   /** 每个输出页对应的 pptx 内部部件路径（解析 data-link="slide:..." 用） */
   slideParts?: string[];
+  /** 放映设置：loop 循环放映（最后一页之后回到第一页）；useTimings 为 false 时不按计时自动换片 */
+  show?: { loop?: boolean; useTimings?: boolean };
 }
 
 export interface DeckSlide {
@@ -36,6 +38,11 @@ export interface DeckSlide {
   transition?: SlideTransition;
   /** 隐藏的幻灯片：顺序放映时跳过，但可以通过超链接、动作按钮或 goto 跳过去 */
   skip?: boolean;
+  /**
+   * 换片方式：after 是自动换片时间（毫秒，从进入这页算起；和 PowerPoint 一样，按计时放映时这一页的点击步骤自动依次播放，
+   * 到时间且动画都播完才翻页）；click 为 false 时单击画面不换片（键盘和接口照常）
+   */
+  advance?: { after?: number; click?: false };
 }
 
 export type AnimEffect =
