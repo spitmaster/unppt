@@ -46,7 +46,7 @@ flowchart TB
   media["media/<br/>图片、音视频、共享资源<br/>decoders ← ImageDecoder 扩展点"]
   text["text/<br/>文本框属性 → 逐段排版（测量、断行、项目符号）→ 排位置 placeLines → 输出 SVG<br/>艺术字变形 warp.ts（字形轮廓弯进包络 / 沿路径排）"]
   effects["effects/<br/>← ShapeEffect 扩展点（形状、文字共用）、映像"]
-  style["style/<br/>fill 填充、pattern 图案（实测点阵）<br/>line 线条（含复合线型）、blip 图片调整"]
+  style["style/<br/>fill 填充、pattern 图案（实测点阵）<br/>line 线条（含复合线型、渐变线）、gradient-stops 渐变色标（实测插值规律）、blip 图片调整"]
   font["font/<br/>TrueType 解析、字距、字形轮廓 glyf.ts、子集化 subset.ts<br/>嵌入字体还原 eot.ts → lzcomp.ts → ctf.ts，sfnt.ts 读写公共部分"]
   geometry["geometry/<br/>公式引擎、187 种预设形状、40 种文字变形<br/>路径遍历 walkGeometry（输出 SVG 或按点采样）"]
   model["model/<br/>演示文稿 / 主题 / 母版 / 版式、颜色"]

@@ -2,6 +2,7 @@
 import { colorIn, css } from '../model/color';
 import { esc, n2 } from '../common/svg';
 import { effectFilter } from '../effects/effect-filter';
+import { gradientStops } from '../style/gradient-stops';
 import { TEXT_EFFECTS } from '../effects/effects';
 import type { SvgDoc } from '../common/svg';
 
@@ -42,10 +43,9 @@ export function textGradient(grad: XEl, env: TextEnv): string {
   const ang = ((numAttr(child(grad, 'a:lin'), 'ang') ?? 0) / 60000) * Math.PI / 180;
   const gb = env.gradBox ?? { w: 1, h: 1 };
   const dx = Math.cos(ang) / 2, dy = Math.sin(ang) / 2;
-  const stops = children(child(grad, 'a:gsLst'), 'a:gs').map((g) => {
-    const c = colorIn(g, env.colors) ?? { r: 0, g: 0, b: 0, a: 1 };
-    return `<stop offset="${n2((numAttr(g, 'pos') ?? 0) / 100000)}" stop-color="${css(c)}"${c.a < 0.999 ? ` stop-opacity="${n2(c.a)}"` : ''}/>`;
-  }).join('');
+  const stops = gradientStops(children(child(grad, 'a:gsLst'), 'a:gs').map((g) => ({
+    pos: (numAttr(g, 'pos') ?? 0) / 100000, color: colorIn(g, env.colors) ?? { r: 0, g: 0, b: 0, a: 1 },
+  })));
   doc.addDef(`<linearGradient id="${id}" gradientUnits="userSpaceOnUse" x1="${n2((0.5 - dx) * gb.w)}" y1="${n2((0.5 - dy) * gb.h)}" x2="${n2((0.5 + dx) * gb.w)}" y2="${n2((0.5 + dy) * gb.h)}">${stops}</linearGradient>`);
   return `url(#${id})`;
 }

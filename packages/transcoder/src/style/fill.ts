@@ -8,6 +8,7 @@ import { attr, child, children, findAll, numAttr, type XEl } from '../io/xml';
 import { EMU_PER_PX, type Theme } from '../model/model';
 import { blipFilter, parseBlipEffects, type BlipEffects } from './blip';
 import { patternFill } from './pattern';
+import { gradientStops } from './gradient-stops';
 
 /** 平铺（a:tile）：缩放比例、偏移（像素）、对齐方式、翻转 */
 export interface Tile { sx: number; sy: number; tx: number; ty: number; algn: string; flip: string }
@@ -147,6 +148,29 @@ async function tileFill(fill: Extract<Fill, { kind: 'image' }>, tile: Tile, href
   return ` fill="url(#${id})"`;
 }
 
+/** 渐变：生成 defs 里的渐变定义，返回 url(#编号)（填充和描边共用）。w/h 是形状尺寸 */
+export function gradientPaint(fill: Extract<Fill, { kind: 'grad' }>, doc: SvgDoc, w: number, h: number, mode: string): string {
+  const id = doc.id('g');
+  const stops = gradientStops(fill.stops, (c) => adjustForPathMode(c, mode));
+  if (fill.path) {
+    const r = fill.rect ?? { l: 0.5, t: 0.5, r: 0.5, b: 0.5 };
+    // 焦点矩形是四边的内缩比例；左右（上下）内缩加起来超过 100% 时矩形倒置，收拢到左（上）边
+    const cx = (r.l + Math.max(r.l, 1 - r.r)) / 2 * w;
+    const cy = (r.t + Math.max(r.t, 1 - r.b)) / 2 * h;
+    const rad = Math.sqrt(Math.max(cx, w - cx) ** 2 + Math.max(cy, h - cy) ** 2);
+    doc.addDef(`<radialGradient id="${id}" gradientUnits="userSpaceOnUse" cx="${n2(cx)}" cy="${n2(cy)}" r="${n2(rad)}">${stops}</radialGradient>`);
+  } else {
+    const a = fill.angle * Math.PI / 180;
+    const dx = Math.cos(a), dy = Math.sin(a);
+    const cx = w / 2, cy = h / 2;
+    // 让四个角在渐变方向上的投影刚好落在 0..1
+    const proj = [[0, 0], [w, 0], [0, h], [w, h]].map(([x, y]) => (x - cx) * dx + (y - cy) * dy);
+    const lo = Math.min(...proj), hi = Math.max(...proj);
+    doc.addDef(`<linearGradient id="${id}" gradientUnits="userSpaceOnUse" x1="${n2(cx + dx * lo)}" y1="${n2(cy + dy * lo)}" x2="${n2(cx + dx * hi)}" y2="${n2(cy + dy * hi)}">${stops}</linearGradient>`);
+  }
+  return `url(#${id})`;
+}
+
 /**
  * 生成 fill 属性。w/h 是形状尺寸（像素），用于渐变方向和图片填充；
  * origin 是元素坐标原点在幻灯片上的位置（图案填充从幻灯片原点对齐）。
@@ -166,29 +190,7 @@ export async function fillAttrs(
     c = adjustForPathMode(c, mode);
     return ` fill="${css(c)}"${c.a < 0.999 ? ` fill-opacity="${n2(c.a)}"` : ''}`;
   }
-  if (fill.kind === 'grad') {
-    const id = doc.id('g');
-    const stops = fill.stops.map((s) => {
-      const c = adjustForPathMode(s.color, mode);
-      return `<stop offset="${n2(s.pos)}" stop-color="${css(c)}"${c.a < 0.999 ? ` stop-opacity="${n2(c.a)}"` : ''}/>`;
-    }).join('');
-    if (fill.path) {
-      const r = fill.rect ?? { l: 0.5, t: 0.5, r: 0.5, b: 0.5 };
-      const cx = (r.l + (1 - r.r)) / 2 * w;
-      const cy = (r.t + (1 - r.b)) / 2 * h;
-      const rad = Math.sqrt(Math.max(cx, w - cx) ** 2 + Math.max(cy, h - cy) ** 2);
-      doc.addDef(`<radialGradient id="${id}" gradientUnits="userSpaceOnUse" cx="${n2(cx)}" cy="${n2(cy)}" r="${n2(rad)}">${stops}</radialGradient>`);
-    } else {
-      const a = fill.angle * Math.PI / 180;
-      const dx = Math.cos(a), dy = Math.sin(a);
-      const cx = w / 2, cy = h / 2;
-      // 让四个角在渐变方向上的投影刚好落在 0..1
-      const proj = [[0, 0], [w, 0], [0, h], [w, h]].map(([x, y]) => (x - cx) * dx + (y - cy) * dy);
-      const lo = Math.min(...proj), hi = Math.max(...proj);
-      doc.addDef(`<linearGradient id="${id}" gradientUnits="userSpaceOnUse" x1="${n2(cx + dx * lo)}" y1="${n2(cy + dy * lo)}" x2="${n2(cx + dx * hi)}" y2="${n2(cy + dy * hi)}">${stops}</linearGradient>`);
-    }
-    return ` fill="url(#${id})"`;
-  }
+  if (fill.kind === 'grad') return ` fill="${gradientPaint(fill, doc, w, h, mode)}"`;
   // 图片填充：用 pattern 把图片拉伸到形状框
   const href = await images.image(fill.part, fill.rid);
   if (!href) return ' fill="#d9d9d9"';

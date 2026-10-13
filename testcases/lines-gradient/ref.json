@@ -1,0 +1,67 @@
+{
+ "version": 7,
+ "slideWidthPt": 960.0,
+ "slideHeightPt": 540.0,
+ "imageWidth": 1280,
+ "imageHeight": 720,
+ "slides": [
+  {
+   "index": 0,
+   "hidden": false,
+   "shapes": [
+    {
+     "id": 2,
+     "name": "Rectangle 1",
+     "type": 1,
+     "x": 60.0,
+     "y": 60.0,
+     "w": 260.0,
+     "h": 180.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1
+    },
+    {
+     "id": 3,
+     "name": "Oval 2",
+     "type": 1,
+     "x": 380.0,
+     "y": 60.0,
+     "w": 260.0,
+     "h": 180.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 9
+    },
+    {
+     "id": 4,
+     "name": "Rounded Rectangle 3",
+     "type": 1,
+     "x": 700.0,
+     "y": 60.0,
+     "w": 200.0,
+     "h": 180.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 5
+    },
+    {
+     "id": 5,
+     "name": "Straight Connector 4",
+     "type": 9,
+     "x": 80.0,
+     "y": 400.0,
+     "w": 800.0,
+     "h": 0.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": -2
+    }
+   ],
+   "effects": [],
+   "triggerHidden": [],
+   "steps": 0
+  }
+ ],
+ "ok": true
+}
