@@ -1,7 +1,6 @@
 /** 图片（p:pic）：裁剪、外形、边框、效果；以及视频、音频 */
 import type { SlideContext } from '../../model/model';
-import { parseFill, styleRef } from '../../style/fill';
-import { blipFilter } from '../../style/blip';
+import { blipImage, parseFill, styleRef } from '../../style/fill';
 import { parseLine, strokeAttrs } from '../../style/line';
 import { effectFilter } from '../../effects/effect-filter';
 import { reflection } from '../../effects/reflection';
@@ -33,7 +32,7 @@ export async function renderPicture(r: RenderContext, el: XEl, ctx: SlideContext
   for (const g of children(child(prstEl ?? custEl, 'a:avLst'), 'a:gd')) av.set(attr(g, 'name') ?? '', attr(g, 'fmla') ?? '');
   const outlineD = buildGeometry(gdef, box.w, box.h, av).paths.map((p) => p.d).join('');
   if (fill && fill.kind === 'image') {
-    const href = await r.images.image(ctx.part, fill.rid);
+    const { href, filter: fid } = await blipImage(r.images, ctx.part, fill.rid, fill.effects, r.doc);
     poster = href;
     if (href) {
       const sr = fill.srcRect ?? { l: 0, t: 0, r: 0, b: 0 };
@@ -46,7 +45,6 @@ export async function renderPicture(r: RenderContext, el: XEl, ctx: SlideContext
         r.doc.addDef(`<clipPath id="${id}"><path d="${outlineD}"/></clipPath>`);
         clip = ` clip-path="url(#${id})"`;
       }
-      const fid = blipFilter(fill.effects, r.doc);
       parts.push(`<g${clip}><image href="${esc(href)}" x="${n2(-sr.l * iw)}" y="${n2(-sr.t * ih)}" width="${n2(iw)}" height="${n2(ih)}" preserveAspectRatio="none"${fill.alpha < 1 ? ` opacity="${n2(fill.alpha)}"` : ''}${fid ? ` filter="url(#${fid})"` : ''}/></g>`);
     } else {
       r.env.pres.warn('图片无法显示（格式不支持或缺失）');

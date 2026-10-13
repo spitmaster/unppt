@@ -6,6 +6,8 @@ import type { Presentation } from '../model/model';
 import { IMAGE_DECODERS } from './decoders';
 import type { ImageDecoder } from './image-decoder';
 import { imageInfo, type ImageInfo } from './image-info';
+import { pngColorKey } from './png-key';
+import type { Rgba } from '../model/color';
 
 export type WriteData = Uint8Array | string | AsyncIterable<Uint8Array>;
 export type WriteFn = (path: string, data: WriteData) => Promise<void>;
@@ -16,6 +18,9 @@ const MIME: Record<string, string> = {
   mp4: 'video/mp4', m4v: 'video/mp4', webm: 'video/webm', ogv: 'video/ogg', mov: 'video/quicktime',
   mp3: 'audio/mpeg', m4a: 'audio/mp4', wav: 'audio/wav', ogg: 'audio/ogg', aac: 'audio/aac',
 };
+
+/** "设置透明色"要在原图上抠的图片，文件超过这个大小的不做（退回滤镜近似） */
+const KEY_MAX_BYTES = 32 * 1024 * 1024;
 
 const BROWSER_IMAGES = new Set(['png', 'jpg', 'jpeg', 'jpe', 'gif', 'bmp', 'svg', 'webp', 'ico']);
 
@@ -69,6 +74,40 @@ export class MediaStore {
       this.infos.set(rel.target, p);
     }
     return p;
+  }
+
+  /**
+   * 关系 rid 指向的图片在原图上把 key 颜色抠成透明后的 href（"设置透明色"，见 png-key.ts）；
+   * 不是 PNG、文件太大或这种 PNG 做不了时返回 undefined（调用方退回滤镜近似）
+   */
+  async keyed(part: string, rid: string, key: Rgba): Promise<string | undefined> {
+    const rel = await this.pkg.rel(part, rid);
+    if (!rel || rel.external) return undefined;
+    const k = `${rel.target}#${key.r},${key.g},${key.b}`;
+    let p = this.hrefs.get(k);
+    if (!p) {
+      p = this.makeKeyed(rel.target, key);
+      this.hrefs.set(k, p);
+    }
+    return p;
+  }
+
+  private async makeKeyed(target: string, key: Rgba): Promise<string | undefined> {
+    const entry = this.pkg.zip.entry(target);
+    if (!entry || entry.size > KEY_MAX_BYTES) return undefined;
+    const bytes = await this.pkg.zip.read(target);
+    const png = bytes ? await pngColorKey(bytes, key) : undefined;
+    if (!png) return undefined;
+    if (png.length <= this.inlineLimit) {
+      const id = this.nextAsset++;
+      this.pending.push({ id, uri: `data:image/png;base64,${base64(png)}` });
+      return `${ASSET_PREFIX}${id}`;
+    }
+    const base = target.slice(target.lastIndexOf('/') + 1).replace(/\.[^.]*$/, '');
+    const hex = ((key.r << 16) | (key.g << 8) | key.b).toString(16).padStart(6, '0');
+    const name = `media/${base}-key${hex}.png`;
+    await this.write(name, png);
+    return name;
   }
 
   /** 关系 rid 指向的视频/音频 -> href（总是写成单独文件，以免 HTML 过大） */

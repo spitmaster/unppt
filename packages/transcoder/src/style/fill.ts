@@ -114,6 +114,19 @@ export interface ImageResolver {
   image(part: string, rid: string): Promise<string | undefined>;
   /** 图片的像素尺寸和分辨率（平铺用）；读不到时返回 undefined */
   info?(part: string, rid: string): Promise<{ width: number; height: number; dpiX?: number; dpiY?: number } | undefined>;
+  /** 在原图上把 key 颜色抠成透明后的 href；这张图做不了时返回 undefined */
+  keyed?(part: string, rid: string, key: Rgba): Promise<string | undefined>;
+}
+
+/**
+ * 图片的 href 和要套的调整滤镜。"设置透明色"能在原图上做时（PNG）直接用抠好的图，滤镜里不再做透明色；
+ * 做不了的用滤镜近似（见 blip.ts）
+ */
+export async function blipImage(images: ImageResolver, part: string, rid: string, effects: BlipEffects | undefined, doc: SvgDoc): Promise<{ href?: string; filter?: string }> {
+  const key = effects?.clrChange;
+  const keyed = key ? await images.keyed?.(part, rid, key) : undefined;
+  const href = keyed ?? await images.image(part, rid);
+  return { href, filter: blipFilter(keyed ? { ...effects, clrChange: undefined } : effects, doc) };
 }
 
 function parseTile(t: XEl | undefined): Tile | undefined {
@@ -129,7 +142,7 @@ function parseTile(t: XEl | undefined): Tile | undefined {
  * 平铺的图片填充。实测：平铺单元 = 图片像素 × 96 / DPI（没写 DPI 按 96）× 缩放比例，
  * 按对齐方式定位后再加偏移；翻转时用两倍大的单元拼出镜像。
  */
-async function tileFill(fill: Extract<Fill, { kind: 'image' }>, tile: Tile, href: string, doc: SvgDoc, w: number, h: number, images: ImageResolver): Promise<string | undefined> {
+async function tileFill(fill: Extract<Fill, { kind: 'image' }>, tile: Tile, href: string, fid: string | undefined, doc: SvgDoc, w: number, h: number, images: ImageResolver): Promise<string | undefined> {
   const info = await images.info?.(fill.part, fill.rid);
   if (!info || !info.width || !info.height) return undefined;
   const tw = info.width * 96 / (info.dpiX || 96) * tile.sx, th = info.height * 96 / (info.dpiY || 96) * tile.sy;
@@ -138,7 +151,6 @@ async function tileFill(fill: Extract<Fill, { kind: 'image' }>, tile: Tile, href
   const fy = /^b/.test(tile.algn) ? 1 : /^(l|r|ctr)$/.test(tile.algn) ? 0.5 : 0;
   const mx = tile.flip === 'x' || tile.flip === 'xy', my = tile.flip === 'y' || tile.flip === 'xy';
   const pw = tw * (mx ? 2 : 1), ph = th * (my ? 2 : 1);
-  const fid = blipFilter(fill.effects, doc);
   const img = (tr: string) => `<image href="${esc(href)}" width="${n2(tw)}" height="${n2(th)}" preserveAspectRatio="none"${tr}${fill.alpha < 1 ? ` opacity="${n2(fill.alpha)}"` : ''}${fid ? ` filter="url(#${fid})"` : ''}/>`;
   let tiles = img('');
   if (mx) tiles += img(` transform="translate(${n2(2 * tw)} 0) scale(-1 1)"`);
@@ -233,17 +245,16 @@ export async function fillAttrs(
   }
   if (fill.kind === 'grad') return ` fill="${gradientPaint(fill, doc, w, h, mode)}"`;
   // 图片填充：用 pattern 把图片拉伸到形状框
-  const href = await images.image(fill.part, fill.rid);
+  const { href, filter: fid } = await blipImage(images, fill.part, fill.rid, fill.effects, doc);
   if (!href) return ' fill="#d9d9d9"';
   if (fill.tile) {
-    const tiled = await tileFill(fill, fill.tile, href, doc, w, h, images);
+    const tiled = await tileFill(fill, fill.tile, href, fid, doc, w, h, images);
     if (tiled) return tiled;
   }
   const id = doc.id('p');
   const sr = fill.srcRect ?? { l: 0, t: 0, r: 0, b: 0 };
   const iw = w / Math.max(0.0001, 1 - sr.l - sr.r);
   const ih = h / Math.max(0.0001, 1 - sr.t - sr.b);
-  const fid = blipFilter(fill.effects, doc);
   doc.addDef(`<pattern id="${id}" patternUnits="userSpaceOnUse" width="${n2(w)}" height="${n2(h)}"><image href="${esc(href)}" x="${n2(-sr.l * iw)}" y="${n2(-sr.t * ih)}" width="${n2(iw)}" height="${n2(ih)}" preserveAspectRatio="none"${fill.alpha < 1 ? ` opacity="${n2(fill.alpha)}"` : ''}${fid ? ` filter="url(#${fid})"` : ''}/></pattern>`);
   return ` fill="url(#${id})"`;
 }
