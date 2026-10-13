@@ -1316,7 +1316,21 @@ def fills_rect_gradient(app):
 fills_rect_gradient.patch = lambda path: _patch_radial(path, "rect")
 
 
-CASES = [shapes_all, text_sizes, text_align, text_spacing, text_bullets, text_missing_font, shapes_basic, fills_lines, table_basic, group_rotate, anim_basic, anim_auto, charts_basic, pictures, smartart, text_effects, text_layout, table_merge, links, emf_images, anim_advanced, charts_labels, freeform_icons, media_audio, anim_trigger, wmf_images, anim_iterate, picture_transparent, charts_more, shape_effects, equations, anim_path, anim_emphasis, transitions, fills_patterns, text_decoration, anim_entrance, svg_images, charts_markers, hidden_slides, media_background, text_glow_reflection, text_tabs, text_picture_bullets, fills_texture, transition_morph, text_embedded_fonts, text_warp, anim_repeat, charts_sizes, slide_timings, lines_compound, table_diagonal, lines_gradient, fills_radial, fills_rect_gradient]
+def shapes_3d(app):
+    """三维形状：默认圆形棱台（三点灯光），10 种填充色，正面会被灯光照亮"""
+    p = new_pres(app)
+    s = blank(p)
+    cols = [(192, 0, 0), (0, 176, 80), (0, 112, 192), (128, 128, 128), (255, 255, 255),
+            (0, 0, 0), (31, 56, 100), (255, 192, 0), (200, 200, 255), (60, 60, 60)]
+    for i, (r, g, b) in enumerate(cols):
+        sh = s.Shapes.AddShape(1, 30 + (i % 5) * 185, 40 + (i // 5) * 240, 160, 200)
+        sh.Fill.ForeColor.RGB = RGB(r, g, b)
+        sh.Line.Visible = 0
+        sh.ThreeD.BevelTopType = 3
+    return p
+
+
+CASES = [shapes_all, text_sizes, text_align, text_spacing, text_bullets, text_missing_font, shapes_basic, fills_lines, table_basic, group_rotate, anim_basic, anim_auto, charts_basic, pictures, smartart, text_effects, text_layout, table_merge, links, emf_images, anim_advanced, charts_labels, freeform_icons, media_audio, anim_trigger, wmf_images, anim_iterate, picture_transparent, charts_more, shape_effects, equations, anim_path, anim_emphasis, transitions, fills_patterns, text_decoration, anim_entrance, svg_images, charts_markers, hidden_slides, media_background, text_glow_reflection, text_tabs, text_picture_bullets, fills_texture, transition_morph, text_embedded_fonts, text_warp, anim_repeat, charts_sizes, slide_timings, lines_compound, table_diagonal, lines_gradient, fills_radial, fills_rect_gradient, shapes_3d]
 
 
 def main():

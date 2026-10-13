@@ -2,6 +2,7 @@
 import type { SlideContext } from '../../model/model';
 import { bgStyle, fillAttrs, findFillEl, parseFill, styleRef, type Fill } from '../../style/fill';
 import { compoundMask, parseLine, strokeAttrs } from '../../style/line';
+import { has3d, litFill } from '../../style/lighting';
 import { effectFilter } from '../../effects/effect-filter';
 import { reflection } from '../../effects/reflection';
 import { buildGeometry, parseGeomXml, presetGeometry } from '../../geometry/geometry';
@@ -36,6 +37,10 @@ export async function renderShape(r: RenderContext, el: XEl, ctx: SlideContext, 
     const sEl = bgStyle(ctx.theme, idx);
     fill = parseFill(sEl, ref.ctx, ctx.theme.part);
   }
+  // 三维形状（自己设的，或者主题效果样式里带的）：正面按灯光提亮
+  const effStyle = styleRef(child(style, 'a:effectRef'), ctx.theme.effectStyles, colors).el;
+  const sp3d = child(spPr, 'a:sp3d') ?? child(lSpPr, 'a:sp3d') ?? child(mSpPr, 'a:sp3d') ?? child(effStyle, 'a:sp3d');
+  if (has3d(sp3d)) fill = litFill(fill);
   // 线条：主题样式 -> 母版 -> 版式 -> 形状
   const lnRef = child(style, 'a:lnRef');
   const lnStyle = styleRef(lnRef, ctx.theme.lineStyles, colors);
