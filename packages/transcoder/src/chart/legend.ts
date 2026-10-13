@@ -2,12 +2,12 @@
 import type { ColorContext, Rgba } from '../model/color';
 import { attr, child, type XEl } from '../io/xml';
 import { chartTypeOf } from './chart-types';
-import { accentColor, label, legendKey, textStyle } from './draw';
+import { accentColor, label, legendKey, strokeOf, textStyle } from './draw';
 import { LEGEND_LINE_KEY, legendBand, legendCenter, legendItemGap, legendKeyGap, legendLead, legendPlotGap, legendRow, legendSquare, legendTopBand, legendTopCenter, PAD, type TextWidth } from './layout';
 import type { Plot, Rect, Series, TextStyle } from './model';
 import { dashAttr } from './trendline';
 
-export interface LegendEntry { name: string; color: Rgba; line: boolean; marker: boolean; series?: Series; width?: number; dash?: string; none?: boolean; paint?: string }
+export interface LegendEntry { name: string; color: Rgba; line: boolean; marker: boolean; series?: Series; width?: number; dash?: string; none?: boolean; paint?: string; stroke?: string }
 
 /** 每个系列的图例键（按系列顺序；数据表的行首也用它） */
 export function seriesEntries(plots: Plot[], colors: ColorContext): LegendEntry[] {
@@ -17,7 +17,7 @@ export function seriesEntries(plots: Plot[], colors: ColorContext): LegendEntry[
     for (const s of p.series) {
       const k = t.legendKey(p, s);
       // 图例里的线和系列一样粗（实测）
-      entries.push({ name: s.name, color: k.color ?? accentColor(0, colors), line: k.line, marker: s.marker || !!k.dot, ...(k.dot ? {} : { series: s }), ...(k.line && s.line ? { width: s.line.width } : {}), ...(k.none ? { none: true } : {}), ...(s.paint && !k.line ? { paint: s.paint } : {}) });
+      entries.push({ name: s.name, color: k.color ?? accentColor(0, colors), line: k.line, marker: s.marker || !!k.dot, ...(k.dot ? {} : { series: s }), ...(k.line && s.line ? { width: s.line.width } : {}), ...(k.none ? { none: true } : {}), ...(s.paint && !k.line ? { paint: s.paint } : {}), ...(!k.line && !k.dot ? { stroke: strokeOf(s, -1) } : {}) });
     }
   }
   return entries;
@@ -29,7 +29,7 @@ function entriesOf(plots: Plot[], colors: ColorContext): LegendEntry[] {
   const type0 = chartTypeOf(plots[0].kind)!;
   if (type0.legendByCategory || (plots[0].varyColors && plots[0].series.length === 1)) {
     const s = plots[0].series[0];
-    s?.cats.forEach((c, i) => entries.push({ name: c, color: s.pointFills.get(i) ?? accentColor(i, colors), line: false, marker: false, ...(s.pointPaints?.has(i) ? { paint: s.pointPaints.get(i) } : {}) }));
+    s?.cats.forEach((c, i) => entries.push({ name: c, color: s.pointFills.get(i) ?? accentColor(i, colors), line: false, marker: false, ...(s.pointPaints?.has(i) ? { paint: s.pointPaints.get(i) } : {}), stroke: strokeOf(s, i) }));
     return entries;
   }
   entries.push(...seriesEntries(plots, colors));

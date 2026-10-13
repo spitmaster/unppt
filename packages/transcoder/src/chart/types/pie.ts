@@ -1,9 +1,10 @@
 /** 饼图、圆环图：自己占满绘图区，图例按分类列出 */
 import { css, type ColorContext } from '../../model/color';
 import { n2 } from '../../common/svg';
-import { accentColor, cpart, label } from '../draw';
+import { accentColor, cpart, label, strokeOf } from '../draw';
 import { labelText } from '../format';
 import type { ChartContext, Plot, Rect } from '../model';
+import type { Line } from '../../style/line';
 import { renderPie3D } from './pie3d';
 import type { ChartType } from '../chart-type';
 
@@ -22,6 +23,9 @@ export function slicePath(cx: number, cy: number, r: number, ri: number, a1: num
   }
   return `M${n2(cx)} ${n2(cy)}L${n2(p1[0])} ${n2(p1[1])}A${n2(r)} ${n2(r)} 0 ${large} 1 ${n2(p2[0])} ${n2(p2[1])}Z`;
 }
+
+/** 没写边框时扇区之间的白线 */
+const PIE_EDGE: Line = { color: { r: 255, g: 255, b: 255, a: 1 }, width: 1.5, cap: 'butt', join: 'round' };
 
 function renderPie(p: Plot, x: number, y: number, w: number, h: number, colors: ColorContext): string {
   const s = p.series[0];
@@ -45,7 +49,7 @@ function renderPie(p: Plot, x: number, y: number, w: number, h: number, colors: 
     // 分离的扇区沿角平分线移出 explosion% 个半径（实测：饼图本身不缩小）
     const ex = v === total ? 0 : s.explosion(i) / 100 * r, mid = (ang + a2) / 2;
     const move = ex ? ` transform="translate(${n2(ex * Math.cos(mid))} ${n2(ex * Math.sin(mid))})"` : '';
-    out.push(cpart(`${s.index}x${i}`, `<path d="${d}" fill="${s.pointPaints?.get(i) ?? css(color)}" fill-rule="evenodd" stroke="#fff" stroke-width="1.5"${move}/>`));
+    out.push(cpart(`${s.index}x${i}`, `<path d="${d}" fill="${s.pointPaints?.get(i) ?? css(color)}" fill-rule="evenodd"${strokeOf(s, i, PIE_EDGE)}${move}/>`));
     const lb = s.labels;
     if (lb) {
       // 默认"最佳位置"：扇形内部靠外边缘；圆环在环的中间（随分离的扇区一起移出）
