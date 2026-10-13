@@ -1061,7 +1061,47 @@ def text_embedded_fonts(app):
 text_embedded_fonts.embed_fonts = True
 
 
-CASES = [shapes_all, text_sizes, text_align, text_spacing, text_bullets, text_missing_font, shapes_basic, fills_lines, table_basic, group_rotate, anim_basic, anim_auto, charts_basic, pictures, smartart, text_effects, text_layout, table_merge, links, emf_images, anim_advanced, charts_labels, freeform_icons, media_audio, anim_trigger, wmf_images, anim_iterate, picture_transparent, charts_more, shape_effects, equations, anim_path, anim_emphasis, transitions, fills_patterns, text_decoration, anim_entrance, svg_images, charts_markers, hidden_slides, media_background, text_glow_reflection, text_tabs, text_picture_bullets, fills_texture, transition_morph, text_embedded_fonts]
+def text_warp(app):
+    """艺术字文字变形：包络类（波形、膨胀、三角、V 形、上弯、多行）和跟随路径类（拱形、下拱、圆形、按钮、倾泻、罐形）"""
+    p = new_pres(app)
+    CR = chr(13)
+
+    def box(s, i, text, warp=None, effect=None, size=36, color=None):
+        t = s.Shapes.AddTextbox(1, 20 + (i % 2) * 480, 15 + (i // 2) * 175, 440, 160)
+        t.TextFrame.AutoSize = 0
+        t.TextFrame.WordWrap = 0
+        t.Width, t.Height = 440, 160
+        r = t.TextFrame.TextRange
+        r.Text = text
+        r.Font.Size = size
+        r.Font.Name = "Arial"
+        r.Font.NameFarEast = "Microsoft YaHei"
+        if color:
+            r.Font.Color.RGB = color
+        if warp is not None:
+            t.TextFrame2.WarpFormat = warp
+        if effect is not None:
+            t.TextEffect.PresetShape = effect
+        return t
+
+    s1 = blank(p)
+    box(s1, 0, "波形 Wave 文字", warp=16)
+    box(s1, 1, "膨胀 Inflate", warp=20, color=RGB(0, 112, 192))
+    box(s1, 2, "三角 Triangle", warp=2)
+    box(s1, 3, "V 形 Chevron", warp=4, color=RGB(192, 0, 0))
+    box(s1, 4, "上弯 Curve Up", warp=12)
+    box(s1, 5, "上半行" + CR + "下半行 Two", warp=26)
+    s2 = blank(p)
+    box(s2, 0, "拱形文字 Arch Up", effect=9)
+    box(s2, 1, "下拱文字 Arch Down", effect=10)
+    box(s2, 2, "圆形排列的文字 Circle Text 环绕", effect=11, size=28)
+    box(s2, 3, "按钮 Button", effect=12)
+    box(s2, 4, "拱形倾泻" + CR + "Arch Pour", warp=8)
+    box(s2, 5, "罐形 Can Up", warp=14, color=RGB(0, 128, 0))
+    return p
+
+
+CASES = [shapes_all, text_sizes, text_align, text_spacing, text_bullets, text_missing_font, shapes_basic, fills_lines, table_basic, group_rotate, anim_basic, anim_auto, charts_basic, pictures, smartart, text_effects, text_layout, table_merge, links, emf_images, anim_advanced, charts_labels, freeform_icons, media_audio, anim_trigger, wmf_images, anim_iterate, picture_transparent, charts_more, shape_effects, equations, anim_path, anim_emphasis, transitions, fills_patterns, text_decoration, anim_entrance, svg_images, charts_markers, hidden_slides, media_background, text_glow_reflection, text_tabs, text_picture_bullets, fills_texture, transition_morph, text_embedded_fonts, text_warp]
 
 
 def main():

@@ -44,18 +44,18 @@ flowchart TB
   render["render/<br/>render.ts 分派、继承；context.ts 渲染能力接口<br/>elements/ 形状、图片、组合；table.ts 表格；box.ts 位置框<br/>frames/ ← FrameHandler 扩展点"]
   chart["chart/<br/>图表"]
   media["media/<br/>图片、音视频、共享资源<br/>decoders ← ImageDecoder 扩展点"]
-  text["text/<br/>文本框属性 → 逐段排版（测量、断行、项目符号）→ 定位输出"]
+  text["text/<br/>文本框属性 → 逐段排版（测量、断行、项目符号）→ 排位置 placeLines → 输出 SVG<br/>艺术字变形 warp.ts（字形轮廓弯进包络 / 沿路径排）"]
   effects["effects/<br/>← ShapeEffect 扩展点（形状、文字共用）、映像"]
   style["style/<br/>fill 填充、pattern 图案（实测点阵）<br/>line 线条、blip 图片调整"]
-  font["font/<br/>TrueType 解析、字距、子集化 subset.ts<br/>嵌入字体还原 eot.ts → lzcomp.ts → ctf.ts，sfnt.ts 读写公共部分"]
-  geometry["geometry/<br/>公式引擎、187 种预设形状"]
+  font["font/<br/>TrueType 解析、字距、字形轮廓 glyf.ts、子集化 subset.ts<br/>嵌入字体还原 eot.ts → lzcomp.ts → ctf.ts，sfnt.ts 读写公共部分"]
+  geometry["geometry/<br/>公式引擎、187 种预设形状、40 种文字变形<br/>路径遍历 walkGeometry（输出 SVG 或按点采样）"]
   model["model/<br/>演示文稿 / 主题 / 母版 / 版式、颜色"]
   common["common/<br/>SVG 输出工具、超链接"]
   io["io/<br/>数据源、ZIP、XML、OPC 包"]
   entry --> anim & render & media & font
   render --> chart & media & text & effects & style & geometry
   chart --> style & font
-  text --> effects & style & font
+  text --> effects & style & font & geometry
   effects --> model
   style --> model
   media --> model

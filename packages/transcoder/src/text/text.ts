@@ -7,11 +7,12 @@ import { n2 } from '../common/svg';
 import { child, children, type XEl } from '../io/xml';
 import { readBody } from './body';
 import { BulletNumbering } from './bullets';
-import { emitParagraphs } from './emit';
+import { emitParagraphs, placeLines } from './emit';
 import { makeMeasurer } from './measure';
 import { layoutParagraph } from './paragraph';
 import { fontRefLevels } from './style';
 import type { ParagraphLayout, StyleChain, TextBox, TextEnv } from './types';
+import { warpOf, warpText } from './warp';
 
 export type { FontEmbedder, StyleChain, TextBox, TextEnv } from './types';
 
@@ -49,6 +50,13 @@ export async function renderText(
   const layouts: ParagraphLayout[] = [];
   const ctx = { fullChain, env, measurer, fontScale, lnReduce, contentW, wrap, numbering: new BulletNumbering() };
   for (let pi = 0; pi < paras.length; pi++) layouts.push(await layoutParagraph(paras[pi], pi, ctx));
+
+  // 艺术字变形：变不了（跟随路径类、缺字体文件）时按普通文字输出
+  const warp = vertical ? undefined : warpOf([...bodyPrs, child(txBody, 'a:bodyPr')]);
+  if (warp) {
+    const warped = await warpText(warp, layouts, placeLines(layouts, b, outer, contentW, out), box, env);
+    if (warped?.length) return `<g transform="translate(${n2(box.x)} ${n2(box.y)})">${warped.join('')}</g>`;
+  }
 
   const parts = emitParagraphs(layouts, b, outer, contentW, env, out);
   if (!parts.length) return '';

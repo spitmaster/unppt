@@ -11,6 +11,7 @@
  */
 import type { GeomDef, GeomPath } from './types';
 import { PRESET_SRC } from './presets-data';
+import { WARP_SRC } from './warps-data';
 
 
 
@@ -75,3 +76,6 @@ function parse(src: string): Map<string, GeomDef> {
 }
 
 export const PRESETS = parse(PRESET_SRC + SUPPLEMENT);
+
+/** 艺术字文字变形（a:prstTxWarp）的预设：路径是变形的上下边界（或文字沿着排的线），格式同上 */
+export const WARPS = parse(WARP_SRC);

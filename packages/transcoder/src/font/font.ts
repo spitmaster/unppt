@@ -4,6 +4,7 @@
  *   GPOS / kern（字距调整）。
  * 字体通过 RandomAccessSource 懒加载：建索引时只读表目录和 name 表，真正用到才读字宽数据。
  */
+import { GlyphOutlines, type Contour } from './glyf';
 import { buildKerning } from './kern';
 import { toSource, type InputSource, type RandomAccessSource } from '../io/source';
 
@@ -29,9 +30,15 @@ export interface FontMetrics {
   /** 删除线：线的上沿离基线的高度和线粗（单位 em，来自 OS/2 表） */
   strikeTop?: number;
   strikeSize?: number;
+  /** 小写字母 x 的高度（单位 em，OS/2 第 2 版起才有） */
+  xHeight?: number;
   /** 两个字符之间的字距调整（单位 em，负数是挤近）；字体没有字距数据时为 0 */
   kern(left: number, right: number): number;
+  /** 字形轮廓（单位 em，y 向上）；字体里没有这个字、或不是 TrueType 轮廓时为 undefined */
+  outline(codePoint: number): Promise<Contour[] | undefined>;
 }
+
+export type { Contour, OutlinePoint } from './glyf';
 
 const be16 = (b: Uint8Array, o: number) => (b[o] << 8) | b[o + 1];
 const bes16 = (b: Uint8Array, o: number) => { const v = be16(b, o); return v & 0x8000 ? v - 0x10000 : v; };
@@ -129,10 +136,18 @@ async function loadMetrics(src: RandomAccessSource, tables: Map<string, TableRec
   const kernRec = tables.get('GPOS'), kernOld = tables.get('kern');
   const kernFn = kernRec || kernOld ? buildKerning(kernRec ? await get('GPOS') : undefined, kernOld ? await get('kern') : undefined) : undefined;
   const kernCache = new Map<number, number>();
+  const glyfRec = tables.get('glyf'), locaRec = tables.get('loca'), maxpRec = tables.get('maxp');
+  let outlines: Promise<GlyphOutlines | undefined> | undefined;
+  const outlinesOf = () => outlines ??= (async () => {
+    if (!glyfRec || !locaRec || !maxpRec) return undefined;
+    const maxp = await src.read(maxpRec.offset, 6);
+    return new GlyphOutlines(src, glyfRec, locaRec, bes16(head, 50) === 1, upem, be16(maxp, 4));
+  })();
   return {
     unitsPerEm: upem, ascent, descent, lineGap,
     strikeTop: os2b && os2b.length >= 30 ? bes16(os2b, 28) / upem : undefined,
     strikeSize: os2b && os2b.length >= 30 ? bes16(os2b, 26) / upem : undefined,
+    xHeight: os2b && os2b.length >= 88 && be16(os2b, 0) >= 2 ? bes16(os2b, 86) / upem : undefined,
     advance(cp) {
       if (cache.has(cp)) return cache.get(cp);
       const gid = lookup(cp);
@@ -155,6 +170,11 @@ async function loadMetrics(src: RandomAccessSource, tables: Map<string, TableRec
         kernCache.set(key, v);
       }
       return v;
+    },
+    async outline(cp) {
+      const gid = lookup(cp);
+      const o = gid ? await outlinesOf() : undefined;
+      return o ? o.glyph(gid) : undefined;
     },
   };
 }
