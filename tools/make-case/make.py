@@ -1130,6 +1130,71 @@ def svg_images(app):
     return p
 
 
+def _chart_values(ch, rows):
+    """改图表数据：rows 是从 A1 开始的表格（第一行是系列名，第一列是分类）"""
+    cd = ch.Chart.ChartData
+    cd.Activate()
+    ws = cd.Workbook.Worksheets(1)
+    for r, row in enumerate(rows, start=1):
+        for c, v in enumerate(row, start=1):
+            ws.Cells(r, c).Value = v
+    ch.Chart.SetSourceData(f"Sheet1!$A$1:${chr(64 + len(rows[0]))}${len(rows)}")
+
+
+def _close_data(ch):
+    try:
+        ch.Chart.ChartData.Workbook.Close()
+    except Exception:
+        pass
+
+
+def charts_options(app):
+    """图表的常用选项：平滑折线、分类轴逆序的条形图、饼图分离、刻度线和次要网格线、
+    趋势线（线性、多项式）、误差线、对数刻度、显示单位（千）"""
+    p = new_pres(app, window=True)
+    def chart(s, i, kind):
+        return s.Shapes.AddChart2(-1, kind, 20 + i * 470, 40, 450, 440)
+    s = blank(p)
+    a = chart(s, 0, 65)                      # 带标记折线，平滑
+    for k in (1, 2, 3):
+        a.Chart.SeriesCollection(k).Smooth = True
+    _close_data(a)
+    b = chart(s, 1, 57)                      # 簇状条形，分类轴逆序（数值轴随之移到上方）
+    b.Chart.Axes(1).ReversePlotOrder = True
+    _close_data(b)
+    s = blank(p)
+    c = chart(s, 0, 5)                       # 饼图，第 2 块分离
+    c.Chart.SeriesCollection(1).Points(2).Explosion = 25
+    _close_data(c)
+    d = chart(s, 1, 51)                      # 簇状柱形：次要网格线、刻度线
+    va, ca = d.Chart.Axes(2), d.Chart.Axes(1)
+    va.HasMinorGridlines = True
+    va.MajorTickMark = 3                     # 外部
+    va.MinorTickMark = 2                     # 内部
+    ca.MajorTickMark = 4                     # 交叉
+    _close_data(d)
+    s = blank(p)
+    e = chart(s, 0, -4169)                   # 散点（默认只有一个系列）：线性、二次多项式趋势线
+    e.Chart.SeriesCollection(1).Trendlines().Add(-4132)
+    e.Chart.SeriesCollection(1).Trendlines().Add(3, 2)
+    _close_data(e)
+    f = chart(s, 1, 51)                      # 簇状柱形：固定值误差线
+    f.Chart.SeriesCollection(1).ErrorBar(1, 1, 1, 0.5)
+    f.Chart.SeriesCollection(2).ErrorBar(1, 2, 1, 0.8)
+    _close_data(f)
+    s = blank(p)
+    g = chart(s, 0, 4)                       # 折线：对数刻度
+    _chart_values(g, [["", "系列 1", "系列 2"], ["类别 1", 3, 120], ["类别 2", 25, 900], ["类别 3", 400, 60], ["类别 4", 5000, 7]])
+    g.Chart.Axes(2).ScaleType = -4133
+    _close_data(g)
+    h = chart(s, 1, 51)                      # 簇状柱形：显示单位"千"
+    _chart_values(h, [["", "系列 1", "系列 2"], ["类别 1", 4300, 2400], ["类别 2", 2500, 4400], ["类别 3", 3500, 1800], ["类别 4", 4500, 2800]])
+    h.Chart.Axes(2).DisplayUnit = -3
+    h.Chart.Axes(2).HasDisplayUnitLabel = True
+    _close_data(h)
+    return p
+
+
 def charts_markers(app):
     """数据点标记的各种形状和大小：折线图（方形、菱形、三角形、X、星形、圆点、短横线、圆形、加号）"""
     p = new_pres(app, window=True)
@@ -1617,7 +1682,7 @@ def table_vertical(app):
     return p
 
 
-CASES = [shapes_all, text_sizes, text_align, text_spacing, text_bullets, text_missing_font, shapes_basic, fills_lines, table_basic, group_rotate, anim_basic, anim_auto, charts_basic, pictures, smartart, text_effects, text_layout, table_merge, links, emf_images, anim_advanced, charts_labels, freeform_icons, media_audio, anim_trigger, wmf_images, anim_iterate, picture_transparent, charts_more, shape_effects, equations, anim_path, anim_emphasis, transitions, fills_patterns, text_decoration, anim_entrance, svg_images, charts_markers, hidden_slides, media_background, text_glow_reflection, text_tabs, text_picture_bullets, fills_texture, transition_morph, text_embedded_fonts, text_warp, anim_repeat, charts_sizes, slide_timings, lines_compound, table_diagonal, lines_gradient, fills_radial, fills_rect_gradient, shapes_3d, table_vertical, transitions_more, anim_sound, anim_build, anim_after, anim_text_emphasis, charts_bubble, media_video]
+CASES = [shapes_all, text_sizes, text_align, text_spacing, text_bullets, text_missing_font, shapes_basic, fills_lines, table_basic, group_rotate, anim_basic, anim_auto, charts_basic, pictures, smartart, text_effects, text_layout, table_merge, links, emf_images, anim_advanced, charts_labels, freeform_icons, media_audio, anim_trigger, wmf_images, anim_iterate, picture_transparent, charts_more, shape_effects, equations, anim_path, anim_emphasis, transitions, fills_patterns, text_decoration, anim_entrance, svg_images, charts_markers, hidden_slides, media_background, text_glow_reflection, text_tabs, text_picture_bullets, fills_texture, transition_morph, text_embedded_fonts, text_warp, anim_repeat, charts_sizes, slide_timings, lines_compound, table_diagonal, lines_gradient, fills_radial, fills_rect_gradient, shapes_3d, table_vertical, transitions_more, anim_sound, anim_build, anim_after, anim_text_emphasis, charts_bubble, media_video, charts_options]
 
 
 def main():

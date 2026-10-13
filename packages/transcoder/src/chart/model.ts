@@ -22,6 +22,8 @@ export interface Series {
   fill?: Rgba;
   line?: Line;
   marker: boolean;
+  /** 平滑线（c:smooth） */
+  smooth: boolean;
   /** 标记形状：circle、square、diamond、triangle、x、star、dot、dash、plus */
   markerSymbol: string;
   /** 标记的直径（像素）和颜色 */
@@ -29,6 +31,40 @@ export interface Series {
   markerFill?: Rgba;
   markerLine?: Rgba;
   pointFills: Map<number, Rgba>;
+  /** 趋势线、误差线 */
+  trendlines: Trendline[];
+  errBars: ErrBars[];
+  /** 饼图扇区分离：每个数据点离开圆心的距离（半径的百分比；系列上写的对所有点生效） */
+  explosion: (i: number) => number;
+}
+
+/** 趋势线（拟合和画法见 trendline.ts） */
+export interface Trendline {
+  type: string;
+  /** 多项式的阶数、移动平均的周期 */
+  order: number;
+  period: number;
+  /** 向前、向后延伸（x 的单位） */
+  forward: number;
+  backward: number;
+  /** 指定的截距 */
+  intercept?: number;
+  line: Line;
+  /** 图例里的名字 */
+  name: string;
+}
+
+/** 误差线（画法见 error-bars.ts） */
+export interface ErrBars {
+  dir: 'x' | 'y';
+  type: string;
+  valType: string;
+  val: number;
+  noEndCap: boolean;
+  line: Line;
+  /** 自定义误差量（c:plus / c:minus） */
+  plus: (number | null)[];
+  minus: (number | null)[];
 }
 
 export interface Plot {
@@ -38,6 +74,8 @@ export interface Plot {
   axIds: string[];
   radarStyle: string;
   horizontal: boolean;
+  /** 分类轴逆序（"逆序类别"） */
+  catReversed: boolean;
   grouping: string;
   gapWidth: number;
   overlap: number;
@@ -50,11 +88,27 @@ export interface Plot {
   series: Series[];
 }
 
-/** 一根数值轴算好的刻度：pos 把数值换成 0~1 的位置 */
-export interface AxisInfo { lo: number; hi: number; ticks: number[]; labels: string[]; fmt: string; deleted: boolean; style: TextStyle; grid?: Line; axisLine?: Line; pos: (v: number) => number }
+/** 一根数值轴算好的刻度：pos 把数值换成 0~1 的位置（已经算上对数刻度和逆序） */
+export interface AxisInfo {
+  lo: number; hi: number; ticks: number[]; labels: string[]; fmt: string; deleted: boolean; style: TextStyle;
+  grid?: Line; axisLine?: Line;
+  /** 次要刻度的数值（有次要网格线或次要刻度线时才算）和次要网格线 */
+  minor: number[]; minorGrid?: Line;
+  /** 主要、次要刻度线：none / in / out / cross */
+  majorMark: string; minorMark: string;
+  /** 刻度标签位置：nextTo（挨着坐标轴）/ low / high / none */
+  lblPos: string;
+  /** 这根轴和另一根轴交叉的位置（c:crosses / c:crossesAt） */
+  crosses: 'autoZero' | 'min' | 'max' | number;
+  /** 逆序刻度值 */
+  reversed: boolean;
+  /** 显示单位的标签（例如"千"） */
+  unitLabel?: { text: string; style: TextStyle };
+  pos: (v: number) => number;
+}
 
-/** 按坐标轴元素和数值范围算刻度；margin 是最大值上方留的余量（默认 5%） */
-export type AxisMaker = (ax: XEl | undefined, vmin: number, vmax: number, pct: boolean, margin?: number) => AxisInfo;
+/** 按坐标轴元素和数值范围算刻度；margin 是最大值上方留的余量（默认 5%）；minPos 是最小的正数（对数刻度用） */
+export type AxisMaker = (ax: XEl | undefined, vmin: number, vmax: number, pct: boolean, margin?: number, minPos?: number) => AxisInfo;
 
 /** 绘图区（像素） */
 export interface Rect { left: number; top: number; right: number; bottom: number }

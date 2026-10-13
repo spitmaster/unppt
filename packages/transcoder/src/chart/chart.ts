@@ -49,7 +49,9 @@ export function renderChart(space: XEl | undefined, w: number, h: number, env: C
     size: 10 * 96 / 72, color: { r: 89, g: 89, b: 89, a: 1 }, bold: false, font: theme.minorLatin || 'Calibri',
   });
 
-  const plots: Plot[] = readPlots(plotArea, colors, env.part, baseText, env.warn);
+  // 趋势线、显示单位等默认名称跟随图表的界面语言（c:lang）
+  const lang = attr(child(space, 'c:lang'), 'val') ?? 'zh-CN';
+  const plots: Plot[] = readPlots(plotArea, colors, env.part, baseText, env.warn, lang.startsWith('zh'));
   if (!plots.length) return out.join('');
   const type0 = chartTypeOf(plots[0].kind)!;
 
@@ -88,7 +90,7 @@ export function renderChart(space: XEl | undefined, w: number, h: number, env: C
     left = fx * w; top = fy * h; right = left + fw * w; bottom = top + fh * h;
   }
 
-  const makeAxis = axisMaker(colors, baseText, env.part);
+  const makeAxis = axisMaker(colors, baseText, env.part, lang);
   if (type0.layout === 'standalone') {
     const ctx: ChartContext = { colors, part: env.part, baseText, plotArea, makeAxis, width: tw, box: { w, h }, defs: env.defs };
     // 雷达、散点的网格和坐标轴在类型自己的输出里：整段当背景，数据部分嵌在里面（背景总是第一步显示，不影响逐个出现）

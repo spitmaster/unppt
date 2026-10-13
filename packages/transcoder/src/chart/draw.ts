@@ -35,16 +35,20 @@ export function accentColor(i: number, colors: ColorContext): Rgba {
   return colorIn({ name: 'x', attrs: {}, text: '', children: [{ name: 'a:schemeClr', attrs: { val: ACCENTS[i % 6] }, children: [], text: '' }] }, colors)!;
 }
 
-/** 图例键：柱/面积是色块，折线是一段线（可带标记），散点等只有标记 */
-export function legendKey(e: { color: Rgba; line: boolean; marker: boolean; series?: Series }, x: number, y: number, ks: number): string {
+/**
+ * 图例键：柱/面积是色块，折线是一段线（可带标记），散点等只有标记。
+ * wide 给了时键统一是这么宽：线画满、标记居中、色块变成 wide × ks 的扁条；不给时线长 3ks、色块 ks × ks
+ */
+export function legendKey(e: { color: Rgba; line: boolean; marker: boolean; series?: Series; width?: number; dash?: string }, x: number, y: number, ks: number, wide?: number): string {
   // 图例里的标记最大 8 像素
   const mark = (cx: number) => (e.series ? markerSvg(e.series, cx, y, 8) : `<circle cx="${n2(cx)}" cy="${n2(y)}" r="3" fill="${css(e.color)}"/>`);
+  const len = wide ?? ks * 3;
   if (e.line) {
-    return `<line x1="${n2(x)}" y1="${n2(y)}" x2="${n2(x + ks * 3)}" y2="${n2(y)}" stroke="${css(e.color)}" stroke-width="2"/>`
-      + (e.marker ? mark(x + ks * 1.5) : '');
+    return `<line x1="${n2(x)}" y1="${n2(y)}" x2="${n2(x + len)}" y2="${n2(y)}" stroke="${css(e.color)}" stroke-width="${n2(e.width ?? 2)}"${e.dash ?? ''}${e.dash ? ' stroke-linecap="round"' : ''}/>`
+      + (e.marker ? mark(x + len / 2) : '');
   }
-  if (e.marker) return mark(x + ks / 2);
-  return `<rect x="${n2(x)}" y="${n2(y - ks / 2)}" width="${n2(ks)}" height="${n2(ks)}" fill="${css(e.color)}"/>`;
+  if (e.marker) return mark(x + (wide ?? ks) / 2);
+  return `<rect x="${n2(x)}" y="${n2(y - ks / 2)}" width="${n2(wide ?? ks)}" height="${n2(ks)}" fill="${css(e.color)}"/>`;
 }
 
 /** 数据点标记：按系列的形状、大小、填充色和边框色画（maxSize 用于图例里缩小） */
@@ -69,6 +73,25 @@ export function markerSvg(s: Series, x: number, y: number, maxSize = Infinity): 
     case 'dot': return `<rect x="${n2(x - r)}" y="${n2(y - d / 16)}" width="${n2(d)}" height="${n2(d / 8)}"${f}/>`;
     default: return `<circle cx="${n2(x)}" cy="${n2(y)}" r="${n2(r)}"${f}${st}/>`;
   }
+}
+
+/**
+ * 折线的路径。平滑线用三次贝塞尔曲线连接：控制点取前后两点连线的 1/6（Catmull-Rom），
+ * 两端外面补一个关于端点对称的点（实测：首尾两段这样吻合到 1 像素，只重复端点会差 3~4 像素）
+ */
+export function linePath(pts: readonly (readonly [number, number])[], smooth: boolean): string {
+  if (!smooth || pts.length < 3) return `M${pts.map((q) => `${n2(q[0])} ${n2(q[1])}`).join('L')}`;
+  const n = pts.length;
+  const at = (i: number): readonly [number, number] => (i < 0 ? [2 * pts[0][0] - pts[1][0], 2 * pts[0][1] - pts[1][1]]
+    : i >= n ? [2 * pts[n - 1][0] - pts[n - 2][0], 2 * pts[n - 1][1] - pts[n - 2][1]] : pts[i]);
+  let d = `M${n2(pts[0][0])} ${n2(pts[0][1])}`;
+  for (let i = 0; i < pts.length - 1; i++) {
+    const [p0, p1, p2, p3] = [at(i - 1), at(i), at(i + 1), at(i + 2)];
+    const c1 = [p1[0] + (p2[0] - p0[0]) / 6, p1[1] + (p2[1] - p0[1]) / 6];
+    const c2 = [p2[0] - (p3[0] - p1[0]) / 6, p2[1] - (p3[1] - p1[1]) / 6];
+    d += `C${n2(c1[0])} ${n2(c1[1])} ${n2(c2[0])} ${n2(c2[1])} ${n2(p2[0])} ${n2(p2[1])}`;
+  }
+  return d;
 }
 
 /**

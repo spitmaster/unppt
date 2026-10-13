@@ -2,8 +2,9 @@
 import { css } from '../../model/color';
 import { n2 } from '../../common/svg';
 import { attr, child } from '../../io/xml';
-import { cpart, label, markerSvg } from '../draw';
+import { cpart, label, linePath, markerSvg } from '../draw';
 import { labelText } from '../format';
+import { errRanges, errSvg } from '../error-bars';
 import type { ChartType, CategoryFrame } from '../chart-type';
 import type { AxisInfo, Plot } from '../model';
 
@@ -36,8 +37,15 @@ function renderLineArea(p: Plot, f: CategoryFrame, A: AxisInfo, out: string[], l
       if (s.fill) drawn.push(cpart(`${s.index}s`, `<path d="${d}" fill="${css(s.fill)}"/>`));
     } else {
       const lc = s.line?.color ?? s.fill;
-      if (lc) drawn.push(cpart(`${s.index}s`, `<path d="M${pts.map((q) => `${n2(q[0])} ${n2(q[1])}`).join('L')}" fill="none" stroke="${css(lc)}" stroke-width="${n2(s.line?.width ?? 3)}" stroke-linejoin="round" stroke-linecap="round"/>`));
+      if (lc) drawn.push(cpart(`${s.index}s`, `<path d="${linePath(pts, s.smooth)}" fill="none" stroke="${css(lc)}" stroke-width="${n2(s.line?.width ?? 3)}" stroke-linejoin="round" stroke-linecap="round"/>`));
       if (s.marker && lc) pts.forEach((q, k) => drawn.push(cpart(`${s.index}x${ptCat[k]}`, markerSvg(s, q[0], q[1]))));
+      if (p.grouping === 'standard') {
+        for (const e of s.errBars) {
+          errRanges(e, s.vals).forEach((r, i) => {
+            if (r) drawn.push(cpart(`${s.index}x${i}e`, errSvg(e, f.catPx(catCenter(i)), f.valPx(vpos(r[0])), f.valPx(vpos(r[1])), true)));
+          });
+        }
+      }
       const lb = s.labels;
       if (lb) {
         let k = 0;

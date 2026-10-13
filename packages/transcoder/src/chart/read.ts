@@ -6,6 +6,9 @@ import { attr, child, children, findAll, numAttr, type XEl } from '../io/xml';
 import { ACCENTS, textStyle } from './draw';
 import { cacheValues, formatNumber } from './format';
 import { chartTypeOfTag } from './chart-types';
+import { axesOf, axId, axisReversed } from './axis';
+import { readErrBars } from './error-bars';
+import { readTrendlines } from './trendline';
 import type { Labels, Plot, Series, TextStyle } from './model';
 
 export function readLabels(d: XEl | undefined, base: Labels | undefined, colors: ColorContext, text: TextStyle): Labels | undefined {
@@ -31,7 +34,8 @@ function sizesOf(el: XEl | undefined, n: number): (number | null)[] {
   });
 }
 
-export function readPlots(plotArea: XEl | undefined, colors: ColorContext, part: string, baseText: TextStyle, warn: (m: string) => void): Plot[] {
+/** zh：中文界面（决定趋势线等默认名称的语言，来自 c:lang） */
+export function readPlots(plotArea: XEl | undefined, colors: ColorContext, part: string, baseText: TextStyle, warn: (m: string) => void, zh = true): Plot[] {
   const plots: Plot[] = [];
   let serialIdx = 0;
   for (const p of plotArea?.children ?? []) {
@@ -63,20 +67,26 @@ export function readPlots(plotArea: XEl | undefined, colors: ColorContext, part:
         vals.push(v === undefined || v === '' ? null : Number(v));
       }
       const pointFills = new Map<number, Rgba>();
+      const explode = new Map<number, number>();
       for (const d of children(s, 'c:dPt')) {
+        const at = numAttr(child(d, 'c:idx'), 'val') ?? 0;
         const f = parseFill(findFillEl(child(d, 'c:spPr')), colors, part);
-        if (f?.kind === 'solid') pointFills.set(numAttr(child(d, 'c:idx'), 'val') ?? 0, f.color);
+        if (f?.kind === 'solid') pointFills.set(at, f.color);
+        const e = numAttr(child(d, 'c:explosion'), 'val');
+        if (e !== undefined) explode.set(at, e);
       }
+      const serExplode = numAttr(child(s, 'c:explosion'), 'val') ?? 0;
       const mk = child(s, 'c:marker');
       const symbol = attr(child(mk, 'c:symbol'), 'val');
       const hasLine = rules.defaultLine;
       const mkFill = parseFill(findFillEl(child(mk, 'c:spPr')), colors, part);
       const mkLine = parseLine([child(child(mk, 'c:spPr'), 'a:ln')], [colors], part);
       const marker = rules.marker(symbol);
+      const name = findAll(child(s, 'c:tx'), 'c:v')[0]?.text ?? child(child(s, 'c:tx'), 'c:v')?.text ?? `系列 ${idx + 1}`;
       return {
         index,
         labels: readLabels(child(s, 'c:dLbls'), plotLabels, colors, baseText),
-        name: findAll(child(s, 'c:tx'), 'c:v')[0]?.text ?? child(child(s, 'c:tx'), 'c:v')?.text ?? `系列 ${idx + 1}`,
+        name,
         cats, vals,
         xs: rules.xy ? cats.map((_c, i) => { const v = Number(cat.pts.get(i)); return cat.pts.has(i) && !isNaN(v) ? v : i + 1; }) : undefined,
         ...(child(s, 'c:bubbleSize') ? { sizes: sizesOf(child(s, 'c:bubbleSize'), n), bubble3D: attr(child(s, 'c:bubble3D'), 'val') === '1' } : {}),
@@ -84,16 +94,22 @@ export function readPlots(plotArea: XEl | undefined, colors: ColorContext, part:
         // 线条写了"无线条"（散点图只画点）时不画线
         line: child(child(spPr, 'a:ln'), 'a:noFill') ? undefined : line ?? (hasLine ? { color: accent, width: 2.25 * 96 / 72, cap: 'round', join: 'round' } : undefined),
         marker,
+        smooth: attr(child(s, 'c:smooth'), 'val') === '1',
         markerSymbol: symbol && symbol !== 'none' && symbol !== 'auto' ? symbol : 'circle',
         markerSize: (numAttr(child(mk, 'c:size'), 'val') ?? 5) * 96 / 72,
         markerFill: mkFill?.kind === 'solid' ? mkFill.color : mkFill?.kind === 'none' ? undefined : accent,
         markerLine: mkLine ? mkLine.color : accent,
         pointFills,
+        explosion: (i: number) => explode.get(i) ?? serExplode,
+        trendlines: readTrendlines(s, name, line?.color ?? (fill?.kind === 'solid' ? fill.color : accent), colors, part, zh),
+        errBars: readErrBars(s, colors, part),
       };
     });
+    const axIds = children(p, 'c:axId').map((a) => attr(a, 'val') ?? '');
     plots.push({
       kind,
-      axIds: children(p, 'c:axId').map((a) => attr(a, 'val') ?? ''),
+      axIds,
+      catReversed: axisReversed(axesOf(plotArea).catAxes.find((a) => axIds.includes(axId(a)))),
       radarStyle: attr(child(p, 'c:radarStyle'), 'val') ?? 'marker',
       horizontal: attr(child(p, 'c:barDir'), 'val') === 'bar',
       grouping: attr(child(p, 'c:grouping'), 'val') ?? type.defaultGrouping ?? 'standard',
