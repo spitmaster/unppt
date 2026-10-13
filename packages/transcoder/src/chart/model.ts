@@ -98,7 +98,10 @@ export interface Plot {
   bubbleScale: number;
   sizeRepresents: string;
   /** 股价图：最高最低连线、涨跌柱（间隙宽度%、涨柱和跌柱的填充、边框） */
-  stock?: { hiLow?: Line; upDown?: { gap: number; up?: Rgba; down?: Rgba; line?: Rgba } };
+  /** 高低点连线、涨跌柱（股价图，折线图也可以开）、垂直线（折线图） */
+  stock?: { hiLow?: Line; drop?: Line; upDown?: { gap: number; up?: Rgba; down?: Rgba; line?: Rgba } };
+  /** 空值怎么画（c:dispBlanksAs）：留空、按零、跨过去连线 */
+  blanks?: 'gap' | 'zero' | 'span';
   /** 复合饼图、复合条饼图：右图类型、怎么拆（auto / pos / val / percent / cust）、拆分值、右图大小%、间隙宽度%、连接线 */
   ofPie?: { type: string; splitType: string; splitPos: number; custom: number[]; second: number; gap: number; lines?: Line };
   series: Series[];

@@ -7,6 +7,7 @@ import { labelText } from '../format';
 import { errRanges, errSvg } from '../error-bars';
 import type { ChartType, CategoryFrame } from '../chart-type';
 import type { AxisInfo, Plot } from '../model';
+import { renderLineExtras, renderUpDownBars } from './line-extras';
 
 function renderLineArea(p: Plot, f: CategoryFrame, A: AxisInfo, out: string[], labelsOut: string[]): void {
   const { nCat, catCenter } = f;
@@ -15,13 +16,21 @@ function renderLineArea(p: Plot, f: CategoryFrame, A: AxisInfo, out: string[], l
   const acc = new Array(nCat).fill(0);
   const series = p.kind === 'area' && p.grouping !== 'standard' ? p.series : p.series;
   const drawn: string[] = [];
+  // 垂直线、高低点连线、涨跌柱画在系列下面
+  if (p.kind !== 'area') renderLineExtras(p, f, A, drawn);
   series.forEach((s) => {
     const pts: [number, number][] = [];
     const base: [number, number][] = [];
     const ptCat: number[] = [];
+    // 折线的空值：按零画，或者在这里断开（留空），默认跨过去连线
+    const breaks: number[] = [];
     for (let i = 0; i < nCat; i++) {
-      const v = s.vals[i];
-      if (v === null || v === undefined) continue;
+      let v = s.vals[i];
+      if ((v === null || v === undefined) && p.kind !== 'area' && p.blanks === 'zero' && i < s.vals.length) v = 0;
+      if (v === null || v === undefined) {
+        if (p.kind !== 'area' && p.blanks === 'gap' && pts.length && breaks[breaks.length - 1] !== pts.length) breaks.push(pts.length);
+        continue;
+      }
       const stacked = p.grouping === 'stacked' || p.grouping === 'percentStacked';
       const b0 = stacked ? acc[i] : 0;
       const v1 = stacked ? acc[i] + v : v;
@@ -38,7 +47,10 @@ function renderLineArea(p: Plot, f: CategoryFrame, A: AxisInfo, out: string[], l
     } else {
       // 无线条的系列不画线；三维折线图是用填充色画的带子，按平面画时仍用填充色画线
       const lc = s.noLine && !p.is3D ? undefined : s.line?.color ?? s.fill;
-      if (lc) drawn.push(cpart(`${s.index}s`, `<path d="${linePath(pts, s.smooth)}" fill="none" stroke="${css(lc)}" stroke-width="${n2(s.line?.width ?? 3)}" stroke-linejoin="round" stroke-linecap="round"/>`));
+      // 留空时按空值断成几段，只有一个点的段不画线
+      const segs = [0, ...breaks, pts.length].map((a, k, arr) => pts.slice(a, arr[k + 1])).filter((g) => g.length > 1);
+      const d = segs.map((g) => linePath(g, s.smooth)).join('');
+      if (lc && d) drawn.push(cpart(`${s.index}s`, `<path d="${d}" fill="none" stroke="${css(lc)}" stroke-width="${n2(s.line?.width ?? 3)}" stroke-linejoin="round" stroke-linecap="round"/>`));
       if (s.marker && (lc || s.markerFill || s.markerLine)) pts.forEach((q, k) => drawn.push(cpart(`${s.index}x${ptCat[k]}`, markerSvg(s, q[0], q[1]))));
       if (p.grouping === 'standard') {
         for (const e of s.errBars) {
@@ -49,11 +61,9 @@ function renderLineArea(p: Plot, f: CategoryFrame, A: AxisInfo, out: string[], l
       }
       const lb = s.labels;
       if (lb) {
-        let k = 0;
-        for (let i = 0; i < nCat; i++) {
-          const v = s.vals[i];
-          if (v === null || v === undefined) continue;
-          const q = pts[k++];
+        for (let k = 0; k < pts.length; k++) {
+          const i = ptCat[k], v = s.vals[i] ?? 0;
+          const q = pts[k];
           const text = labelText(lb, v, 0, s.cats[i] ?? '', s.name, valFmt);
           const pos = lb.pos ?? 'r';
           const key = `${s.index}x${i}l`;
@@ -66,6 +76,7 @@ function renderLineArea(p: Plot, f: CategoryFrame, A: AxisInfo, out: string[], l
       }
     }
   });
+  if (p.kind !== 'area') renderUpDownBars(p, f, A, drawn);
   out.push(...drawn);
 }
 

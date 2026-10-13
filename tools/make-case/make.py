@@ -1290,6 +1290,39 @@ def charts_options(app):
     return p
 
 
+def charts_extras(app):
+    """图表的其它常用设置：数据表（柱形图、折线图）；带空值的折线图按零、连线、留空显示；
+    折线图的垂直线、高低点连线、涨跌柱（默认示例数据）"""
+    p = new_pres(app, window=True)
+    def chart(s, i, kind):
+        return s.Shapes.AddChart2(-1, kind, 20 + i * 470, 40, 450, 440)
+    s = blank(p)
+    a = chart(s, 0, 51)
+    a.Chart.HasDataTable = True
+    _close_data(a)
+    b = chart(s, 1, 65)
+    b.Chart.HasDataTable = True
+    _close_data(b)
+    rows = [["", "系列 1", "系列 2"], ["类别 1", 4.3, 2.4], ["类别 2", None, 4.4], ["类别 3", 3.5, None], ["类别 4", 4.5, 2.8], ["类别 5", 2.0, 3.0]]
+    s = blank(p)
+    for i, mode in enumerate((2, 3)):        # xlZero、xlInterpolated
+        c = chart(s, i, 65)
+        _chart_values(c, rows)
+        c.Chart.DisplayBlanksAs = mode
+        _close_data(c)
+    s = blank(p)
+    e = chart(s, 0, 65)
+    _chart_values(e, rows)
+    e.Chart.DisplayBlanksAs = 1              # xlNotPlotted（留空）
+    _close_data(e)
+    f = chart(s, 1, 4)
+    g = f.Chart.ChartGroups(1)
+    g.HasDropLines = True
+    g.HasHiLoLines = True
+    g.HasUpDownBars = True
+    _close_data(f)
+    return p
+
 def charts_negative(app):
     """带负数的图表：簇状柱形、条形、折线、堆积柱形（分类轴在 0 线上，标签默认挨着它）；
     柱形图把分类标签设成"低"（放到底部）"""
@@ -1890,7 +1923,7 @@ def table_vertical(app):
     return p
 
 
-CASES = [shapes_all, text_sizes, text_align, text_spacing, text_bullets, text_missing_font, shapes_basic, fills_lines, table_basic, group_rotate, anim_basic, anim_auto, charts_basic, pictures, smartart, text_effects, text_layout, table_merge, links, emf_images, anim_advanced, charts_labels, freeform_icons, media_audio, anim_trigger, wmf_images, anim_iterate, picture_transparent, charts_more, shape_effects, equations, anim_path, anim_emphasis, transitions, fills_patterns, text_decoration, anim_entrance, svg_images, charts_markers, hidden_slides, media_background, text_glow_reflection, text_tabs, text_picture_bullets, fills_texture, transition_morph, text_embedded_fonts, text_warp, anim_repeat, charts_sizes, slide_timings, lines_compound, table_diagonal, lines_gradient, fills_radial, fills_rect_gradient, shapes_3d, table_vertical, transitions_more, anim_sound, anim_build, anim_after, anim_text_emphasis, charts_bubble, media_video, charts_options, charts_negative, shapes_bevel, charts_legend, shapes_3d_rotation, smartart_3d, charts_ofpie, charts_3d, anim_group_emphasis, activex_controls]
+CASES = [shapes_all, text_sizes, text_align, text_spacing, text_bullets, text_missing_font, shapes_basic, fills_lines, table_basic, group_rotate, anim_basic, anim_auto, charts_basic, pictures, smartart, text_effects, text_layout, table_merge, links, emf_images, anim_advanced, charts_labels, freeform_icons, media_audio, anim_trigger, wmf_images, anim_iterate, picture_transparent, charts_more, shape_effects, equations, anim_path, anim_emphasis, transitions, fills_patterns, text_decoration, anim_entrance, svg_images, charts_markers, hidden_slides, media_background, text_glow_reflection, text_tabs, text_picture_bullets, fills_texture, transition_morph, text_embedded_fonts, text_warp, anim_repeat, charts_sizes, slide_timings, lines_compound, table_diagonal, lines_gradient, fills_radial, fills_rect_gradient, shapes_3d, table_vertical, transitions_more, anim_sound, anim_build, anim_after, anim_text_emphasis, charts_bubble, media_video, charts_options, charts_negative, shapes_bevel, charts_legend, shapes_3d_rotation, smartart_3d, charts_ofpie, charts_3d, anim_group_emphasis, activex_controls, charts_extras]
 
 
 def main():

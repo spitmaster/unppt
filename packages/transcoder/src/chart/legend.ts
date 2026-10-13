@@ -9,6 +9,20 @@ import { dashAttr } from './trendline';
 
 export interface LegendEntry { name: string; color: Rgba; line: boolean; marker: boolean; series?: Series; width?: number; dash?: string; none?: boolean }
 
+/** 每个系列的图例键（按系列顺序；数据表的行首也用它） */
+export function seriesEntries(plots: Plot[], colors: ColorContext): LegendEntry[] {
+  const entries: LegendEntry[] = [];
+  for (const p of plots) {
+    const t = chartTypeOf(p.kind)!;
+    for (const s of p.series) {
+      const k = t.legendKey(p, s);
+      // 图例里的线和系列一样粗（实测）
+      entries.push({ name: s.name, color: k.color ?? accentColor(0, colors), line: k.line, marker: s.marker || !!k.dot, ...(k.dot ? {} : { series: s }), ...(k.line && s.line ? { width: s.line.width } : {}), ...(k.none ? { none: true } : {}) });
+    }
+  }
+  return entries;
+}
+
 /** 图例里的各项（按显示顺序） */
 function entriesOf(plots: Plot[], colors: ColorContext): LegendEntry[] {
   const entries: LegendEntry[] = [];
@@ -18,14 +32,7 @@ function entriesOf(plots: Plot[], colors: ColorContext): LegendEntry[] {
     s?.cats.forEach((c, i) => entries.push({ name: c, color: s.pointFills.get(i) ?? accentColor(i, colors), line: false, marker: false }));
     return entries;
   }
-  for (const p of plots) {
-    const t = chartTypeOf(p.kind)!;
-    for (const s of p.series) {
-      const k = t.legendKey(p, s);
-      // 图例里的线和系列一样粗（实测）
-      entries.push({ name: s.name, color: k.color ?? accentColor(0, colors), line: k.line, marker: s.marker || !!k.dot, ...(k.dot ? {} : { series: s }), ...(k.line && s.line ? { width: s.line.width } : {}), ...(k.none ? { none: true } : {}) });
-    }
-  }
+  entries.push(...seriesEntries(plots, colors));
   if (type0.legendReversed?.(plots[0])) entries.reverse();
   // 趋势线排在所有系列后面
   for (const p of plots) {
