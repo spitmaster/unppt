@@ -1,0 +1,101 @@
+{
+ "version": 7,
+ "slideWidthPt": 960.0,
+ "slideHeightPt": 540.0,
+ "imageWidth": 1280,
+ "imageHeight": 720,
+ "slides": [
+  {
+   "index": 0,
+   "hidden": false,
+   "shapes": [
+    {
+     "id": 2,
+     "name": "TextBox 1",
+     "type": 17,
+     "x": 60.0,
+     "y": 40.0,
+     "w": 800.0,
+     "h": 109.055,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 6,
+       "text": "第一条要点\r",
+       "x": 107.7,
+       "y": 43.6,
+       "w": 147.625,
+       "h": 33.6
+      },
+      {
+       "start": 6,
+       "len": 18,
+       "text": "第二条要点 Second item\r",
+       "x": 107.7,
+       "y": 77.2,
+       "w": 304.75,
+       "h": 33.6
+      },
+      {
+       "start": 24,
+       "len": 5,
+       "text": "第三条要点",
+       "x": 107.7,
+       "y": 110.8,
+       "w": 140.005,
+       "h": 33.6
+      }
+     ]
+    },
+    {
+     "id": 3,
+     "name": "TextBox 2",
+     "type": 17,
+     "x": 60.0,
+     "y": 280.0,
+     "w": 800.0,
+     "h": 109.055,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 6,
+       "text": "第一条要点\r",
+       "x": 107.7,
+       "y": 283.6,
+       "w": 147.625,
+       "h": 33.6
+      },
+      {
+       "start": 6,
+       "len": 18,
+       "text": "第二条要点 Second item\r",
+       "x": 107.7,
+       "y": 317.2,
+       "w": 304.75,
+       "h": 33.6
+      },
+      {
+       "start": 24,
+       "len": 5,
+       "text": "第三条要点",
+       "x": 107.7,
+       "y": 350.8,
+       "w": 140.005,
+       "h": 33.6
+      }
+     ]
+    }
+   ],
+   "effects": [],
+   "triggerHidden": [],
+   "steps": 0
+  }
+ ],
+ "ok": true
+}
