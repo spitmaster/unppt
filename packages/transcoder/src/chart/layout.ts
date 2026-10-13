@@ -33,14 +33,19 @@ export const RIGHT_LABEL_PAD = 15.5;
 export const legendSquare = (s: number) => 0.48 * s;
 export const legendKeyGap = (s: number) => 0.3 * s;
 export const legendItemGap = (s: number) => 0.68 * s;
-/** 图例里有线条项（折线、趋势线）时所有图例键统一的宽度（实测 12 磅，3 个图表；项间隔不变） */
-export const legendLineKey = (s: number) => 1.75 * s;
+/** 图例里有线条项（折线、趋势线）时所有图例键统一的宽度：固定 21 磅，不随字号变（COM 生成 9~20 磅的横排、竖排图例，导出图实测） */
+export const LEGEND_LINE_KEY = 28;
 /** 竖排图例（左、右）：每行的高度（COM 读 3 种字号：1.03 × 字号 + 6 磅）、图例和绘图区之间的距离（导出图实测，像素） */
 export const legendRow = (s: number) => 1.03 * s + 8;
 /** 上方图例：中心离图表上边的距离、图例连同下方留白占的高度（像素） */
 export const legendTopCenter = (s: number) => 12 + 0.515 * s;
 export const legendTopBand = (s: number) => 16 + 1.03 * s;
-export const legendPlotGap = 21;
+/**
+ * 竖排图例（左、右）：键到文字的空隙（线条键约 1 像素，方块 0.2 × 字号）、键到绘图区的距离（线条 20，方块 0.19 × 字号 + 18.7）。
+ * COM 生成 9~20 磅折线、柱形图的右侧图例，导出图实测
+ */
+export const legendKeyGapV = (s: number, line: boolean) => (line ? 1 : 0.2 * s);
+export const legendPlotGap = (s: number, line: boolean) => (line ? 20 : 0.19 * s + 18.7);
 
 /**
  * 雷达图（PowerPoint 实测，COM 读 96 组"尺寸 × 字号 × 分类数 × 标签"的绘图区）：外接圆直径
