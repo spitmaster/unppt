@@ -107,8 +107,21 @@ export interface AxisInfo {
   pos: (v: number) => number;
 }
 
-/** 按坐标轴元素和数值范围算刻度；margin 是最大值上方留的余量（默认 5%）；minPos 是最小的正数（对数刻度用） */
-export type AxisMaker = (ax: XEl | undefined, vmin: number, vmax: number, pct: boolean, margin?: number, minPos?: number) => AxisInfo;
+/** 算刻度时的附加信息 */
+export interface AxisOpts {
+  /** 百分比堆积（默认格式 0%） */
+  pct?: boolean;
+  /** 最大值上方留的余量（默认 5%） */
+  margin?: number;
+  /** 最小的正数（对数刻度用） */
+  minPos?: number;
+  /** 轴的长度（像素）和方向：自动刻度的疏密取决于能放下几个标签 */
+  length?: number;
+  horizontal?: boolean;
+}
+
+/** 按坐标轴元素和数值范围算刻度 */
+export type AxisMaker = (ax: XEl | undefined, vmin: number, vmax: number, opts?: AxisOpts) => AxisInfo;
 
 /** 绘图区（像素） */
 export interface Rect { left: number; top: number; right: number; bottom: number }
