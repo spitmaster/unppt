@@ -3,7 +3,7 @@ import type { ColorContext, Rgba } from '../model/color';
 import { attr, child, type XEl } from '../io/xml';
 import { chartTypeOf } from './chart-types';
 import { accentColor, label, legendKey, textStyle } from './draw';
-import { LEGEND_LINE_KEY, legendBand, legendCenter, legendItemGap, legendKeyGap, legendKeyGapV, legendPlotGap, legendRow, legendSquare, legendTopBand, legendTopCenter, PAD, type TextWidth } from './layout';
+import { LEGEND_LINE_KEY, legendBand, legendCenter, legendItemGap, legendKeyGap, legendLead, legendPlotGap, legendRow, legendSquare, legendTopBand, legendTopCenter, PAD, type TextWidth } from './layout';
 import type { Plot, Rect, Series, TextStyle } from './model';
 import { dashAttr } from './trendline';
 
@@ -50,15 +50,15 @@ export function renderLegend(legend: XEl | undefined, plots: Plot[], area: Rect,
     // 有线条项时所有图例键一样宽（方块变成扁条、标记居中，实测）
     const anyLine = entries.some((e) => e.line);
     const keyW = (e: LegendEntry) => (anyLine ? LEGEND_LINE_KEY : e.line ? ks * 3 : legendSquare(sz));
-    const gap = legendItemGap(sz);
-    const parts = entries.map((e) => keyW(e) + legendKeyGap(sz) + tw(e.name, sz));
-    const total = parts.reduce((a, b) => a + b, 0) + gap * Math.max(0, entries.length - 1);
-    let x = (w - total) / 2;
+    const kGap = legendKeyGap(sz, anyLine), gap = legendItemGap(sz, anyLine), lead = legendLead(sz, anyLine);
+    const parts = entries.map((e) => keyW(e) + kGap + tw(e.name, sz));
+    const total = lead + parts.reduce((a, b) => a + b, 0) + gap * Math.max(0, entries.length - 1);
+    let x = (w - total) / 2 + lead;
     // 上方图例：中心在 9 磅 + 0.515 倍字号处，下沿（12 磅 + 1.03 倍字号）再往下 11 磅才是绘图区（COM 读 3 种字号，导出图核对）
     const y = legendPos === 'b' ? bottom - legendCenter(sz) : top - PAD + legendTopCenter(sz);
     entries.forEach((e, i) => {
       if (!e.none) out.push(anyLine ? legendKey(e, x, y, legendSquare(sz), keyW(e)) : legendKey(e, x, y, e.line ? ks : legendSquare(sz)));
-      out.push(label(e.name, x + keyW(e) + legendKeyGap(sz), y, legendText, 'start'));
+      out.push(label(e.name, x + keyW(e) + kGap, y, legendText, 'start'));
       x += parts[i] + gap;
     });
     if (legendPos === 'b') bottom -= legendBand(legendText.size);
@@ -69,7 +69,7 @@ export function renderLegend(legend: XEl | undefined, plots: Plot[], area: Rect,
     const sz = legendText.size;
     const anyLine = entries.some((e) => e.line);
     const keyW = anyLine ? LEGEND_LINE_KEY : legendSquare(sz);
-    const kGap = legendKeyGapV(sz, anyLine);
+    const kGap = legendKeyGap(sz, anyLine);
     const lw = keyW + kGap + Math.max(0, ...entries.map((e) => tw(e.name, sz)));
     const row = legendRow(sz);
     const x = legendPos === 'l' ? left : right - lw;
