@@ -35,19 +35,38 @@ export function accentColor(i: number, colors: ColorContext): Rgba {
   return colorIn({ name: 'x', attrs: {}, text: '', children: [{ name: 'a:schemeClr', attrs: { val: ACCENTS[i % 6] }, children: [], text: '' }] }, colors)!;
 }
 
-export function legendKey(e: { color: Rgba; line: boolean; marker: boolean }, x: number, y: number, ks: number): string {
+/** 图例键：柱/面积是色块，折线是一段线（可带标记），散点等只有标记 */
+export function legendKey(e: { color: Rgba; line: boolean; marker: boolean; series?: Series }, x: number, y: number, ks: number): string {
+  // 图例里的标记最大 8 像素
+  const mark = (cx: number) => (e.series ? markerSvg(e.series, cx, y, 8) : `<circle cx="${n2(cx)}" cy="${n2(y)}" r="3" fill="${css(e.color)}"/>`);
   if (e.line) {
     return `<line x1="${n2(x)}" y1="${n2(y)}" x2="${n2(x + ks * 3)}" y2="${n2(y)}" stroke="${css(e.color)}" stroke-width="2"/>`
-      + (e.marker ? `<circle cx="${n2(x + ks * 1.5)}" cy="${n2(y)}" r="3" fill="${css(e.color)}"/>` : '');
+      + (e.marker ? mark(x + ks * 1.5) : '');
   }
-  if (e.marker) return `<circle cx="${n2(x + ks / 2)}" cy="${n2(y)}" r="3" fill="${css(e.color)}"/>`;
+  if (e.marker) return mark(x + ks / 2);
   return `<rect x="${n2(x)}" y="${n2(y - ks / 2)}" width="${n2(ks)}" height="${n2(ks)}" fill="${css(e.color)}"/>`;
 }
 
-/** 数据点标记（圆形；其它形状先都画成圆） */
-export function markerSvg(s: Series, x: number, y: number): string {
+/** 数据点标记：按系列的形状、大小、填充色和边框色画（maxSize 用于图例里缩小） */
+export function markerSvg(s: Series, x: number, y: number, maxSize = Infinity): string {
   const fill = s.markerFill ?? s.line?.color;
   const stroke = s.markerLine;
   if (!fill && !stroke) return '';
-  return `<circle cx="${n2(x)}" cy="${n2(y)}" r="${n2(s.markerSize / 2)}" fill="${fill ? css(fill) : 'none'}"${stroke ? ` stroke="${css(stroke)}" stroke-width="0.75"` : ''}/>`;
+  const d = Math.min(s.markerSize, maxSize), r = d / 2;
+  const f = ` fill="${fill ? css(fill) : 'none'}"`;
+  const st = stroke ? ` stroke="${css(stroke)}" stroke-width="0.75"` : '';
+  // 只有线条的标记（X、星形、加号、短横线）用标记的边框色，没有就用填充色
+  const lineOnly = ` fill="none" stroke="${css(stroke ?? fill!)}" stroke-width="${n2(Math.max(1, d / 8))}"`;
+  const P = (pts: [number, number][]) => pts.map(([px, py]) => `${n2(x + px)},${n2(y + py)}`).join(' ');
+  switch (s.markerSymbol) {
+    case 'square': return `<rect x="${n2(x - r)}" y="${n2(y - r)}" width="${n2(d)}" height="${n2(d)}"${f}${st}/>`;
+    case 'diamond': return `<polygon points="${P([[0, -r], [r, 0], [0, r], [-r, 0]])}"${f}${st}/>`;
+    case 'triangle': return `<polygon points="${P([[0, -r], [r, r], [-r, r]])}"${f}${st}/>`;
+    case 'x': return `<path d="M${n2(x - r)} ${n2(y - r)}L${n2(x + r)} ${n2(y + r)}M${n2(x + r)} ${n2(y - r)}L${n2(x - r)} ${n2(y + r)}"${lineOnly}/>`;
+    case 'star': return `<path d="M${n2(x - r)} ${n2(y - r)}L${n2(x + r)} ${n2(y + r)}M${n2(x + r)} ${n2(y - r)}L${n2(x - r)} ${n2(y + r)}M${n2(x)} ${n2(y - r)}L${n2(x)} ${n2(y + r)}"${lineOnly}/>`;
+    case 'plus': return `<path d="M${n2(x - r)} ${n2(y)}L${n2(x + r)} ${n2(y)}M${n2(x)} ${n2(y - r)}L${n2(x)} ${n2(y + r)}"${lineOnly}/>`;
+    case 'dash': return `<path d="M${n2(x - r)} ${n2(y)}L${n2(x + r)} ${n2(y)}"${lineOnly}/>`;
+    case 'dot': return `<rect x="${n2(x - r)}" y="${n2(y - d / 16)}" width="${n2(d)}" height="${n2(d / 8)}"${f}/>`;
+    default: return `<circle cx="${n2(x)}" cy="${n2(y)}" r="${n2(r)}"${f}${st}/>`;
+  }
 }

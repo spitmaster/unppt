@@ -17,6 +17,8 @@ export interface Series {
   fill?: Rgba;
   line?: Line;
   marker: boolean;
+  /** 标记形状：circle、square、diamond、triangle、x、star、dot、dash、plus */
+  markerSymbol: string;
   /** 标记的直径（像素）和颜色 */
   markerSize: number;
   markerFill?: Rgba;

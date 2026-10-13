@@ -871,7 +871,25 @@ def svg_images(app):
     return p
 
 
-CASES = [shapes_all, text_sizes, text_align, text_spacing, text_bullets, text_missing_font, shapes_basic, fills_lines, table_basic, group_rotate, anim_basic, anim_auto, charts_basic, pictures, smartart, text_effects, text_layout, table_merge, links, emf_images, anim_advanced, charts_labels, freeform_icons, media_audio, anim_trigger, wmf_images, anim_iterate, picture_transparent, charts_more, shape_effects, equations, anim_path, anim_emphasis, transitions, fills_patterns, text_decoration, anim_entrance, svg_images]
+def charts_markers(app):
+    """数据点标记的各种形状和大小：折线图（方形、菱形、三角形、X、星形、圆点、短横线、圆形、加号）"""
+    p = new_pres(app, window=True)
+    styles = [1, 2, 3, -4168, 5, -4118, -4115, 8, 9]   # xlMarkerStyle：方、菱、三角、X、星、点、横、圆、加号
+    s = blank(p)
+    for k in range(3):
+        ch = s.Shapes.AddChart2(-1, 65, 20 + k * 310, 60, 300, 420).Chart
+        for si in range(1, ch.SeriesCollection().Count + 1):
+            ser = ch.SeriesCollection(si)
+            ser.MarkerStyle = styles[k * 3 + si - 1]
+            ser.MarkerSize = [5, 9, 13][si - 1]
+        try:
+            ch.ChartData.Workbook.Close()
+        except Exception:
+            pass
+    return p
+
+
+CASES = [shapes_all, text_sizes, text_align, text_spacing, text_bullets, text_missing_font, shapes_basic, fills_lines, table_basic, group_rotate, anim_basic, anim_auto, charts_basic, pictures, smartart, text_effects, text_layout, table_merge, links, emf_images, anim_advanced, charts_labels, freeform_icons, media_audio, anim_trigger, wmf_images, anim_iterate, picture_transparent, charts_more, shape_effects, equations, anim_path, anim_emphasis, transitions, fills_patterns, text_decoration, anim_entrance, svg_images, charts_markers]
 
 
 def main():

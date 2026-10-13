@@ -14,7 +14,7 @@ import { axesOf, axId, axisMaker } from './axis';
 import type { CategoryFrame } from './chart-type';
 import { chartTypeOf } from './chart-types';
 import { accentColor, label, legendKey, textStyle, textWidth } from './draw';
-import type { ChartContext, Plot, TextStyle } from './model';
+import type { ChartContext, Plot, Series, TextStyle } from './model';
 import { readPlots } from './read';
 import { lineType } from './types/line-area';
 
@@ -77,7 +77,7 @@ export function renderChart(space: XEl | undefined, w: number, h: number, env: C
   const legendPos = attr(child(legend, 'c:legendPos'), 'val') ?? 'r';
   const legendText = textStyle(child(legend, 'c:txPr'), colors, baseText);
   if (legend) {
-    const entries: { name: string; color: Rgba; line: boolean; marker: boolean }[] = [];
+    const entries: { name: string; color: Rgba; line: boolean; marker: boolean; series?: Series }[] = [];
     if (type0.legendByCategory || (plots[0].varyColors && plots[0].series.length === 1)) {
       const s = plots[0].series[0];
       s?.cats.forEach((c, i) => entries.push({ name: c, color: s.pointFills.get(i) ?? accentColor(i, colors), line: false, marker: false }));
@@ -86,7 +86,7 @@ export function renderChart(space: XEl | undefined, w: number, h: number, env: C
         const t = chartTypeOf(p.kind)!;
         for (const s of p.series) {
           const k = t.legendKey(p, s);
-          entries.push({ name: s.name, color: k.color ?? accentColor(0, colors), line: k.line, marker: s.marker });
+          entries.push({ name: s.name, color: k.color ?? accentColor(0, colors), line: k.line, marker: s.marker, series: s });
         }
       }
       if (type0.legendReversed?.(plots[0])) entries.reverse();
