@@ -5,32 +5,11 @@
  */
 import type { AnimBehavior } from '../../../format/src/index';
 import { attr, child, children, findAll, numAttr, path, type XEl } from '../io/xml';
-import { delayOf } from './timing-util';
+import { timingOf } from './timing-util';
 
 const PROPS: Record<string, AnimBehavior['prop']> = {
   ppt_x: 'x', ppt_y: 'y', ppt_w: 'w', ppt_h: 'h', 'style.rotation': 'r', r: 'r', 'style.opacity': 'o',
 };
-
-/** 时间节点上的设置：开始、时长、加减速、时间折线、往返、重复 */
-function timing(cTn: XEl | undefined): Omit<AnimBehavior, 'prop' | 'keys' | 'filter' | 'out'> | undefined {
-  const d = attr(cTn, 'dur');
-  const dur = d === undefined ? 1 : Number(d);
-  if (!(dur >= 0) || !isFinite(dur)) return undefined;
-  const out: Omit<AnimBehavior, 'prop' | 'keys' | 'filter' | 'out'> = { delay: delayOf(cTn), dur: Math.max(1, dur) };
-  const accel = (numAttr(cTn, 'accel') ?? 0) / 100000, decel = (numAttr(cTn, 'decel') ?? 0) / 100000;
-  if (accel > 0) out.accel = Math.min(1, accel);
-  if (decel > 0) out.decel = Math.min(1 - (out.accel ?? 0), decel);
-  const tf = attr(cTn, 'tmFilter');
-  if (tf) {
-    const pts = tf.split(';').map((p) => p.split(',').map((v) => Number(v.trim()))).filter((p) => p.length === 2 && p.every(isFinite));
-    if (pts.length >= 2) out.tmFilter = pts.map(([a, b]) => [a, b] as [number, number]);
-  }
-  const ar = attr(cTn, 'autoRev');
-  if (ar === '1' || ar === 'true') out.autoRev = true;
-  const rc = attr(cTn, 'repeatCount');
-  if (rc && rc !== 'indefinite' && Number(rc) > 1000) out.repeat = Math.min(1000, Number(rc) / 1000);
-  return out;
-}
 
 /** p:val 里的值：数字或公式字符串 */
 function value(v: XEl | undefined): number | string | undefined {
@@ -69,11 +48,11 @@ export function compileBehaviors(cTn: XEl | undefined): { behaviors: AnimBehavio
   if (!cTn) return undefined;
   const list = children(child(cTn, 'p:childTnLst'));
   const behaviors: AnimBehavior[] = [];
-  const relative: { el: XEl; tm: NonNullable<ReturnType<typeof timing>> }[] = [];
+  const relative: { el: XEl; tm: NonNullable<ReturnType<typeof timingOf>> }[] = [];
   for (const el of list) {
     const tn = path(el, 'p:cBhvr', 'p:cTn');
     const names = findAll(child(el, 'p:cBhvr'), 'p:attrName').map((n) => n.text.trim());
-    const tm = timing(tn);
+    const tm = timingOf(tn);
     if (!tm) return undefined;
     if (el.name === 'p:set') {
       if (names.includes('style.visibility')) continue;
