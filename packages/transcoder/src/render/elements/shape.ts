@@ -64,7 +64,7 @@ export async function renderShape(r: RenderContext, el: XEl, ctx: SlideContext, 
   for (const p of paths) {
     if (!p.d) continue;
     const fa = p.fill !== 'none' ? await fillAttrs(fill, r.doc, box.w, box.h, p.fill, r.images, box) : ' fill="none"';
-    const sa = p.stroke ? strokeAttrs(line, r.doc, p.fill) : ' stroke="none"';
+    const sa = p.stroke ? strokeAttrs(line, r.doc, p.fill, box) : ' stroke="none"';
     if (fa === ' fill="none"' && sa === ' stroke="none"') continue;
     const evenodd = p.d.split('M').length > 2 ? ' fill-rule="evenodd"' : '';
     // 复合线型（双线等）：描边单独画，用遮罩挖出线间空隙

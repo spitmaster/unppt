@@ -5,7 +5,7 @@ import { css, type ColorContext, type Rgba } from '../model/color';
 import { n2, type SvgDoc } from '../common/svg';
 import { attr, child, numAttr, type XEl } from '../io/xml';
 import { EMU_PER_PX } from '../model/model';
-import { adjustForPathMode, findFillEl, parseFill, type Fill } from './fill';
+import { adjustForPathMode, findFillEl, gradientPaint, parseFill, type Fill } from './fill';
 
 export interface Line {
   color?: Rgba;
@@ -113,11 +113,13 @@ function marker(doc: SvgDoc, end: { type: string; w: string; len: string }, colo
   return id;
 }
 
-export function strokeAttrs(line: Line | undefined, doc: SvgDoc, mode: string): string {
+/** 描边属性；box 是形状尺寸，给了才能画渐变线（不给时用渐变的第一个颜色） */
+export function strokeAttrs(line: Line | undefined, doc: SvgDoc, mode: string, box?: { w: number; h: number }): string {
   if (!line) return ' stroke="none"';
   const c = adjustForPathMode(line.color ?? { r: 0, g: 0, b: 0, a: 1 }, mode === 'norm' ? '' : '');
-  let s = ` stroke="${css(c)}" stroke-width="${n2(line.width)}"`;
-  if (c.a < 0.999) s += ` stroke-opacity="${n2(c.a)}"`;
+  const grad = box && line.fill?.kind === 'grad' ? line.fill : undefined;
+  let s = ` stroke="${grad ? gradientPaint(grad, doc, box!.w, box!.h, 'norm') : css(c)}" stroke-width="${n2(line.width)}"`;
+  if (!grad && c.a < 0.999) s += ` stroke-opacity="${n2(c.a)}"`;
   if (line.dash) s += ` stroke-dasharray="${line.dash}"`;
   if (line.cap !== 'butt') s += ` stroke-linecap="${line.cap}"`;
   if (line.join !== 'miter') s += ` stroke-linejoin="${line.join}"`;

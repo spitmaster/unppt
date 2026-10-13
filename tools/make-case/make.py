@@ -1226,7 +1226,48 @@ def table_diagonal(app):
     return p
 
 
-CASES = [shapes_all, text_sizes, text_align, text_spacing, text_bullets, text_missing_font, shapes_basic, fills_lines, table_basic, group_rotate, anim_basic, anim_auto, charts_basic, pictures, smartart, text_effects, text_layout, table_merge, links, emf_images, anim_advanced, charts_labels, freeform_icons, media_audio, anim_trigger, wmf_images, anim_iterate, picture_transparent, charts_more, shape_effects, equations, anim_path, anim_emphasis, transitions, fills_patterns, text_decoration, anim_entrance, svg_images, charts_markers, hidden_slides, media_background, text_glow_reflection, text_tabs, text_picture_bullets, fills_texture, transition_morph, text_embedded_fonts, text_warp, anim_repeat, charts_sizes, slide_timings, lines_compound, table_diagonal]
+def lines_gradient(app):
+    """渐变线条：矩形、椭圆的渐变边框（双色、三色），粗直线的渐变（COM 设不了线条渐变，保存后改 XML）"""
+    p = new_pres(app)
+    s = blank(p)
+    marks = [RGB(1, 2, 3), RGB(4, 5, 6), RGB(7, 8, 9)]
+    a = s.Shapes.AddShape(1, 60, 60, 260, 180)
+    b = s.Shapes.AddShape(9, 380, 60, 260, 180)
+    c = s.Shapes.AddShape(5, 700, 60, 200, 180)
+    for sh, m in zip((a, b, c), marks):
+        sh.Fill.ForeColor.RGB = RGB(242, 242, 242)
+        sh.Line.Weight = 10
+        sh.Line.ForeColor.RGB = m
+    ln = s.Shapes.AddLine(80, 400, 880, 400)
+    ln.Line.Weight = 14
+    ln.Line.ForeColor.RGB = RGB(10, 11, 12)
+    return p
+
+
+def _patch_gradient_lines(path):
+    """把标记颜色的线条换成渐变（PowerPoint 界面里"渐变线"写出的同样结构）"""
+    import zipfile
+    grads = {
+        b"010203": b'<a:gradFill><a:gsLst><a:gs pos="0"><a:srgbClr val="FF0000"/></a:gs><a:gs pos="100000"><a:srgbClr val="0070C0"/></a:gs></a:gsLst><a:lin ang="0" scaled="0"/></a:gradFill>',
+        b"040506": b'<a:gradFill><a:gsLst><a:gs pos="0"><a:srgbClr val="FFC000"/></a:gs><a:gs pos="50000"><a:srgbClr val="00B050"/></a:gs><a:gs pos="100000"><a:srgbClr val="7030A0"/></a:gs></a:gsLst><a:lin ang="5400000" scaled="0"/></a:gradFill>',
+        b"070809": b'<a:gradFill><a:gsLst><a:gs pos="0"><a:srgbClr val="002060"/></a:gs><a:gs pos="100000"><a:srgbClr val="00B0F0"/></a:gs></a:gsLst><a:lin ang="2700000" scaled="0"/></a:gradFill>',
+        b"0A0B0C": b'<a:gradFill><a:gsLst><a:gs pos="0"><a:srgbClr val="C00000"/></a:gs><a:gs pos="100000"><a:srgbClr val="FFC000"/></a:gs></a:gsLst><a:lin ang="0" scaled="0"/></a:gradFill>',
+    }
+    tmp = path.with_suffix(".tmp")
+    with zipfile.ZipFile(path) as zin, zipfile.ZipFile(tmp, "w", zipfile.ZIP_DEFLATED) as zout:
+        for item in zin.infolist():
+            data = zin.read(item.filename)
+            if item.filename.startswith("ppt/slides/slide"):
+                for k, v in grads.items():
+                    data = data.replace(b'<a:solidFill><a:srgbClr val="' + k + b'"/></a:solidFill>', v)
+            zout.writestr(item, data)
+    tmp.replace(path)
+
+
+lines_gradient.patch = _patch_gradient_lines
+
+
+CASES = [shapes_all, text_sizes, text_align, text_spacing, text_bullets, text_missing_font, shapes_basic, fills_lines, table_basic, group_rotate, anim_basic, anim_auto, charts_basic, pictures, smartart, text_effects, text_layout, table_merge, links, emf_images, anim_advanced, charts_labels, freeform_icons, media_audio, anim_trigger, wmf_images, anim_iterate, picture_transparent, charts_more, shape_effects, equations, anim_path, anim_emphasis, transitions, fills_patterns, text_decoration, anim_entrance, svg_images, charts_markers, hidden_slides, media_background, text_glow_reflection, text_tabs, text_picture_bullets, fills_texture, transition_morph, text_embedded_fonts, text_warp, anim_repeat, charts_sizes, slide_timings, lines_compound, table_diagonal, lines_gradient]
 
 
 def main():
