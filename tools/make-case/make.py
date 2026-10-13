@@ -1280,11 +1280,11 @@ def fills_radial(app):
     return p
 
 
-def _patch_radial(path):
+def _patch_radial(path, kind="circle"):
     import zipfile
     def g(stops, ftr):
         gs = "".join(f'<a:gs pos="{p}"><a:srgbClr val="{c}"/></a:gs>' for p, c in stops)
-        return f'<a:gradFill rotWithShape="1"><a:gsLst>{gs}</a:gsLst><a:path path="circle"><a:fillToRect {ftr}/></a:path></a:gradFill>'.encode()
+        return f'<a:gradFill rotWithShape="1"><a:gsLst>{gs}</a:gsLst><a:path path="{kind}"><a:fillToRect {ftr}/></a:path></a:gradFill>'.encode()
     wb = [(0, "FFFFFF"), (100000, "1F3864")]
     reps = {
         "151515": g(wb, 'l="50000" t="50000" r="50000" b="50000"'),
@@ -1308,7 +1308,15 @@ def _patch_radial(path):
 fills_radial.patch = _patch_radial
 
 
-CASES = [shapes_all, text_sizes, text_align, text_spacing, text_bullets, text_missing_font, shapes_basic, fills_lines, table_basic, group_rotate, anim_basic, anim_auto, charts_basic, pictures, smartart, text_effects, text_layout, table_merge, links, emf_images, anim_advanced, charts_labels, freeform_icons, media_audio, anim_trigger, wmf_images, anim_iterate, picture_transparent, charts_more, shape_effects, equations, anim_path, anim_emphasis, transitions, fills_patterns, text_decoration, anim_entrance, svg_images, charts_markers, hidden_slides, media_background, text_glow_reflection, text_tabs, text_picture_bullets, fills_texture, transition_morph, text_embedded_fonts, text_warp, anim_repeat, charts_sizes, slide_timings, lines_compound, table_diagonal, lines_gradient, fills_radial]
+def fills_rect_gradient(app):
+    """矩形（path=rect）渐变：和 fills-radial 同样的焦点布置，等值线是一圈圈矩形"""
+    return fills_radial(app)
+
+
+fills_rect_gradient.patch = lambda path: _patch_radial(path, "rect")
+
+
+CASES = [shapes_all, text_sizes, text_align, text_spacing, text_bullets, text_missing_font, shapes_basic, fills_lines, table_basic, group_rotate, anim_basic, anim_auto, charts_basic, pictures, smartart, text_effects, text_layout, table_merge, links, emf_images, anim_advanced, charts_labels, freeform_icons, media_audio, anim_trigger, wmf_images, anim_iterate, picture_transparent, charts_more, shape_effects, equations, anim_path, anim_emphasis, transitions, fills_patterns, text_decoration, anim_entrance, svg_images, charts_markers, hidden_slides, media_background, text_glow_reflection, text_tabs, text_picture_bullets, fills_texture, transition_morph, text_embedded_fonts, text_warp, anim_repeat, charts_sizes, slide_timings, lines_compound, table_diagonal, lines_gradient, fills_radial, fills_rect_gradient]
 
 
 def main():
