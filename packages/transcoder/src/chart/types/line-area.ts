@@ -8,7 +8,7 @@ import type { ChartType, CategoryFrame } from '../chart-type';
 import type { AxisInfo, Plot } from '../model';
 
 function renderLineArea(p: Plot, f: CategoryFrame, A: AxisInfo, out: string[], labelsOut: string[]): void {
-  const { nCat, left, bottom, ph, catCenter } = f;
+  const { nCat, catCenter } = f;
   const vpos = A.pos;
   const valFmt = A.fmt;
   const acc = new Array(nCat).fill(0);
@@ -25,9 +25,9 @@ function renderLineArea(p: Plot, f: CategoryFrame, A: AxisInfo, out: string[], l
       const b0 = stacked ? acc[i] : 0;
       const v1 = stacked ? acc[i] + v : v;
       if (stacked) acc[i] = v1;
-      const x = left + catCenter(i);
-      pts.push([x, bottom - vpos(v1) * ph]);
-      base.push([x, bottom - vpos(b0) * ph]);
+      const x = f.catPx(catCenter(i));
+      pts.push([x, f.valPx(vpos(v1))]);
+      base.push([x, f.valPx(vpos(b0))]);
       ptCat.push(i);
     }
     if (!pts.length) return;

@@ -17,7 +17,7 @@ export const barType: ChartType = {
   seriesRules: () => ({ xy: false, defaultLine: false, marker: () => false }),
   legendKey: (_p, s) => ({ color: s.fill, line: false }),
   renderOnAxes(p, f, A, out, labelsOut) {
-    const { band, nCat, left, bottom, pw, ph, horizontal } = f;
+    const { band, nCat, horizontal } = f;
     const nSer = p.series.length;
     const vpos = A.pos;
     const valFmt = A.fmt;
@@ -47,14 +47,16 @@ export const barType: ChartType = {
         const raw = s.vals[i] ?? 0;
         const text = lb ? labelText(lb, raw, totals[i], s.cats[i] ?? '', s.name, valFmt) : '';
         const inside = stacked || lb?.pos === 'ctr' || lb?.pos === 'inEnd' || lb?.pos === 'inBase';
+        // 柱子在分类方向上的一段、在数值方向上的两端（坐标轴逆序时由 frame 换算）
+        const [c1, cl] = f.catSpan(offset, barW);
+        const va = f.valPx(fa), vb = f.valPx(fb);
+        const v1 = Math.min(va, vb), v2 = Math.max(va, vb);
         if (!horizontal) {
-          const y1 = bottom - Math.max(fa, fb) * ph, y2 = bottom - Math.min(fa, fb) * ph;
-          out.push(cpart(`${s.index}x${i}`, `<rect x="${n2(left + offset)}" y="${n2(y1)}" width="${n2(barW)}" height="${n2(y2 - y1)}" fill="${css(color)}"/>`));
-          if (text) labelsOut.push(cpart(`${s.index}x${i}l`, label(text, left + offset + barW / 2, inside ? (y1 + y2) / 2 : y1 - 4 - lb!.style.size * 0.55, lb!.style)));
+          out.push(cpart(`${s.index}x${i}`, `<rect x="${n2(c1)}" y="${n2(v1)}" width="${n2(cl)}" height="${n2(v2 - v1)}" fill="${css(color)}"/>`));
+          if (text) labelsOut.push(cpart(`${s.index}x${i}l`, label(text, c1 + cl / 2, inside ? (v1 + v2) / 2 : v1 - 4 - lb!.style.size * 0.55, lb!.style)));
         } else {
-          const x1 = left + Math.min(fa, fb) * pw, x2 = left + Math.max(fa, fb) * pw;
-          out.push(cpart(`${s.index}x${i}`, `<rect x="${n2(x1)}" y="${n2(bottom - offset - barW)}" width="${n2(x2 - x1)}" height="${n2(barW)}" fill="${css(color)}"/>`));
-          if (text) labelsOut.push(cpart(`${s.index}x${i}l`, label(text, inside ? (x1 + x2) / 2 : x2 + 4, bottom - offset - barW / 2, lb!.style, inside ? 'middle' : 'start')));
+          out.push(cpart(`${s.index}x${i}`, `<rect x="${n2(v1)}" y="${n2(c1)}" width="${n2(v2 - v1)}" height="${n2(cl)}" fill="${css(color)}"/>`));
+          if (text) labelsOut.push(cpart(`${s.index}x${i}l`, label(text, inside ? (v1 + v2) / 2 : v2 + 4, c1 + cl / 2, lb!.style, inside ? 'middle' : 'start')));
         }
       }
     });
