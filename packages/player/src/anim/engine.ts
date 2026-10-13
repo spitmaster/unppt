@@ -3,7 +3,7 @@
  * 具体效果的关键帧来自 effects/（AnimEffect 扩展点），强调和路径见 target.ts，逐字见 text-units.ts。
  */
 import type { AnimAction } from '../../../format/src/index';
-import { mediaCommand } from '../media';
+import { mediaCommand, type MediaHost } from '../media';
 import { animEffect } from './effects/effects';
 import { applyTarget, type TransformState } from './target';
 import { TextUnits, type AnimHost } from './text-units';
@@ -23,7 +23,8 @@ export class AnimationEngine implements AnimHost {
   private units = new TextUnits();
   private readonly trackFn = (a: Animation) => this.track(a);
 
-  constructor(private scene: Scene) {}
+  /** media：媒体控制（播放器注入，用来支持跨页播放）；不传时直接控制元素里的音视频 */
+  constructor(private scene: Scene, private media: MediaHost = { command: (el, a) => mediaCommand(el, a.media!, a.start) }) {}
 
   track(a: Animation) {
     this.running.push(a);
@@ -64,7 +65,7 @@ export class AnimationEngine implements AnimHost {
       if (!el) continue;
       if (a.to) { applyTarget(el, a.to, true, a.dur, a.delay, this.states, this.trackFn); continue; }
       if (a.media) {
-        const run = () => mediaCommand(el, a.media!, a.start);
+        const run = () => this.media.command(el, a);
         if (a.delay) { const t = setTimeout(run, a.delay); this.cleanupLater(() => clearTimeout(t)); } else run();
         continue;
       }

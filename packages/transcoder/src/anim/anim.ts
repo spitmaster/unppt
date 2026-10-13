@@ -3,7 +3,7 @@
  * 单个效果见 effect.ts，强调终态见 emphasis.ts，运动路径见 motion.ts，页面切换见 transition.ts。
  */
 import type { AnimAction } from '../../../format/src/index';
-import { attr, child, children, findAll, type XEl } from '../io/xml';
+import { attr, child, children, findAll, numAttr, type XEl } from '../io/xml';
 import type { AnimContext } from './emphasis';
 import { effectAction } from './effect';
 import { delayOf, isClick } from './timing-util';
@@ -71,6 +71,20 @@ export function compileTiming(timing: XEl | undefined, existing: Set<string>, ct
     }
   }
   for (const [uid, a] of firstSeen) if (a.dir === 'in') result.hidden.push(uid);
+  // 跨幻灯片播放（numSld）、循环播放（媒体节点 repeatCount=indefinite）：带到"播放"动作上
+  const mediaOpts = new Map<string, { across: number; loop: boolean }>();
+  for (const node of findAll(timing, 'p:cMediaNode')) {
+    const spid = attr(findAll(node, 'p:spTgt')[0], 'spid');
+    if (!spid) continue;
+    const across = Math.max(1, Math.min(9999, numAttr(node, 'numSld') ?? 1));
+    const loop = attr(child(node, 'p:cTn'), 'repeatCount') === 'indefinite';
+    if (across > 1 || loop) mediaOpts.set(`s${spid}`, { across, loop });
+  }
+  const allActions = [...result.auto, ...result.steps.flat(), ...result.triggers.flatMap((t) => t.steps.flat())];
+  for (const a of allActions) {
+    const o = a.media === 'play' ? mediaOpts.get(a.uid) : undefined;
+    if (o) { if (o.across > 1) a.across = o.across; if (o.loop) a.loop = true; }
+  }
   // 放映时隐藏的音频/视频图标（showWhenStopped="0"）
   for (const node of findAll(timing, 'p:cMediaNode')) {
     if (attr(node, 'showWhenStopped') !== '0') continue;

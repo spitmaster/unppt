@@ -6,7 +6,7 @@ import type { AnimAction, PlayerState } from '../../../format/src/index';
 import { AnimationEngine } from '../anim/engine';
 import { injectCss } from '../css';
 import type { DeckLike } from '../deck';
-import { mediaCommand } from '../media';
+import { MediaPlayer, mediaCommand } from '../media';
 import { runTransition } from '../transitions/transitions';
 import { Controls } from '../ui/controls';
 import { bindInput, type InputOptions } from '../ui/input';
@@ -32,6 +32,8 @@ export class Player {
   private controls?: Controls;
   private cleanup: (() => void)[] = [];
   private engine: AnimationEngine;
+  /** 音视频（含跨页播放的背景音乐） */
+  private media: MediaPlayer;
   /** 每个触发器已经播到第几组（换页时清零） */
   private triggerIdx = new Map<string, number>();
 
@@ -45,7 +47,11 @@ export class Player {
     this.stage.style.height = `${deck.height}px`;
     this.root.appendChild(this.stage);
     host.appendChild(this.root);
-    this.engine = new AnimationEngine({ find: (uid) => this.find(uid), width: deck.width, height: deck.height });
+    const keep = host.ownerDocument.createElement('div');
+    keep.style.display = 'none';
+    this.root.appendChild(keep);
+    this.media = new MediaPlayer(keep, () => this.slideIdx);
+    this.engine = new AnimationEngine({ find: (uid) => this.find(uid), width: deck.width, height: deck.height }, this.media);
     if (opts.ui !== false) this.controls = new Controls(this.root, () => this.prev(), () => this.next());
     this.cleanup.push(...bindInput(this.root, opts, {
       click: (t) => this.click(t),
@@ -119,6 +125,7 @@ export class Player {
 
   destroy() {
     this.engine.finishRunning();
+    this.media.stopAll();
     for (const c of this.cleanup) c();
     this.root.remove();
   }
@@ -212,6 +219,7 @@ export class Player {
     this.stage.appendChild(el);
     this.current = el;
     this.slideIdx = slideIdx;
+    this.media.enter(slideIdx);
     this.stepIdx = Math.max(0, Math.min(data.steps.length, Math.floor(Number(step) || 0)));
     // 初始状态
     for (const uid of data.hidden) this.find(uid)?.classList.add('unppt-hide');
