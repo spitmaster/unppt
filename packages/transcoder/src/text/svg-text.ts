@@ -23,7 +23,7 @@ export function textEl(txt: string, x: number, y: number, s: RunStyle, family: s
   // 浏览器默认会做字距调整；PowerPoint 没开的地方关掉，保持和排版时算的宽度一致
   if (!kernOn(s)) css2.push('font-kerning:none');
   if (css2.length) a += ` style="${css2.join(';')}"`;
-  if (s.outline) a += ` stroke="${css(s.outline.color)}" stroke-width="${n2(s.outline.width)}"${s.outline.color.a < 0.999 ? ` stroke-opacity="${n2(s.outline.color.a)}"` : ''} paint-order="stroke"`;
+  if (s.outline) a += ` stroke="${css(s.outline.color)}" stroke-width="${n2(s.outline.width)}"${s.outline.color.a < 0.999 ? ` stroke-opacity="${n2(s.outline.color.a)}"` : ''}`;
   const doc = env?.doc;
   if (doc && s.grad) {
     const id = doc.id('tg');
