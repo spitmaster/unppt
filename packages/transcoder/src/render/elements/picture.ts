@@ -60,7 +60,11 @@ export async function renderPicture(r: RenderContext, el: XEl, ctx: SlideContext
   // 剪裁（毫秒）：st 从开头剪掉、end 从结尾剪掉；写成秒交给播放器
   const trimEl = child(p14, 'p14:trim');
   const trimSt = (numAttr(trimEl, 'st') ?? 0) / 1000, trimEnd = (numAttr(trimEl, 'end') ?? 0) / 1000;
-  const trim = `${trimSt > 0 ? ` data-trim-start="${n2(trimSt)}"` : ''}${trimEnd > 0 ? ` data-trim-end="${n2(trimEnd)}"` : ''}`;
+  // 淡入、淡出（毫秒）：播放器按播放位置调音量
+  const fadeEl = child(p14, 'p14:fade');
+  const fadeIn = (numAttr(fadeEl, 'in') ?? 0) / 1000, fadeOut = (numAttr(fadeEl, 'out') ?? 0) / 1000;
+  const trim = `${trimSt > 0 ? ` data-trim-start="${n2(trimSt)}"` : ''}${trimEnd > 0 ? ` data-trim-end="${n2(trimEnd)}"` : ''}`
+    + `${fadeIn > 0 ? ` data-fade-in="${n2(fadeIn)}"` : ''}${fadeOut > 0 ? ` data-fade-out="${n2(fadeOut)}"` : ''}`;
   if (video || audio || p14) {
     const rid = attr(p14, 'r:embed') ?? attr(video ?? audio, 'r:link') ?? '';
     const href = rid ? await r.env.media.media(ctx.part, rid) : undefined;

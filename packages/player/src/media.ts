@@ -11,13 +11,35 @@ export function mediaCommand(el: Element, cmd: MediaCmd, start?: number) {
   if (m) run(m, cmd, start);
 }
 
+/** 切换一个媒体元素的播放 / 暂停（控制条用；和点击媒体一样会挂上剪裁、淡入淡出） */
+export const toggleMedia = (m: HTMLMediaElement) => run(m, 'toggle');
+
 /** 剪裁（秒）：data-trim-start 从开头剪掉，data-trim-end 从结尾剪掉 */
 const trimOf = (m: HTMLMediaElement) => ({ st: Number(m.dataset.trimStart) || 0, end: Number(m.dataset.trimEnd) || 0 });
 
-/** 第一次播放前挂上剪裁：播到剪裁终点就停（循环时回到剪裁起点） */
+/** 淡入、淡出（秒）：播放时每帧按播放位置调音量（剪裁后的开头淡入、结尾淡出） */
+function fades(m: HTMLMediaElement) {
+  const fin = Number(m.dataset.fadeIn) || 0, fout = Number(m.dataset.fadeOut) || 0;
+  if (!fin && !fout) return;
+  const win = m.ownerDocument.defaultView;
+  let raf = 0;
+  const tick = () => {
+    const { st, end } = trimOf(m);
+    const t = m.currentTime - st, left = (m.duration || Infinity) - end - m.currentTime;
+    let v = 1;
+    if (fin && t < fin) v = Math.max(0, t / fin);
+    if (fout && left < fout) v = Math.min(v, Math.max(0, left / fout));
+    m.volume = v;
+    raf = m.paused ? 0 : win?.requestAnimationFrame(tick) ?? 0;
+  };
+  m.addEventListener('play', () => { if (!raf) tick(); });
+}
+
+/** 第一次播放前挂上剪裁（播到剪裁终点就停，循环时回到剪裁起点）和淡入淡出 */
 function prepare(m: HTMLMediaElement) {
   if (m.dataset.trimReady) return;
   m.dataset.trimReady = '1';
+  fades(m);
   const { st, end } = trimOf(m);
   if (!st && !end) return;
   m.addEventListener('timeupdate', () => {

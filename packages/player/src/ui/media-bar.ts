@@ -2,6 +2,7 @@
  * 音视频控制条：和 PowerPoint 放映时一样，鼠标移到视频或音频图标上时在它下方出现（触屏上点一下出现）：
  * 播放/暂停、拖动进度、当前时间 / 总时长。点在控制条上不会翻页；剪裁过的媒体只在剪裁范围里拖动。
  */
+import { toggleMedia } from '../media';
 
 const fmt = (s: number) => {
   if (!isFinite(s) || s < 0) s = 0;
@@ -41,7 +42,7 @@ export class MediaBar {
     this.btn.addEventListener('click', () => {
       const m = this.media;
       if (!m) return;
-      if (m.paused) void m.play().catch(() => {}); else m.pause();
+      toggleMedia(m);
     });
     this.seek.addEventListener('input', () => {
       const m = this.media;
