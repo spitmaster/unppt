@@ -3,7 +3,7 @@ import type { SlideContext } from '../../model/model';
 import { bgStyle, fillAttrs, findFillEl, parseFill, styleRef, type Fill } from '../../style/fill';
 import { compoundMask, parseLine, strokeAttrs } from '../../style/line';
 import { faceLighting, has3d, litFill } from '../../style/lighting';
-import { cameraLightFilter, cameraTransform, extrusionOffset, extrusionScreenOffset, extrusionSides } from '../../style/camera';
+import { cameraLightFilter, cameraTransform, extrusionOffset, extrusionScreenOffset, extrusionSides, hasCamera } from '../../style/camera';
 import { EMU_PER_PX } from '../../model/model';
 import { bevelLayer } from '../../effects/bevel';
 import { effectFilter } from '../../effects/effect-filter';
@@ -47,7 +47,7 @@ export async function renderShape(r: RenderContext, el: XEl, ctx: SlideContext, 
   // 三维旋转、灯光（形状自己的、版式的或者主题效果样式里的 a:scene3d；SmartArt 里没写时用场景的灯光）
   const scene3d = child(spPr, 'a:scene3d') ?? child(lSpPr, 'a:scene3d') ?? child(mSpPr, 'a:scene3d') ?? child(effStyle, 'a:scene3d');
   const rig = attr(child(scene3d ?? ctx.scene?.scene3d, 'a:lightRig'), 'rig');
-  if (has3d(sp3d)) fill = litFill(fill, faceLighting(rig, attr(sp3d, 'prstMaterial')));
+  if (has3d(sp3d) || hasCamera(scene3d)) fill = litFill(fill, faceLighting(rig, attr(sp3d, 'prstMaterial')));
   // 线条：主题样式 -> 母版 -> 版式 -> 形状
   const lnRef = child(style, 'a:lnRef');
   const lnStyle = styleRef(lnRef, ctx.theme.lineStyles, colors);
