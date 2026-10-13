@@ -4,7 +4,6 @@ import { EMU_PER_PX, type Theme } from '../model/model';
 import { linkAttr } from '../common/links';
 import { attr, child, numAttr, type XEl } from '../io/xml';
 import type { RunStyle, StyleChain, TextEnv } from './types';
-import { litColor } from '../style/lighting';
 
 /** 东亚字符集：GB2312、Big5、Shift-JIS、韩文（XML 里是有符号数） */
 const EA_CHARSETS = new Set(['-122', '-120', '-128', '-127', '134', '136', '128', '129']);
@@ -56,7 +55,7 @@ function textOutline(ln: XEl | undefined, env: TextEnv): RunStyle['outline'] {
   if (!ln || child(ln, 'a:noFill')) return undefined;
   const c0 = colorIn(child(ln, 'a:solidFill'), env.colors);
   if (!c0) return undefined;
-  const c = env.lit3d ? litColor(c0) : c0;
+  const c = env.lit3d ? env.lit3d(c0) : c0;
   return { color: c, width: Math.max(0.5, (numAttr(ln, 'w') ?? 12700) / EMU_PER_PX) };
 }
 
@@ -69,7 +68,7 @@ export function runStyle(r: XEl, env: TextEnv, scale: number): RunStyle {
   if (fill?.name === 'a:solidFill') color = colorIn(fill, env.colors) ?? color;
   else if (fill?.name === 'a:gradFill') color = colorIn(child(child(fill, 'a:gsLst'), 'a:gs'), env.colors) ?? color;
   else if (fill?.name === 'a:noFill') color = { ...color, a: 0 };
-  if (env.lit3d) color = litColor(color);
+  if (env.lit3d) color = env.lit3d(color);
   let u = attr(r, 'u');
   // 带超链接的文字：PowerPoint 用主题的超链接颜色并加下划线
   const h = child(r, 'a:hlinkClick');

@@ -3,7 +3,6 @@ import { colorIn, css } from '../model/color';
 import { esc, n2 } from '../common/svg';
 import { effectFilter } from '../effects/effect-filter';
 import { gradientStops } from '../style/gradient-stops';
-import { litColor } from '../style/lighting';
 import { bevelLayer } from '../effects/bevel';
 import { TEXT_EFFECTS } from '../effects/effects';
 import type { SvgDoc } from '../common/svg';
@@ -54,7 +53,7 @@ export function textGradient(grad: XEl, env: TextEnv): string {
   const dx = (Math.cos(ang) / 2) * box.w, dy = (Math.sin(ang) / 2) * box.h;
   const stops = gradientStops(children(child(grad, 'a:gsLst'), 'a:gs').map((g) => ({
     pos: (numAttr(g, 'pos') ?? 0) / 100000, color: colorIn(g, env.colors) ?? { r: 0, g: 0, b: 0, a: 1 },
-  })), env.lit3d ? litColor : undefined);
+  })), env.lit3d);
   doc.addDef(`<linearGradient id="${id}" gradientUnits="userSpaceOnUse" x1="${n2(box.cx - dx)}" y1="${n2(box.cy - dy)}" x2="${n2(box.cx + dx)}" y2="${n2(box.cy + dy)}">${stops}</linearGradient>`);
   return `url(#${id})`;
 }
