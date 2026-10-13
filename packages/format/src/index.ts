@@ -79,8 +79,14 @@ export interface AnimTarget {
 }
 
 export interface SlideTransition {
-  type: 'none' | 'fade' | 'push' | 'wipe' | 'cover';
+  /** push 推入、cover 覆盖、pull 揭开、wipe 擦除、split 分割、circle 圆形；其它切换都按 fade 淡入 */
+  type: 'none' | 'fade' | 'push' | 'wipe' | 'cover' | 'pull' | 'split' | 'circle';
   dur: number;
+  /** 运动方向（和 PowerPoint 一致）：l 向左（新页从右边进来）、r、u、d */
+  dir?: 'l' | 'r' | 'u' | 'd';
+  /** 分割：横向/纵向，向外展开/向内合拢 */
+  orient?: 'horz' | 'vert';
+  inOut?: 'in' | 'out';
 }
 
 export interface DeckFont {

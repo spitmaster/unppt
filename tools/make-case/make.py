@@ -760,7 +760,26 @@ def anim_emphasis(app):
     return p
 
 
-CASES = [shapes_all, text_sizes, text_align, text_spacing, text_bullets, text_missing_font, shapes_basic, fills_lines, table_basic, group_rotate, anim_basic, anim_auto, charts_basic, pictures, smartart, text_effects, text_layout, table_merge, links, emf_images, anim_advanced, charts_labels, freeform_icons, media_audio, anim_trigger, wmf_images, anim_iterate, picture_transparent, charts_more, shape_effects, equations, anim_path, anim_emphasis]
+def transitions(app):
+    """页面切换：无、淡入、推入（左/上/右）、擦除（左/上）、分割（横向向内/纵向向外）、覆盖、揭开、随机线条、圆形"""
+    p = new_pres(app)
+    effects = [257, 3849, 3853, 3854, 3855, 2817, 2818, 3586, 3589, 1281, 2049, 2305, 3845]
+    for i, eff in enumerate(effects):
+        s = blank(p)
+        s.FollowMasterBackground = 0
+        s.Background.Fill.ForeColor.RGB = RGB(40 + (i * 37) % 200, 90, 160 - (i * 23) % 120)
+        t = s.Shapes.AddTextbox(1, 100, 220, 760, 100)
+        t.TextFrame.TextRange.Text = f"第 {i + 1} 页"
+        t.TextFrame.TextRange.Font.Size = 54
+        t.TextFrame.TextRange.Font.Color.RGB = RGB(255, 255, 255)
+        try:
+            s.SlideShowTransition.EntryEffect = eff
+        except Exception as ex:
+            print("切换", eff, "失败", ex)
+    return p
+
+
+CASES = [shapes_all, text_sizes, text_align, text_spacing, text_bullets, text_missing_font, shapes_basic, fills_lines, table_basic, group_rotate, anim_basic, anim_auto, charts_basic, pictures, smartart, text_effects, text_layout, table_merge, links, emf_images, anim_advanced, charts_labels, freeform_icons, media_audio, anim_trigger, wmf_images, anim_iterate, picture_transparent, charts_more, shape_effects, equations, anim_path, anim_emphasis, transitions]
 
 
 def main():
