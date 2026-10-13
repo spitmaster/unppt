@@ -40,7 +40,7 @@ flowchart LR
 ```mermaid
 flowchart TB
   entry["入口 index.ts / cli.ts<br/>convert：逐页、流式输出 HTML 或数据"]
-  anim["anim/<br/>动画时间线、效果、页面切换编译"]
+  anim["anim/<br/>时间线编排 anim.ts、单个效果 effect.ts<br/>强调终态 emphasis.ts、运动路径 motion.ts、切换 transition.ts"]
   render["render/<br/>SlideRenderer：形状 / 图片 / 组合<br/>box.ts 位置框、table.ts 表格<br/>frames/ ← FrameHandler 扩展点"]
   chart["chart/<br/>图表"]
   media["media/<br/>图片、音视频、共享资源<br/>decoders ← ImageDecoder 扩展点"]
