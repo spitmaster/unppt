@@ -1,0 +1,310 @@
+{
+ "version": 7,
+ "slideWidthPt": 960.0,
+ "slideHeightPt": 540.0,
+ "imageWidth": 1280,
+ "imageHeight": 720,
+ "slides": [
+  {
+   "index": 0,
+   "hidden": false,
+   "shapes": [
+    {
+     "id": 4,
+     "name": "Group 3",
+     "type": 6,
+     "x": 40.0,
+     "y": 60.0,
+     "w": 240.0,
+     "h": 150.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": -2,
+     "children": [
+      {
+       "id": 2,
+       "name": "Rectangle 1",
+       "type": 1,
+       "x": 40.0,
+       "y": 60.0,
+       "w": 120.0,
+       "h": 90.0,
+       "rot": 0.0,
+       "visible": true,
+       "autoShapeType": 1
+      },
+      {
+       "id": 3,
+       "name": "Oval 2",
+       "type": 1,
+       "x": 170.0,
+       "y": 100.0,
+       "w": 110.0,
+       "h": 110.0,
+       "rot": 0.0,
+       "visible": true,
+       "autoShapeType": 9
+      }
+     ]
+    },
+    {
+     "id": 7,
+     "name": "Group 6",
+     "type": 6,
+     "x": 340.0,
+     "y": 60.0,
+     "w": 240.0,
+     "h": 150.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": -2,
+     "children": [
+      {
+       "id": 5,
+       "name": "Rectangle 4",
+       "type": 1,
+       "x": 340.0,
+       "y": 60.0,
+       "w": 120.0,
+       "h": 90.0,
+       "rot": 0.0,
+       "visible": true,
+       "autoShapeType": 1
+      },
+      {
+       "id": 6,
+       "name": "Oval 5",
+       "type": 1,
+       "x": 470.0,
+       "y": 100.0,
+       "w": 110.0,
+       "h": 110.0,
+       "rot": 0.0,
+       "visible": true,
+       "autoShapeType": 9
+      }
+     ]
+    },
+    {
+     "id": 10,
+     "name": "Group 9",
+     "type": 6,
+     "x": 640.0,
+     "y": 60.0,
+     "w": 240.0,
+     "h": 150.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": -2,
+     "children": [
+      {
+       "id": 8,
+       "name": "Rectangle 7",
+       "type": 1,
+       "x": 640.0,
+       "y": 60.0,
+       "w": 120.0,
+       "h": 90.0,
+       "rot": 0.0,
+       "visible": true,
+       "autoShapeType": 1
+      },
+      {
+       "id": 9,
+       "name": "Oval 8",
+       "type": 1,
+       "x": 770.0,
+       "y": 100.0,
+       "w": 110.0,
+       "h": 110.0,
+       "rot": 0.0,
+       "visible": true,
+       "autoShapeType": 9
+      }
+     ]
+    },
+    {
+     "id": 13,
+     "name": "Group 12",
+     "type": 6,
+     "x": 40.0,
+     "y": 290.0,
+     "w": 240.0,
+     "h": 150.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": -2,
+     "children": [
+      {
+       "id": 11,
+       "name": "Rectangle 10",
+       "type": 1,
+       "x": 40.0,
+       "y": 290.0,
+       "w": 120.0,
+       "h": 90.0,
+       "rot": 0.0,
+       "visible": true,
+       "autoShapeType": 1
+      },
+      {
+       "id": 12,
+       "name": "Oval 11",
+       "type": 1,
+       "x": 170.0,
+       "y": 330.0,
+       "w": 110.0,
+       "h": 110.0,
+       "rot": 0.0,
+       "visible": true,
+       "autoShapeType": 9
+      }
+     ]
+    },
+    {
+     "id": 16,
+     "name": "Group 15",
+     "type": 6,
+     "x": 340.0,
+     "y": 290.0,
+     "w": 240.0,
+     "h": 150.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": -2,
+     "children": [
+      {
+       "id": 14,
+       "name": "Rectangle 13",
+       "type": 1,
+       "x": 340.0,
+       "y": 290.0,
+       "w": 120.0,
+       "h": 90.0,
+       "rot": 0.0,
+       "visible": true,
+       "autoShapeType": 1
+      },
+      {
+       "id": 15,
+       "name": "Oval 14",
+       "type": 1,
+       "x": 470.0,
+       "y": 330.0,
+       "w": 110.0,
+       "h": 110.0,
+       "rot": 0.0,
+       "visible": true,
+       "autoShapeType": 9
+      }
+     ]
+    },
+    {
+     "id": 19,
+     "name": "Group 18",
+     "type": 6,
+     "x": 640.0,
+     "y": 290.0,
+     "w": 240.0,
+     "h": 150.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": -2,
+     "children": [
+      {
+       "id": 17,
+       "name": "Rectangle 16",
+       "type": 1,
+       "x": 640.0,
+       "y": 290.0,
+       "w": 120.0,
+       "h": 90.0,
+       "rot": 0.0,
+       "visible": true,
+       "autoShapeType": 1
+      },
+      {
+       "id": 18,
+       "name": "Oval 17",
+       "type": 1,
+       "x": 770.0,
+       "y": 330.0,
+       "w": 110.0,
+       "h": 110.0,
+       "rot": 0.0,
+       "visible": true,
+       "autoShapeType": 9
+      }
+     ]
+    }
+   ],
+   "effects": [
+    {
+     "index": 1,
+     "type": 54,
+     "exit": false,
+     "trigger": 1,
+     "dur": 2.0,
+     "delay": 0.0,
+     "shapeId": 4,
+     "paragraph": 0
+    },
+    {
+     "index": 2,
+     "type": 73,
+     "exit": false,
+     "trigger": 1,
+     "dur": 0.5,
+     "delay": 0.0,
+     "shapeId": 7,
+     "paragraph": 0
+    },
+    {
+     "index": 3,
+     "type": 78,
+     "exit": false,
+     "trigger": 1,
+     "dur": 0.5,
+     "delay": 0.0,
+     "shapeId": 10,
+     "paragraph": 0
+    },
+    {
+     "index": 4,
+     "type": 74,
+     "exit": false,
+     "trigger": 1,
+     "dur": 0.5,
+     "delay": 0.0,
+     "shapeId": 13,
+     "paragraph": 0
+    },
+    {
+     "index": 5,
+     "type": 70,
+     "exit": false,
+     "trigger": 1,
+     "dur": 0.5,
+     "delay": 0.0,
+     "shapeId": 16,
+     "paragraph": 0
+    },
+    {
+     "index": 6,
+     "type": 60,
+     "exit": false,
+     "trigger": 1,
+     "dur": 2.0,
+     "delay": 0.0,
+     "shapeId": 19,
+     "paragraph": 0
+    }
+   ],
+   "triggerHidden": [],
+   "steps": 6,
+   "approxSteps": false,
+   "stepSource": "slideshow"
+  }
+ ],
+ "ok": true
+}

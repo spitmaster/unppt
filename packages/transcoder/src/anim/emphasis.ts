@@ -12,10 +12,12 @@ export interface AnimContext {
   colors: ColorContext;
   /** 动画声音、切换声音：关系编号 -> 媒体文件路径（调用方事先取好） */
   sounds?: Map<string, string>;
+  /** 组合的动画编号：颜色类动画（更改填充/线条/字体颜色、变暗变淡、播放后变暗）作用在组合上不起作用（实测放映） */
+  groups?: ReadonlySet<string>;
 }
 
-/** 强调和路径动画结束后保持的状态 */
-export function finalState(cTn: XEl | undefined, ctx: AnimContext): AnimTarget | undefined {
+/** 强调和路径动画结束后保持的状态；noColor：目标是组合，颜色变化不起作用 */
+export function finalState(cTn: XEl | undefined, ctx: AnimContext, noColor = false): AnimTarget | undefined {
   const t: AnimTarget = {};
   // 整个效果的加减速（"平滑开始/平滑结束"）
   const A = (numAttr(cTn, 'accel') ?? 0) / 100000, D = (numAttr(cTn, 'decel') ?? 0) / 100000;
@@ -59,7 +61,7 @@ export function finalState(cTn: XEl | undefined, ctx: AnimContext): AnimTarget |
   // 带 autoRev 的行为播完会变回去，不影响最终状态
   const reverts = (el: XEl) => { const v = attr(path(el, 'p:cBhvr', 'p:cTn'), 'autoRev'); return v === '1' || v === 'true'; };
   for (const c of findAll(cTn, 'p:animClr')) {
-    if (reverts(c)) continue;
+    if (noColor || reverts(c)) continue;
     const names = findAll(c, 'p:attrName').map((a) => a.text.trim().toLowerCase());
     const col = colorIn(child(c, 'p:to'), ctx.colors);
     if (!col) continue;
@@ -70,7 +72,7 @@ export function finalState(cTn: XEl | undefined, ctx: AnimContext): AnimTarget |
   if (t.scale && findAll(cTn, 'p:attrName').some((n) => n.text.trim() === 'style.fontSize')) t.origin = [0, 0];
   // 文字样式：颜色、加粗、倾斜、下划线
   const ts = textStyle(cTn, ctx.colors, total);
-  if (ts.color) t.color = ts.color;
+  if (ts.color && !noColor) t.color = ts.color;
   if (ts.font) t.font = ts.font;
   if (ts.flash) t.flash = ts.flash;
   // 不透明度：效果保持（fill="hold"）时才留下终值

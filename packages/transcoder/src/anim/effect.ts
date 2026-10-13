@@ -71,7 +71,7 @@ export function effectAction(eff: XEl, base: number, ctx: AnimContext): AnimActi
   let effect: AnimEffect = cls === 'emph' ? 'emphasis' : cls === 'path' ? 'path' : EFFECT_BY_ID[id] ?? 'fade';
   if (dir !== 'emph' && id === 1) dur = 0;
   if (effect === 'appear') dur = 0;
-  const to = dir === 'emph' ? finalState(cTn, ctx) : undefined;
+  const to = dir === 'emph' ? finalState(cTn, ctx, ctx.groups?.has(uid)) : undefined;
   // 往返、重复的行为实际时长比单段 dur 长
   if (dir === 'emph') dur = Math.max(dur, emphasisDuration(cTn));
   const iterate = iterateOf(cTn, dur);

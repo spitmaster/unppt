@@ -143,7 +143,7 @@ export async function convert(input: InputSource, options: ConvertOptions): Prom
         const href = await media.media(ref.part, rid);
         if (href) sounds.set(rid, href);
       }
-      const anim = compileTiming(r.timing, uids, { width: pres.width, height: pres.height, colors: r.colors ?? { scheme: {}, map: {} }, sounds });
+      const anim = compileTiming(r.timing, uids, { width: pres.width, height: pres.height, colors: r.colors ?? { scheme: {}, map: {} }, sounds, groups: r.groups });
       for (const w of anim.warnings) pres.warn(w);
       count++;
       slideParts.push(ref.part);
