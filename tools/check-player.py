@@ -129,6 +129,16 @@ def main():
         page4.wait_for_timeout(3000)
         n, shown, hidden_ = page4.evaluate(js)
         check(n > 10 and shown == n, f"逐字淡入播完全部出现：{n} 个字，已出现 {shown}")
+        # 逐字飞入：每个字拆成单独的 text，中途有的在路上，播完全部落回原位
+        page4.evaluate("window.unppt.goto(0, 2)")
+        page4.evaluate("window.unppt.next()")
+        page4.wait_for_timeout(250)
+        js4 = """(() => { const us = Array.from(document.querySelectorAll('div.unppt-slide .unppt-unit'));
+          return [us.length, us.filter(u => getComputedStyle(u).transform !== 'none' && !/^matrix\(1, 0, 0, 1, 0, 0\)$/.test(getComputedStyle(u).transform)).length]; })()"""
+        mid4 = page4.evaluate(js4)
+        page4.wait_for_timeout(2500)
+        end4 = page4.evaluate(js4)
+        check(mid4[0] > 10 and mid4[1] > 0 and end4[1] == 0, f"逐字飞入中途有字在路上、播完落回原位：{mid4} -> {end4}")
         page4.evaluate("window.unppt.goto(0, 3)")
         page4.evaluate("window.unppt.next()")
         page4.wait_for_timeout(4000)
