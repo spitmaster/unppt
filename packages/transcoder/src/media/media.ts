@@ -5,6 +5,7 @@ import type { OpcPackage } from '../io/package';
 import type { Presentation } from '../model/model';
 import { IMAGE_DECODERS } from './decoders';
 import type { ImageDecoder } from './image-decoder';
+import { imageInfo, type ImageInfo } from './image-info';
 
 export type WriteData = Uint8Array | string | AsyncIterable<Uint8Array>;
 export type WriteFn = (path: string, data: WriteData) => Promise<void>;
@@ -54,6 +55,20 @@ export class MediaStore {
     const rel = await this.pkg.rel(part, rid);
     if (!rel || rel.external) return rel?.external ? rel.target : undefined;
     return this.href(rel.target, true);
+  }
+
+  private infos = new Map<string, Promise<ImageInfo | undefined>>();
+
+  /** 关系 rid 指向的图片的像素尺寸和分辨率（读文件头，同一张只读一次） */
+  async info(part: string, rid: string): Promise<ImageInfo | undefined> {
+    const rel = await this.pkg.rel(part, rid);
+    if (!rel || rel.external) return undefined;
+    let p = this.infos.get(rel.target);
+    if (!p) {
+      p = this.pkg.zip.read(rel.target).then((b) => (b ? imageInfo(b) : undefined));
+      this.infos.set(rel.target, p);
+    }
+    return p;
   }
 
   /** 关系 rid 指向的视频/音频 -> href（总是写成单独文件，以免 HTML 过大） */

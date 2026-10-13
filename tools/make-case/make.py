@@ -999,7 +999,24 @@ def text_picture_bullets(app):
     return p
 
 
-CASES = [shapes_all, text_sizes, text_align, text_spacing, text_bullets, text_missing_font, shapes_basic, fills_lines, table_basic, group_rotate, anim_basic, anim_auto, charts_basic, pictures, smartart, text_effects, text_layout, table_merge, links, emf_images, anim_advanced, charts_labels, freeform_icons, media_audio, anim_trigger, wmf_images, anim_iterate, picture_transparent, charts_more, shape_effects, equations, anim_path, anim_emphasis, transitions, fills_patterns, text_decoration, anim_entrance, svg_images, charts_markers, hidden_slides, media_background, text_glow_reflection, text_tabs, text_picture_bullets]
+def fills_texture(app):
+    """纹理填充（平铺图片）：PowerPoint 预设纹理用在形状上，以及缩放、偏移过的平铺；背景用纹理"""
+    p = new_pres(app)
+    s = blank(p)
+    for k, tex in enumerate([1, 5, 9, 13, 17, 21]):     # msoPresetTexture 若干种
+        sh = s.Shapes.AddShape(1, 40 + (k % 3) * 300, 40 + (k // 3) * 240, 260, 200)
+        sh.Line.Visible = 0
+        sh.Fill.PresetTextured(tex)
+    s2 = blank(p)
+    s2.FollowMasterBackground = 0
+    s2.Background.Fill.PresetTextured(7)
+    t = s2.Shapes.AddTextbox(1, 100, 200, 760, 80)
+    t.TextFrame.TextRange.Text = "纹理背景上的文字"
+    t.TextFrame.TextRange.Font.Size = 40
+    return p
+
+
+CASES = [shapes_all, text_sizes, text_align, text_spacing, text_bullets, text_missing_font, shapes_basic, fills_lines, table_basic, group_rotate, anim_basic, anim_auto, charts_basic, pictures, smartart, text_effects, text_layout, table_merge, links, emf_images, anim_advanced, charts_labels, freeform_icons, media_audio, anim_trigger, wmf_images, anim_iterate, picture_transparent, charts_more, shape_effects, equations, anim_path, anim_emphasis, transitions, fills_patterns, text_decoration, anim_entrance, svg_images, charts_markers, hidden_slides, media_background, text_glow_reflection, text_tabs, text_picture_bullets, fills_texture]
 
 
 def main():

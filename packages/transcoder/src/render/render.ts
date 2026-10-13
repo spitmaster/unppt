@@ -32,7 +32,7 @@ class SlideRenderer implements RenderContext {
 
   constructor(public env: RenderEnv, public slideIndex: number) {
     this.doc = new SvgDoc(`u${slideIndex}_`);
-    this.images = { image: (part, rid) => env.media.image(part, rid) };
+    this.images = { image: (part, rid) => env.media.image(part, rid), info: (part, rid) => env.media.info(part, rid) };
   }
 
   /** 占位符继承：返回 [母版占位符, 版式占位符]（可能为空） */
