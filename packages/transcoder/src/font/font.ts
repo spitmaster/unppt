@@ -26,6 +26,9 @@ export interface FontMetrics {
   lineGap: number;
   /** 返回字符宽度（单位 em）；字体里没有这个字时返回 undefined */
   advance(codePoint: number): number | undefined;
+  /** 删除线：线的上沿离基线的高度和线粗（单位 em，来自 OS/2 表） */
+  strikeTop?: number;
+  strikeSize?: number;
   /** 两个字符之间的字距调整（单位 em，负数是挤近）；字体没有字距数据时为 0 */
   kern(left: number, right: number): number;
 }
@@ -128,6 +131,8 @@ async function loadMetrics(src: RandomAccessSource, tables: Map<string, TableRec
   const kernCache = new Map<number, number>();
   return {
     unitsPerEm: upem, ascent, descent, lineGap,
+    strikeTop: os2b && os2b.length >= 30 ? bes16(os2b, 28) / upem : undefined,
+    strikeSize: os2b && os2b.length >= 30 ? bes16(os2b, 26) / upem : undefined,
     advance(cp) {
       if (cache.has(cp)) return cache.get(cp);
       const gid = lookup(cp);

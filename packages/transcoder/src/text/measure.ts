@@ -50,8 +50,13 @@ export async function makeAtoms(text: string, style: RunStyle, m: Measurer): Pro
   let src = text;
   if (style.caps === 'all') src = src.toUpperCase();
   const kerning = kernOn(style);
+  // 实测：小型大写字母把小写字母画成大写，字号缩到 0.8 倍
+  const smallCaps = style.caps === 'small' ? { ...style, size: style.size * 0.8, caps: 'none' as const } : undefined;
   let prevM: Measured | undefined;
-  for (const ch of src) {
+  for (const raw of src) {
+    const lower = !!smallCaps && raw !== raw.toUpperCase();
+    const ch = lower ? raw.toUpperCase() : raw;
+    const st = lower ? smallCaps! : style;
     const cp = ch.codePointAt(0)!;
     const wide = isWide(cp);
     const primary = wide ? eaM : latinM;
@@ -65,16 +70,18 @@ export async function makeAtoms(text: string, style: RunStyle, m: Measurer): Pro
     }
     const used = usedM?.metrics;
     if (usedM && adv !== undefined && m.embed && cp > 0x20) m.embed.use(usedM.face, cp);
-    const size = style.baseline ? style.size * 0.67 : style.size;
-    const width = (adv ?? fallbackAdvance(cp)) * size + style.spc;
+    const size = st.baseline ? st.size * 0.67 : st.size;
+    const width = (adv ?? fallbackAdvance(cp)) * size + st.spc;
     // 字距调整：和前一个字同一个字体时，把成对调整量加到前一个字的宽度上
     const prevAtom = out[out.length - 1];
     if (kerning && prevAtom && adv !== undefined && usedM && usedM === prevM) prevAtom.width += usedM.metrics.kern(prevAtom.cp, cp) * size;
     prevM = adv !== undefined ? usedM : undefined;
     out.push({
-      text: ch, cp, width, style, family, face: adv !== undefined ? usedM?.face : undefined,
-      ascent: (used?.ascent ?? 0.92) * style.size,
-      descent: (used?.descent ?? 0.24) * style.size,
+      text: ch, cp, width, style: st, family, face: adv !== undefined ? usedM?.face : undefined,
+      // 实测：上下标按缩小后的字号算上伸、下伸和行高
+      ascent: (used?.ascent ?? 0.92) * size,
+      descent: (used?.descent ?? 0.24) * size,
+      strikeY: (used?.strikeTop !== undefined && used.strikeSize !== undefined ? used.strikeTop - used.strikeSize / 2 : 0.25) * size,
       space: ch === ' ' || ch === '　', wide, tab: ch === '\t',
     });
   }

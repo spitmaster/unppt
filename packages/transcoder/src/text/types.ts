@@ -41,7 +41,13 @@ export interface RunStyle {
   italic: boolean;
   color: Rgba;
   underline: boolean;
+  /** 下划线样式（OOXML 的 u 值：sng、dbl、heavy、dotted、dash、wavy……） */
+  uStyle?: string;
   strike: boolean;
+  /** 双删除线 */
+  dblStrike?: boolean;
+  /** 荧光笔高亮 */
+  highlight?: Rgba;
   baseline: number;       // 上下标，百分比（正数上标）
   spc: number;            // 字间距，像素
   /** 字距调整（kerning）从多大字号开始（磅）；没写就不调整 */
@@ -68,6 +74,8 @@ export interface Atom {
   face?: FontFace;
   ascent: number;
   descent: number;
+  /** 删除线中心离基线的高度（像素） */
+  strikeY: number;
   space: boolean;
   wide: boolean;
   tab: boolean;

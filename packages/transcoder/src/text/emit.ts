@@ -1,6 +1,7 @@
 /** 把排好的段落放进文本框：垂直对齐、分栏、行高和基线、水平对齐（含两端对齐），输出 SVG */
 import { n2 } from '../common/svg';
 import type { BodyProps } from './body';
+import { decorate } from './decorations';
 import { textEl } from './svg-text';
 import type { Atom, Line, ParagraphLayout, TextEnv } from './types';
 
@@ -31,6 +32,9 @@ export function emitParagraphs(
     const pl = layouts[i];
     if (i > 0) y += pl.spcBef;
     const pParts: string[] = [];
+    // 高亮画在文字下面，下划线和删除线画在文字上面
+    const under: string[] = [];
+    const over: string[] = [];
     pl.lines.forEach((line, li) => {
       const lh = lineHeight(line, pl.lineSpc);
       // 分栏：这一栏放不下就换到下一栏顶部
@@ -87,11 +91,13 @@ export function emitParagraphs(
           const cy = baseline - st.size * 0.38;
           pParts.push(`<g transform="rotate(-90 ${n2(cx)} ${n2(cy)})">${textEl(txt, cx, baseline + shift, st, seg[0].family, false, alias, env, 'middle')}</g>`);
         } else if (txt.trim().length || s.underline || s.strike) pParts.push(textEl(txt, xs[s0], baseline + shift, st, seg[0].family, false, alias, env));
+        decorate(seg, s, xs[s0], xs[k - 1] + seg[seg.length - 1].width - xs[s0], baseline + shift, st.size, under, over);
         s0 = k;
       }
       y += lh;
     });
     if (i < layouts.length - 1) y += pl.spcAft;
-    if (pParts.length) parts.push(pl.uid ? `<g data-uid="${pl.uid}">${pParts.join('')}</g>` : pParts.join(''));
+    const all = [...under, ...pParts, ...over];
+    if (all.length) parts.push(pl.uid ? `<g data-uid="${pl.uid}">${all.join('')}</g>` : all.join(''));
   }  return parts;
 }

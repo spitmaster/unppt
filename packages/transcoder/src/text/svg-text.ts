@@ -16,8 +16,6 @@ export function textEl(txt: string, x: number, y: number, s: RunStyle, family: s
   if (s.color.a < 0.999) a += ` fill-opacity="${n2(s.color.a)}"`;
   if (s.bold) a += ' font-weight="bold"';
   if (s.italic) a += ' font-style="italic"';
-  const deco = [s.underline ? 'underline' : '', s.strike ? 'line-through' : ''].filter(Boolean).join(' ');
-  if (deco) a += ` text-decoration="${deco}"`;
   if (s.spc) a += ` letter-spacing="${n2(s.spc)}"`;
   if (anchor) a += ` text-anchor="${anchor}"`;
   const css2: string[] = [];

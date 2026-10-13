@@ -83,7 +83,10 @@ export function runStyle(r: XEl, env: TextEnv, scale: number): RunStyle {
     italic: attr(r, 'i') === '1' || attr(r, 'i') === 'true',
     color,
     underline: !!u && u !== 'none',
+    uStyle: u && u !== 'none' ? u : undefined,
     strike: !!attr(r, 'strike') && attr(r, 'strike') !== 'noStrike',
+    dblStrike: attr(r, 'strike') === 'dblStrike' || undefined,
+    highlight: colorIn(child(r, 'a:highlight'), env.colors),
     baseline: (numAttr(r, 'baseline') ?? 0) / 1000,
     // 自动缩小时字间距也按同样比例缩小
     spc: ((numAttr(r, 'spc') ?? 0) / 100) * scale * 96 / 72,
