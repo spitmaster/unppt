@@ -70,6 +70,7 @@ def main():
     subprocess.run(["node", "packages/transcoder/dist/cli.js", "convert", "testcases/anim-sound.pptx", "-o", str(player_dir / "sound.html"), "-q"], cwd=ROOT, check=True)
     subprocess.run(["node", "packages/transcoder/dist/cli.js", "convert", "testcases/anim-build.pptx", "-o", str(player_dir / "build.html"), "-q"], cwd=ROOT, check=True)
     subprocess.run(["node", "packages/transcoder/dist/cli.js", "convert", "testcases/anim-after.pptx", "-o", str(player_dir / "after.html"), "-q"], cwd=ROOT, check=True)
+    subprocess.run(["node", "packages/transcoder/dist/cli.js", "convert", "testcases/anim-text-emphasis.pptx", "-o", str(player_dir / "textemph.html"), "-q"], cwd=ROOT, check=True)
     s1, player_url = serve(player_dir)
     s2, host_url = serve(host_dir)
 
@@ -383,6 +384,24 @@ def main():
             vis.append(page17.evaluate("['s2','s3','s4'].filter((u) => { const e = document.querySelector('[data-uid=\"' + u + '\"]'); return e && !e.closest('.unppt-hide'); })"))
         check(dims == [[False, False, False], [True, False, False], [True, True, False]] and vis == [[], ["s3"], ["s4"]],
               f"播放后变暗 {dims}、播放后隐藏 / 下次单击后隐藏 {vis}")
+
+        # ---------------- 18. 文字强调：颜色保留；更改字形、加粗闪烁、样式强调只在效果过程中；下划线保留；字号放大保留
+        page18 = b.new_page()
+        page18.goto(f"{player_url}/textemph.html")
+        page18.wait_for_function("window.unppt !== undefined && !!document.querySelector('div.unppt-slide')")
+        js18 = """(u) => { const g = document.querySelector('[data-uid="' + u + '"]'); const t = g.querySelector('text'); const s = getComputedStyle(t);
+                  return [s.fill, s.fontWeight, s.textDecorationLine || s.textDecoration, getComputedStyle(g).transform]; }"""
+        mid18, end18 = [], []
+        for k in range(6):
+            page18.evaluate("window.unppt.next()")
+            page18.wait_for_timeout(300)
+            mid18.append(page18.evaluate(js18, f"s{k + 2}"))
+            page18.wait_for_timeout(1000)
+            end18.append(page18.evaluate(js18, f"s{k + 2}"))
+        ok18 = (end18[0][0] == "rgb(233, 113, 50)" and mid18[1][1] in ("700", "bold") and end18[1][1] in ("400", "normal")
+                and end18[2][1] in ("400", "normal") and mid18[3][0] == "rgb(233, 113, 50)" and end18[3][0] == "rgb(0, 0, 0)"
+                and "underline" in end18[4][2] and end18[5][3].startswith("matrix(1.5"))
+        check(ok18, f"文字强调 中途 {mid18} 结束 {end18}")
 
         # ---------------- 移动端视口
         mobile = {"is_mobile": True} if BROWSER != "firefox" else {}

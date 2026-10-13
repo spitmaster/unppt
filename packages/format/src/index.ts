@@ -92,6 +92,12 @@ export interface AnimAction {
   sound?: Sound;
 }
 
+export interface TextStyleChange {
+  bold?: boolean;
+  italic?: boolean;
+  underline?: boolean;
+}
+
 /** 一段声音：src 是媒体文件路径；loop 时一直循环到下一个声音 */
 export interface Sound {
   src: string;
@@ -151,6 +157,12 @@ export interface AnimTarget {
   opacity?: number;
   /** "动画播放后变暗"的颜色：文字改成这个颜色，没有文字时改形状的填充 */
   dim?: string;
+  /** 缩放、旋转的原点（相对元素外框的比例，默认中心）；更改字号按左上角放大（PowerPoint 是重新排版，这里近似） */
+  origin?: [number, number];
+  /** 一直保留的文字样式：加粗、倾斜、下划线（true 打开，false 关掉） */
+  font?: TextStyleChange;
+  /** 只在效果过程中出现、之后恢复的文字样式（加粗闪烁、样式强调）：from、to 是在效果时长里的位置（0~1） */
+  flash?: (TextStyleChange & { from: number; to: number; color?: string })[];
 }
 
 export interface SlideTransition {

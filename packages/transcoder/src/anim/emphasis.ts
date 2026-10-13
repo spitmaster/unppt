@@ -3,6 +3,7 @@ import type { AnimTarget } from '../../../format/src/index';
 import { colorIn, css, type ColorContext } from '../model/color';
 import { attr, child, findAll, numAttr, path, type XEl } from '../io/xml';
 import { motionPoints } from './motion';
+import { textStyle } from './text-style';
 import { easeAccel, filterTime, nonLinear, progressAt, timingOf, type Timing } from './timing-util';
 
 export interface AnimContext {
@@ -65,6 +66,13 @@ export function finalState(cTn: XEl | undefined, ctx: AnimContext): AnimTarget |
     if (names.some((n) => n === 'fillcolor' || n === 'fill.color')) t.fill = css(col);
     if (names.some((n) => n === 'style.color')) t.color = css(col);
   }
+  // 更改字号：PowerPoint 重新排版、文字从左上角往外长，缩放原点放在左上角
+  if (t.scale && findAll(cTn, 'p:attrName').some((n) => n.text.trim() === 'style.fontSize')) t.origin = [0, 0];
+  // 文字样式：颜色、加粗、倾斜、下划线
+  const ts = textStyle(cTn, ctx.colors, total);
+  if (ts.color) t.color = ts.color;
+  if (ts.font) t.font = ts.font;
+  if (ts.flash) t.flash = ts.flash;
   // 不透明度：效果保持（fill="hold"）时才留下终值
   if (op.list.length && op.hold) {
     const a = op.sample(op.end + 1);
@@ -113,6 +121,15 @@ export function transformTimeline(cTn: XEl | undefined) {
       ...tm, sx: (numAttr(v, 'x') ?? 100000) / 100000, sy: (numAttr(v, 'y') ?? 100000) / 100000,
       ...(by ? {} : { abs: true, ...(from ? { fx: (numAttr(from, 'x') ?? 100000) / 100000, fy: (numAttr(from, 'y') ?? 100000) / 100000 } : {}) }),
     });
+  }
+  // 更改字号（style.fontSize 的倍数）：按缩放近似（PowerPoint 会重新排版，这里不重排）
+  for (const a of findAll(cTn, 'p:anim')) {
+    if (findAll(a, 'p:attrName')[0]?.text.trim() !== 'style.fontSize') continue;
+    const to = Number(attr(a, 'to')), by = Number(attr(a, 'by'));
+    const tm = behaviorTiming(a);
+    if (!tm) continue;
+    if (isFinite(to) && to > 0) list.push({ ...tm, sx: to, sy: to, abs: true });
+    else if (isFinite(by) && by > 0) list.push({ ...tm, sx: by, sy: by });
   }
   list.sort((a, b) => a.delay - b.delay);
   for (const r of findAll(cTn, 'p:animRot')) {
