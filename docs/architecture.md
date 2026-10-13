@@ -80,7 +80,7 @@ flowchart TB
   target["anim/target.ts<br/>强调、路径（沿路径、往返关键帧）<br/>repeat.ts 重复、自动翻转"]
   units["anim/text-units.ts<br/>逐字 / 逐词：淡入拆 tspan，<br/>飞入等带位移的拆成单独摆放的 text"]
   trans["transitions/<br/>← TransitionEffect 扩展点（22 种）<br/>位移类用关键帧；软边类 soft-edge.ts 逐帧遮罩渐变；<br/>图块类 tiles.ts 逐帧裁剪；drive.ts 逐帧驱动"]
-  ui["ui/controls.ts 按钮<br/>ui/input.ts 点击、键盘、触屏"]
+  ui["ui/controls.ts 按钮<br/>ui/input.ts 点击、键盘、触屏<br/>ui/media-bar.ts 音视频控制条"]
   deck["deck.ts 数据接口、字体<br/>media.ts 音视频命令、动画和切换的声音<br/>css.ts 样式"]
   entry --> boot & bridge & core
   boot --> core & bridge & deck

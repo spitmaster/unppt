@@ -1011,6 +1011,33 @@ def charts_bubble(app):
             pass
     return p
 
+def _test_video(path):
+    """用 ffmpeg 生成一段中性的测试视频（彩条图案 + 440Hz 音调，4 秒）。ffmpeg 找不到时可以用 UNPPT_FFMPEG 指定"""
+    import os
+    import shutil
+    import subprocess
+    ff = os.environ.get("UNPPT_FFMPEG") or shutil.which("ffmpeg") or r"D:\library\ffmpeg\ffmpeg.exe"
+    subprocess.run([ff, "-v", "error", "-y", "-f", "lavfi", "-i", "testsrc=duration=4:size=320x180:rate=15",
+                    "-f", "lavfi", "-i", "sine=frequency=440:duration=4", "-shortest", "-pix_fmt", "yuv420p",
+                    "-c:v", "libx264", "-c:a", "aac", str(path)], check=True)
+
+
+def media_video(app):
+    """视频：第 1 页单击时播放（PowerPoint 默认）；第 2 页进入时自动播放"""
+    tmp = TESTCASES.parent / ".cache" / "media"
+    tmp.mkdir(parents=True, exist_ok=True)
+    mp4 = tmp / "test-video.mp4"
+    _test_video(mp4)
+    p = new_pres(app, window=True)
+    for auto in (False, True):
+        s = blank(p)
+        textbox(s, 60, 30, 800, 60, "视频：进入时自动播放" if auto else "视频：单击时播放", size=28)
+        v = s.Shapes.AddMediaObject2(str(mp4.resolve()), 0, -1, 240, 120, 480, 270)
+        if auto:
+            v.AnimationSettings.PlaySettings.PlayOnEntry = -1
+    return p
+
+
 def fills_patterns(app):
     """图案填充：多种预设图案、不同前景/背景色、不同位置（图案从幻灯片原点对齐），表格单元格的图案填充"""
     p = new_pres(app)
@@ -1590,7 +1617,7 @@ def table_vertical(app):
     return p
 
 
-CASES = [shapes_all, text_sizes, text_align, text_spacing, text_bullets, text_missing_font, shapes_basic, fills_lines, table_basic, group_rotate, anim_basic, anim_auto, charts_basic, pictures, smartart, text_effects, text_layout, table_merge, links, emf_images, anim_advanced, charts_labels, freeform_icons, media_audio, anim_trigger, wmf_images, anim_iterate, picture_transparent, charts_more, shape_effects, equations, anim_path, anim_emphasis, transitions, fills_patterns, text_decoration, anim_entrance, svg_images, charts_markers, hidden_slides, media_background, text_glow_reflection, text_tabs, text_picture_bullets, fills_texture, transition_morph, text_embedded_fonts, text_warp, anim_repeat, charts_sizes, slide_timings, lines_compound, table_diagonal, lines_gradient, fills_radial, fills_rect_gradient, shapes_3d, table_vertical, transitions_more, anim_sound, anim_build, anim_after, anim_text_emphasis, charts_bubble]
+CASES = [shapes_all, text_sizes, text_align, text_spacing, text_bullets, text_missing_font, shapes_basic, fills_lines, table_basic, group_rotate, anim_basic, anim_auto, charts_basic, pictures, smartart, text_effects, text_layout, table_merge, links, emf_images, anim_advanced, charts_labels, freeform_icons, media_audio, anim_trigger, wmf_images, anim_iterate, picture_transparent, charts_more, shape_effects, equations, anim_path, anim_emphasis, transitions, fills_patterns, text_decoration, anim_entrance, svg_images, charts_markers, hidden_slides, media_background, text_glow_reflection, text_tabs, text_picture_bullets, fills_texture, transition_morph, text_embedded_fonts, text_warp, anim_repeat, charts_sizes, slide_timings, lines_compound, table_diagonal, lines_gradient, fills_radial, fills_rect_gradient, shapes_3d, table_vertical, transitions_more, anim_sound, anim_build, anim_after, anim_text_emphasis, charts_bubble, media_video]
 
 
 def main():

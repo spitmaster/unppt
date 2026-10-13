@@ -1,0 +1,126 @@
+{
+ "version": 7,
+ "slideWidthPt": 960.0,
+ "slideHeightPt": 540.0,
+ "imageWidth": 1280,
+ "imageHeight": 720,
+ "slides": [
+  {
+   "index": 0,
+   "hidden": false,
+   "shapes": [
+    {
+     "id": 2,
+     "name": "TextBox 1",
+     "type": 17,
+     "x": 60.0,
+     "y": 30.0,
+     "w": 800.0,
+     "h": 60.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 8,
+       "text": "视频：单击时播放",
+       "x": 67.2,
+       "y": 33.6,
+       "w": 224.005,
+       "h": 33.6
+      }
+     ]
+    },
+    {
+     "id": 3,
+     "name": "test-video",
+     "type": 16,
+     "x": 240.0,
+     "y": 120.0,
+     "w": 480.0,
+     "h": 270.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1
+    }
+   ],
+   "effects": [
+    {
+     "index": 0,
+     "type": 0,
+     "exit": false,
+     "trigger": 2,
+     "dur": 0,
+     "delay": 0,
+     "shapeId": null,
+     "paragraph": 0
+    }
+   ],
+   "triggerHidden": [
+    3
+   ],
+   "steps": 0,
+   "approxSteps": false
+  },
+  {
+   "index": 1,
+   "hidden": false,
+   "shapes": [
+    {
+     "id": 2,
+     "name": "TextBox 1",
+     "type": 17,
+     "x": 60.0,
+     "y": 30.0,
+     "w": 800.0,
+     "h": 60.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 10,
+       "text": "视频：进入时自动播放",
+       "x": 67.2,
+       "y": 33.6,
+       "w": 280.005,
+       "h": 33.6
+      }
+     ]
+    },
+    {
+     "id": 3,
+     "name": "test-video",
+     "type": 16,
+     "x": 240.0,
+     "y": 120.0,
+     "w": 480.0,
+     "h": 270.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1
+    }
+   ],
+   "effects": [
+    {
+     "index": 1,
+     "type": 83,
+     "exit": false,
+     "trigger": 1,
+     "dur": 4.0,
+     "delay": 0.0,
+     "shapeId": 3,
+     "paragraph": 0
+    }
+   ],
+   "triggerHidden": [
+    3
+   ],
+   "steps": 1,
+   "approxSteps": false
+  }
+ ],
+ "ok": true
+}

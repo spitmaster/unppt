@@ -7,6 +7,7 @@ import { AnimationEngine } from '../anim/engine';
 import { injectCss } from '../css';
 import type { DeckLike } from '../deck';
 import { MediaPlayer, mediaCommand } from '../media';
+import { MediaBar } from '../ui/media-bar';
 import { runTransition } from '../transitions/transitions';
 import { Controls } from '../ui/controls';
 import { bindInput, type InputOptions } from '../ui/input';
@@ -37,6 +38,7 @@ export class Player {
   private engine: AnimationEngine;
   /** 音视频（含跨页播放的背景音乐） */
   private media: MediaPlayer;
+  private mediaBar: MediaBar;
   /** 每个触发器已经播到第几组（换页时清零） */
   private triggerIdx = new Map<string, number>();
   /** 按计时自动放映 */
@@ -64,6 +66,7 @@ export class Player {
       next: () => this.next(),
     }, opts.timings !== false && deck.show?.useTimings !== false);
     if (opts.ui !== false) this.controls = new Controls(this.root, () => this.prev(), () => this.next());
+    this.mediaBar = new MediaBar(this.root);
     this.cleanup.push(...bindInput(this.root, opts, {
       click: (t) => this.click(t),
       next: () => this.next(),
@@ -136,6 +139,7 @@ export class Player {
   }
 
   destroy() {
+    this.mediaBar.destroy();
     this.auto.stop();
     this.engine.finishRunning();
     this.media.stopAll();
@@ -232,6 +236,7 @@ export class Player {
     const old = this.current;
     if (old) for (const m of Array.from(old.querySelectorAll('video,audio'))) (m as HTMLMediaElement).pause();
     this.stage.appendChild(el);
+    this.mediaBar.attach(el);
     this.current = el;
     this.slideIdx = slideIdx;
     this.media.enter(slideIdx);
