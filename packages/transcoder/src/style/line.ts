@@ -56,7 +56,8 @@ export function parseLine(lns: (XEl | undefined)[], ctxs: ColorContext[], part: 
     if (te) tail = { type: attr(te, 'type') ?? 'none', w: attr(te, 'w') ?? 'med', len: attr(te, 'len') ?? 'med' };
   });
   if (!any || !fill || fill.kind === 'none') return undefined;
-  const px = Math.max(width / EMU_PER_PX, width > 0 ? 0.5 : 0);
+  // 不到 1 像素的细线（0.25、0.5 磅）PowerPoint 画成 1 像素宽、颜色不变淡（实测）
+  const px = Math.max(width / EMU_PER_PX, width > 0 ? 1 : 0);
   const color = fill.kind === 'solid' ? fill.color : fill.kind === 'grad' ? fill.stops[0]?.color : undefined;
   return {
     color, fill, width: px,
