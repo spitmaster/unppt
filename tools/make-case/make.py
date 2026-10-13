@@ -1041,7 +1041,27 @@ def transition_morph(app):
     return p
 
 
-CASES = [shapes_all, text_sizes, text_align, text_spacing, text_bullets, text_missing_font, shapes_basic, fills_lines, table_basic, group_rotate, anim_basic, anim_auto, charts_basic, pictures, smartart, text_effects, text_layout, table_merge, links, emf_images, anim_advanced, charts_labels, freeform_icons, media_audio, anim_trigger, wmf_images, anim_iterate, picture_transparent, charts_more, shape_effects, equations, anim_path, anim_emphasis, transitions, fills_patterns, text_decoration, anim_entrance, svg_images, charts_markers, hidden_slides, media_background, text_glow_reflection, text_tabs, text_picture_bullets, fills_texture, transition_morph]
+def text_embedded_fonts(app):
+    """嵌入字体：保存时把字体嵌进文件（PowerPoint 只存用到的字，MicroType Express 压缩）"""
+    p = new_pres(app)
+    s = blank(p)
+    rows = [("华文行楷", "嵌入字体：华文行楷 春眠不觉晓", 40), ("Impact", "Embedded Font Impact 2024", 44),
+            ("华文行楷", "处处闻啼鸟 Mixed 混排 123", 32)]
+    for i, (font, text, size) in enumerate(rows):
+        t = s.Shapes.AddTextbox(1, 60, 50 + i * 150, 840, 120)
+        t.TextFrame.WordWrap = -1
+        r = t.TextFrame.TextRange
+        r.Text = text
+        r.Font.Name = font
+        r.Font.NameFarEast = font
+        r.Font.Size = size
+    return p
+
+
+text_embedded_fonts.embed_fonts = True
+
+
+CASES = [shapes_all, text_sizes, text_align, text_spacing, text_bullets, text_missing_font, shapes_basic, fills_lines, table_basic, group_rotate, anim_basic, anim_auto, charts_basic, pictures, smartart, text_effects, text_layout, table_merge, links, emf_images, anim_advanced, charts_labels, freeform_icons, media_audio, anim_trigger, wmf_images, anim_iterate, picture_transparent, charts_more, shape_effects, equations, anim_path, anim_emphasis, transitions, fills_patterns, text_decoration, anim_entrance, svg_images, charts_markers, hidden_slides, media_background, text_glow_reflection, text_tabs, text_picture_bullets, fills_texture, transition_morph, text_embedded_fonts]
 
 
 def main():
@@ -1068,7 +1088,11 @@ def main():
             out = TESTCASES / f"{name}.pptx"
             if out.exists():
                 out.unlink()
-            p.SaveAs(str(out.resolve()))
+            # 需要嵌入字体的用例：SaveAs 第三个参数 EmbedTrueTypeFonts
+            if getattr(fn, "embed_fonts", False):
+                p.SaveAs(str(out.resolve()), 24, -1)
+            else:
+                p.SaveAs(str(out.resolve()))
             p.Close()
             print("生成", out.name)
     finally:

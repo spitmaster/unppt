@@ -10,6 +10,7 @@
  */
 import { DECK_FORMAT, DECK_FORMAT_VERSION, UNPPT_VERSION, type DeckReport, type DeckSlide } from '../../format/src/index';
 import { compileTiming, compileTransition } from './anim/anim';
+import { loadEmbeddedFont } from './font/eot';
 import { FontLibrary, loadFontFile, type FontFace } from './font/font';
 import { subsetFont } from './font/subset';
 import { base64 } from './media/media';
@@ -18,6 +19,7 @@ import { MediaStore, type WriteData, type WriteFn } from './media/media';
 import { Presentation } from './model/model';
 import { OpcPackage } from './io/package';
 import { renderSlide } from './render/render';
+import type { FontEmbedder } from './text/types';
 import { toSource, type InputSource } from './io/source';
 import { ZipReader } from './io/zip';
 
@@ -65,6 +67,15 @@ export async function convert(input: InputSource, options: ConvertOptions): Prom
   await pres.load();
 
   const fonts = new FontLibrary();
+  // 演示文稿里嵌入的字体先加（同名时优先用它），并且总是嵌入产物：观看端多半没装这些字体
+  const docFaces = new Set<FontFace>();
+  for (const ef of pres.embeddedFonts) {
+    const bytes = await pkg.zip.read(ef.part);
+    const faces = bytes ? await loadEmbeddedFont(bytes, ef.typeface, ef.bold, ef.italic) : [];
+    if (!faces.length) pres.warn(`嵌入的字体读不出来：${ef.typeface}`);
+    for (const f of faces) docFaces.add(f);
+    fonts.add(faces);
+  }
   for (const f of options.fonts ?? []) fonts.add(await loadFontFile(f));
   const missingFonts = new Set<string>();
   // 只输出演示数据时，图片一律写成单独文件（不在内存里攒）
@@ -77,7 +88,11 @@ export async function convert(input: InputSource, options: ConvertOptions): Prom
     if (!u) { u = { alias: `unppt-f${usage.size}`, cps: new Set() }; usage.set(face, u); }
     return u;
   };
-  const embed = options.embedFonts ? { use: (face: FontFace, cp: number) => { entry(face).cps.add(cp); }, alias: (face: FontFace) => entry(face).alias } : undefined;
+  const embeds = (face: FontFace) => options.embedFonts === true || docFaces.has(face);
+  const embed: FontEmbedder = {
+    use: (face, cp) => { if (embeds(face)) entry(face).cps.add(cp); },
+    alias: (face) => (embeds(face) ? entry(face).alias : undefined),
+  };
   const env = { pres, fonts, missingFonts, media, embed };
   const deckFonts: DeckFont[] = [];
   async function* fontFiles(): AsyncGenerator<{ font: DeckFont; data: Uint8Array }> {

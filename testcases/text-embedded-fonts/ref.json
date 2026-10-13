@@ -1,0 +1,88 @@
+{
+ "version": 7,
+ "slideWidthPt": 960.0,
+ "slideHeightPt": 540.0,
+ "imageWidth": 1280,
+ "imageHeight": 720,
+ "slides": [
+  {
+   "index": 0,
+   "hidden": false,
+   "shapes": [
+    {
+     "id": 2,
+     "name": "TextBox 1",
+     "type": 17,
+     "x": 60.0,
+     "y": 50.0,
+     "w": 840.0,
+     "h": 55.739,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 15,
+       "text": "嵌入字体：华文行楷 春眠不觉晓",
+       "x": 67.2,
+       "y": 53.6,
+       "w": 569.755,
+       "h": 48.0
+      }
+     ]
+    },
+    {
+     "id": 3,
+     "name": "TextBox 2",
+     "type": 17,
+     "x": 60.0,
+     "y": 200.0,
+     "w": 840.0,
+     "h": 60.586,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 25,
+       "text": "Embedded Font Impact 2024",
+       "x": 67.2,
+       "y": 203.6,
+       "w": 503.875,
+       "h": 52.8
+      }
+     ]
+    },
+    {
+     "id": 4,
+     "name": "TextBox 3",
+     "type": 17,
+     "x": 60.0,
+     "y": 350.0,
+     "w": 840.0,
+     "h": 46.045,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 18,
+       "text": "处处闻啼鸟 Mixed 混排 123",
+       "x": 67.2,
+       "y": 353.6,
+       "w": 352.38,
+       "h": 38.4
+      }
+     ]
+    }
+   ],
+   "effects": [],
+   "triggerHidden": [],
+   "steps": 0
+  }
+ ],
+ "ok": true
+}

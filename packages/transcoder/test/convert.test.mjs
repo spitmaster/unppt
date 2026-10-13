@@ -179,3 +179,17 @@ function writeZip(entries, deflate) {
   e.writeUInt32LE(cd.length, 12); e.writeUInt32LE(off, 16);
   return new Uint8Array(Buffer.concat([...parts, cd, e]));
 }
+
+test('演示文稿里嵌入的字体（MicroType Express 压缩）能解出来，并且总是嵌入产物', async () => {
+  const w = memoryWriter();
+  const r = await convert(await readFile(new URL('text-embedded-fonts.pptx', TC)), { write: w.write, output: 'data' });
+  // 没有提供任何字体文件，也不缺字体
+  assert.deepEqual(r.report.missingFonts, []);
+  assert.ok(!r.report.warnings.some((m) => m.includes('字体')), r.report.warnings.join('；'));
+  const deck = JSON.parse(w.files.get('deck.json').toString('utf8'));
+  assert.deepEqual(deck.fonts.map((f) => f.source).sort(), ['Impact', 'STXingkai']);
+  for (const f of deck.fonts) {
+    const woff = w.files.get(f.url);
+    assert.equal(woff.subarray(0, 4).toString('latin1'), 'wOFF');
+  }
+});
