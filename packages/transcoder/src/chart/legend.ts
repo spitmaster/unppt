@@ -3,10 +3,11 @@ import type { ColorContext, Rgba } from '../model/color';
 import { attr, child, type XEl } from '../io/xml';
 import { chartTypeOf } from './chart-types';
 import { accentColor, label, legendKey, textStyle } from './draw';
-import { legendBand, legendCenter, legendItemGap, legendKeyGap, legendSquare, type TextWidth } from './layout';
+import { legendBand, legendCenter, legendItemGap, legendKeyGap, legendLineKey, legendSquare, type TextWidth } from './layout';
 import type { Plot, Rect, Series, TextStyle } from './model';
+import { dashAttr } from './trendline';
 
-export interface LegendEntry { name: string; color: Rgba; line: boolean; marker: boolean; series?: Series }
+export interface LegendEntry { name: string; color: Rgba; line: boolean; marker: boolean; series?: Series; width?: number; dash?: string }
 
 /** 图例里的各项（按显示顺序） */
 function entriesOf(plots: Plot[], colors: ColorContext): LegendEntry[] {
@@ -21,10 +22,17 @@ function entriesOf(plots: Plot[], colors: ColorContext): LegendEntry[] {
     const t = chartTypeOf(p.kind)!;
     for (const s of p.series) {
       const k = t.legendKey(p, s);
-      entries.push({ name: s.name, color: k.color ?? accentColor(0, colors), line: k.line, marker: s.marker || !!k.dot, ...(k.dot ? {} : { series: s }) });
+      // 图例里的线和系列一样粗（实测）
+      entries.push({ name: s.name, color: k.color ?? accentColor(0, colors), line: k.line, marker: s.marker || !!k.dot, ...(k.dot ? {} : { series: s }), ...(k.line && s.line ? { width: s.line.width } : {}) });
     }
   }
   if (type0.legendReversed?.(plots[0])) entries.reverse();
+  // 趋势线排在所有系列后面
+  for (const p of plots) {
+    for (const s of p.series) {
+      for (const t of s.trendlines) if (t.line.color) entries.push({ name: t.name, color: t.line.color, line: true, marker: false, width: t.line.width, dash: dashAttr(t.line) });
+    }
+  }
   return entries;
 }
 
@@ -40,15 +48,18 @@ export function renderLegend(legend: XEl | undefined, plots: Plot[], area: Rect,
   if (legendPos === 'b' || legendPos === 't') {
     // 实测（9~28 磅）：色块、间隔都随字号变化
     const sz = legendText.size;
-    const keyW = (e: LegendEntry) => (e.line ? ks * 3 : legendSquare(sz));
+    // 有线条项时所有图例键一样宽（方块变成扁条、标记居中，实测）
+    const anyLine = entries.some((e) => e.line);
+    const keyW = (e: LegendEntry) => (anyLine ? legendLineKey(sz) : e.line ? ks * 3 : legendSquare(sz));
+    const gap = legendItemGap(sz);
     const parts = entries.map((e) => keyW(e) + legendKeyGap(sz) + tw(e.name, sz));
-    const total = parts.reduce((a, b) => a + b, 0) + legendItemGap(sz) * Math.max(0, entries.length - 1);
+    const total = parts.reduce((a, b) => a + b, 0) + gap * Math.max(0, entries.length - 1);
     let x = (w - total) / 2;
     const y = legendPos === 'b' ? bottom - legendCenter(sz) : top + sz * 0.6;
     entries.forEach((e, i) => {
-      out.push(legendKey(e, x, y, e.line ? ks : legendSquare(sz)));
+      out.push(anyLine ? legendKey(e, x, y, legendSquare(sz), keyW(e)) : legendKey(e, x, y, e.line ? ks : legendSquare(sz)));
       out.push(label(e.name, x + keyW(e) + legendKeyGap(sz), y, legendText, 'start'));
-      x += parts[i] + legendItemGap(sz);
+      x += parts[i] + gap;
     });
     if (legendPos === 'b') bottom -= legendBand(legendText.size);
     else top += legendText.size * 1.2 + 8;

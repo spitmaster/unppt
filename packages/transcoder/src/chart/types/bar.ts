@@ -3,6 +3,7 @@ import { css } from '../../model/color';
 import { n2 } from '../../common/svg';
 import { cpart, label } from '../draw';
 import { labelText } from '../format';
+import { errRanges, errSvg } from '../error-bars';
 import type { ChartType } from '../chart-type';
 
 export const barType: ChartType = {
@@ -13,7 +14,8 @@ export const barType: ChartType = {
   legendByCategory: false,
   defaultGrouping: 'clustered',
   horizontal: (p) => p.horizontal,
-  legendReversed: (p) => p.horizontal,
+  // 条形图第一个系列画在每组的最下面，横排图例倒过来和它对应；分类轴逆序时整体翻过来，图例不倒
+  legendReversed: (p) => p.horizontal && !p.catReversed,
   seriesRules: () => ({ xy: false, defaultLine: false, marker: () => false }),
   legendKey: (_p, s) => ({ color: s.fill, line: false }),
   renderOnAxes(p, f, A, out, labelsOut) {
@@ -28,7 +30,9 @@ export const barType: ChartType = {
     const barW = band / (slots + p.gapWidth / 100);
     const pos = new Array(nCat).fill(0), neg = new Array(nCat).fill(0);
     const totals = new Array(nCat).fill(0).map((_, i) => p.series.reduce((a, s) => a + Math.abs(s.vals[i] ?? 0), 0) || 1);
+    const errOut: string[] = [];
     p.series.forEach((s, si) => {
+      const errs = s.errBars.map((e) => errRanges(e, s.vals));
       for (let i = 0; i < nCat; i++) {
         let v = s.vals[i];
         if (v === null || v === undefined) continue;
@@ -58,7 +62,15 @@ export const barType: ChartType = {
           out.push(cpart(`${s.index}x${i}`, `<rect x="${n2(v1)}" y="${n2(c1)}" width="${n2(v2 - v1)}" height="${n2(cl)}" fill="${css(color)}"/>`));
           if (text) labelsOut.push(cpart(`${s.index}x${i}l`, label(text, inside ? (v1 + v2) / 2 : v2 + 4, c1 + cl / 2, lb!.style, inside ? 'middle' : 'start')));
         }
+        // 误差线（堆积时以这一段的顶端为中心）
+        s.errBars.forEach((e, k) => {
+          const r = errs[k][i];
+          if (!r || p.grouping === 'percentStacked') return;
+          const shift = stacked ? b - raw : 0;
+          errOut.push(cpart(`${s.index}x${i}e`, errSvg(e, c1 + cl / 2, f.valPx(vpos(r[0] + shift)), f.valPx(vpos(r[1] + shift)), !horizontal)));
+        });
       }
     });
+    out.push(...errOut);
   },
 };

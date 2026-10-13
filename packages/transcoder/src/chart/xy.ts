@@ -5,7 +5,9 @@
 import { attr, child, type XEl } from '../io/xml';
 import { css } from '../model/color';
 import { n2 } from '../common/svg';
-import { label } from './draw';
+import { cpart, label } from './draw';
+import { errRanges, errSvg } from './error-bars';
+import { extraValues, trendlines } from './extras';
 import { PAD, RIGHT_LABEL_PAD, SIDE_LABEL_PAD, sideAnchor, sideGap, topForLabel, valBand, valCenter, type TextWidth } from './layout';
 import type { AxisInfo, AxisMaker, Plot, Rect, Series } from './model';
 
@@ -31,6 +33,8 @@ export function renderXY(p: Plot, valAxes: XEl[], makeAxis: AxisMaker, tw: TextW
       if (v === null || x === null || x === undefined) return;
       range = { x0: Math.min(range.x0, x), x1: Math.max(range.x1, x), y0: Math.min(range.y0, v), y1: Math.max(range.y1, v) };
     });
+    // 趋势线、误差线也要放得下
+    for (const v of extraValues(s, (i) => s.xs?.[i])) range = { ...range, y0: Math.min(range.y0, v), y1: Math.max(range.y1, v) };
   }
   const layout = (r: Range): XYFrame => {
     const X = makeAxis(xAx, r.x0, r.x1, false, r.margin), Y = makeAxis(yAx, r.y0, r.y1, false, r.margin);
@@ -71,6 +75,19 @@ export function renderXY(p: Plot, valAxes: XEl[], makeAxis: AxisMaker, tw: TextW
       pts.push({ x: left + X.pos(x) * pw, y: bottom - Y.pos(v) * ph, i });
     });
     if (pts.length) marks.series(s, pts, f, out);
+    out.push(...trendlines(s, (i) => s.xs?.[i], (x, y) => [left + X.pos(x) * pw, bottom - Y.pos(y) * ph]));
+    for (const e of s.errBars) {
+      // Y 方向的误差线竖着画在点上，X 方向的横着画
+      const xs = s.xs ?? [];
+      const ranges = errRanges(e, e.dir === 'x' ? xs.map((x, i) => (s.vals[i] === null ? null : x ?? null)) : s.vals);
+      ranges.forEach((r, i) => {
+        const x = xs[i], v = s.vals[i];
+        if (!r || x === null || x === undefined || v === null) return;
+        out.push(cpart(`${s.index}x${i}e`, e.dir === 'x'
+          ? errSvg(e, bottom - Y.pos(v) * ph, left + X.pos(r[0]) * pw, left + X.pos(r[1]) * pw, false)
+          : errSvg(e, left + X.pos(x) * pw, bottom - Y.pos(r[0]) * ph, bottom - Y.pos(r[1]) * ph, true)));
+      });
+    }
   }
   return out.join('');
 }
