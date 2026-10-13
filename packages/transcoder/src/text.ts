@@ -142,7 +142,8 @@ function runStyle(r: XEl, env: TextEnv, scale: number): RunStyle {
     underline: !!u && u !== 'none',
     strike: !!attr(r, 'strike') && attr(r, 'strike') !== 'noStrike',
     baseline: (numAttr(r, 'baseline') ?? 0) / 1000,
-    spc: ((numAttr(r, 'spc') ?? 0) / 100) * 96 / 72,
+    // 自动缩小时字间距也按同样比例缩小
+    spc: ((numAttr(r, 'spc') ?? 0) / 100) * scale * 96 / 72,
     caps: (attr(r, 'cap') as RunStyle['caps']) ?? 'none',
     latinEaCharset: EA_CHARSETS.has(attr(child(r, 'a:latin'), 'charset') ?? ''),
     panoseBold: panoseWeight(attr(child(r, 'a:ea'), 'panose') ?? attr(child(r, 'a:latin'), 'panose')) >= 7,
@@ -469,7 +470,9 @@ export async function renderText(
       if (buSzPct) size = baseStyle.size * (numAttr(buSzPct, 'val') ?? 100000) / 100000;
       if (buSzPts) size = (numAttr(buSzPts, 'val') ?? 1800) / 100 * fontScale * 96 / 72;
       const font = buFont ? (resolveTypeface(attr(buFont, 'typeface'), env.theme) ?? baseStyle.latin) : baseStyle.latin;
-      const style: RunStyle = { ...baseStyle, size, latin: font, ea: font, color: buClr ? (colorIn(buClr, env.colors) ?? baseStyle.color) : baseStyle.color, underline: false, strike: false, spc: 0 };
+      // 实测：空格当符号时不用符号字体，而是跟正文第一个字用同一种字体（中文正文时是东亚字体的半角空格宽度）
+      const buFace = !text.trim() && atoms[0]?.family ? atoms[0].family : font;
+      const style: RunStyle = { ...baseStyle, size, latin: buFace, ea: buFace, color: buClr ? (colorIn(buClr, env.colors) ?? baseStyle.color) : baseStyle.color, underline: false, strike: false, spc: 0 };
       const ba = await makeAtoms(text, style, measurer);
       const width = ba.reduce((s, a) => s + a.width, 0);
       bullet = { text, style, x: marL + indent, width, family: ba[0]?.family ?? style.latin, face: ba[0]?.face };
