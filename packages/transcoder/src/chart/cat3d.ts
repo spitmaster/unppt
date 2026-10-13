@@ -6,21 +6,19 @@
  *   - 数值轴不加 5% 余量；背景墙右上角比平面布局的绘图区往里 (0.28·dx, 0.42·|dy|)，正面底边比平面布局高 0.77·|dy|，
  *     正面左边右移 0.53·dx；
  *   - 左侧（柱形图的数值、条形图的分类）标签再往左让出 0.53·dx、往下 0.3·|dy|，下方标签往下 0.4·|dy|；
- *   - 顶面是正面颜色 × 0.76，侧面 × 0.64。
+ *   - 立方体和网格线的画法见 box3d.ts。
  * 条形图按同样的系数横过来画（分类在左、数值在下，网格线是地板上的斜线 + 背景墙上的竖线）。
- * 其它三维图（系列沿深度排的柱形图、折线、面积、透视投影）还按平面画。
+ * 系列沿深度排的柱形图见 cat3d-depth.ts；其它三维图（折线、面积、透视投影）还按平面画。
  */
 import { css, type ColorContext, type Rgba } from '../model/color';
 import { n2 } from '../common/svg';
 import { attr, child, type XEl } from '../io/xml';
+import { barCuboid, columnCuboid, wallGridPath } from './box3d';
 import { cpart, label, textStyle } from './draw';
 import { catBand, catCenter, PAD, RIGHT_LABEL_PAD, SIDE_LABEL_PAD, sideAnchor, sideGap, topForLabel, valBand, valCenter, type TextWidth } from './layout';
 import type { AxisMaker, Plot, Rect, TextStyle, View3D } from './model';
 
 export interface Cat3DEnv { colors: ColorContext; part: string; baseText: TextStyle; makeAxis: AxisMaker; tw: TextWidth; w: number; view: View3D }
-
-const TOP_SHADE = 0.76, SIDE_SHADE = 0.64;
-const shadeOf = (c: Rgba, k: number): Rgba => ({ r: Math.round(c.r * k), g: Math.round(c.g * k), b: Math.round(c.b * k), a: c.a });
 
 /** 能按三维柱形 / 条形图画的：只有一个 bar3DChart、簇状或堆积、直角坐标轴 */
 export const isColumn3D = (plots: Plot[], view?: View3D) =>
@@ -82,10 +80,7 @@ export function renderColumn3D(p: Plot, valAx: XEl | undefined, catAx: XEl | und
   const vp = (v: number) => (hz ? fl + A.pos(v) * fw : fb - A.pos(v) * fh);
   const g = A.grid;
   if (g?.color) {
-    const d = A.ticks.map((t) => {
-      const q = vp(t);
-      return hz ? `M${n2(q)} ${n2(fb)}L${n2(q + dx)} ${n2(fb + dy)}V${n2(ft + dy)}` : `M${n2(fl)} ${n2(q)}L${n2(fl + dx)} ${n2(q + dy)}H${n2(fr + dx)}`;
-    }).join('');
+    const d = wallGridPath(A.ticks.map(vp), hz, fl, fr, ft, fb, dx, dy);
     out.push(`<path d="${d}" fill="none" stroke="${css(g.color)}" stroke-width="${n2(g.width)}"/>`);
   }
   const leftLabel = (t: string, y: number, st: TextStyle) => label(t, fl - 0.53 * dx - sideAnchor(st.size), y + 0.3 * -dy, st, 'end');
@@ -116,20 +111,8 @@ export function renderColumn3D(p: Plot, valAx: XEl | undefined, catAx: XEl | und
   // 柱形图从左往右画（右侧面被右边的挡住），条形图从下往上画（顶面被上面的挡住）
   boxes.sort((m, n) => m.c0 - n.c0);
   for (const bx of boxes) {
-    const { color } = bx;
-    const topC = css(shadeOf(color, TOP_SHADE)), side = css(shadeOf(color, SIDE_SHADE)), front = css(color);
-    let svg: string;
-    if (!hz) {
-      const x = fl + bx.c0, y1 = bx.v2, y2 = bx.v1;
-      svg = `<path d="M${n2(x + thick)} ${n2(y1)}l${n2(bdx)} ${n2(bdy)}V${n2(y2 + bdy)}l${n2(-bdx)} ${n2(-bdy)}Z" fill="${side}"/>`
-        + `<path d="M${n2(x)} ${n2(y1)}l${n2(bdx)} ${n2(bdy)}h${n2(thick)}l${n2(-bdx)} ${n2(-bdy)}Z" fill="${topC}"/>`
-        + `<rect x="${n2(x)}" y="${n2(y1)}" width="${n2(thick)}" height="${n2(Math.max(0, y2 - y1))}" fill="${front}"/>`;
-    } else {
-      const y = fb - bx.c0 - thick, x1 = bx.v1, x2 = bx.v2;
-      svg = `<path d="M${n2(x2)} ${n2(y)}l${n2(bdx)} ${n2(bdy)}v${n2(thick)}l${n2(-bdx)} ${n2(-bdy)}Z" fill="${side}"/>`
-        + `<path d="M${n2(x1)} ${n2(y)}l${n2(bdx)} ${n2(bdy)}H${n2(x2 + bdx)}l${n2(-bdx)} ${n2(-bdy)}Z" fill="${topC}"/>`
-        + `<rect x="${n2(x1)}" y="${n2(y)}" width="${n2(Math.max(0, x2 - x1))}" height="${n2(thick)}" fill="${front}"/>`;
-    }
-    out.push(cpart(bx.key, svg));
+    out.push(cpart(bx.key, hz
+      ? barCuboid(bx.v1, bx.v2, fb - bx.c0 - thick, thick, bdx, bdy, bx.color)
+      : columnCuboid(fl + bx.c0, bx.v2, bx.v1, thick, bdx, bdy, bx.color)));
   }
 }
