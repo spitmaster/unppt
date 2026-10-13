@@ -14,7 +14,7 @@ import { axisMaker } from './axis';
 import { renderCategoryChart } from './cat-chart';
 import { chartTypeOf } from './chart-types';
 import { label, textStyle, textWidth } from './draw';
-import { PAD, type TextWidth } from './layout';
+import { BOTTOM_PAD, PAD, type TextWidth } from './layout';
 import { renderLegend } from './legend';
 import type { ChartContext, Plot, SvgDefs, TextStyle } from './model';
 import { readPlots } from './read';
@@ -81,6 +81,8 @@ export function renderChart(space: XEl | undefined, w: number, h: number, env: C
 
   // ---------------- 图例
   ({ left, top, right, bottom } = renderLegend(child(chart, 'c:legend'), plots, { left, top, right, bottom }, w, colors, baseText, tw, out));
+  // 底部没有图例时，下边只留 BOTTOM_PAD（COM 读 3 种字号：图例从下方移走后绘图区增高 1.03 × 字号 + 12 磅，比图例带多出约 5 磅）
+  if (bottom === h - PAD) bottom = h - BOTTOM_PAD;
 
   // ---------------- 绘图区（手动布局优先）
   const ml = path(plotArea, 'c:layout', 'c:manualLayout');
