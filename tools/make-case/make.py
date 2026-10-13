@@ -1317,7 +1317,7 @@ fills_rect_gradient.patch = lambda path: _patch_radial(path, "rect")
 
 
 def shapes_3d(app):
-    """三维形状：默认圆形棱台（三点灯光），10 种填充色，正面会被灯光照亮"""
+    """三维形状：默认圆形棱台（三点灯光），10 种填充色，正面会被灯光照亮；第 2 页是带棱台的文字"""
     p = new_pres(app)
     s = blank(p)
     cols = [(192, 0, 0), (0, 176, 80), (0, 112, 192), (128, 128, 128), (255, 255, 255),
@@ -1327,6 +1327,18 @@ def shapes_3d(app):
         sh.Fill.ForeColor.RGB = RGB(r, g, b)
         sh.Line.Visible = 0
         sh.ThreeD.BevelTopType = 3
+    # 第 2 页：带棱台的文字（艺术字常见），文字颜色同样被灯光提亮
+    s2 = blank(p)
+    for i, (r, g, b) in enumerate([(192, 0, 0), (0, 112, 192), (128, 128, 128)]):
+        t = s2.Shapes.AddTextbox(1, 40, 30 + i * 160, 880, 150)
+        tr = t.TextFrame.TextRange
+        tr.Text = "三维文字 Bevel 3D"
+        tr.Font.Size = 72
+        tr.Font.Name = "Arial"
+        tr.Font.NameFarEast = "Microsoft YaHei"
+        tr.Font.Bold = -1
+        tr.Font.Color.RGB = RGB(r, g, b)
+        t.TextFrame2.ThreeD.BevelTopType = 3
     return p
 
 

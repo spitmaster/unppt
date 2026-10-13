@@ -22,6 +22,8 @@ export interface TextEnv {
   doc?: SvgDoc;
   /** 渐变文字铺满的范围（文本框，内部坐标） */
   gradBox?: { w: number; h: number };
+  /** 文字开了三维效果（文本框属性里的 a:sp3d）：颜色按三维光照提亮 */
+  lit3d?: boolean;
   /** 当前部件的关系，用来解析文字上的超链接 */
   rels?: Rel[];
   /** 图片项目符号要用：图片解析和当前部件 */

@@ -133,6 +133,84 @@
    "effects": [],
    "triggerHidden": [],
    "steps": 0
+  },
+  {
+   "index": 1,
+   "hidden": false,
+   "shapes": [
+    {
+     "id": 2,
+     "name": "TextBox 1",
+     "type": 17,
+     "x": 40.0,
+     "y": 30.0,
+     "w": 880.0,
+     "h": 94.514,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 13,
+       "text": "三维文字 Bevel 3D",
+       "x": 47.2,
+       "y": 33.6,
+       "w": 612.005,
+       "h": 86.4
+      }
+     ]
+    },
+    {
+     "id": 3,
+     "name": "TextBox 2",
+     "type": 17,
+     "x": 40.0,
+     "y": 190.0,
+     "w": 880.0,
+     "h": 94.514,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 13,
+       "text": "三维文字 Bevel 3D",
+       "x": 47.2,
+       "y": 193.6,
+       "w": 612.005,
+       "h": 86.4
+      }
+     ]
+    },
+    {
+     "id": 4,
+     "name": "TextBox 3",
+     "type": 17,
+     "x": 40.0,
+     "y": 350.0,
+     "w": 880.0,
+     "h": 94.514,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 13,
+       "text": "三维文字 Bevel 3D",
+       "x": 47.2,
+       "y": 353.6,
+       "w": 612.005,
+       "h": 86.4
+      }
+     ]
+    }
+   ],
+   "effects": [],
+   "triggerHidden": [],
+   "steps": 0
   }
  ],
  "ok": true
