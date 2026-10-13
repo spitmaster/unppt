@@ -133,22 +133,24 @@ export function renderCategoryChart(plots: Plot[], plotArea: XEl | undefined, ar
     valPx: horizontal ? (f) => left + f * pw : (f) => bottom - f * ph,
   };
 
+  // 坐标轴标签画在系列和轴线上面（实测：分类轴在中间时标签盖在柱子上）
+  const axisText: string[] = [];
   // 网格线（次要的在下面）和数值标签
   for (const t of prim.minor) out.push(gridLine(frame.valPx(prim.pos(t)), prim.minorGrid, horizontal, box));
   prim.ticks.forEach((t, i) => {
     const v = frame.valPx(prim.pos(t));
     out.push(gridLine(v, prim.grid, horizontal, box));
     if (!valLabels) return;
-    if (!horizontal) out.push(sides.val === 'l' ? label(tickLabels[i], left - sideAnchor(valStyle.size), v, valStyle, 'end') : label(tickLabels[i], right + sideAnchor(valStyle.size), v, valStyle, 'start'));
-    else out.push(label(tickLabels[i], v, sides.val === 'b' ? bottom + valCenter(valStyle.size) : top - valCenter(valStyle.size), valStyle));
+    if (!horizontal) axisText.push(sides.val === 'l' ? label(tickLabels[i], left - sideAnchor(valStyle.size), v, valStyle, 'end') : label(tickLabels[i], right + sideAnchor(valStyle.size), v, valStyle, 'start'));
+    else axisText.push(label(tickLabels[i], v, sides.val === 'b' ? bottom + valCenter(valStyle.size) : top - valCenter(valStyle.size), valStyle));
   });
   // 显示单位（例如"千"）
   if (unit) {
     const x = sides.val === 'l' ? edgeLeft + unitCenter(unit.style.size) : edgeRight - unitCenter(unit.style.size);
-    out.push(`<g transform="translate(${n2(x)} ${n2(top + unitTop(unit.style.size))}) rotate(-90)">${label(unit.text, 0, 0, unit.style, 'end')}</g>`);
+    axisText.push(`<g transform="translate(${n2(x)} ${n2(top + unitTop(unit.style.size))}) rotate(-90)">${label(unit.text, 0, 0, unit.style, 'end')}</g>`);
   }
   if (sec && !sec.deleted && !horizontal) {
-    sec.ticks.forEach((t, i) => out.push(label(sec.labels[i], right + sideAnchor(sec.style.size), frame.valPx(sec.pos(t)), sec.style, 'start')));
+    sec.ticks.forEach((t, i) => axisText.push(label(sec.labels[i], right + sideAnchor(sec.style.size), frame.valPx(sec.pos(t)), sec.style, 'start')));
   }
 
   // 分类轴标签：挨着绘图区的边，或者挨着中间的分类轴线
@@ -156,8 +158,8 @@ export function renderCategoryChart(plots: Plot[], plotArea: XEl | undefined, ar
     const edge = sides.catMid ? frame.valPx(prim.pos(sides.catCross)) : sides.cat === 'b' ? bottom : sides.cat === 't' ? top : sides.cat === 'l' ? left : right;
     cats.forEach((c, i) => {
       const at = frame.catPx(bandCenter(i));
-      if (!horizontal) out.push(label(c, at, sides.cat === 'b' ? edge + catC(catStyle.size) : edge - catC(catStyle.size), catStyle));
-      else out.push(sides.cat === 'l' ? label(c, edge - sideAnchor(catStyle.size), at, catStyle, 'end') : label(c, edge + sideAnchor(catStyle.size), at, catStyle, 'start'));
+      if (!horizontal) axisText.push(label(c, at, sides.cat === 'b' ? edge + catC(catStyle.size) : edge - catC(catStyle.size), catStyle));
+      else axisText.push(sides.cat === 'l' ? label(c, edge - sideAnchor(catStyle.size), at, catStyle, 'end') : label(c, edge + sideAnchor(catStyle.size), at, catStyle, 'start'));
     });
   }
 
@@ -193,5 +195,5 @@ export function renderCategoryChart(plots: Plot[], plotArea: XEl | undefined, ar
     out.push(tickMarks(prim.ticks.map((t) => frame.valPx(prim.pos(t))), at, dir, outward(sides.val), prim.majorMark, prim.axisLine));
     out.push(tickMarks(prim.minor.map((t) => frame.valPx(prim.pos(t))), at, dir, outward(sides.val), prim.minorMark, prim.axisLine));
   }
-  out.push(...labelsOut);
+  out.push(...axisText, ...labelsOut);
 }
