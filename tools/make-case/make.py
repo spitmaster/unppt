@@ -1342,7 +1342,23 @@ def shapes_3d(app):
     return p
 
 
-CASES = [shapes_all, text_sizes, text_align, text_spacing, text_bullets, text_missing_font, shapes_basic, fills_lines, table_basic, group_rotate, anim_basic, anim_auto, charts_basic, pictures, smartart, text_effects, text_layout, table_merge, links, emf_images, anim_advanced, charts_labels, freeform_icons, media_audio, anim_trigger, wmf_images, anim_iterate, picture_transparent, charts_more, shape_effects, equations, anim_path, anim_emphasis, transitions, fills_patterns, text_decoration, anim_entrance, svg_images, charts_markers, hidden_slides, media_background, text_glow_reflection, text_tabs, text_picture_bullets, fills_texture, transition_morph, text_embedded_fonts, text_warp, anim_repeat, charts_sizes, slide_timings, lines_compound, table_diagonal, lines_gradient, fills_radial, fills_rect_gradient, shapes_3d]
+def table_vertical(app):
+    """表格单元格竖排文字：竖排（汉字正立）、向上旋转 90 度、向下旋转 90 度"""
+    p = new_pres(app)
+    s = blank(p)
+    t = s.Shapes.AddTable(2, 4, 60, 60, 840, 400).Table
+    t.Rows(2).Height = 320
+    texts = ["竖排文字", "向上 Upward", "向下 Downward", "横排对照"]
+    for c, (txt, orient) in enumerate(zip(texts, [5, 2, 3, 1])):
+        t.Cell(1, c + 1).Shape.TextFrame.TextRange.Text = f"第 {c + 1} 列"
+        cell = t.Cell(2, c + 1).Shape.TextFrame
+        cell.TextRange.Text = txt
+        cell.TextRange.Font.Size = 28
+        cell.Orientation = orient
+    return p
+
+
+CASES = [shapes_all, text_sizes, text_align, text_spacing, text_bullets, text_missing_font, shapes_basic, fills_lines, table_basic, group_rotate, anim_basic, anim_auto, charts_basic, pictures, smartart, text_effects, text_layout, table_merge, links, emf_images, anim_advanced, charts_labels, freeform_icons, media_audio, anim_trigger, wmf_images, anim_iterate, picture_transparent, charts_more, shape_effects, equations, anim_path, anim_emphasis, transitions, fills_patterns, text_decoration, anim_entrance, svg_images, charts_markers, hidden_slides, media_background, text_glow_reflection, text_tabs, text_picture_bullets, fills_texture, transition_morph, text_embedded_fonts, text_warp, anim_repeat, charts_sizes, slide_timings, lines_compound, table_diagonal, lines_gradient, fills_radial, fills_rect_gradient, shapes_3d, table_vertical]
 
 
 def main():

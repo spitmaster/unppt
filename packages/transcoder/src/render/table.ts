@@ -112,6 +112,8 @@ export async function renderTable(tbl: XEl | undefined, origin: { x: number; y: 
         lIns: attr(tcPr, 'marL') ?? '91440', rIns: attr(tcPr, 'marR') ?? '91440',
         tIns: attr(tcPr, 'marT') ?? '45720', bIns: attr(tcPr, 'marB') ?? '45720',
         anchor: attr(tcPr, 'anchor') ?? 't',
+        // 单元格的文字方向（竖排等），和文本框的 vert 取值相同
+        ...(attr(tcPr, 'vert') ? { vert: attr(tcPr, 'vert')! } : {}),
       },
     };
     return renderText(child(c.tc, 'a:txBody'), [r.env.pres.defaultTextStyle, defaults], [bodyPr], box, env, out);
