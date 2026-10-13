@@ -10,7 +10,7 @@
  */
 import { DECK_FORMAT, DECK_FORMAT_VERSION, UNPPT_VERSION, type DeckReport, type DeckSlide } from '../../format/src/index';
 import { compileAdvance, compileTiming, compileTransition } from './anim/anim';
-import { loadEmbeddedFont } from './font/eot';
+import { lazyEmbeddedFont } from './font/eot';
 import { FontLibrary, loadFontFile, type FontFace } from './font/font';
 import { subsetFont } from './font/subset';
 import { base64 } from './media/media';
@@ -75,11 +75,10 @@ export async function convert(input: InputSource, options: ConvertOptions): Prom
   // 演示文稿里嵌入的字体先加（同名时优先用它），并且总是嵌入产物：观看端多半没装这些字体（私有字体同样）
   const docFaces = new Set<FontFace>();
   for (const ef of pres.embeddedFonts) {
-    const bytes = await pkg.zip.read(ef.part);
-    const faces = bytes ? await loadEmbeddedFont(bytes, ef.typeface, ef.bold, ef.italic) : [];
-    if (!faces.length) pres.warn(`嵌入的字体读不出来：${ef.typeface}`);
-    for (const f of faces) docFaces.add(f);
-    fonts.add(faces);
+    // 用到才解压
+    const face = lazyEmbeddedFont(() => pkg.zip.read(ef.part), ef.typeface, ef.bold, ef.italic, () => pres.warn(`嵌入的字体读不出来：${ef.typeface}`));
+    docFaces.add(face);
+    fonts.add([face]);
   }
   for (const f of options.fonts ?? []) fonts.add(await loadFontFile(f));
   for (const f of options.privateFonts ?? []) {
