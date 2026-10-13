@@ -3,8 +3,8 @@
  */
 import type { OpcPackage } from '../io/package';
 import type { Presentation } from '../model/model';
-import { emfToSvg } from './emf';
-import { wmfToSvg } from './wmf';
+import { IMAGE_DECODERS } from './decoders';
+import type { ImageDecoder } from './image-decoder';
 
 export type WriteData = Uint8Array | string | AsyncIterable<Uint8Array>;
 export type WriteFn = (path: string, data: WriteData) => Promise<void>;
@@ -40,7 +40,14 @@ export class MediaStore {
   /** 新产生、还没写进输出的共享图片 */
   pending: { id: number; uri: string }[] = [];
 
-  constructor(private pres: Presentation, private pkg: OpcPackage, private write: WriteFn, private inlineLimit: number) {}
+  private decoders = new Map<string, ImageDecoder>();
+
+  constructor(
+    private pres: Presentation, private pkg: OpcPackage, private write: WriteFn, private inlineLimit: number,
+    decoders: readonly ImageDecoder[] = IMAGE_DECODERS,
+  ) {
+    for (const d of decoders) for (const e of d.exts) this.decoders.set(e, d);
+  }
 
   /** 关系 rid（在 part 里）指向的图片 -> href；浏览器不支持的格式返回 undefined */
   async image(part: string, rid: string): Promise<string | undefined> {
@@ -70,13 +77,14 @@ export class MediaStore {
     const entry = this.pkg.zip.entry(target);
     if (!entry) return undefined;
     const ext = extOf(target);
-    if (isImage && (ext === 'emf' || ext === 'wmf')) {
-      // EMF / WMF 矢量图：转成 SVG（同一张只转一次）
+    const decoder = isImage ? this.decoders.get(ext) : undefined;
+    if (decoder) {
+      // 浏览器不能直接显示的格式（EMF / WMF 等）：转换后存一份（同一张只转一次）
       const bytes = await this.pkg.zip.read(target);
-      const svg = bytes ? (ext === 'emf' ? emfToSvg(bytes) : wmfToSvg(bytes)) : undefined;
-      if (!svg) { this.pres.warn(`${ext.toUpperCase()} 图片无法解析`); return undefined; }
+      const img = bytes ? decoder.decode(bytes) : undefined;
+      if (!img) { this.pres.warn(`${ext.toUpperCase()} 图片无法解析`); return undefined; }
       const id = this.nextAsset++;
-      this.pending.push({ id, uri: `data:image/svg+xml;base64,${base64(new TextEncoder().encode(svg))}` });
+      this.pending.push({ id, uri: `data:${img.mime};base64,${base64(img.data)}` });
       return `${ASSET_PREFIX}${id}`;
     }
     if (isImage && !BROWSER_IMAGES.has(ext)) {
