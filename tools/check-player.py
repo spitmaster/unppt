@@ -27,8 +27,40 @@ BROWSER = sys.argv[1] if len(sys.argv) > 1 else "chromium"
 
 def serve(directory: Path):
     class Quiet(http.server.SimpleHTTPRequestHandler):
+        """支持 Range 请求：Chromium 在不支持 Range 的服务器上拖不动视频进度（真实的 Web 服务器都支持）"""
         def log_message(self, *a):
             pass
+
+        def send_head(self):
+            rng = self.headers.get("Range", "")
+            path = Path(self.translate_path(self.path))
+            if not rng.startswith("bytes=") or not path.is_file():
+                return super().send_head()
+            size = path.stat().st_size
+            a, _, b = rng[6:].split(",")[0].partition("-")
+            start = int(a) if a else max(0, size - int(b))
+            end = min(size - 1, int(b)) if a and b else size - 1
+            f = open(path, "rb")
+            f.seek(start)
+            self.send_response(206)
+            self.send_header("Content-Type", self.guess_type(str(path)))
+            self.send_header("Accept-Ranges", "bytes")
+            self.send_header("Content-Range", f"bytes {start}-{end}/{size}")
+            self.send_header("Content-Length", str(end - start + 1))
+            self.end_headers()
+            self.range_left = end - start + 1
+            return f
+
+        def copyfile(self, src, dst):
+            left = getattr(self, "range_left", None)
+            if left is None:
+                return super().copyfile(src, dst)
+            while left > 0:
+                buf = src.read(min(65536, left))
+                if not buf:
+                    break
+                dst.write(buf)
+                left -= len(buf)
     handler = functools.partial(Quiet, directory=str(directory))
     srv = http.server.ThreadingHTTPServer(("127.0.0.1", 0), handler)
     threading.Thread(target=srv.serve_forever, daemon=True).start()
@@ -71,6 +103,7 @@ def main():
     subprocess.run(["node", "packages/transcoder/dist/cli.js", "convert", "testcases/anim-build.pptx", "-o", str(player_dir / "build.html"), "-q"], cwd=ROOT, check=True)
     subprocess.run(["node", "packages/transcoder/dist/cli.js", "convert", "testcases/anim-after.pptx", "-o", str(player_dir / "after.html"), "-q"], cwd=ROOT, check=True)
     subprocess.run(["node", "packages/transcoder/dist/cli.js", "convert", "testcases/anim-text-emphasis.pptx", "-o", str(player_dir / "textemph.html"), "-q"], cwd=ROOT, check=True)
+    subprocess.run(["node", "packages/transcoder/dist/cli.js", "convert", "testcases/media-video.pptx", "-o", str(player_dir / "video.html"), "-q"], cwd=ROOT, check=True)
     s1, player_url = serve(player_dir)
     s2, host_url = serve(host_dir)
 
@@ -402,6 +435,27 @@ def main():
                 and end18[2][1] in ("400", "normal") and mid18[3][0] == "rgb(233, 113, 50)" and end18[3][0] == "rgb(0, 0, 0)"
                 and "underline" in end18[4][2] and end18[5][3].startswith("matrix(1.5"))
         check(ok18, f"文字强调 中途 {mid18} 结束 {end18}")
+
+        # ---------------- 19. 视频：鼠标移上去出现控制条；点视频播放、不翻页；拖进度；进度条上按方向键不翻页
+        page19 = b.new_page(viewport={"width": 960, "height": 540})
+        page19.goto(f"{player_url}/video.html?timings=0")
+        page19.wait_for_function("window.unppt !== undefined && !!document.querySelector('video')")
+        vb = page19.evaluate("(() => { const r = document.querySelector('video').getBoundingClientRect(); return [r.x + r.width / 2, r.y + r.height / 2]; })()")
+        page19.mouse.move(vb[0], vb[1])
+        page19.wait_for_timeout(300)
+        bar19 = page19.evaluate("getComputedStyle(document.querySelector('.unppt-mbar')).display")
+        page19.mouse.click(vb[0], vb[1])
+        page19.wait_for_timeout(1200)
+        play19 = [page19.evaluate("!document.querySelector('video').paused"), page19.evaluate("window.unppt.getState()")["slide"]]
+        sb = page19.evaluate("(() => { const r = document.querySelector('.unppt-mbar input').getBoundingClientRect(); return [r.x + r.width * 0.75, r.y + r.height / 2]; })()")
+        page19.mouse.click(sb[0], sb[1])
+        page19.wait_for_timeout(200)
+        t19 = page19.evaluate("document.querySelector('video').currentTime")
+        page19.keyboard.press("ArrowRight")
+        page19.wait_for_timeout(200)
+        slide19 = page19.evaluate("window.unppt.getState()")["slide"]
+        check(bar19 == "flex" and play19 == [True, 0] and t19 > 2 and slide19 == 0,
+              f"视频控制条 {bar19}、点击播放 {play19}、拖进度到 {t19:.1f} 秒、进度条上按方向键不翻页 {slide19}")
 
         # ---------------- 移动端视口
         mobile = {"is_mobile": True} if BROWSER != "firefox" else {}

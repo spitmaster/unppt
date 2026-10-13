@@ -8,7 +8,7 @@ export interface InputOptions {
 }
 
 export interface InputHandlers {
-  /** 点击画面上的某个元素（已排除视频、音频、链接、按钮） */
+  /** 点击画面上的某个元素（已排除链接、按钮、输入框、媒体控制条） */
   click(target: Element): void;
   next(): void;
   prev(): void;
@@ -23,13 +23,16 @@ export function bindInput(root: HTMLElement, opts: InputOptions, h: InputHandler
   if (opts.clickToNext !== false) {
     root.addEventListener('click', (e) => {
       const t = e.target as Element;
-      if (t.closest('video,audio,a,button')) return;
+      // 点在视频上交给点击处理（切换播放）；链接、按钮、输入框、媒体控制条自己处理
+      if (t.closest('a,button,input,.unppt-mbar')) return;
       h.click(t);
     });
   }
   if (opts.keyboard !== false) {
     const onKey = (e: KeyboardEvent) => {
       if (e.defaultPrevented || e.altKey || e.ctrlKey || e.metaKey) return;
+      // 在输入框（比如媒体控制条的进度条）里按方向键是调整它，不翻页
+      if ((e.target as Element | null)?.closest?.('input,textarea,select,[contenteditable]')) return;
       const k = e.key;
       if (k === 'ArrowRight' || k === 'ArrowDown' || k === 'PageDown' || k === ' ' || k === 'Enter') { h.next(); e.preventDefault(); }
       else if (k === 'ArrowLeft' || k === 'ArrowUp' || k === 'PageUp' || k === 'Backspace') { h.prev(); e.preventDefault(); }
