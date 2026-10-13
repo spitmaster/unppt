@@ -64,6 +64,7 @@ def main():
     subprocess.run(["node", "packages/transcoder/dist/cli.js", "convert", "testcases/media-background.pptx", "-o", str(player_dir / "bgm.html"), "-q"], cwd=ROOT, check=True)
     subprocess.run(["node", "packages/transcoder/dist/cli.js", "convert", "testcases/transition-morph.pptx", "-o", str(player_dir / "morph.html"), "-q"], cwd=ROOT, check=True)
     subprocess.run(["node", "packages/transcoder/dist/cli.js", "convert", "testcases/text-embedded-fonts.pptx", "-o", str(player_dir / "embfont.html"), "-q"], cwd=ROOT, check=True)
+    subprocess.run(["node", "packages/transcoder/dist/cli.js", "convert", "testcases/anim-repeat.pptx", "-o", str(player_dir / "repeat.html"), "-q"], cwd=ROOT, check=True)
     s1, player_url = serve(player_dir)
     s2, host_url = serve(host_dir)
 
@@ -266,6 +267,30 @@ def main():
         st12 = page12.evaluate("""(async () => { await document.fonts.ready; const fs = Array.from(document.fonts).filter(f => f.family.includes('unppt-f'));
           await Promise.all(fs.map(f => f.load().catch(() => null))); return fs.map(f => f.status); })()""")
         check(len(st12) == 2 and all(s == "loaded" for s in st12), f"嵌入字体加载成功：{st12}")
+
+        # ---------------- 13. 动画重复和自动翻转：重复次数、播完翻回原样、"直到下一次单击"被点击打断
+        page13 = b.new_page()
+        errors13 = []
+        page13.on("pageerror", lambda e: errors13.append(str(e)))
+        page13.goto(f"{player_url}/repeat.html")
+        page13.wait_for_function("window.unppt !== undefined && !!document.querySelector('div.unppt-slide')")
+        iters = "(() => Array.from(document.getAnimations()).map(a => a.effect.getComputedTiming().iterations))()"
+        page13.evaluate("window.unppt.next()")
+        it1 = page13.evaluate(iters)
+        page13.evaluate("window.unppt.next()")
+        page13.wait_for_timeout(200)
+        it2 = page13.evaluate(iters)
+        page13.wait_for_timeout(4500)
+        tf2 = page13.evaluate("(() => { const el = Array.from(document.querySelectorAll('div.unppt-slide [data-uid]')).filter(e => /^s[0-9]+$/.test(e.getAttribute('data-uid')))[1]; return getComputedStyle(el).transform; })()")
+        page13.evaluate("window.unppt.goto(0, 3)")
+        page13.evaluate("window.unppt.next()")
+        page13.wait_for_timeout(300)
+        it4 = page13.evaluate(iters)
+        st13 = page13.evaluate("window.unppt.next()")
+        page13.wait_for_timeout(100)
+        left = page13.evaluate("document.getAnimations().length")
+        check(2 in it1 and 2 in it2 and tf2 in ("none", "matrix(1, 0, 0, 1, 0, 0)") and None in [None if x != x or x == float("inf") else 0 for x in it4] and left == 0 and not errors13,
+              f"重复 2 次 {it1}、自动翻转 {it2} 播完复原 {tf2}、一直重复 {it4} 点击后停止 {left} {errors13[:1]}")
 
         # ---------------- 移动端视口
         mobile = {"is_mobile": True} if BROWSER != "firefox" else {}

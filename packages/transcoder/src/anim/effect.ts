@@ -70,12 +70,18 @@ export function effectAction(eff: XEl, base: number, ctx: AnimContext): AnimActi
   if (dir === 'emph') dur = Math.max(dur, transformTimeline(cTn).end);
   const iterate = iterateOf(cTn, dur);
   const variant = dir === 'emph' ? undefined : variantOf(id, effect, numAttr(cTn, 'presetSubtype'));
+  // 重复：repeatCount 的单位是千分之一次，indefinite 是"直到下一次单击"
+  const rc = attr(cTn, 'repeatCount');
+  const repeat = rc === 'indefinite' ? -1 : rc && Number(rc) > 1000 ? Math.min(1000, Number(rc) / 1000) : undefined;
+  const autoRev = attr(cTn, 'autoRev') === '1' || attr(cTn, 'autoRev') === 'true';
   return {
     uid, effect, dir, dur: dur || (effect === 'appear' ? 0 : 500), delay: base + delayOf(cTn),
     from: effect === 'fly' || effect === 'wipe' ? dirFromSubtype(numAttr(cTn, 'presetSubtype')) : undefined,
     ...(to ? { to } : {}),
     ...(iterate ? { iterate } : {}),
     ...(variant ? { variant } : {}),
+    ...(repeat ? { repeat } : {}),
+    ...(autoRev ? { autoRev } : {}),
   };
 }
 

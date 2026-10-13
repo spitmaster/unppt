@@ -70,6 +70,10 @@ export interface AnimAction {
   loop?: boolean;
   /** 文字逐字（letter）/ 逐词（word）播放：每个字（词）各自播 dur，相邻两个间隔 gap 毫秒 */
   iterate?: { by: 'letter' | 'word'; gap: number };
+  /** 整个效果重复播放的次数（"重复 3 次"是 3）；-1 表示一直重复到下一次点击 */
+  repeat?: number;
+  /** 播完再倒着播回去（自动翻转）：结束时回到效果开始前的样子 */
+  autoRev?: boolean;
 }
 
 export interface AnimTarget {

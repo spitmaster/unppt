@@ -5,6 +5,7 @@
 import type { AnimAction } from '../../../format/src/index';
 import { mediaCommand, type MediaHost } from '../media';
 import { animEffect } from './effects/effects';
+import { repeatOptions } from './repeat';
 import { applyTarget, type TransformState } from './target';
 import { TextUnits, type AnimHost } from './text-units';
 
@@ -56,9 +57,11 @@ export class AnimationEngine implements AnimHost {
     for (const a of actions) {
       const el = this.scene.find(a.uid);
       if (!el) continue;
-      if (a.dir === 'in') el.classList.remove('unppt-hide');
-      else if (a.dir === 'out') el.classList.add('unppt-hide');
-      if (a.to) applyTarget(el, a.to, false, 0, 0, this.states, this.trackFn);
+      // 自动翻转的进入 / 退出播完回到开始前：进入的又看不见了，退出的又出现了
+      const visible = a.dir === 'in' ? !a.autoRev : a.dir === 'out' ? !!a.autoRev : undefined;
+      if (visible === true) el.classList.remove('unppt-hide');
+      else if (visible === false) el.classList.add('unppt-hide');
+      if (a.to) applyTarget(el, a.to, false, 0, 0, this.states, this.trackFn, repeatOptions(a));
     }
   }
 
@@ -66,7 +69,7 @@ export class AnimationEngine implements AnimHost {
     for (const a of actions) {
       const el = this.scene.find(a.uid);
       if (!el) continue;
-      if (a.to) { applyTarget(el, a.to, true, a.dur, a.delay, this.states, this.trackFn); continue; }
+      if (a.to) { applyTarget(el, a.to, true, a.dur, a.delay, this.states, this.trackFn, repeatOptions(a)); continue; }
       if (a.media) {
         const run = () => this.media.command(el, a);
         if (a.delay) { const t = setTimeout(run, a.delay); this.cleanupLater(() => clearTimeout(t)); } else run();
@@ -86,8 +89,9 @@ export class AnimationEngine implements AnimHost {
         const t = setTimeout(() => el.classList.remove('unppt-hide'), a.delay);
         this.cleanupLater(() => { clearTimeout(t); el.classList.remove('unppt-hide'); });
       }
-      const anim = el.animate(frames, { duration: Math.max(1, a.dur), delay: a.delay, easing, fill: 'backwards' });
-      if (a.dir === 'out') {
+      const anim = el.animate(frames, { duration: Math.max(1, a.dur), delay: a.delay, easing, fill: 'backwards', ...repeatOptions(a) });
+      // 播完不可见的：退出，以及自动翻转的进入
+      if ((a.dir === 'out') !== !!a.autoRev) {
         const hide = () => el.classList.add('unppt-hide');
         anim.addEventListener('finish', hide);
         anim.addEventListener('cancel', hide);
