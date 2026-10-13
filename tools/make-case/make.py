@@ -1688,6 +1688,31 @@ def shapes_3d(app):
     return p
 
 
+def shapes_bevel(app):
+    """棱台的尺寸、形状和截面类型：第 1 页圆形棱台 4 种宽高（含主题"强烈效果"常见的 5×2 磅）× 椭圆、圆角矩形、星形；
+    第 2 页其它截面类型（斜角、柔圆、凸起、角度、松散嵌入、十字）"""
+    p = new_pres(app)
+    s = blank(p)
+    sizes = [(3, 3), (9, 9), (5, 2), (8, 4)]
+    kinds = [1, 9, 5, 92]   # 矩形、椭圆、圆角矩形、五角星
+    for i, (bw, bh) in enumerate(sizes):
+        for j, kind in enumerate(kinds):
+            sh = s.Shapes.AddShape(kind, 40 + j * 230, 30 + i * 125, 180, 105)
+            sh.Fill.ForeColor.RGB = RGB(60, 120, 200) if i % 2 == 0 else RGB(220, 120, 40)
+            sh.Line.Visible = 0
+            sh.ThreeD.BevelTopType = 3
+            sh.ThreeD.BevelTopInset = bw
+            sh.ThreeD.BevelTopDepth = bh
+    s2 = blank(p)
+    # msoBevel：2 松散嵌入、4 斜角(coolSlant)、5 角度、6 柔圆、7 凸起、11 十字
+    for i, t in enumerate([2, 4, 5, 6, 7, 11]):
+        sh = s2.Shapes.AddShape(1, 40 + (i % 3) * 300, 60 + (i // 3) * 240, 240, 180)
+        sh.Fill.ForeColor.RGB = RGB(80, 160, 90)
+        sh.Line.Visible = 0
+        sh.ThreeD.BevelTopType = t
+    return p
+
+
 def table_vertical(app):
     """表格单元格竖排文字：竖排（汉字正立）、向上旋转 90 度、向下旋转 90 度"""
     p = new_pres(app)
@@ -1704,7 +1729,7 @@ def table_vertical(app):
     return p
 
 
-CASES = [shapes_all, text_sizes, text_align, text_spacing, text_bullets, text_missing_font, shapes_basic, fills_lines, table_basic, group_rotate, anim_basic, anim_auto, charts_basic, pictures, smartart, text_effects, text_layout, table_merge, links, emf_images, anim_advanced, charts_labels, freeform_icons, media_audio, anim_trigger, wmf_images, anim_iterate, picture_transparent, charts_more, shape_effects, equations, anim_path, anim_emphasis, transitions, fills_patterns, text_decoration, anim_entrance, svg_images, charts_markers, hidden_slides, media_background, text_glow_reflection, text_tabs, text_picture_bullets, fills_texture, transition_morph, text_embedded_fonts, text_warp, anim_repeat, charts_sizes, slide_timings, lines_compound, table_diagonal, lines_gradient, fills_radial, fills_rect_gradient, shapes_3d, table_vertical, transitions_more, anim_sound, anim_build, anim_after, anim_text_emphasis, charts_bubble, media_video, charts_options, charts_negative]
+CASES = [shapes_all, text_sizes, text_align, text_spacing, text_bullets, text_missing_font, shapes_basic, fills_lines, table_basic, group_rotate, anim_basic, anim_auto, charts_basic, pictures, smartart, text_effects, text_layout, table_merge, links, emf_images, anim_advanced, charts_labels, freeform_icons, media_audio, anim_trigger, wmf_images, anim_iterate, picture_transparent, charts_more, shape_effects, equations, anim_path, anim_emphasis, transitions, fills_patterns, text_decoration, anim_entrance, svg_images, charts_markers, hidden_slides, media_background, text_glow_reflection, text_tabs, text_picture_bullets, fills_texture, transition_morph, text_embedded_fonts, text_warp, anim_repeat, charts_sizes, slide_timings, lines_compound, table_diagonal, lines_gradient, fills_radial, fills_rect_gradient, shapes_3d, table_vertical, transitions_more, anim_sound, anim_build, anim_after, anim_text_emphasis, charts_bubble, media_video, charts_options, charts_negative, shapes_bevel]
 
 
 def main():
