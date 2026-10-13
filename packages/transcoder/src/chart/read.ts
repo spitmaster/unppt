@@ -21,6 +21,7 @@ export function readLabels(d: XEl | undefined, base: Labels | undefined, colors:
     pos: attr(child(d, 'c:dLblPos'), 'val') ?? base?.pos,
     fmt: attr(child(d, 'c:numFmt'), 'formatCode') ?? base?.fmt,
     style: textStyle(child(d, 'c:txPr'), colors, base?.style ?? text),
+    sep: child(d, 'c:separator')?.text ?? base?.sep,
   };
   return l.val || l.pct || l.cat || l.ser ? l : undefined;
 }

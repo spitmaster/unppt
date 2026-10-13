@@ -54,12 +54,21 @@ export const barType: ChartType = {
         const [c1, cl] = f.catSpan(offset, barW);
         const va = f.valPx(fa), vb = f.valPx(fb);
         const v1 = Math.min(va, vb), v2 = Math.max(va, vb);
+        // 内侧末端 / 内侧底部（非堆积）：离柱子那一头 1.1 倍字号（柱形图，到标签中心）或 0.5 倍字号（条形图，到文字边，实测）
+        const at = !stacked && (lb?.pos === 'inEnd' || lb?.pos === 'inBase') ? lb.pos : undefined;
+        const sz = lb?.style.size ?? 0;
         if (!horizontal) {
           out.push(cpart(`${s.index}x${i}`, `<rect x="${n2(c1)}" y="${n2(v1)}" width="${n2(cl)}" height="${n2(v2 - v1)}" fill="${paintOf(s, i, color)}"${strokeOf(s, i)}/>`));
-          if (text) labelsOut.push(cpart(`${s.index}x${i}l`, label(text, c1 + cl / 2, inside ? (v1 + v2) / 2 : v1 - 4 - lb!.style.size * 0.55, lb!.style)));
+          // 柱子往上长（正数）时末端是上边
+          const endTop = (vb < va) === (at === 'inEnd');
+          const y = at ? (endTop ? v1 + 1.1 * sz : v2 - 1.1 * sz) : inside ? (v1 + v2) / 2 : v1 - 4 - sz * 0.55;
+          if (text) labelsOut.push(cpart(`${s.index}x${i}l`, label(text, c1 + cl / 2, y, lb!.style)));
         } else {
           out.push(cpart(`${s.index}x${i}`, `<rect x="${n2(v1)}" y="${n2(c1)}" width="${n2(v2 - v1)}" height="${n2(cl)}" fill="${paintOf(s, i, color)}"${strokeOf(s, i)}/>`));
-          if (text) labelsOut.push(cpart(`${s.index}x${i}l`, label(text, inside ? (v1 + v2) / 2 : v2 + 4, c1 + cl / 2, lb!.style, inside ? 'middle' : 'start')));
+          const endRight = (vb > va) === (at === 'inEnd');
+          const x = at ? (endRight ? v2 - 0.5 * sz : v1 + 0.5 * sz) : inside ? (v1 + v2) / 2 : v2 + 4;
+          const anchor = at ? (endRight ? 'end' : 'start') : inside ? 'middle' : 'start';
+          if (text) labelsOut.push(cpart(`${s.index}x${i}l`, label(text, x, c1 + cl / 2, lb!.style, anchor)));
         }
         // 误差线（堆积时以这一段的顶端为中心）
         s.errBars.forEach((e, k) => {

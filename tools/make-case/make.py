@@ -1415,6 +1415,39 @@ def charts_outlines(app):
     d.SeriesCollection(1).Format.Line.Visible = 0
     return p
 
+def charts_labels_more(app):
+    """数据标签的位置和内容：柱形图标签在内侧末端、堆积柱形图在中间；饼图标签在外侧（类别名 + 百分比）、
+    圆环图显示数值；条形图标签在内侧底部、折线图标签在上方（一位小数）"""
+    p = new_pres(app, window=True)
+    def chart(s, i, kind):
+        ch = s.Shapes.AddChart2(-1, kind, 20 + i * 470, 40, 450, 440)
+        _close_data(ch)
+        return ch.Chart
+    def labels(c, k, pos=None):
+        sr = c.SeriesCollection(k)
+        sr.HasDataLabels = True
+        if pos is not None:
+            sr.DataLabels().Position = pos
+        return sr.DataLabels()
+    s = blank(p)
+    a = chart(s, 0, 51)
+    for k in (1, 2, 3): labels(a, k, 3)          # xlLabelPositionInsideEnd
+    b = chart(s, 1, 52)
+    for k in (1, 2, 3): labels(b, k, -4108)      # xlLabelPositionCenter
+    s = blank(p)
+    c = chart(s, 0, 5)
+    d = labels(c, 1, 2)                          # xlLabelPositionOutsideEnd
+    d.ShowCategoryName = True; d.ShowPercentage = True; d.ShowValue = False
+    e = chart(s, 1, -4120)                       # 圆环图
+    labels(e, 1)
+    s = blank(p)
+    f = chart(s, 0, 57)
+    for k in (1, 2, 3): labels(f, k, 4)          # xlLabelPositionInsideBase
+    g = chart(s, 1, 65)
+    d = labels(g, 1, 0)                          # xlLabelPositionAbove
+    d.NumberFormat = "0.0"
+    return p
+
 def charts_negative(app):
     """带负数的图表：簇状柱形、条形、折线、堆积柱形（分类轴在 0 线上，标签默认挨着它）；
     柱形图把分类标签设成"低"（放到底部）"""
@@ -2015,7 +2048,7 @@ def table_vertical(app):
     return p
 
 
-CASES = [shapes_all, text_sizes, text_align, text_spacing, text_bullets, text_missing_font, shapes_basic, fills_lines, table_basic, group_rotate, anim_basic, anim_auto, charts_basic, pictures, smartart, text_effects, text_layout, table_merge, links, emf_images, anim_advanced, charts_labels, freeform_icons, media_audio, anim_trigger, wmf_images, anim_iterate, picture_transparent, charts_more, shape_effects, equations, anim_path, anim_emphasis, transitions, fills_patterns, text_decoration, anim_entrance, svg_images, charts_markers, hidden_slides, media_background, text_glow_reflection, text_tabs, text_picture_bullets, fills_texture, transition_morph, text_embedded_fonts, text_warp, anim_repeat, charts_sizes, slide_timings, lines_compound, table_diagonal, lines_gradient, fills_radial, fills_rect_gradient, shapes_3d, table_vertical, transitions_more, anim_sound, anim_build, anim_after, anim_text_emphasis, charts_bubble, media_video, charts_options, charts_negative, shapes_bevel, charts_legend, shapes_3d_rotation, smartart_3d, charts_ofpie, charts_3d, anim_group_emphasis, activex_controls, charts_extras, charts_axis_titles, charts_fills, charts_outlines]
+CASES = [shapes_all, text_sizes, text_align, text_spacing, text_bullets, text_missing_font, shapes_basic, fills_lines, table_basic, group_rotate, anim_basic, anim_auto, charts_basic, pictures, smartart, text_effects, text_layout, table_merge, links, emf_images, anim_advanced, charts_labels, freeform_icons, media_audio, anim_trigger, wmf_images, anim_iterate, picture_transparent, charts_more, shape_effects, equations, anim_path, anim_emphasis, transitions, fills_patterns, text_decoration, anim_entrance, svg_images, charts_markers, hidden_slides, media_background, text_glow_reflection, text_tabs, text_picture_bullets, fills_texture, transition_morph, text_embedded_fonts, text_warp, anim_repeat, charts_sizes, slide_timings, lines_compound, table_diagonal, lines_gradient, fills_radial, fills_rect_gradient, shapes_3d, table_vertical, transitions_more, anim_sound, anim_build, anim_after, anim_text_emphasis, charts_bubble, media_video, charts_options, charts_negative, shapes_bevel, charts_legend, shapes_3d_rotation, smartart_3d, charts_ofpie, charts_3d, anim_group_emphasis, activex_controls, charts_extras, charts_axis_titles, charts_fills, charts_outlines, charts_labels_more]
 
 
 def main():

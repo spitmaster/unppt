@@ -5,7 +5,7 @@ import type { XEl } from '../io/xml';
 
 export interface TextStyle { size: number; color: Rgba; bold: boolean; font: string; }
 
-export interface Labels { val: boolean; pct: boolean; cat: boolean; ser: boolean; pos?: string; fmt?: string; style: TextStyle; }
+export interface Labels { val: boolean; pct: boolean; cat: boolean; ser: boolean; pos?: string; fmt?: string; style: TextStyle; sep?: string }
 
 /** 渐变填充（色标和角度，角度是度） */
 export interface GradFill { stops: { pos: number; color: Rgba }[]; angle: number }
