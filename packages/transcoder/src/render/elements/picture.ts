@@ -99,5 +99,5 @@ export async function renderPicture(r: RenderContext, el: XEl, ctx: SlideContext
   const inner = refl + visual + media;
   // 媒体：点击切换播放（形状本身没有写点击动作时也加上）
   const clickable = mediaLink && !child(nvProps(el), 'a:hlinkClick') ? ' data-link="media" style="cursor:pointer"' : '';
-  return withUid(uid, `<g${clickable} transform="${boxTransform(box)}">${inner}</g>`);
+  return withUid(uid, `<g${clickable} transform="${boxTransform(box)}">${inner}</g>`, el);
 }

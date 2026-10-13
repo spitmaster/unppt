@@ -7,10 +7,10 @@ export function compileTransition(tr: XEl | undefined): SlideTransition | undefi
   const spd = attr(tr, 'spd');
   const durAttr = numAttr(tr, 'p14:dur') ?? numAttr(tr, 'dur');
   const dur = durAttr ?? (spd === 'fast' ? 500 : spd === 'slow' ? 1000 : 750);
-  const kind = tr.children.find((c) => c.name.startsWith('p:') || c.name.startsWith('p14:') || c.name.startsWith('p15:'));
+  const kind = tr.children.find((c) => /^p(14|15|159)?:/.test(c.name));
   if (!kind) return undefined;
   const local = kind.name.slice(kind.name.indexOf(':') + 1);
-  const MAP: Record<string, SlideTransition['type']> = { cut: 'none', push: 'push', wipe: 'wipe', cover: 'cover', pull: 'pull', split: 'split', circle: 'circle' };
+  const MAP: Record<string, SlideTransition['type']> = { cut: 'none', push: 'push', wipe: 'wipe', cover: 'cover', pull: 'pull', split: 'split', circle: 'circle', morph: 'morph' };
   const type = MAP[local] ?? 'fade';
   if (type === 'none') return { type, dur: 0 };
   const out: SlideTransition = { type, dur };

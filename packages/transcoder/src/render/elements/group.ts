@@ -17,12 +17,12 @@ export async function renderGroup(r: RenderContext, el: XEl, ctx: SlideContext, 
   const inner = await r.shapes(kids, ctx, groupFill);
   if (!inner) return '';
   const uid = r.uidOf(el, ctx);
-  if (!box) return withUid(uid, inner);
+  if (!box) return withUid(uid, inner, el);
   const cx = px(numAttr(chOff, 'x')), cy = px(numAttr(chOff, 'y'));
   const cw = px(numAttr(chExt, 'cx')) || box.w, ch = px(numAttr(chExt, 'cy')) || box.h;
   const sx = cw ? box.w / cw : 1, sy = ch ? box.h / ch : 1;
   let t = boxTransform(box);
   if (box.flipH || box.flipV) t += ` translate(${box.flipH ? n2(box.w) : 0} ${box.flipV ? n2(box.h) : 0}) scale(${box.flipH ? -1 : 1} ${box.flipV ? -1 : 1})`;
   t += ` scale(${sx} ${sy}) translate(${n2(-cx)} ${n2(-cy)})`;
-  return withUid(uid, `<g transform="${t}">${inner}</g>`);
+  return withUid(uid, `<g transform="${t}">${inner}</g>`, el);
 }

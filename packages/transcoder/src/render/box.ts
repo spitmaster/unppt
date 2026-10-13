@@ -1,6 +1,6 @@
 /** 元素的位置框（a:xfrm）和输出时用的变换 */
-import { n2 } from '../common/svg';
-import { boolAttr, child, numAttr, type XEl } from '../io/xml';
+import { esc, n2 } from '../common/svg';
+import { attr, boolAttr, child, numAttr, type XEl } from '../io/xml';
 import { EMU_PER_PX } from '../model/model';
 
 export interface Box { x: number; y: number; w: number; h: number; rot: number; flipH: boolean; flipV: boolean; }
@@ -29,9 +29,14 @@ export function nvProps(el: XEl): XEl | undefined {
   return nv?.children.find((c) => c.name.endsWith(':cNvPr'));
 }
 
-/** 动画目标外包一层不带 transform 的 g，播放器用 CSS 动画时不会覆盖元素自己的位置变换 */
-export function withUid(uid: string | undefined, inner: string): string {
-  return uid ? `<g data-uid="${uid}">${inner}</g>` : inner;
+/**
+ * 动画目标外包一层不带 transform 的 g，播放器用 CSS 动画时不会覆盖元素自己的位置变换。
+ * el 是元素本身：带上它的名字（data-name），平滑切换按名字配对前后两页的对象。
+ */
+export function withUid(uid: string | undefined, inner: string, el: XEl): string {
+  if (!uid) return inner;
+  const name = attr(nvProps(el), 'name');
+  return `<g data-uid="${uid}"${name ? ` data-name="${esc(name)}"` : ''}>${inner}</g>`;
 }
 
 export function boxTransform(b: Box): string {

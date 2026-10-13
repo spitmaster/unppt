@@ -92,8 +92,11 @@ export interface AnimTarget {
 }
 
 export interface SlideTransition {
-  /** push 推入、cover 覆盖、pull 揭开、wipe 擦除、split 分割、circle 圆形；其它切换都按 fade 淡入 */
-  type: 'none' | 'fade' | 'push' | 'wipe' | 'cover' | 'pull' | 'split' | 'circle';
+  /**
+   * push 推入、cover 覆盖、pull 揭开、wipe 擦除、split 分割、circle 圆形；其它切换都按 fade 淡入。
+   * morph 平滑切换：前后两页里同名（data-name）的顶层对象从旧位置、旧大小变到新位置、新大小，其余内容淡入
+   */
+  type: 'none' | 'fade' | 'push' | 'wipe' | 'cover' | 'pull' | 'split' | 'circle' | 'morph';
   dur: number;
   /** 运动方向（和 PowerPoint 一致）：l 向左（新页从右边进来）、r、u、d */
   dir?: 'l' | 'r' | 'u' | 'd';

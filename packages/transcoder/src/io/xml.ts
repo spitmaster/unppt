@@ -201,7 +201,7 @@ export function findAll(el: XEl | undefined, name: string, out: XEl[] = []): XEl
  * 处理 mc:AlternateContent：优先用 mc:Choice（新版 PowerPoint 写的内容），
  * 只认我们理解的命名空间；否则用 mc:Fallback。返回展开后的子元素列表。
  */
-const SUPPORTED_REQUIRES = new Set(['p14', 'p15', 'a14', 'a16', 'v', 'mc']);
+const SUPPORTED_REQUIRES = new Set(['p14', 'p15', 'p159', 'a14', 'a16', 'v', 'mc']);
 /** 这些命名空间里我们不画的元素：Choice 里出现时改用 Fallback（Office 数学公式、墨迹） */
 const UNRENDERED = ['a14:m', 'p14:contentPart', 'p:contentPart'];
 

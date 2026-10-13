@@ -62,6 +62,7 @@ def main():
     subprocess.run(["node", "packages/transcoder/dist/cli.js", "convert", "testcases/anim-entrance.pptx", "-o", str(player_dir / "entr.html"), "-q"], cwd=ROOT, check=True)
     subprocess.run(["node", "packages/transcoder/dist/cli.js", "convert", "testcases/hidden-slides.pptx", "-o", str(player_dir / "hidden.html"), "-q"], cwd=ROOT, check=True)
     subprocess.run(["node", "packages/transcoder/dist/cli.js", "convert", "testcases/media-background.pptx", "-o", str(player_dir / "bgm.html"), "-q"], cwd=ROOT, check=True)
+    subprocess.run(["node", "packages/transcoder/dist/cli.js", "convert", "testcases/transition-morph.pptx", "-o", str(player_dir / "morph.html"), "-q"], cwd=ROOT, check=True)
     s1, player_url = serve(player_dir)
     s2, host_url = serve(host_dir)
 
@@ -230,6 +231,22 @@ def main():
         page10.evaluate("window.unppt.next()")
         t10 = page10.evaluate("(() => { const a = document.querySelector('audio'); return [a.dataset.trimStart, a.dataset.trimEnd, Math.round(a.currentTime * 100) / 100]; })()")
         check(t10 == ['0.3', '0.2', 0.3], f"剪裁过的音频从剪裁起点开始：{t10}")
+
+        # ---------------- 11. 平滑切换：同名对象中途在旧位置和新位置之间（新旧两份交叉淡化），播完只剩新页
+        page11 = b.new_page()
+        errors11 = []
+        page11.on("pageerror", lambda e: errors11.append(str(e)))
+        page11.goto(f"{player_url}/morph.html")
+        page11.wait_for_function("window.unppt !== undefined && !!document.querySelector('div.unppt-slide')")
+        js11 = """(() => { const s = document.querySelectorAll('div.unppt-slide'); const cur = s[s.length - 1];
+          const els = Array.from(cur.querySelectorAll('[data-name="圆"]'));
+          return [s.length, els.length, els.every(e => getComputedStyle(e).transform !== 'none')]; })()"""
+        page11.evaluate("window.unppt.next()")
+        page11.wait_for_timeout(1000)
+        mid11 = page11.evaluate(js11)
+        page11.wait_for_timeout(1500)
+        end11 = page11.evaluate(js11)
+        check(mid11 == [2, 2, True] and end11 == [1, 1, False] and not errors11, f"平滑切换中途变形、播完复原：{mid11} -> {end11} {errors11[:1]}")
 
         # ---------------- 移动端视口
         mobile = {"is_mobile": True} if BROWSER != "firefox" else {}
