@@ -1348,7 +1348,7 @@ def charts_axis_titles(app):
 
 def charts_fills(app):
     """图表区、绘图区的填充和边框：灰色绘图区加边框（Excel 2003 风格）的柱形图；
-    渐变图表区、浅色绘图区的折线图；散点图的绘图区填充"""
+    渐变图表区、浅色绘图区的折线图；散点图的绘图区填充；系列的渐变填充（柱形图两个系列、饼图一块）"""
     p = new_pres(app, window=True)
     def chart(s, i, kind):
         ch = s.Shapes.AddChart2(-1, kind, 20 + i * 470, 40, 450, 440)
@@ -1375,6 +1375,19 @@ def charts_fills(app):
     c.PlotArea.Format.Fill.Visible = -1
     c.PlotArea.Format.Fill.Solid()
     c.PlotArea.Format.Fill.ForeColor.RGB = RGB(235, 241, 222)
+    # 系列的渐变填充：柱形图第 1 个系列竖向渐变、第 2 个横向渐变；饼图第 2 块渐变
+    d = chart(s, 1, 51)
+    f1 = d.SeriesCollection(1).Format.Fill
+    f1.TwoColorGradient(1, 1)
+    f1.ForeColor.RGB = RGB(30, 90, 160); f1.BackColor.RGB = RGB(160, 210, 250)
+    f2 = d.SeriesCollection(2).Format.Fill
+    f2.TwoColorGradient(2, 1)
+    f2.ForeColor.RGB = RGB(200, 60, 30); f2.BackColor.RGB = RGB(255, 200, 120)
+    s = blank(p)
+    e = chart(s, 0, 5)
+    g = e.SeriesCollection(1).Points(2).Format.Fill
+    g.TwoColorGradient(1, 1)
+    g.ForeColor.RGB = RGB(40, 140, 60); g.BackColor.RGB = RGB(200, 240, 200)
     return p
 
 def charts_negative(app):

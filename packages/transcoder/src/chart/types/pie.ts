@@ -45,7 +45,7 @@ function renderPie(p: Plot, x: number, y: number, w: number, h: number, colors: 
     // 分离的扇区沿角平分线移出 explosion% 个半径（实测：饼图本身不缩小）
     const ex = v === total ? 0 : s.explosion(i) / 100 * r, mid = (ang + a2) / 2;
     const move = ex ? ` transform="translate(${n2(ex * Math.cos(mid))} ${n2(ex * Math.sin(mid))})"` : '';
-    out.push(cpart(`${s.index}x${i}`, `<path d="${d}" fill="${css(color)}" fill-rule="evenodd" stroke="#fff" stroke-width="1.5"${move}/>`));
+    out.push(cpart(`${s.index}x${i}`, `<path d="${d}" fill="${s.pointPaints?.get(i) ?? css(color)}" fill-rule="evenodd" stroke="#fff" stroke-width="1.5"${move}/>`));
     const lb = s.labels;
     if (lb) {
       // 默认"最佳位置"：扇形内部靠外边缘；圆环在环的中间（随分离的扇区一起移出）

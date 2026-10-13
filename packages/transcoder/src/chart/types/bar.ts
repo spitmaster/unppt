@@ -1,7 +1,6 @@
 /** 柱形图、条形图（簇状、堆积、百分比堆积）：画在共享的分类轴上 */
-import { css } from '../../model/color';
 import { n2 } from '../../common/svg';
-import { cpart, label } from '../draw';
+import { cpart, label, paintOf } from '../draw';
 import { labelText } from '../format';
 import { errRanges, errSvg } from '../error-bars';
 import type { ChartType } from '../chart-type';
@@ -56,10 +55,10 @@ export const barType: ChartType = {
         const va = f.valPx(fa), vb = f.valPx(fb);
         const v1 = Math.min(va, vb), v2 = Math.max(va, vb);
         if (!horizontal) {
-          out.push(cpart(`${s.index}x${i}`, `<rect x="${n2(c1)}" y="${n2(v1)}" width="${n2(cl)}" height="${n2(v2 - v1)}" fill="${css(color)}"/>`));
+          out.push(cpart(`${s.index}x${i}`, `<rect x="${n2(c1)}" y="${n2(v1)}" width="${n2(cl)}" height="${n2(v2 - v1)}" fill="${paintOf(s, i, color)}"/>`));
           if (text) labelsOut.push(cpart(`${s.index}x${i}l`, label(text, c1 + cl / 2, inside ? (v1 + v2) / 2 : v1 - 4 - lb!.style.size * 0.55, lb!.style)));
         } else {
-          out.push(cpart(`${s.index}x${i}`, `<rect x="${n2(v1)}" y="${n2(c1)}" width="${n2(v2 - v1)}" height="${n2(cl)}" fill="${css(color)}"/>`));
+          out.push(cpart(`${s.index}x${i}`, `<rect x="${n2(v1)}" y="${n2(c1)}" width="${n2(v2 - v1)}" height="${n2(cl)}" fill="${paintOf(s, i, color)}"/>`));
           if (text) labelsOut.push(cpart(`${s.index}x${i}l`, label(text, inside ? (v1 + v2) / 2 : v2 + 4, c1 + cl / 2, lb!.style, inside ? 'middle' : 'start')));
         }
         // 误差线（堆积时以这一段的顶端为中心）

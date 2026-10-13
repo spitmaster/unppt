@@ -12,7 +12,7 @@ import { attr, child, findAll, numAttr, path, type XEl } from '../io/xml';
 import { axisMaker } from './axis';
 import { renderCategoryChart } from './cat-chart';
 import { chartTypeOf } from './chart-types';
-import { label, textStyle, textWidth } from './draw';
+import { gradientRef, label, textStyle, textWidth } from './draw';
 import { BOTTOM_PAD, PAD, type TextWidth } from './layout';
 import { renderLegend } from './legend';
 import type { ChartContext, Plot, Rect, SvgDefs, TextStyle, View3D } from './model';
@@ -51,6 +51,14 @@ export function renderChart(space: XEl | undefined, w: number, h: number, env: C
   const plots: Plot[] = readPlots(plotArea, colors, env.part, baseText, env.warn, lang.startsWith('zh'));
   const blanks = attr(child(chart, 'c:dispBlanksAs'), 'val');
   for (const p of plots) p.blanks = blanks === 'zero' || blanks === 'span' ? blanks : 'gap';
+  // 系列、数据点的渐变填充生成定义（每个柱子、扇区各自铺满）
+  const defs = env.defs;
+  if (defs) {
+    for (const s of plots.flatMap((p) => p.series)) {
+      if (s.grad) s.paint = gradientRef(s.grad, defs);
+      if (s.pointGrads) s.pointPaints = new Map([...s.pointGrads].map(([i, g]) => [i, gradientRef(g, defs)]));
+    }
+  }
   if (!plots.length) return out.join('');
   const type0 = chartTypeOf(plots[0].kind)!;
 

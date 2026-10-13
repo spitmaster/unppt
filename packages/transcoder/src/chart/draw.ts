@@ -3,7 +3,8 @@ import { colorIn, css, type ColorContext, type Rgba } from '../model/color';
 import { fallbackAdvance } from '../font/font';
 import { esc, n2 } from '../common/svg';
 import { attr, child, numAttr, path, type XEl } from '../io/xml';
-import type { Series, TextStyle } from './model';
+import type { GradFill, Series, SvgDefs, TextStyle } from './model';
+import { gradientStops } from '../style/gradient-stops';
 
 export const ACCENTS = ['accent1', 'accent2', 'accent3', 'accent4', 'accent5', 'accent6'];
 
@@ -42,7 +43,7 @@ export function accentColor(i: number, colors: ColorContext): Rgba {
  * 图例键：柱/面积是色块，折线是一段线（可带标记），散点等只有标记。
  * wide 给了时键统一是这么宽：线画满、标记居中、色块变成 wide × ks 的扁条；不给时线长 3ks、色块 ks × ks
  */
-export function legendKey(e: { color: Rgba; line: boolean; marker: boolean; series?: Series; width?: number; dash?: string }, x: number, y: number, ks: number, wide?: number): string {
+export function legendKey(e: { color: Rgba; line: boolean; marker: boolean; series?: Series; width?: number; dash?: string; paint?: string }, x: number, y: number, ks: number, wide?: number): string {
   // 图例里的标记最大 8 像素
   const mark = (cx: number) => (e.series ? markerSvg(e.series, cx, y, 8) : `<circle cx="${n2(cx)}" cy="${n2(y)}" r="3" fill="${css(e.color)}"/>`);
   const len = wide ?? ks * 3;
@@ -51,7 +52,7 @@ export function legendKey(e: { color: Rgba; line: boolean; marker: boolean; seri
       + (e.marker ? mark(x + len / 2) : '');
   }
   if (e.marker) return mark(x + (wide ?? ks) / 2);
-  return `<rect x="${n2(x)}" y="${n2(y - ks / 2)}" width="${n2(wide ?? ks)}" height="${n2(ks)}" fill="${css(e.color)}"/>`;
+  return `<rect x="${n2(x)}" y="${n2(y - ks / 2)}" width="${n2(wide ?? ks)}" height="${n2(ks)}" fill="${e.paint ?? css(e.color)}"/>`;
 }
 
 /** 数据点标记：按系列的形状、大小、填充色和边框色画（maxSize 用于图例里缩小） */
@@ -102,3 +103,20 @@ export function linePath(pts: readonly (readonly [number, number])[], smooth: bo
  * "系列序号s"（整条折线、面积），数据标签再加 l。图表框把它换成动画编号（拼法见 common/uid.ts）
  */
 export const cpart = (key: string, svg: string) => (svg ? `<g data-cpart="${key}">${svg}</g>` : '');
+
+/**
+ * 系列（或单个数据点）的线性渐变写成 SVG 定义，返回 url(#…)：按每个柱子、扇区自己的外框铺满（objectBoundingBox，
+ * 角度在单位正方形里算，相当于 PowerPoint 的"随形状缩放"），色标按 PowerPoint 的插值规律（style/gradient-stops.ts）
+ */
+export function gradientRef(g: GradFill, defs: SvgDefs): string {
+  const t = (g.angle * Math.PI) / 180, c = Math.cos(t), s = Math.sin(t);
+  const L = (Math.abs(c) + Math.abs(s)) / 2;
+  const id = defs.id('cg');
+  defs.add(`<linearGradient id="${id}" x1="${n2(0.5 - c * L)}" y1="${n2(0.5 - s * L)}" x2="${n2(0.5 + c * L)}" y2="${n2(0.5 + s * L)}">${gradientStops(g.stops)}</linearGradient>`);
+  return `url(#${id})`;
+}
+
+/** 第 i 个数据点的填充写法：数据点自己的渐变 > 数据点自己的纯色 > 系列的渐变 > color */
+export function paintOf(s: Series, i: number, color: Rgba): string {
+  return s.pointPaints?.get(i) ?? (s.pointFills.has(i) ? css(color) : s.paint ?? css(color));
+}

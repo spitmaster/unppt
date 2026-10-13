@@ -7,9 +7,18 @@ export interface TextStyle { size: number; color: Rgba; bold: boolean; font: str
 
 export interface Labels { val: boolean; pct: boolean; cat: boolean; ser: boolean; pos?: string; fmt?: string; style: TextStyle; }
 
+/** 渐变填充（色标和角度，角度是度） */
+export interface GradFill { stops: { pos: number; color: Rgba }[]; angle: number }
+
 export interface Series {
   /** 在整个图表里的序号（按读到的顺序，多个图叠在一起时连续编号）：按系列动画用 */
   index: number;
+  /** 系列、单个数据点的线性渐变填充（读的时候留下，chart.ts 生成定义后填 paint / pointPaints） */
+  grad?: GradFill;
+  pointGrads?: Map<number, GradFill>;
+  /** 渐变填充的 SVG 写法 url(#…)：每个柱子、扇区各自铺满一遍（objectBoundingBox） */
+  paint?: string;
+  pointPaints?: Map<number, string>;
   labels?: Labels;
   name: string;
   cats: string[];
