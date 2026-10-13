@@ -24,6 +24,8 @@ function readParams(win: Window) {
   return {
     slide: num('slide'), step: num('step'),
     ui: q.get('ui') !== '0',
+    // 自动放映：timings=0/1 指定；没指定时，用 slide/step 打开到某个位置（截图、预览）不自动往下走
+    timings: q.get('timings') === '1' ? true : q.get('timings') === '0' || q.has('slide') || q.has('step') ? false : undefined,
     origins: origins ? origins.split(',').map((s) => s.trim()).filter(Boolean) : null,
   };
 }
@@ -77,7 +79,7 @@ export function autoBoot() {
       return { family, weight: m?.weight, style: m?.style, src: `data:font/woff;base64,${JSON.parse(el.textContent ?? '""')}` };
     }));
     const p = readParams(win);
-    const player = new Player(host, deck, { slide: p.slide, step: p.step, ui: p.ui });
+    const player = new Player(host, deck, { slide: p.slide, step: p.step, ui: p.ui, timings: p.timings });
     const api = installBridge(win, player, p.origins);
     (win as unknown as { unppt: UnpptApi }).unppt = api;
   } catch (e) {

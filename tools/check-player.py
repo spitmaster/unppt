@@ -65,6 +65,7 @@ def main():
     subprocess.run(["node", "packages/transcoder/dist/cli.js", "convert", "testcases/transition-morph.pptx", "-o", str(player_dir / "morph.html"), "-q"], cwd=ROOT, check=True)
     subprocess.run(["node", "packages/transcoder/dist/cli.js", "convert", "testcases/text-embedded-fonts.pptx", "-o", str(player_dir / "embfont.html"), "-q"], cwd=ROOT, check=True)
     subprocess.run(["node", "packages/transcoder/dist/cli.js", "convert", "testcases/anim-repeat.pptx", "-o", str(player_dir / "repeat.html"), "-q"], cwd=ROOT, check=True)
+    subprocess.run(["node", "packages/transcoder/dist/cli.js", "convert", "testcases/slide-timings.pptx", "-o", str(player_dir / "timing.html"), "-q"], cwd=ROOT, check=True)
     s1, player_url = serve(player_dir)
     s2, host_url = serve(host_dir)
 
@@ -291,6 +292,27 @@ def main():
         left = page13.evaluate("document.getAnimations().length")
         check(2 in it1 and 2 in it2 and tf2 in ("none", "matrix(1, 0, 0, 1, 0, 0)") and None in [None if x != x or x == float("inf") else 0 for x in it4] and left == 0 and not errors13,
               f"重复 2 次 {it1}、自动翻转 {it2} 播完复原 {tf2}、一直重复 {it4} 点击后停止 {left} {errors13[:1]}")
+
+        # ---------------- 14. 按计时自动放映：3 秒换片、单击动画自动依次播放、等动画播完再换片、单击不换片、循环放映
+        page14 = b.new_page()
+        page14.goto(f"{player_url}/timing.html")
+        page14.wait_for_function("window.unppt !== undefined && !!document.querySelector('div.unppt-slide')")
+        seq14 = []
+        for t in (1000, 2600, 2000, 2600):   # 约 1s、3.6s、5.6s、8.2s
+            page14.wait_for_timeout(t)
+            st = page14.evaluate("window.unppt.getState()")
+            seq14.append((st["slide"], st["step"]))
+        page14.mouse.click(300, 300)
+        page14.wait_for_timeout(300)
+        after_click = page14.evaluate("window.unppt.getState()")["slide"]
+        looped = page14.evaluate("window.unppt.next()")["slide"]
+        check(seq14[0] == (0, 0) and seq14[1][0] == 1 and seq14[1][1] >= 1 and seq14[2][0] == 2 and seq14[3][0] == 3 and after_click == 3 and looped == 0,
+              f"自动放映的时间线 {seq14}、单击不换片 {after_click}、循环回到 {looped}")
+        page14b = b.new_page()
+        page14b.goto(f"{player_url}/timing.html?slide=0")
+        page14b.wait_for_function("window.unppt !== undefined")
+        page14b.wait_for_timeout(3500)
+        check(page14b.evaluate("window.unppt.getState()")["slide"] == 0, "用 slide 参数打开到某页时不自动放映（截图、预览用）")
 
         # ---------------- 移动端视口
         mobile = {"is_mobile": True} if BROWSER != "firefox" else {}

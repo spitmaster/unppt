@@ -104,8 +104,9 @@ window.unppt.on('change', (s) => { /* ... */ });
 
 | 参数 | 说明 |
 |---|---|
-| `slide`、`step` | 打开时直接定位到第几页第几步（从 0 开始） |
+| `slide`、`step` | 打开时直接定位到第几页第几步（从 0 开始）；这样打开时默认不按计时自动放映 |
 | `ui=0` | 隐藏播放器自带的翻页按钮，完全由宿主控制 |
+| `timings=0` / `timings=1` | 关闭 / 强制开启按演示文稿里的"自动换片时间"自动放映（默认开启） |
 | `origin=https://a.com,https://b.com` | 只接受这些来源的 postMessage 指令 |
 
 完整示例见 [examples/iframe-host.html](examples/iframe-host.html)。

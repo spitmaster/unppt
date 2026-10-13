@@ -1150,7 +1150,37 @@ def charts_sizes(app):
     return p
 
 
-CASES = [shapes_all, text_sizes, text_align, text_spacing, text_bullets, text_missing_font, shapes_basic, fills_lines, table_basic, group_rotate, anim_basic, anim_auto, charts_basic, pictures, smartart, text_effects, text_layout, table_merge, links, emf_images, anim_advanced, charts_labels, freeform_icons, media_audio, anim_trigger, wmf_images, anim_iterate, picture_transparent, charts_more, shape_effects, equations, anim_path, anim_emphasis, transitions, fills_patterns, text_decoration, anim_entrance, svg_images, charts_markers, hidden_slides, media_background, text_glow_reflection, text_tabs, text_picture_bullets, fills_texture, transition_morph, text_embedded_fonts, text_warp, anim_repeat, charts_sizes]
+def slide_timings(app):
+    """自动换片和循环放映：3 秒换片；2 秒换片且有两个单击动画（自动依次播放）；
+    2 秒换片但动画要 2.5 秒才播完（等动画）；单击不换片；放映设置为循环放映"""
+    p = new_pres(app)
+    def page(title, after=None):
+        s = blank(p)
+        t = s.Shapes.AddTextbox(1, 60, 40, 800, 60)
+        t.TextFrame.TextRange.Text = title
+        t.TextFrame.TextRange.Font.Size = 32
+        if after is not None:
+            s.SlideShowTransition.AdvanceOnTime = -1
+            s.SlideShowTransition.AdvanceTime = after
+        return s
+    page("第 1 页：3 秒后自动换片", 3)
+    s2 = page("第 2 页：2 秒换片，两个单击动画自动播放", 2)
+    for i in range(2):
+        sh = s2.Shapes.AddShape(1, 100 + i * 250, 220, 200, 120)
+        e = s2.TimeLine.MainSequence.AddEffect(sh, 10, 0, 1)
+        e.Timing.Duration = 0.5
+    s3 = page("第 3 页：动画 2.5 秒才播完", 2)
+    sh = s3.Shapes.AddShape(9, 100, 220, 200, 200)
+    e = s3.TimeLine.MainSequence.AddEffect(sh, 10, 0, 3)
+    e.Timing.Duration = 1
+    e.Timing.TriggerDelayTime = 1.5
+    s4 = page("第 4 页：单击不换片")
+    s4.SlideShowTransition.AdvanceOnClick = 0
+    p.SlideShowSettings.LoopUntilStopped = -1
+    return p
+
+
+CASES = [shapes_all, text_sizes, text_align, text_spacing, text_bullets, text_missing_font, shapes_basic, fills_lines, table_basic, group_rotate, anim_basic, anim_auto, charts_basic, pictures, smartart, text_effects, text_layout, table_merge, links, emf_images, anim_advanced, charts_labels, freeform_icons, media_audio, anim_trigger, wmf_images, anim_iterate, picture_transparent, charts_more, shape_effects, equations, anim_path, anim_emphasis, transitions, fills_patterns, text_decoration, anim_entrance, svg_images, charts_markers, hidden_slides, media_background, text_glow_reflection, text_tabs, text_picture_bullets, fills_texture, transition_morph, text_embedded_fonts, text_warp, anim_repeat, charts_sizes, slide_timings]
 
 
 def main():

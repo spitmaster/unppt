@@ -12,6 +12,7 @@ export interface DeckLike {
   title?: string;
   slideCount: number;
   slide(i: number): DeckSlide;
+  show?: { loop?: boolean; useTimings?: boolean };
 }
 
 export function checkFormat(meta: { format?: string; version?: number }) {

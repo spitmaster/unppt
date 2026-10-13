@@ -9,7 +9,7 @@
  * 纯函数：不读写磁盘、不联网。大文件请传 { size, read(offset, length) }，转码器只按需读取。
  */
 import { DECK_FORMAT, DECK_FORMAT_VERSION, UNPPT_VERSION, type DeckReport, type DeckSlide } from '../../format/src/index';
-import { compileTiming, compileTransition } from './anim/anim';
+import { compileAdvance, compileTiming, compileTransition } from './anim/anim';
 import { loadEmbeddedFont } from './font/eot';
 import { FontLibrary, loadFontFile, type FontFace } from './font/font';
 import { subsetFont } from './font/subset';
@@ -132,9 +132,11 @@ export async function convert(input: InputSource, options: ConvertOptions): Prom
       for (const w of anim.warnings) pres.warn(w);
       count++;
       slideParts.push(ref.part);
+      const advance = compileAdvance(r.transition);
       yield {
         svg: r.svg, steps: anim.steps, auto: anim.auto, hidden: anim.hidden, transition: compileTransition(r.transition),
         ...(anim.triggers.length ? { triggers: anim.triggers } : {}), ...(r.hidden ? { skip: true } : {}),
+        ...(advance ? { advance } : {}),
       };
     }
   }
@@ -145,7 +147,7 @@ export async function convert(input: InputSource, options: ConvertOptions): Prom
   };
   const meta = () => ({
     format: DECK_FORMAT, version: DECK_FORMAT_VERSION, generator: `unppt ${UNPPT_VERSION}`,
-    width: pres.width, height: pres.height, title, fonts: deckFonts, report, slideParts,
+    width: pres.width, height: pres.height, title, fonts: deckFonts, report, slideParts, ...(pres.show ? { show: pres.show } : {}),
   });
 
   async function* html(): AsyncGenerator<Uint8Array> {
