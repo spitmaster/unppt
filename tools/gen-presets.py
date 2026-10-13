@@ -1,10 +1,11 @@
-"""从 ECMA-376 标准附带的 presetShapeDefinitions.xml 生成转码器的预设形状数据。
+"""从 ECMA-376 标准附带的几何定义生成转码器的预设数据。
 
 标准下载：https://ecma-international.org/publications-and-standards/standards/ecma-376/
 （Part 1 压缩包里的 OfficeOpenXML-DrawingMLGeometries.zip）
 
-用法：python tools/gen-presets.py <presetShapeDefinitions.xml 路径>
-输出：packages/transcoder/src/geometry/presets-data.ts
+用法：python tools/gen-presets.py <presetShapeDefinitions.xml 路径> [<presetTextWarpDefinitions.xml 路径>]
+输出：packages/transcoder/src/geometry/presets-data.ts（预设形状）
+      packages/transcoder/src/geometry/warps-data.ts（艺术字文字变形，给了第二个文件时）
 """
 import sys
 import xml.etree.ElementTree as ET
@@ -14,7 +15,7 @@ A = "{http://schemas.openxmlformats.org/drawingml/2006/main}"
 ROOT = Path(__file__).resolve().parent.parent
 
 
-def main(src: str):
+def convert(src: str, source_name: str, const: str, target: str, what: str):
     tree = ET.parse(src)
     out = []
     for shape in tree.getroot():
@@ -55,13 +56,15 @@ def main(src: str):
         out.append("")
     body = "\n".join(out).replace("\\", "\\\\").replace("`", "\\`")
     ts = (
-        "// 自动生成，不要手改。来源：ECMA-376 第 1 部分附带的 presetShapeDefinitions.xml\n"
+        f"// 自动生成，不要手改。来源：ECMA-376 第 1 部分附带的 {source_name}\n"
         "// 生成脚本：tools/gen-presets.py\n"
-        f"export const PRESET_SRC = `\n{body}`;\n"
+        f"export const {const} = `\n{body}`;\n"
     )
-    (ROOT / "packages/transcoder/src/geometry/presets-data.ts").write_text(ts, encoding="utf-8", newline="\n")
-    print(f"生成 {len(tree.getroot())} 个预设形状")
+    (ROOT / target).write_text(ts, encoding="utf-8", newline="\n")
+    print(f"生成 {len(tree.getroot())} 个{what}")
 
 
 if __name__ == "__main__":
-    main(sys.argv[1])
+    convert(sys.argv[1], "presetShapeDefinitions.xml", "PRESET_SRC", "packages/transcoder/src/geometry/presets-data.ts", "预设形状")
+    if len(sys.argv) > 2:
+        convert(sys.argv[2], "presetTextWarpDefinitions.xml", "WARP_SRC", "packages/transcoder/src/geometry/warps-data.ts", "文字变形")

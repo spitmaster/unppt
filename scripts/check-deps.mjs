@@ -26,7 +26,7 @@ const RULES = {
   [`${T}font`]: [`${T}io`, `${T}common`],
   [`${T}style`]: [`${T}io`, `${T}common`, `${T}model`],
   [`${T}effects`]: [`${T}io`, `${T}common`, `${T}model`],
-  [`${T}text`]: [`${T}io`, `${T}common`, `${T}model`, `${T}font`, `${T}style`, `${T}effects`],
+  [`${T}text`]: [`${T}io`, `${T}common`, `${T}model`, `${T}geometry`, `${T}font`, `${T}style`, `${T}effects`],
   [`${T}media`]: [`${T}io`, `${T}common`, `${T}model`],
   [`${T}chart`]: [`${T}io`, `${T}common`, `${T}model`, `${T}font`, `${T}style`],
   [`${T}render`]: [`${T}io`, `${T}common`, `${T}model`, `${T}geometry`, `${T}font`, `${T}style`, `${T}effects`, `${T}text`, `${T}media`, `${T}chart`],
