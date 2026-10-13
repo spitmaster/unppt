@@ -681,7 +681,14 @@ function renderRadar(p: Plot, A: AxisInfo, catStyle: TextStyle, catDeleted: bool
   const n = Math.max(1, ...p.series.map((s) => s.vals.length));
   const maxW = catDeleted ? 0 : Math.max(0, ...cats.map((c) => textWidth(c, catStyle.size)));
   const gap = 6;
-  const r = Math.max(1, Math.min((right - left) / 2 - maxW - gap, (bottom - top) / 2 - catStyle.size * 1.2 - gap));
+  // 按多边形顶点实际伸出的范围留标签空间（五边形左右顶点只到半径的 0.951 倍）
+  let sMax = 0, cMax = 0;
+  for (let i = 0; i < n; i++) {
+    const a = (Math.PI * 2 * i) / n;
+    sMax = Math.max(sMax, Math.abs(Math.sin(a)));
+    cMax = Math.max(cMax, Math.abs(Math.cos(a)));
+  }
+  const r = Math.max(1, Math.min(((right - left) / 2 - maxW - gap) / (sMax || 1), ((bottom - top) / 2 - catStyle.size * 1.2 - gap) / (cMax || 1)));
   const cx = (left + right) / 2, cy = (top + bottom) / 2;
   const at = (i: number, f: number): [number, number] => {
     const a = (Math.PI * 2 * i) / n;
