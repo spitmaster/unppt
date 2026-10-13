@@ -1,0 +1,110 @@
+{
+ "version": 7,
+ "slideWidthPt": 960.0,
+ "slideHeightPt": 540.0,
+ "imageWidth": 1280,
+ "imageHeight": 720,
+ "slides": [
+  {
+   "index": 0,
+   "hidden": false,
+   "shapes": [
+    {
+     "id": 2,
+     "name": "TextBox 1",
+     "type": 17,
+     "x": 60.0,
+     "y": 40.0,
+     "w": 840.0,
+     "h": 123.595,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 10,
+       "text": "默认\t制表位\t测试\r",
+       "x": 67.2,
+       "y": 43.6,
+       "w": 270.625,
+       "h": 28.8
+      },
+      {
+       "start": 10,
+       "len": 9,
+       "text": "第一章\t概述\t3\r",
+       "x": 67.2,
+       "y": 72.4,
+       "w": 235.25,
+       "h": 28.8
+      },
+      {
+       "start": 19,
+       "len": 13,
+       "text": "第二章\t方法和步骤\t12\r",
+       "x": 67.2,
+       "y": 101.2,
+       "w": 319.875,
+       "h": 28.8
+      },
+      {
+       "start": 32,
+       "len": 15,
+       "text": "合计\t1234.5\t67.89",
+       "x": 67.2,
+       "y": 130.0,
+       "w": 199.755,
+       "h": 28.8
+      }
+     ]
+    },
+    {
+     "id": 3,
+     "name": "TextBox 2",
+     "type": 17,
+     "x": 60.0,
+     "y": 280.0,
+     "w": 840.0,
+     "h": 94.514,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 14,
+       "text": "左\t居中\t右对齐\t12.5\r",
+       "x": 67.2,
+       "y": 283.6,
+       "w": 626.625,
+       "h": 28.8
+      },
+      {
+       "start": 14,
+       "len": 31,
+       "text": "Left\tCenter text\tRight\t1234.75\r",
+       "x": 67.2,
+       "y": 312.4,
+       "w": 626.625,
+       "h": 28.8
+      },
+      {
+       "start": 45,
+       "len": 11,
+       "text": "甲\t乙丙丁\t戊\t3.1",
+       "x": 67.2,
+       "y": 341.2,
+       "w": 620.005,
+       "h": 28.8
+      }
+     ]
+    }
+   ],
+   "effects": [],
+   "triggerHidden": [],
+   "steps": 0
+  }
+ ],
+ "ok": true
+}

@@ -3,6 +3,7 @@ import { EMU_PER_PX } from '../model/model';
 import { attr, child, numAttr, type XEl } from '../io/xml';
 import { makeBullet, type BulletNumbering } from './bullets';
 import { breakLines, trimmedWidth } from './linebreak';
+import { layoutTabs, tabStops } from './tabs';
 import { makeAtoms, type Measurer } from './measure';
 import { levelPPr, merge, runStyle } from './style';
 import type { Atom, Line, ParagraphLayout, RunStyle, StyleChain, TextEnv } from './types';
@@ -66,13 +67,8 @@ export async function layoutParagraph(p: XEl, pi: number, ctx: ParagraphContext)
   const availFirst = contentW - firstX;
   const availRest = contentW - marL;
 
-  // 处理制表符宽度（简化：按默认制表位）
-  let acc = 0;
-  for (const a of atoms) {
-    if (a.text === '\n') { acc = 0; continue; }
-    if (a.tab) { const next = (Math.floor(acc / defTab) + 1) * defTab; a.width = next - acc; }
-    acc += a.width;
-  }
+  // 制表符宽度：自定义制表位，超出后按默认制表位
+  layoutTabs(atoms, tabStops(pPr), defTab, firstX);
 
   const rows = breakLines(atoms, (first) => (first ? availFirst : availRest), wrap);
   const lines: Line[] = rows.map((row, i) => {
