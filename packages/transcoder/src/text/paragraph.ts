@@ -1,0 +1,114 @@
+/** 一个段落的排版：收集字符、项目符号、制表符、断行、行距和段间距 */
+import { EMU_PER_PX } from '../model/model';
+import { attr, child, numAttr, type XEl } from '../io/xml';
+import { makeBullet, type BulletNumbering } from './bullets';
+import { breakLines, trimmedWidth } from './linebreak';
+import { makeAtoms, type Measurer } from './measure';
+import { levelPPr, merge, runStyle } from './style';
+import type { Atom, Line, ParagraphLayout, RunStyle, StyleChain, TextEnv } from './types';
+
+/** 排一个文本框里所有段落时共用的东西 */
+export interface ParagraphContext {
+  fullChain: StyleChain;
+  env: TextEnv;
+  measurer: Measurer;
+  fontScale: number;
+  lnReduce: number;
+  contentW: number;
+  wrap: boolean;
+  numbering: BulletNumbering;
+}
+
+export async function layoutParagraph(p: XEl, pi: number, ctx: ParagraphContext): Promise<ParagraphLayout> {
+  const { fullChain, env, measurer, fontScale, lnReduce, contentW, wrap } = ctx;
+  const pPrEl = child(p, 'a:pPr');
+  const lvl = numAttr(pPrEl, 'lvl') ?? 0;
+  const levels = levelPPr(fullChain, lvl);
+  const pPr = merge([...levels, pPrEl]);
+  const defRPr = merge([...levels.map((l) => child(l, 'a:defRPr')), child(pPrEl, 'a:defRPr')]);
+
+  // 收集原子
+  const atoms: Atom[] = [];
+  let firstStyle: RunStyle | undefined;
+  for (const r of p.children) {
+    if (r.name === 'a:r' || r.name === 'a:fld') {
+      const style = runStyle(merge([defRPr, child(r, 'a:rPr')]), env, fontScale);
+      firstStyle ??= style;
+      atoms.push(...await makeAtoms(child(r, 'a:t')?.text ?? '', style, measurer));
+    } else if (r.name === 'a:br') {
+      const style = runStyle(merge([defRPr, child(r, 'a:rPr')]), env, fontScale);
+      firstStyle ??= style;
+      atoms.push({ text: '\n', cp: 10, width: 0, style, family: style.latin, ascent: 0, descent: 0, space: false, wide: false, tab: false });
+    }
+  }
+  const endStyle = runStyle(merge([defRPr, child(p, 'a:endParaRPr')]), env, fontScale);
+  const baseStyle = firstStyle ?? endStyle;
+  const baseM = (await measurer.metrics(baseStyle.latin, baseStyle.bold, baseStyle.italic, true)
+    ?? await measurer.metrics(baseStyle.ea, baseStyle.bold, baseStyle.italic, true))?.metrics;
+  const emptyAsc = (baseM?.ascent ?? 0.92) * endStyle.size;
+  const emptyDesc = (baseM?.descent ?? 0.24) * endStyle.size;
+
+  // 制表符：跳到下一个默认制表位
+  const defTab = (numAttr(pPr, 'defTabSz') ?? 914400) / EMU_PER_PX;
+
+  const marL = (numAttr(pPr, 'marL') ?? 0) / EMU_PER_PX;
+  const indent = (numAttr(pPr, 'indent') ?? 0) / EMU_PER_PX;
+  const algn = attr(pPr, 'algn') ?? 'l';
+
+  // 项目符号
+  let bullet: ParagraphLayout['bullet'];
+  const bu = ctx.numbering.textFor(pPr, lvl, atoms.length > 0);
+  if (bu) bullet = await makeBullet(bu.text, pPr, baseStyle, atoms, fontScale, marL + indent, env, measurer);
+
+  let firstX = marL + (indent >= 0 ? indent : 0);
+  if (bullet && bullet.x + bullet.width > firstX) firstX = bullet.x + bullet.width + (indent >= 0 ? 0 : 0);
+  if (!bullet && indent < 0) firstX = marL + indent;
+  const availFirst = contentW - firstX;
+  const availRest = contentW - marL;
+
+  // 处理制表符宽度（简化：按默认制表位）
+  let acc = 0;
+  for (const a of atoms) {
+    if (a.text === '\n') { acc = 0; continue; }
+    if (a.tab) { const next = (Math.floor(acc / defTab) + 1) * defTab; a.width = next - acc; }
+    acc += a.width;
+  }
+
+  const rows = breakLines(atoms, (first) => (first ? availFirst : availRest), wrap);
+  const lines: Line[] = rows.map((row, i) => {
+    const vis = row.filter((a) => a.text !== '\n');
+    return {
+      atoms: vis,
+      width: trimmedWidth(vis),
+      size: vis.length ? Math.max(...vis.map((a) => a.style.size)) : endStyle.size,
+      ascent: vis.length ? Math.max(...vis.map((a) => a.ascent)) : emptyAsc,
+      descent: vis.length ? Math.max(...vis.map((a) => a.descent)) : emptyDesc,
+      x0: i === 0 ? firstX : marL,
+      avail: i === 0 ? availFirst : availRest,
+    };
+  });
+  if (!lines.length) lines.push({ atoms: [], width: 0, size: endStyle.size, ascent: emptyAsc, descent: emptyDesc, x0: marL, avail: availRest });
+
+  const spc = (el: XEl | undefined) => {
+    const pct = child(el, 'a:spcPct');
+    const pts = child(el, 'a:spcPts');
+    if (pts) return { pts: (numAttr(pts, 'val') ?? 0) / 100 };
+    if (pct) return { pct: (numAttr(pct, 'val') ?? 100000) / 100000 };
+    return undefined;
+  };
+  const ls = spc(pPr.children.find((c) => c.name === 'a:lnSpc')) ?? { pct: 1 };
+  if (ls.pct !== undefined) ls.pct = Math.max(0.1, ls.pct - lnReduce);
+  const toPx = (s: { pct?: number; pts?: number } | undefined, ref: number) =>
+    !s ? 0 : s.pts !== undefined ? s.pts * 96 / 72 : (s.pct ?? 0) * ref;
+  const refH = (lines[0].ascent + lines[0].descent) * 1.2;
+  return {
+    lines,
+    // 实测：自动缩小（lnSpcReduction）只减行距，不减段前段后
+    spcBef: toPx(spc(pPr.children.find((c) => c.name === 'a:spcBef')), refH),
+    spcAft: toPx(spc(pPr.children.find((c) => c.name === 'a:spcAft')), refH),
+    lineSpc: ls,
+    algn,
+    bullet,
+    uid: env.uid ? `${env.uid}p${pi}` : undefined,
+  };
+}
