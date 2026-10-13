@@ -1267,11 +1267,14 @@ def charts_ofpie(app):
 
 
 def charts_3d(app):
-    """三维图表：三维饼图、三维簇状柱形图（老课件常见），默认示例数据"""
+    """三维图表：三维饼图、三维簇状柱形图（老课件常见）；第 2 页三维堆积柱形图、三维簇状条形图；
+    第 3 页三维柱形图（系列沿深度排）、三维折线图，默认示例数据"""
     p = new_pres(app, window=True)
-    s = blank(p)
-    for i, kind in enumerate((-4102, 54)):   # xl3DPie、xl3DColumnClustered
-        ch = s.Shapes.AddChart2(-1, kind, 20 + i * 470, 40, 450, 440)
+    # xl3DPie、xl3DColumnClustered、xl3DColumnStacked、xl3DBarClustered、xl3DColumn、xl3DLine
+    for k, kind in enumerate((-4102, 54, 55, 60, -4100, -4101)):
+        if k % 2 == 0:
+            s = blank(p)
+        ch = s.Shapes.AddChart2(-1, kind, 20 + (k % 2) * 470, 40, 450, 440)
         _close_data(ch)
     return p
 
