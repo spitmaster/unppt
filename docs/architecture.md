@@ -33,45 +33,40 @@ flowchart LR
 - **转码器和播放器只通过 `@unppt/format` 里定义的数据格式交流**（`Deck`、`DeckSlide`、`AnimAction`、`SlideTransition`、bridge 协议）。两边可以独立部署、独立升级。
 - 转码器不依赖任何环境：输入是字节（或按需读取的数据源），输出是字节流；字体只是可选输入。
 
-## 2. 转码器内部（现状）
+## 2. 转码器内部分层
+
+上层可以依赖下层，下层不能依赖上层，不允许循环依赖。这些规则由 `scripts/check-deps.mjs` 自动检查（`npm test` 里的"架构守门"测试），违反了测试直接失败。
 
 ```mermaid
 flowchart TB
-  subgraph io[读取层]
-    source[source.ts<br/>按需读取的数据源] --> zip[zip.ts<br/>ZIP / ZIP64]
-    zip --> pkg[package.ts<br/>OPC 包、关系]
-    xml[xml.ts<br/>XML 解析]
-  end
-  subgraph model[文档模型]
-    m[model.ts<br/>演示文稿 / 主题 / 母版 / 版式 / 占位符]
-    color[color.ts<br/>颜色和颜色变换]
-  end
-  subgraph render[渲染]
-    r[render.ts<br/>SlideRenderer：形状 / 图片 / 组合 / graphicFrame 分派]
-    geo[geometry.ts + presets<br/>187 种预设形状公式]
-    fill[fill.ts<br/>填充 / 线条 / 图片调整 / 阴影发光等效果]
-    text[text.ts<br/>字体替代 / 测量 / 断行 / SVG 文字]
-    table[table.ts]
-    chart[chart.ts<br/>全部图表类型]
-    links[links.ts]
-  end
-  subgraph media[资源]
-    store[media.ts<br/>图片 / 音视频 / EMF、WMF 转 SVG]
-    emf[emf.ts]
-    wmf[wmf.ts]
-    font[font.ts + kern.ts<br/>TrueType 解析、字距]
-    subset[subset.ts<br/>字体子集 WOFF]
-  end
-  anim[anim.ts<br/>动画时间线 / 效果 / 切换]
-  index[index.ts<br/>convert：逐页、流式输出 HTML 或数据]
-  index --> r & anim & store & subset
-  r --> geo & fill & text & table & chart & links & store
-  table -.循环依赖.-> r
-  store --> emf & wmf
-  text --> font
+  entry["入口 index.ts / cli.ts<br/>convert：逐页、流式输出 HTML 或数据"]
+  anim["anim/<br/>动画时间线、效果、页面切换编译"]
+  render["render/<br/>SlideRenderer：形状 / 图片 / 组合<br/>box.ts 位置框、table.ts 表格<br/>frames/ ← FrameHandler 扩展点"]
+  chart["chart/<br/>图表"]
+  media["media/<br/>图片、音视频、共享资源<br/>decoders ← ImageDecoder 扩展点"]
+  text["text/<br/>字体替代、测量、断行、SVG 文字"]
+  effects["effects/<br/>← ShapeEffect 扩展点、映像、文字阴影"]
+  style["style/<br/>fill 填充、line 线条、blip 图片调整"]
+  font["font/<br/>TrueType 解析、字距、子集化"]
+  geometry["geometry/<br/>公式引擎、187 种预设形状"]
+  model["model/<br/>演示文稿 / 主题 / 母版 / 版式、颜色"]
+  common["common/<br/>SVG 输出工具、超链接"]
+  io["io/<br/>数据源、ZIP、XML、OPC 包"]
+  entry --> anim & render & media & font
+  render --> chart & media & text & effects & style & geometry
+  chart --> style & font
+  text --> effects & style & font
+  effects --> model
+  style --> model
+  media --> model
+  anim --> model
+  font --> common
+  geometry --> common
+  model --> common
+  common --> io
 ```
 
-### 现状的问题（2026-10-13 评估）
+### 重构前的问题和进度（2026-10-13 评估）
 
 | 位置 | 问题 | 违反的原则 |
 |---|---|---|
