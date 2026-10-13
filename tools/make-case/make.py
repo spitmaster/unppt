@@ -748,7 +748,19 @@ def anim_path(app):
     return p
 
 
-CASES = [shapes_all, text_sizes, text_align, text_spacing, text_bullets, text_missing_font, shapes_basic, fills_lines, table_basic, group_rotate, anim_basic, anim_auto, charts_basic, pictures, smartart, text_effects, text_layout, table_merge, links, emf_images, anim_advanced, charts_labels, freeform_icons, media_audio, anim_trigger, wmf_images, anim_iterate, picture_transparent, charts_more, shape_effects, equations, anim_path]
+def anim_emphasis(app):
+    """过程有往返的强调动画（脉冲、跷跷板等）和用 from/to 写的缩放：检查每步结束后的状态"""
+    p = new_pres(app)
+    s = blank(p)
+    seq = s.TimeLine.MainSequence
+    for i, eff in enumerate([64, 75, 80, 81, 52]):   # presetID 14、脉冲 26、跷跷板 32、33、波浪 36
+        sh = s.Shapes.AddShape(1, 50 + i * 180, 200, 130, 100)
+        sh.TextFrame.TextRange.Text = f"强调 {i + 1}"
+        seq.AddEffect(sh, eff, 0, 1)
+    return p
+
+
+CASES = [shapes_all, text_sizes, text_align, text_spacing, text_bullets, text_missing_font, shapes_basic, fills_lines, table_basic, group_rotate, anim_basic, anim_auto, charts_basic, pictures, smartart, text_effects, text_layout, table_merge, links, emf_images, anim_advanced, charts_labels, freeform_icons, media_audio, anim_trigger, wmf_images, anim_iterate, picture_transparent, charts_more, shape_effects, equations, anim_path, anim_emphasis]
 
 
 def main():
