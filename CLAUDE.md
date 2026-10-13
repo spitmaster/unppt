@@ -40,7 +40,7 @@ unppt：把 .pptx 转成静态产物（SVG + JSON + 资源），由一个可 ifr
 | `packages/format` | 产物格式规范（类型 + Schema + 版本号） |
 | `packages/transcoder` | 转码器（TS，零依赖） |
 | `packages/player` | 播放器（TS，零依赖） |
-| `tools/powerpoint` | 调本机 PowerPoint 导出参考图（Python + pywin32） |
+| `tools/powerpoint` | 调本机 PowerPoint 导出参考图、放映截图对照页面切换（Python + pywin32） |
 | `tools/make-case` | 用 PowerPoint 生成合成测试用例 |
 | `tools/compare` | 截图、比对、打分、出报告（Python + Playwright） |
 | `testcases/` | 测试用例 + 参考图（无客户内容，可提交） |
@@ -85,6 +85,8 @@ npm test                                              # 单元测试
 .venv/Scripts/python tools/compare/run.py --set all         # 样本比对（只看数字）
 .venv/Scripts/python tools/compare/offsets.py 编号          # 逐行位置偏差（数字）
 .venv/Scripts/python tools/check-player.py [firefox]        # 播放器端到端测试
+.venv/Scripts/python tools/powerpoint/transitions.py capture FadeSmoothly,PushLeft  # 放映截图
+.venv/Scripts/python tools/powerpoint/transitions.py compare                        # 切换逐帧对照
 ```
 
 新增或修改测试用例：`tools/make-case/make.py` 加函数 → `make.py 用例名` → `tools/powerpoint/export.py run --set testcases --only 用例名`。

@@ -104,16 +104,30 @@ export interface AnimTarget {
 
 export interface SlideTransition {
   /**
-   * push 推入、cover 覆盖、pull 揭开、wipe 擦除、split 分割、circle 圆形；其它切换都按 fade 淡入。
-   * morph 平滑切换：前后两页里同名（data-name）的顶层对象从旧位置、旧大小变到新位置、新大小，其余内容淡入
+   * fade 淡入（thruBlk 时先变黑再从黑色淡入）、cut 穿过黑色切出（thruBlk）、flash 闪光、
+   * push 推入、cover 覆盖、pull 揭开、wipe 擦除、split 分割、strips 条纹、
+   * circle 圆形、diamond 菱形、plus 加号、zoom 盒状、wheel 轮子（spokes 条轮辐，ccw 逆时针）、wedge 扇形、newsflash 新闻快报、
+   * blinds 百叶窗、checker 棋盘、comb 梳理、randomBar 随机线条、dissolve 溶解；
+   * morph 平滑切换：前后两页里同名（data-name）的顶层对象从旧位置、旧大小变到新位置、新大小，其余内容淡入。
+   * 播放器不认识的类型按 fade 播放
    */
-  type: 'none' | 'fade' | 'push' | 'wipe' | 'cover' | 'pull' | 'split' | 'circle' | 'morph';
+  type:
+    | 'none' | 'fade' | 'cut' | 'flash' | 'push' | 'wipe' | 'cover' | 'pull' | 'split' | 'strips'
+    | 'circle' | 'diamond' | 'plus' | 'zoom' | 'wheel' | 'wedge' | 'newsflash'
+    | 'blinds' | 'checker' | 'comb' | 'randomBar' | 'dissolve' | 'morph';
   dur: number;
-  /** 运动方向（和 PowerPoint 一致）：l 向左（新页从右边进来）、r、u、d */
-  dir?: 'l' | 'r' | 'u' | 'd';
-  /** 分割：横向/纵向，向外展开/向内合拢 */
+  /** 运动方向（和 PowerPoint 一致）：l 向左（新页从右边进来）、r、u、d；覆盖、揭开、条纹还有斜向 lu、ru、ld、rd */
+  dir?: 'l' | 'r' | 'u' | 'd' | 'lu' | 'ru' | 'ld' | 'rd';
+  /** 分割的分割线、百叶窗/棋盘/梳理/随机线条的条纹方向：horz 横向、vert 纵向 */
   orient?: 'horz' | 'vert';
+  /** 分割、盒状：in 向内收拢，out 向外展开 */
   inOut?: 'in' | 'out';
+  /** 淡入、切出：穿过黑色 */
+  thruBlk?: true;
+  /** 轮子：轮辐数（默认 4） */
+  spokes?: number;
+  /** 轮子：逆时针 */
+  ccw?: true;
 }
 
 export interface DeckFont {

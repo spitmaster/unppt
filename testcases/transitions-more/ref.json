@@ -1,0 +1,1034 @@
+{
+ "version": 7,
+ "slideWidthPt": 960.0,
+ "slideHeightPt": 540.0,
+ "imageWidth": 1280,
+ "imageHeight": 720,
+ "slides": [
+  {
+   "index": 0,
+   "hidden": false,
+   "shapes": [
+    {
+     "id": 2,
+     "name": "TextBox 1",
+     "type": 17,
+     "x": 100.0,
+     "y": 220.0,
+     "w": 760.0,
+     "h": 72.703,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 5,
+       "text": "第 1 页",
+       "x": 107.2,
+       "y": 223.6,
+       "w": 166.005,
+       "h": 64.8
+      }
+     ]
+    }
+   ],
+   "effects": [],
+   "triggerHidden": [],
+   "steps": 0
+  },
+  {
+   "index": 1,
+   "hidden": false,
+   "shapes": [
+    {
+     "id": 2,
+     "name": "TextBox 1",
+     "type": 17,
+     "x": 100.0,
+     "y": 220.0,
+     "w": 760.0,
+     "h": 72.703,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 5,
+       "text": "第 2 页",
+       "x": 107.2,
+       "y": 223.6,
+       "w": 166.005,
+       "h": 64.8
+      }
+     ]
+    }
+   ],
+   "effects": [],
+   "triggerHidden": [],
+   "steps": 0
+  },
+  {
+   "index": 2,
+   "hidden": false,
+   "shapes": [
+    {
+     "id": 2,
+     "name": "TextBox 1",
+     "type": 17,
+     "x": 100.0,
+     "y": 220.0,
+     "w": 760.0,
+     "h": 72.703,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 5,
+       "text": "第 3 页",
+       "x": 107.2,
+       "y": 223.6,
+       "w": 166.005,
+       "h": 64.8
+      }
+     ]
+    }
+   ],
+   "effects": [],
+   "triggerHidden": [],
+   "steps": 0
+  },
+  {
+   "index": 3,
+   "hidden": false,
+   "shapes": [
+    {
+     "id": 2,
+     "name": "TextBox 1",
+     "type": 17,
+     "x": 100.0,
+     "y": 220.0,
+     "w": 760.0,
+     "h": 72.703,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 5,
+       "text": "第 4 页",
+       "x": 107.2,
+       "y": 223.6,
+       "w": 166.005,
+       "h": 64.8
+      }
+     ]
+    }
+   ],
+   "effects": [],
+   "triggerHidden": [],
+   "steps": 0
+  },
+  {
+   "index": 4,
+   "hidden": false,
+   "shapes": [
+    {
+     "id": 2,
+     "name": "TextBox 1",
+     "type": 17,
+     "x": 100.0,
+     "y": 220.0,
+     "w": 760.0,
+     "h": 72.703,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 5,
+       "text": "第 5 页",
+       "x": 107.2,
+       "y": 223.6,
+       "w": 166.005,
+       "h": 64.8
+      }
+     ]
+    }
+   ],
+   "effects": [],
+   "triggerHidden": [],
+   "steps": 0
+  },
+  {
+   "index": 5,
+   "hidden": false,
+   "shapes": [
+    {
+     "id": 2,
+     "name": "TextBox 1",
+     "type": 17,
+     "x": 100.0,
+     "y": 220.0,
+     "w": 760.0,
+     "h": 72.703,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 5,
+       "text": "第 6 页",
+       "x": 107.2,
+       "y": 223.6,
+       "w": 166.005,
+       "h": 64.8
+      }
+     ]
+    }
+   ],
+   "effects": [],
+   "triggerHidden": [],
+   "steps": 0
+  },
+  {
+   "index": 6,
+   "hidden": false,
+   "shapes": [
+    {
+     "id": 2,
+     "name": "TextBox 1",
+     "type": 17,
+     "x": 100.0,
+     "y": 220.0,
+     "w": 760.0,
+     "h": 72.703,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 5,
+       "text": "第 7 页",
+       "x": 107.2,
+       "y": 223.6,
+       "w": 166.005,
+       "h": 64.8
+      }
+     ]
+    }
+   ],
+   "effects": [],
+   "triggerHidden": [],
+   "steps": 0
+  },
+  {
+   "index": 7,
+   "hidden": false,
+   "shapes": [
+    {
+     "id": 2,
+     "name": "TextBox 1",
+     "type": 17,
+     "x": 100.0,
+     "y": 220.0,
+     "w": 760.0,
+     "h": 72.703,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 5,
+       "text": "第 8 页",
+       "x": 107.2,
+       "y": 223.6,
+       "w": 166.005,
+       "h": 64.8
+      }
+     ]
+    }
+   ],
+   "effects": [],
+   "triggerHidden": [],
+   "steps": 0
+  },
+  {
+   "index": 8,
+   "hidden": false,
+   "shapes": [
+    {
+     "id": 2,
+     "name": "TextBox 1",
+     "type": 17,
+     "x": 100.0,
+     "y": 220.0,
+     "w": 760.0,
+     "h": 72.703,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 5,
+       "text": "第 9 页",
+       "x": 107.2,
+       "y": 223.6,
+       "w": 166.005,
+       "h": 64.8
+      }
+     ]
+    }
+   ],
+   "effects": [],
+   "triggerHidden": [],
+   "steps": 0
+  },
+  {
+   "index": 9,
+   "hidden": false,
+   "shapes": [
+    {
+     "id": 2,
+     "name": "TextBox 1",
+     "type": 17,
+     "x": 100.0,
+     "y": 220.0,
+     "w": 760.0,
+     "h": 72.703,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 6,
+       "text": "第 10 页",
+       "x": 107.2,
+       "y": 223.6,
+       "w": 194.505,
+       "h": 64.8
+      }
+     ]
+    }
+   ],
+   "effects": [],
+   "triggerHidden": [],
+   "steps": 0
+  },
+  {
+   "index": 10,
+   "hidden": false,
+   "shapes": [
+    {
+     "id": 2,
+     "name": "TextBox 1",
+     "type": 17,
+     "x": 100.0,
+     "y": 220.0,
+     "w": 760.0,
+     "h": 72.703,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 6,
+       "text": "第 11 页",
+       "x": 107.2,
+       "y": 223.6,
+       "w": 194.505,
+       "h": 64.8
+      }
+     ]
+    }
+   ],
+   "effects": [],
+   "triggerHidden": [],
+   "steps": 0
+  },
+  {
+   "index": 11,
+   "hidden": false,
+   "shapes": [
+    {
+     "id": 2,
+     "name": "TextBox 1",
+     "type": 17,
+     "x": 100.0,
+     "y": 220.0,
+     "w": 760.0,
+     "h": 72.703,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 6,
+       "text": "第 12 页",
+       "x": 107.2,
+       "y": 223.6,
+       "w": 194.505,
+       "h": 64.8
+      }
+     ]
+    }
+   ],
+   "effects": [],
+   "triggerHidden": [],
+   "steps": 0
+  },
+  {
+   "index": 12,
+   "hidden": false,
+   "shapes": [
+    {
+     "id": 2,
+     "name": "TextBox 1",
+     "type": 17,
+     "x": 100.0,
+     "y": 220.0,
+     "w": 760.0,
+     "h": 72.703,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 6,
+       "text": "第 13 页",
+       "x": 107.2,
+       "y": 223.6,
+       "w": 194.505,
+       "h": 64.8
+      }
+     ]
+    }
+   ],
+   "effects": [],
+   "triggerHidden": [],
+   "steps": 0
+  },
+  {
+   "index": 13,
+   "hidden": false,
+   "shapes": [
+    {
+     "id": 2,
+     "name": "TextBox 1",
+     "type": 17,
+     "x": 100.0,
+     "y": 220.0,
+     "w": 760.0,
+     "h": 72.703,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 6,
+       "text": "第 14 页",
+       "x": 107.2,
+       "y": 223.6,
+       "w": 194.505,
+       "h": 64.8
+      }
+     ]
+    }
+   ],
+   "effects": [],
+   "triggerHidden": [],
+   "steps": 0
+  },
+  {
+   "index": 14,
+   "hidden": false,
+   "shapes": [
+    {
+     "id": 2,
+     "name": "TextBox 1",
+     "type": 17,
+     "x": 100.0,
+     "y": 220.0,
+     "w": 760.0,
+     "h": 72.703,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 6,
+       "text": "第 15 页",
+       "x": 107.2,
+       "y": 223.6,
+       "w": 194.505,
+       "h": 64.8
+      }
+     ]
+    }
+   ],
+   "effects": [],
+   "triggerHidden": [],
+   "steps": 0
+  },
+  {
+   "index": 15,
+   "hidden": false,
+   "shapes": [
+    {
+     "id": 2,
+     "name": "TextBox 1",
+     "type": 17,
+     "x": 100.0,
+     "y": 220.0,
+     "w": 760.0,
+     "h": 72.703,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 6,
+       "text": "第 16 页",
+       "x": 107.2,
+       "y": 223.6,
+       "w": 194.505,
+       "h": 64.8
+      }
+     ]
+    }
+   ],
+   "effects": [],
+   "triggerHidden": [],
+   "steps": 0
+  },
+  {
+   "index": 16,
+   "hidden": false,
+   "shapes": [
+    {
+     "id": 2,
+     "name": "TextBox 1",
+     "type": 17,
+     "x": 100.0,
+     "y": 220.0,
+     "w": 760.0,
+     "h": 72.703,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 6,
+       "text": "第 17 页",
+       "x": 107.2,
+       "y": 223.6,
+       "w": 194.505,
+       "h": 64.8
+      }
+     ]
+    }
+   ],
+   "effects": [],
+   "triggerHidden": [],
+   "steps": 0
+  },
+  {
+   "index": 17,
+   "hidden": false,
+   "shapes": [
+    {
+     "id": 2,
+     "name": "TextBox 1",
+     "type": 17,
+     "x": 100.0,
+     "y": 220.0,
+     "w": 760.0,
+     "h": 72.703,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 6,
+       "text": "第 18 页",
+       "x": 107.2,
+       "y": 223.6,
+       "w": 194.505,
+       "h": 64.8
+      }
+     ]
+    }
+   ],
+   "effects": [],
+   "triggerHidden": [],
+   "steps": 0
+  },
+  {
+   "index": 18,
+   "hidden": false,
+   "shapes": [
+    {
+     "id": 2,
+     "name": "TextBox 1",
+     "type": 17,
+     "x": 100.0,
+     "y": 220.0,
+     "w": 760.0,
+     "h": 72.703,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 6,
+       "text": "第 19 页",
+       "x": 107.2,
+       "y": 223.6,
+       "w": 194.505,
+       "h": 64.8
+      }
+     ]
+    }
+   ],
+   "effects": [],
+   "triggerHidden": [],
+   "steps": 0
+  },
+  {
+   "index": 19,
+   "hidden": false,
+   "shapes": [
+    {
+     "id": 2,
+     "name": "TextBox 1",
+     "type": 17,
+     "x": 100.0,
+     "y": 220.0,
+     "w": 760.0,
+     "h": 72.703,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 6,
+       "text": "第 20 页",
+       "x": 107.2,
+       "y": 223.6,
+       "w": 194.505,
+       "h": 64.8
+      }
+     ]
+    }
+   ],
+   "effects": [],
+   "triggerHidden": [],
+   "steps": 0
+  },
+  {
+   "index": 20,
+   "hidden": false,
+   "shapes": [
+    {
+     "id": 2,
+     "name": "TextBox 1",
+     "type": 17,
+     "x": 100.0,
+     "y": 220.0,
+     "w": 760.0,
+     "h": 72.703,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 6,
+       "text": "第 21 页",
+       "x": 107.2,
+       "y": 223.6,
+       "w": 194.505,
+       "h": 64.8
+      }
+     ]
+    }
+   ],
+   "effects": [],
+   "triggerHidden": [],
+   "steps": 0
+  },
+  {
+   "index": 21,
+   "hidden": false,
+   "shapes": [
+    {
+     "id": 2,
+     "name": "TextBox 1",
+     "type": 17,
+     "x": 100.0,
+     "y": 220.0,
+     "w": 760.0,
+     "h": 72.703,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 6,
+       "text": "第 22 页",
+       "x": 107.2,
+       "y": 223.6,
+       "w": 194.505,
+       "h": 64.8
+      }
+     ]
+    }
+   ],
+   "effects": [],
+   "triggerHidden": [],
+   "steps": 0
+  },
+  {
+   "index": 22,
+   "hidden": false,
+   "shapes": [
+    {
+     "id": 2,
+     "name": "TextBox 1",
+     "type": 17,
+     "x": 100.0,
+     "y": 220.0,
+     "w": 760.0,
+     "h": 72.703,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 6,
+       "text": "第 23 页",
+       "x": 107.2,
+       "y": 223.6,
+       "w": 194.505,
+       "h": 64.8
+      }
+     ]
+    }
+   ],
+   "effects": [],
+   "triggerHidden": [],
+   "steps": 0
+  },
+  {
+   "index": 23,
+   "hidden": false,
+   "shapes": [
+    {
+     "id": 2,
+     "name": "TextBox 1",
+     "type": 17,
+     "x": 100.0,
+     "y": 220.0,
+     "w": 760.0,
+     "h": 72.703,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 6,
+       "text": "第 24 页",
+       "x": 107.2,
+       "y": 223.6,
+       "w": 194.505,
+       "h": 64.8
+      }
+     ]
+    }
+   ],
+   "effects": [],
+   "triggerHidden": [],
+   "steps": 0
+  },
+  {
+   "index": 24,
+   "hidden": false,
+   "shapes": [
+    {
+     "id": 2,
+     "name": "TextBox 1",
+     "type": 17,
+     "x": 100.0,
+     "y": 220.0,
+     "w": 760.0,
+     "h": 72.703,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 6,
+       "text": "第 25 页",
+       "x": 107.2,
+       "y": 223.6,
+       "w": 194.505,
+       "h": 64.8
+      }
+     ]
+    }
+   ],
+   "effects": [],
+   "triggerHidden": [],
+   "steps": 0
+  },
+  {
+   "index": 25,
+   "hidden": false,
+   "shapes": [
+    {
+     "id": 2,
+     "name": "TextBox 1",
+     "type": 17,
+     "x": 100.0,
+     "y": 220.0,
+     "w": 760.0,
+     "h": 72.703,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 6,
+       "text": "第 26 页",
+       "x": 107.2,
+       "y": 223.6,
+       "w": 194.505,
+       "h": 64.8
+      }
+     ]
+    }
+   ],
+   "effects": [],
+   "triggerHidden": [],
+   "steps": 0
+  },
+  {
+   "index": 26,
+   "hidden": false,
+   "shapes": [
+    {
+     "id": 2,
+     "name": "TextBox 1",
+     "type": 17,
+     "x": 100.0,
+     "y": 220.0,
+     "w": 760.0,
+     "h": 72.703,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 6,
+       "text": "第 27 页",
+       "x": 107.2,
+       "y": 223.6,
+       "w": 194.505,
+       "h": 64.8
+      }
+     ]
+    }
+   ],
+   "effects": [],
+   "triggerHidden": [],
+   "steps": 0
+  },
+  {
+   "index": 27,
+   "hidden": false,
+   "shapes": [
+    {
+     "id": 2,
+     "name": "TextBox 1",
+     "type": 17,
+     "x": 100.0,
+     "y": 220.0,
+     "w": 760.0,
+     "h": 72.703,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 6,
+       "text": "第 28 页",
+       "x": 107.2,
+       "y": 223.6,
+       "w": 194.505,
+       "h": 64.8
+      }
+     ]
+    }
+   ],
+   "effects": [],
+   "triggerHidden": [],
+   "steps": 0
+  },
+  {
+   "index": 28,
+   "hidden": false,
+   "shapes": [
+    {
+     "id": 2,
+     "name": "TextBox 1",
+     "type": 17,
+     "x": 100.0,
+     "y": 220.0,
+     "w": 760.0,
+     "h": 72.703,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 6,
+       "text": "第 29 页",
+       "x": 107.2,
+       "y": 223.6,
+       "w": 194.505,
+       "h": 64.8
+      }
+     ]
+    }
+   ],
+   "effects": [],
+   "triggerHidden": [],
+   "steps": 0
+  },
+  {
+   "index": 29,
+   "hidden": false,
+   "shapes": [
+    {
+     "id": 2,
+     "name": "TextBox 1",
+     "type": 17,
+     "x": 100.0,
+     "y": 220.0,
+     "w": 760.0,
+     "h": 72.703,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 6,
+       "text": "第 30 页",
+       "x": 107.2,
+       "y": 223.6,
+       "w": 194.505,
+       "h": 64.8
+      }
+     ]
+    }
+   ],
+   "effects": [],
+   "triggerHidden": [],
+   "steps": 0
+  },
+  {
+   "index": 30,
+   "hidden": false,
+   "shapes": [
+    {
+     "id": 2,
+     "name": "TextBox 1",
+     "type": 17,
+     "x": 100.0,
+     "y": 220.0,
+     "w": 760.0,
+     "h": 72.703,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 6,
+       "text": "第 31 页",
+       "x": 107.2,
+       "y": 223.6,
+       "w": 194.505,
+       "h": 64.8
+      }
+     ]
+    }
+   ],
+   "effects": [],
+   "triggerHidden": [],
+   "steps": 0
+  },
+  {
+   "index": 31,
+   "hidden": false,
+   "shapes": [
+    {
+     "id": 2,
+     "name": "TextBox 1",
+     "type": 17,
+     "x": 100.0,
+     "y": 220.0,
+     "w": 760.0,
+     "h": 72.703,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 6,
+       "text": "第 32 页",
+       "x": 107.2,
+       "y": 223.6,
+       "w": 194.505,
+       "h": 64.8
+      }
+     ]
+    }
+   ],
+   "effects": [],
+   "triggerHidden": [],
+   "steps": 0
+  }
+ ],
+ "ok": true
+}

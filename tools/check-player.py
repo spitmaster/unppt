@@ -59,6 +59,7 @@ def main():
     subprocess.run(["node", "packages/transcoder/dist/cli.js", "convert", "testcases/anim-path.pptx", "-o", str(player_dir / "path.html"), "-q"], cwd=ROOT, check=True)
     subprocess.run(["node", "packages/transcoder/dist/cli.js", "convert", "testcases/anim-emphasis.pptx", "-o", str(player_dir / "emph.html"), "-q"], cwd=ROOT, check=True)
     subprocess.run(["node", "packages/transcoder/dist/cli.js", "convert", "testcases/transitions.pptx", "-o", str(player_dir / "trans.html"), "-q"], cwd=ROOT, check=True)
+    subprocess.run(["node", "packages/transcoder/dist/cli.js", "convert", "testcases/transitions-more.pptx", "-o", str(player_dir / "trans2.html"), "-q"], cwd=ROOT, check=True)
     subprocess.run(["node", "packages/transcoder/dist/cli.js", "convert", "testcases/anim-entrance.pptx", "-o", str(player_dir / "entr.html"), "-q"], cwd=ROOT, check=True)
     subprocess.run(["node", "packages/transcoder/dist/cli.js", "convert", "testcases/hidden-slides.pptx", "-o", str(player_dir / "hidden.html"), "-q"], cwd=ROOT, check=True)
     subprocess.run(["node", "packages/transcoder/dist/cli.js", "convert", "testcases/media-background.pptx", "-o", str(player_dir / "bgm.html"), "-q"], cwd=ROOT, check=True)
@@ -179,21 +180,26 @@ def main():
         check(mid > 1.01 and abs(end - 1) < 0.001, f"脉冲中途放大、播完复原：{mid:.3f} -> {end:.3f}")
 
         # ---------------- 7. 各种页面切换：翻页播完后只剩新的一页，没有脚本错误
-        page7 = b.new_page()
+        # 播完后旧页移除、新页上没有残留的遮罩、裁剪、滤镜
         errors = []
-        page7.on("pageerror", lambda e: errors.append(str(e)))
-        page7.goto(f"{player_url}/trans.html")
-        page7.wait_for_function("window.unppt !== undefined && !!document.querySelector('div.unppt-slide')")
-        n = page7.evaluate("window.unppt.getState()")["slideCount"]
         bad = []
-        for k in range(1, n):
-            page7.evaluate("window.unppt.next()")
-            page7.wait_for_timeout(2300)
-            st = page7.evaluate("window.unppt.getState()")["slide"]
-            left = page7.evaluate("document.querySelectorAll('div.unppt-slide').length")
-            if st != k or left != 1:
-                bad.append((k, st, left))
-        check(n > 10 and not bad and not errors, f"{n - 1} 种切换都正常结束：{bad} {errors[:2]}")
+        total = 0
+        for deck, wait in (("trans.html", 2300), ("trans2.html", 1300)):
+            page7 = b.new_page()
+            page7.on("pageerror", lambda e: errors.append(str(e)))
+            page7.goto(f"{player_url}/{deck}?timings=0")
+            page7.wait_for_function("window.unppt !== undefined && !!document.querySelector('div.unppt-slide')")
+            n = page7.evaluate("window.unppt.getState()")["slideCount"]
+            total += n - 1
+            for k in range(1, n):
+                page7.evaluate("window.unppt.next()")
+                page7.wait_for_timeout(wait)
+                st = page7.evaluate("window.unppt.getState()")["slide"]
+                left = page7.evaluate("[document.querySelectorAll('div.unppt-slide').length, (() => { const s = document.querySelector('div.unppt-slide').style; return [s.clipPath, s.maskImage, s.webkitMaskImage, s.filter, s.opacity, s.transform].map((v) => v || '').join(''); })()]")
+                if st != k or left != [1, ""]:
+                    bad.append((deck, k, st, left))
+            page7.close()
+        check(total > 40 and not bad and not errors, f"{total} 种切换都正常结束：{bad[:3]} {errors[:2]}")
 
         # ---------------- 8. 进入效果（形状、轮子、百叶窗……）：播放中途有裁剪，播完完整显示
         page8 = b.new_page()

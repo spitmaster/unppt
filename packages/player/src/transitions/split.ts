@@ -1,15 +1,15 @@
-/** 分割：向外展开新页，或向内合拢旧页 */
+/**
+ * 分割：从中线向两侧展开（out），或从两边向中线合拢（in），软边宽度等于半个画面。
+ * orient 是分割线的方向：vert 时左右展开
+ */
+import { maskTransition, twoSides } from './soft-edge';
 import type { TransitionEffect } from './transition';
 
 export const split: TransitionEffect = {
   type: 'split',
-  run(old, el, t, dur) {
-    const closed = t.orient === 'vert' ? 'inset(0 50% 0 50%)' : 'inset(50% 0 50% 0)';
-    if (t.inOut === 'in') {
-      // 向内合拢：旧页从两边往中间收拢消失
-      old.style.zIndex = '1';
-      return old.animate([{ clipPath: 'inset(0 0 0 0)' }, { clipPath: closed }], { duration: dur, fill: 'forwards' });
-    }
-    return el.animate([{ clipPath: closed }, { clipPath: 'inset(0 0 0 0)' }], { duration: dur });
+  run(_old, el, t, dur) {
+    const to = t.orient === 'vert' ? 'to right' : 'to bottom';
+    const way = t.inOut === 'in' ? 'in' : 'out';
+    return maskTransition(el, el, dur, (u) => `linear-gradient(${to},${twoSides(u, 1, way)})`);
   },
 };

@@ -1,11 +1,13 @@
-/** 擦除：从运动方向的反侧开始露出（向左擦除时从右边缘露出） */
+/** 擦除：从运动方向的反侧开始，一条和画面一样宽的软边匀速扫过（向左擦除时从右边缘露出） */
+import { oneSide, maskTransition } from './soft-edge';
 import type { TransitionEffect } from './transition';
+
+const TO: Record<string, string> = { l: 'to left', r: 'to right', u: 'to top', d: 'to bottom' };
 
 export const wipe: TransitionEffect = {
   type: 'wipe',
   run(_old, el, t, dur) {
-    const dir = t.dir ?? 'l';
-    const start = dir === 'l' ? 'inset(0 0 0 100%)' : dir === 'r' ? 'inset(0 100% 0 0)' : dir === 'u' ? 'inset(100% 0 0 0)' : 'inset(0 0 100% 0)';
-    return el.animate([{ clipPath: start }, { clipPath: 'inset(0 0 0 0)' }], { duration: dur });
+    const to = TO[t.dir ?? 'l'] ?? TO.l;
+    return maskTransition(el, el, dur, (u) => `linear-gradient(${to},${oneSide(u, 1)})`);
   },
 };
