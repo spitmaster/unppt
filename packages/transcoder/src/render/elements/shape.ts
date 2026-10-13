@@ -80,6 +80,7 @@ export async function renderShape(r: RenderContext, el: XEl, ctx: SlideContext, 
     colors, theme: ctx.theme, fonts: r.env.fonts, missingFonts: r.env.missingFonts,
     fontRefColor: colorIn(fontRef, colors), uid, embed: r.env.embed, doc: r.doc,
     rels: await r.env.pres.pkg.rels(ctx.part),
+    images: r.images, part: ctx.part,
   };
   // SmartArt 的文字框有单独的位置（dsp:txXfrm）
   const txXfrm = readXfrm(pc(el, 'txXfrm'));

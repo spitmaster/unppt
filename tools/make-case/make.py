@@ -975,7 +975,31 @@ def text_tabs(app):
     return p
 
 
-CASES = [shapes_all, text_sizes, text_align, text_spacing, text_bullets, text_missing_font, shapes_basic, fills_lines, table_basic, group_rotate, anim_basic, anim_auto, charts_basic, pictures, smartart, text_effects, text_layout, table_merge, links, emf_images, anim_advanced, charts_labels, freeform_icons, media_audio, anim_trigger, wmf_images, anim_iterate, picture_transparent, charts_more, shape_effects, equations, anim_path, anim_emphasis, transitions, fills_patterns, text_decoration, anim_entrance, svg_images, charts_markers, hidden_slides, media_background, text_glow_reflection, text_tabs]
+def text_picture_bullets(app):
+    """图片项目符号：两种大小（100%、150%）"""
+    from PIL import Image, ImageDraw
+    png = (CACHE / "make-case" / "bullet.png").resolve()
+    png.parent.mkdir(parents=True, exist_ok=True)
+    im = Image.new("RGBA", (64, 64), (0, 0, 0, 0))
+    d = ImageDraw.Draw(im)
+    d.ellipse((4, 4, 60, 60), fill=(192, 0, 0, 255))
+    d.rectangle((24, 24, 40, 40), fill=(255, 255, 255, 255))
+    im.save(png)
+    p = new_pres(app)
+    s = blank(p)
+    for k, pct in enumerate((1.0, 1.5)):
+        tb = s.Shapes.AddTextbox(1, 60, 40 + k * 240, 800, 200)
+        tr = tb.TextFrame.TextRange
+        tr.Text = chr(13).join(["第一条要点", "第二条要点 Second item", "第三条要点"])
+        tr.Font.Size = 28
+        pf = tr.ParagraphFormat
+        pf.Bullet.Visible = -1
+        pf.Bullet.Picture(str(png))
+        pf.Bullet.RelativeSize = pct
+    return p
+
+
+CASES = [shapes_all, text_sizes, text_align, text_spacing, text_bullets, text_missing_font, shapes_basic, fills_lines, table_basic, group_rotate, anim_basic, anim_auto, charts_basic, pictures, smartart, text_effects, text_layout, table_merge, links, emf_images, anim_advanced, charts_labels, freeform_icons, media_audio, anim_trigger, wmf_images, anim_iterate, picture_transparent, charts_more, shape_effects, equations, anim_path, anim_emphasis, transitions, fills_patterns, text_decoration, anim_entrance, svg_images, charts_markers, hidden_slides, media_background, text_glow_reflection, text_tabs, text_picture_bullets]
 
 
 def main():

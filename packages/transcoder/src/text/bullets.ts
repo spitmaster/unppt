@@ -1,6 +1,6 @@
 /** 项目符号和自动编号 */
 import { colorIn } from '../model/color';
-import { attr, numAttr, type XEl } from '../io/xml';
+import { attr, child, numAttr, type XEl } from '../io/xml';
 import { makeAtoms, type Measurer } from './measure';
 import { GROUP, resolveTypeface } from './style';
 import type { Atom, Bullet, RunStyle, TextEnv } from './types';
@@ -75,7 +75,7 @@ export class BulletNumbering {
 
 /** 按段落属性（符号字体、颜色、大小）测出符号的样式和宽度 */
 export async function makeBullet(
-  text: string, pPr: XEl, baseStyle: RunStyle, atoms: Atom[], fontScale: number, x: number, env: TextEnv, measurer: Measurer,
+  text: string, pPr: XEl, baseStyle: RunStyle, atoms: Atom[], fontScale: number, x: number, env: TextEnv, measurer: Measurer, bu?: XEl,
 ): Promise<Bullet> {
   const buFont = pPr.children.find((c) => c.name === 'a:buFont');
   const buClr = pPr.children.find((c) => c.name === 'a:buClr');
@@ -88,6 +88,12 @@ export async function makeBullet(
   // 实测：空格当符号时不用符号字体，而是跟正文第一个字用同一种字体（中文正文时是东亚字体的半角空格宽度）
   const buFace = !text.trim() && atoms[0]?.family ? atoms[0].family : font;
   const style: RunStyle = { ...baseStyle, size, latin: buFace, ea: buFace, color: buClr ? (colorIn(buClr, env.colors) ?? baseStyle.color) : baseStyle.color, underline: false, strike: false, spc: 0 };
+  // 图片符号：实测边长约 0.70 倍字号 × 符号大小；取不到图片时退回圆点
+  if (bu?.name === 'a:buBlip' && env.images && env.part) {
+    const rid = attr(child(bu, 'a:blip'), 'r:embed');
+    const href = rid ? await env.images.image(env.part, rid) : undefined;
+    if (href) return { text: '', style, x, width: size * 0.7, family: style.latin, image: href };
+  }
   const ba = await makeAtoms(text, style, measurer);
   const width = ba.reduce((s, a) => s + a.width, 0);
   return { text, style, x, width, family: ba[0]?.family ?? style.latin, face: ba[0]?.face };

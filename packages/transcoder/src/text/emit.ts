@@ -1,5 +1,5 @@
 /** 把排好的段落放进文本框：垂直对齐、分栏、行高和基线、水平对齐（含两端对齐），输出 SVG */
-import { n2 } from '../common/svg';
+import { esc, n2 } from '../common/svg';
 import type { BodyProps } from './body';
 import { reflection } from '../effects/reflection';
 import { child } from '../io/xml';
@@ -65,7 +65,10 @@ export function emitParagraphs(
         const b = pl.bullet;
         const bx = pl.algn === 'l' || pl.algn === 'just' ? lIns + colX + b.x : x - b.width;
         const bAlias = b.face && env.embed ? env.embed.alias(b.face) : undefined;
-        pParts.push(textEl(b.text, bx, baseline, b.style, b.family, true, bAlias, env));
+        if (b.image) {
+          // 实测：图片底边在基线下约 0.075 倍边长
+          pParts.push(`<image data-bu="1" href="${esc(b.image)}" x="${n2(bx)}" y="${n2(baseline - b.width * 0.925)}" width="${n2(b.width)}" height="${n2(b.width)}" preserveAspectRatio="xMidYMid meet"/>`);
+        } else pParts.push(textEl(b.text, bx, baseline, b.style, b.family, true, bAlias, env));
       }
       // 先算每个字的横坐标，再按样式、字体分段输出（两端对齐时在每个间隙处分段）
       const atoms = line.atoms;

@@ -5,6 +5,7 @@ import type { Theme } from '../model/model';
 import type { SvgDoc } from '../common/svg';
 import type { Rel } from '../io/package';
 import type { XEl } from '../io/xml';
+import type { ImageResolver } from '../style/fill';
 
 export interface TextEnv {
   colors: ColorContext;
@@ -23,6 +24,9 @@ export interface TextEnv {
   gradBox?: { w: number; h: number };
   /** 当前部件的关系，用来解析文字上的超链接 */
   rels?: Rel[];
+  /** 图片项目符号要用：图片解析和当前部件 */
+  images?: ImageResolver;
+  part?: string;
 }
 
 export interface FontEmbedder {
@@ -98,7 +102,7 @@ export interface TextBox {
 }
 
 /** 段落的项目符号（已经测好宽度） */
-export interface Bullet { text: string; style: RunStyle; x: number; width: number; family: string; face?: FontFace }
+export interface Bullet { text: string; style: RunStyle; x: number; width: number; family: string; face?: FontFace; image?: string }
 
 /** 排好的一段 */
 export interface ParagraphLayout { lines: Line[]; spcBef: number; spcAft: number; lineSpc: { pct?: number; pts?: number }; algn: string; bullet?: Bullet; uid?: string; }
