@@ -2,28 +2,47 @@
 import { attr, child } from '../../io/xml';
 import { css } from '../../model/color';
 import { n2 } from '../../common/svg';
-import { cpart, label, markerSvg, textStyle } from '../draw';
-import { sideGap, type TextWidth } from '../layout';
+import { cpart, hasCjk, label, markerSvg, textStyle } from '../draw';
+import { RADAR_DY, radarLegendBand, radarMarginX, radarMarginY, sideGap, type TextWidth } from '../layout';
 import { axesOf } from '../axis';
-import type { AxisInfo, Plot, TextStyle } from '../model';
+import type { AxisInfo, ChartContext, Plot, Rect, TextStyle } from '../model';
 import type { ChartType } from '../chart-type';
 
-/** 雷达图：分类沿圆周均匀分布，从正上方顺时针；网格是多边形 */
-function renderRadar(p: Plot, A: AxisInfo, catStyle: TextStyle, catDeleted: boolean, tw: TextWidth, left: number, top: number, right: number, bottom: number): string {
+interface RadarGeo { cx: number; cy: number; r: number }
+
+/**
+ * 外接圆的圆心和半径。没有标题、没有手动布局、图例在上面或下面（或没有）时按 PowerPoint 的规则（layout.ts）；
+ * 其它情况按多边形顶点实际伸出的范围在给定区域里留出标签空间
+ */
+function geometry(p: Plot, catStyle: TextStyle, catDeleted: boolean, tw: TextWidth, a: Rect, ctx: ChartContext): RadarGeo {
   const cats = p.series[0]?.cats ?? [];
-  const n = Math.max(1, ...p.series.map((s) => s.vals.length));
-  const maxW = catDeleted ? 0 : Math.max(0, ...cats.map((c) => tw(c, catStyle.size)));
-  // 标签和图形之间的间隙：和坐标轴标签同一规律（0.8 倍字号）
-  const gap = sideGap(catStyle.size);
-  // 按多边形顶点实际伸出的范围留标签空间（五边形左右顶点只到半径的 0.951 倍）
+  const s = catStyle.size;
+  const maxW = catDeleted ? 0 : Math.max(0, ...cats.map((c) => tw(c, s)));
+  if (!ctx.hasTitle && !ctx.manual && (!ctx.legendPos || ctx.legendPos === 't' || ctx.legendPos === 'b')) {
+    const { w, h } = ctx.box;
+    const top = ctx.legendPos === 't' ? radarLegendBand(s) : 0, bottom = h - (ctx.legendPos === 'b' ? radarLegendBand(s) : 0);
+    const d = Math.min(w - 2 * radarMarginX(maxW, s), bottom - top - 2 * radarMarginY(s, cats.some(hasCjk)));
+    return { cx: w / 2, cy: (top + bottom) / 2 + RADAR_DY, r: Math.max(1, d / 2) };
+  }
+  const n = Math.max(1, ...p.series.map((x) => x.vals.length));
+  // 标签和图形之间的间隙：和坐标轴标签同一规律（0.8 倍字号）；按多边形顶点实际伸出的范围留标签空间（五边形左右顶点只到半径的 0.951 倍）
+  const gap = sideGap(s);
   let sMax = 0, cMax = 0;
   for (let i = 0; i < n; i++) {
-    const a = (Math.PI * 2 * i) / n;
-    sMax = Math.max(sMax, Math.abs(Math.sin(a)));
-    cMax = Math.max(cMax, Math.abs(Math.cos(a)));
+    const ang = (Math.PI * 2 * i) / n;
+    sMax = Math.max(sMax, Math.abs(Math.sin(ang)));
+    cMax = Math.max(cMax, Math.abs(Math.cos(ang)));
   }
-  const r = Math.max(1, Math.min(((right - left) / 2 - maxW - gap) / (sMax || 1), ((bottom - top) / 2 - catStyle.size * 1.2 - gap) / (cMax || 1)));
-  const cx = (left + right) / 2, cy = (top + bottom) / 2;
+  const r = Math.max(1, Math.min(((a.right - a.left) / 2 - maxW - gap) / (sMax || 1), ((a.bottom - a.top) / 2 - s * 1.2 - gap) / (cMax || 1)));
+  return { cx: (a.left + a.right) / 2, cy: (a.top + a.bottom) / 2, r };
+}
+
+/** 雷达图：分类沿圆周均匀分布，从正上方顺时针；网格是多边形 */
+function renderRadar(p: Plot, A: AxisInfo, catStyle: TextStyle, catDeleted: boolean, tw: TextWidth, geo: RadarGeo): string {
+  const cats = p.series[0]?.cats ?? [];
+  const n = Math.max(1, ...p.series.map((s) => s.vals.length));
+  const gap = sideGap(catStyle.size);
+  const { cx, cy, r } = geo;
   const at = (i: number, f: number): [number, number] => {
     const a = (Math.PI * 2 * i) / n;
     return [cx + r * f * Math.sin(a), cy - r * f * Math.cos(a)];
@@ -80,6 +99,7 @@ export const radarType: ChartType = {
     let vmin = 0, vmax = 0;
     for (const s of p.series) for (const v of s.vals) if (v !== null) { vmax = Math.max(vmax, v); vmin = Math.min(vmin, v); }
     const rStyle = textStyle(child(catAxes[0], 'c:txPr'), ctx.colors, ctx.baseText);
-    return renderRadar(p, ctx.makeAxis(valAxes[0], vmin, vmax), rStyle, attr(child(catAxes[0], 'c:delete'), 'val') === '1', ctx.width, a.left, a.top, a.right, a.bottom);
+    const catDeleted = attr(child(catAxes[0], 'c:delete'), 'val') === '1';
+    return renderRadar(p, ctx.makeAxis(valAxes[0], vmin, vmax), rStyle, catDeleted, ctx.width, geometry(p, rStyle, catDeleted, ctx.width, a, ctx));
   },
 };

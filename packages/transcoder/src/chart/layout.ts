@@ -35,6 +35,19 @@ export const legendItemGap = (s: number) => 0.68 * s;
 export const legendLineKey = (s: number) => 1.75 * s;
 
 /**
+ * 雷达图（PowerPoint 实测，COM 读 96 组"尺寸 × 字号 × 分类数 × 标签"的绘图区）：外接圆直径
+ * D = min(图表宽 − 2·mx, 可用高 − 2·my)，mx = 最宽分类标签 + 0.26s + 8 磅，my = 1.63s + 7.7 磅（标签带中文；纯数字 1.32s + 7.7 磅）；
+ * 可用高是图表高减去上方（或下方）图例占的 1.03s + 8 磅；圆心横向在中线上，纵向在可用范围中点往下 2 磅（COM 读到的绘图区坐标
+ * 相对图表区差 4 磅，按导出图对齐过：charts-more 的雷达图圆心、半径误差 ≤ 0.5 像素）。和分类数无关。
+ * s 是分类标签字号（像素），返回像素
+ */
+const PT = 4 / 3;
+export const radarMarginX = (labelW: number, s: number) => labelW + 0.26 * s + 8 * PT;
+export const radarMarginY = (s: number, cjk: boolean) => (cjk ? 1.63 : 1.32) * s + 7.7 * PT;
+export const radarLegendBand = (s: number) => 1.03 * s + 8 * PT;
+export const RADAR_DY = 2 * PT;
+
+/**
  * 数值轴上最多放几个刻度标签：len 是轴长、s 是标签字号（同一单位）。竖轴 0.65·len/s + 2.9、横轴 0.26·len/s + 1.9
  * （COM 读 480 组"数据 × 图表大小 × 字号"的自动刻度拟合：竖轴 240/240、横轴 234/240 吻合）
  */
