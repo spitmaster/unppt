@@ -18,26 +18,33 @@ import { isColumnDepth3D, renderColumnDepth3D } from './cat3d-depth';
 import { lineType } from './types/line-area';
 import { extraValues, trendlines } from './extras';
 import { dataTableSize, readDataTable, renderDataTable } from './data-table';
+import { readAxisTitle, renderAxisTitles, reserveAxisTitles, type AxisTitles } from './axis-title';
 
-export interface CatEnv { colors: ColorContext; part: string; baseText: TextStyle; makeAxis: AxisMaker; tw: TextWidth; w: number; view?: View3D }
+export interface CatEnv { colors: ColorContext; part: string; baseText: TextStyle; makeAxis: AxisMaker; tw: TextWidth; w: number; view?: View3D; zh?: boolean }
 
-export function renderCategoryChart(plots: Plot[], plotArea: XEl | undefined, area: Rect, env: CatEnv, out: string[]): void {
+export function renderCategoryChart(plots: Plot[], plotArea: XEl | undefined, area0: Rect, env: CatEnv, out: string[]): void {
   const { colors, baseText, makeAxis, tw, w } = env;
   const { valAxes, catAxes } = axesOf(plotArea);
   const axisOf = (p: Plot) => valAxes.find((a) => p.axIds.includes(axId(a))) ?? valAxes[0];
   const catAx = catAxes.find((a) => plots[0].axIds.includes(axId(a))) ?? catAxes[0];
+  const horizontal = plots.some((p) => chartTypeOf(p.kind)?.horizontal?.(p) ?? false);
+  // 坐标轴标题：先让出位置（条形图的分类轴在左边、数值轴在下边）
+  const title = (ax: XEl | undefined) => readAxisTitle(ax, colors, baseText, env.zh ?? true);
+  const titles: AxisTitles = horizontal ? { left: title(catAx), bottom: title(axisOf(plots[0])) } : { left: title(axisOf(plots[0])), bottom: title(catAx) };
+  const area = reserveAxisTitles(area0, titles);
   // 三维柱形图（直角坐标轴）：墙、斜网格线、立方体，单独画
   if (isColumnDepth3D(plots, env.view)) {
     const serAx = plotArea?.children.find((c) => c.name === 'c:serAx');
     renderColumnDepth3D(plots[0], axisOf(plots[0]), catAx, serAx, area, { ...env, view: env.view! }, out);
+    renderAxisTitles(titles, area, area0, out);
     return;
   }
   if (isColumn3D(plots, env.view)) {
     renderColumn3D(plots[0], axisOf(plots[0]), catAx, area, { ...env, view: env.view! }, out);
+    renderAxisTitles(titles, area, area0, out);
     return;
   }
   const catStyle = textStyle(child(catAx, 'c:txPr'), colors, baseText);
-  const horizontal = plots.some((p) => chartTypeOf(p.kind)?.horizontal?.(p) ?? false);
   const cats = plots[0].series[0]?.cats ?? [];
   const nCat = Math.max(1, ...plots.flatMap((p) => p.series.map((s) => s.vals.length)));
 
@@ -210,6 +217,7 @@ export function renderCategoryChart(plots: Plot[], plotArea: XEl | undefined, ar
     out.push(tickMarks(prim.minor.map((t) => frame.valPx(prim.pos(t))), at, dir, outward(sides.val), prim.minorMark, prim.axisLine));
   }
   out.push(...axisText);
+  renderAxisTitles(titles, box, area0, out);
   if (dt) renderDataTable(dt, plots, cats, colors, tw, bottom, left, right, band, out);
   out.push(...labelsOut);
 }
