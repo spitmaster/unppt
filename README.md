@@ -3,7 +3,7 @@
 把 PowerPoint（.pptx）转成**一个自包含的 HTML 播放页**：双击就能播放，可以用 iframe 嵌入任意网页，也可以被外部页面或原生 App 控制翻页、播放动画。
 
 - **转码器**：纯函数，零依赖（不依赖任何 npm 库、WASM、原生库或外部程序），字节进、文件出，可以直接放进云函数；1GB 级的大文件也能在小内存下转码。
-- **播放器**：零依赖，约 13KB，内置在转码出来的 HTML 里；支持 Chrome、Firefox、移动端 WebView。
+- **播放器**：零依赖，约 45KB（gzip 后约 16KB），内置在转码出来的 HTML 里；支持 Chrome、Firefox、移动端 WebView。
 - **目标**：效果和 Microsoft PowerPoint 一致。开发时用本机 PowerPoint 的输出做自动比对评测。
 
 > 当前版本 0.0.1，处于早期开发阶段。需求和设计见 [SPEC.md](SPEC.md)。
