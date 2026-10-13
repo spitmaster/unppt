@@ -1,6 +1,8 @@
 /** 把排好的段落放进文本框：垂直对齐、分栏、行高和基线、水平对齐（含两端对齐），输出 SVG */
 import { n2 } from '../common/svg';
 import type { BodyProps } from './body';
+import { reflection } from '../effects/reflection';
+import { child } from '../io/xml';
 import { decorate } from './decorations';
 import { textEl } from './svg-text';
 import type { Atom, Line, ParagraphLayout, TextEnv } from './types';
@@ -37,6 +39,7 @@ export function emitParagraphs(
     const over: string[] = [];
     pl.lines.forEach((line, li) => {
       const lh = lineHeight(line, pl.lineSpc);
+      const lineStart = pParts.length;
       // 分栏：这一栏放不下就换到下一栏顶部
       if (numCol > 1 && col < numCol - 1 && y + lh > tIns + availH + 0.5 && y > tIns) { col++; y = tIns; }
       const colX = col * (contentW + spcCol);
@@ -93,6 +96,14 @@ export function emitParagraphs(
         } else if (txt.trim().length || s.underline || s.strike) pParts.push(textEl(txt, xs[s0], baseline + shift, st, seg[0].family, false, alias, env));
         decorate(seg, s, xs[s0], xs[k - 1] + seg[seg.length - 1].width - xs[s0], baseline + shift, st.size, under, over);
         s0 = k;
+      }
+      // 文字映像：实测紧贴文字底部，以基线为轴翻到下方
+      const refl = line.atoms.map((q) => child(q.style.effects, 'a:reflection')).find((r) => r);
+      if (refl && env.doc && pParts.length > lineStart) {
+        const bottom = baseline, height = line.ascent;
+        const content = `<g transform="translate(0 ${n2(height - bottom)})">${pParts.slice(lineStart).join('')}</g>`;
+        const mirrored = reflection(refl, height, env.doc, content);
+        if (mirrored) under.push(`<g transform="translate(0 ${n2(bottom - height)})">${mirrored}</g>`);
       }
       y += lh;
     });

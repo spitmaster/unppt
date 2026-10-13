@@ -95,7 +95,7 @@ export function runStyle(r: XEl, env: TextEnv, scale: number): RunStyle {
     latinEaCharset: EA_CHARSETS.has(attr(child(r, 'a:latin'), 'charset') ?? ''),
     panoseBold: panoseWeight(attr(child(r, 'a:ea'), 'panose') ?? attr(child(r, 'a:latin'), 'panose')) >= 7,
     outline: textOutline(child(r, 'a:ln'), env),
-    shadow: child(child(r, 'a:effectLst'), 'a:outerShdw'),
+    effects: child(r, 'a:effectLst')?.children.length ? child(r, 'a:effectLst') : undefined,
     grad: fill?.name === 'a:gradFill' ? fill : undefined,
     link: link || undefined,
   };
