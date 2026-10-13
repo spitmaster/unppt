@@ -324,4 +324,68 @@ export function shadowFilter(effectLst: XEl | undefined, ctx: ColorContext, doc:
   return id;
 }
 
+/**
+ * 形状效果 -> 一个 SVG filter：外阴影、发光画在形状下面，柔化边缘作用在形状本身，内阴影盖在形状上面。
+ * 映像（reflection）需要复制一份图形，由调用方处理。
+ */
+export function effectFilter(effectLst: XEl | undefined, ctx: ColorContext, doc: SvgDoc, w: number, h: number): string | undefined {
+  if (!effectLst) return undefined;
+  const px = (el: XEl | undefined, name: string) => (numAttr(el, name) ?? 0) / EMU_PER_PX;
+  const parts: string[] = [];
+  const under: string[] = [];
+  let src = 'SourceGraphic';
+  let pad = 0;
+  const soft = child(effectLst, 'a:softEdge');
+  if (soft) {
+    // 柔化边缘：边缘向内逐渐透明
+    const r = px(soft, 'rad');
+    // 先把透明度模糊（边缘处约 0.5），再拉陡：边缘处变成全透明、往里 rad 左右变成不透明（不用腐蚀，椭圆不会出棱角）
+    parts.push(`<feGaussianBlur in="SourceAlpha" stdDeviation="${n2(r * SOFT_BLUR)}"/><feComponentTransfer result="se"><feFuncA type="linear" slope="${SOFT_SLOPE}" intercept="${n2(-SOFT_CUT * SOFT_SLOPE)}"/></feComponentTransfer><feComposite in="SourceGraphic" in2="se" operator="in" result="soft"/>`);
+    src = 'soft';
+  }
+  const outer = child(effectLst, 'a:outerShdw');
+  if (outer) {
+    const c = colorIn(outer, ctx) ?? { r: 0, g: 0, b: 0, a: 0.4 };
+    const blur = px(outer, 'blurRad'), dist = px(outer, 'dist');
+    const dir = ((numAttr(outer, 'dir') ?? 0) / 60000) * Math.PI / 180;
+    pad = Math.max(pad, blur + dist);
+    parts.push(`<feGaussianBlur in="SourceAlpha" stdDeviation="${n2(blur / 2)}"/><feOffset dx="${n2(Math.cos(dir) * dist)}" dy="${n2(Math.sin(dir) * dist)}" result="osb"/><feFlood flood-color="${css(c)}" flood-opacity="${n2(c.a)}"/><feComposite in2="osb" operator="in" result="osh"/>`);
+    under.push('osh');
+  }
+  const glow = child(effectLst, 'a:glow');
+  if (glow) {
+    // 发光：形状外扩一圈再羽化
+    const r = px(glow, 'rad');
+    const c = colorIn(glow, ctx) ?? { r: 255, g: 255, b: 255, a: 1 };
+    pad = Math.max(pad, r);
+    parts.push(`<feMorphology in="SourceAlpha" operator="dilate" radius="${n2(r * GLOW_SPREAD)}"/><feGaussianBlur stdDeviation="${n2(r * GLOW_BLUR)}" result="gb"/><feFlood flood-color="${css(c)}" flood-opacity="${n2(c.a)}"/><feComposite in2="gb" operator="in" result="glw"/>`);
+    under.push('glw');
+  }
+  const inner = child(effectLst, 'a:innerShdw');
+  let top = '';
+  if (inner) {
+    // 实测：内阴影出现在 dir 指向的那一侧（往右下偏移时右边和下边变暗）
+    const c = colorIn(inner, ctx) ?? { r: 0, g: 0, b: 0, a: 0.5 };
+    const blur = px(inner, 'blurRad'), dist = px(inner, 'dist');
+    const dir = ((numAttr(inner, 'dir') ?? 0) / 60000) * Math.PI / 180;
+    parts.push(`<feComponentTransfer in="SourceAlpha" result="inv"><feFuncA type="table" tableValues="1 0"/></feComponentTransfer><feOffset in="inv" dx="${n2(-Math.cos(dir) * dist)}" dy="${n2(-Math.sin(dir) * dist)}"/><feGaussianBlur stdDeviation="${n2(blur / 2)}" result="ib"/><feFlood flood-color="${css(c)}" flood-opacity="${n2(c.a)}"/><feComposite in2="ib" operator="in"/><feComposite in2="SourceAlpha" operator="in" result="ish"/>`);
+    top = 'ish';
+  }
+  if (!parts.length) return undefined;
+  const merge = [...under, src, ...(top ? [top] : [])].map((r) => `<feMergeNode in="${r}"/>`).join('');
+  const id = doc.id('f');
+  // 滤镜区域用形状自己的坐标：按效果伸出的距离再加上线宽的余量（细长形状、线条按百分比算会被裁掉）
+  const m = pad + 20;
+  doc.addDef(`<filter id="${id}" filterUnits="userSpaceOnUse" x="${n2(-m)}" y="${n2(-m)}" width="${n2(w + 2 * m)}" height="${n2(h + 2 * m)}">${parts.join('')}<feMerge>${merge}</feMerge></filter>`);
+  return id;
+}
+
+/** 发光：外扩半径和羽化程度相对于 rad 的比例（按 PowerPoint 截图校准） */
+const GLOW_SPREAD = 0.4;
+const GLOW_BLUR = 0.25;
+/** 柔化边缘：模糊半径（相对 rad）、透明度从 SOFT_CUT 起按 SOFT_SLOPE 倍拉陡 */
+const SOFT_BLUR = 0.7;
+const SOFT_SLOPE = 4;
+const SOFT_CUT = 0.75;
+
 export { parseColorEl };

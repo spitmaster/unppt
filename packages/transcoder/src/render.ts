@@ -3,7 +3,7 @@
  * 顺序：背景 -> 母版元素 -> 版式元素 -> 幻灯片元素。占位符的属性沿 幻灯片 -> 版式 -> 母版 继承。
  */
 import { colorContext, matchPlaceholder, phInfo, EMU_PER_PX, type Layout, type Master, type Presentation, type SlideContext, type SlideRef } from './model';
-import { bgStyle, blipFilter, fillAttrs, findFillEl, parseFill, parseLine, shadowFilter, strokeAttrs, styleRef, type Fill, type ImageResolver } from './fill';
+import { bgStyle, blipFilter, effectFilter, fillAttrs, findFillEl, parseFill, parseLine, strokeAttrs, styleRef, type Fill, type ImageResolver } from './fill';
 import { buildGeometry, parseGeomXml, presetGeometry } from './geometry';
 import { colorIn } from './color';
 import type { FontLibrary } from './font';
@@ -188,8 +188,10 @@ class SlideRenderer {
     for (const g of children(child(prst ?? cust, 'a:avLst'), 'a:gd')) av.set(attr(g, 'name') ?? '', attr(g, 'fmla') ?? '');
     const geo = buildGeometry(def, box.w, box.h, av);
     const paths = geo.paths;
-    const effect = child(spPr, 'a:effectLst') ?? child(lSpPr, 'a:effectLst');
-    const filter = shadowFilter(effect, colors, this.doc);
+    // 效果：形状自己写的 > 版式 > 主题样式（effectRef）
+    const effRef = styleRef(child(style, 'a:effectRef'), ctx.theme.effectStyles, colors);
+    const effect = child(spPr, 'a:effectLst') ?? child(lSpPr, 'a:effectLst') ?? child(effRef.el, 'a:effectLst');
+    const filter = effectFilter(effect, effect === child(effRef.el, 'a:effectLst') ? effRef.ctx : colors, this.doc, box.w, box.h);
     for (const p of paths) {
       if (!p.d) continue;
       const fa = p.fill !== 'none' ? await fillAttrs(fill, this.doc, box.w, box.h, p.fill, this.images) : ' fill="none"';
@@ -219,7 +221,8 @@ class SlideRenderer {
       textBox, textEnv,
     );
     if (!geom && !text) return '';
-    return withUid(uid, `<g transform="${boxTransform(box)}">${geom}${text}</g>`);
+    const refl = reflection(child(effect, 'a:reflection'), box.h, this.doc, `${geom}${text}`);
+    return withUid(uid, `<g transform="${boxTransform(box)}">${refl}${geom}${text}</g>`);
   }
 
   async picture(el: XEl, ctx: SlideContext): Promise<string> {
@@ -232,7 +235,16 @@ class SlideRenderer {
     const blipFill = pc(el, 'blipFill');
     const fill = parseFill(blipFill ? { ...blipFill, name: 'a:blipFill' } : undefined, ctx.colors, ctx.part);
     const parts: string[] = [];
+    const mediaParts: string[] = [];
     let poster: string | undefined;
+    // 图片的外形（裁剪和边框都按它画）
+    const prstEl = child(spPr, 'a:prstGeom');
+    const custEl = child(spPr, 'a:custGeom');
+    const prst = attr(prstEl, 'prst') ?? 'rect';
+    const gdef = (custEl ? parseGeomXml(custEl) : presetGeometry(prst)) ?? presetGeometry('rect')!;
+    const av = new Map<string, string>();
+    for (const g of children(child(prstEl ?? custEl, 'a:avLst'), 'a:gd')) av.set(attr(g, 'name') ?? '', attr(g, 'fmla') ?? '');
+    const outlineD = buildGeometry(gdef, box.w, box.h, av).paths.map((p) => p.d).join('');
     if (fill && fill.kind === 'image') {
       const href = await this.images.image(ctx.part, fill.rid);
       poster = href;
@@ -240,14 +252,11 @@ class SlideRenderer {
         const sr = fill.srcRect ?? { l: 0, t: 0, r: 0, b: 0 };
         const iw = box.w / Math.max(0.0001, 1 - sr.l - sr.r);
         const ih = box.h / Math.max(0.0001, 1 - sr.t - sr.b);
-        const prst = attr(child(spPr, 'a:prstGeom'), 'prst') ?? 'rect';
         let clip = '';
-        const needsClip = prst !== 'rect' || sr.l < 0 || sr.t < 0 || sr.r < 0 || sr.b < 0 || sr.l > 0 || sr.t > 0 || sr.r > 0 || sr.b > 0;
+        const needsClip = prst !== 'rect' || !!custEl || sr.l !== 0 || sr.t !== 0 || sr.r !== 0 || sr.b !== 0;
         if (needsClip) {
-          const def = presetGeometry(prst) ?? presetGeometry('rect')!;
           const id = this.doc.id('c');
-          const d = buildGeometry(def, box.w, box.h).paths.map((p) => p.d).join('');
-          this.doc.addDef(`<clipPath id="${id}"><path d="${d}"/></clipPath>`);
+          this.doc.addDef(`<clipPath id="${id}"><path d="${outlineD}"/></clipPath>`);
           clip = ` clip-path="url(#${id})"`;
         }
         const fid = blipFilter(fill.effects, this.doc);
@@ -269,19 +278,35 @@ class SlideRenderer {
         const isAudio = !!audio && !video;
         if (isAudio) {
           // 音频：显示 PowerPoint 的图标，音频元素本身不显示，由时间线或点击图标控制播放
-          parts.push(`<foreignObject x="0" y="0" width="1" height="1"><audio xmlns="http://www.w3.org/1999/xhtml" data-media="1" src="${esc(href)}" preload="metadata" style="display:none"></audio></foreignObject>`);
+          mediaParts.push(`<foreignObject x="0" y="0" width="1" height="1"><audio xmlns="http://www.w3.org/1999/xhtml" data-media="1" src="${esc(href)}" preload="metadata" style="display:none"></audio></foreignObject>`);
         } else {
           // 视频：显示封面帧，不用浏览器自带控件，点击播放/暂停
-          parts.push(`<foreignObject x="0" y="0" width="${n2(box.w)}" height="${n2(box.h)}"><video xmlns="http://www.w3.org/1999/xhtml" data-media="1" src="${esc(href)}" playsinline="" preload="metadata"${poster ? ` poster="${esc(poster)}"` : ''} style="width:100%;height:100%;object-fit:fill"></video></foreignObject>`);
+          mediaParts.push(`<foreignObject x="0" y="0" width="${n2(box.w)}" height="${n2(box.h)}"><video xmlns="http://www.w3.org/1999/xhtml" data-media="1" src="${esc(href)}" playsinline="" preload="metadata"${poster ? ` poster="${esc(poster)}"` : ''} style="width:100%;height:100%;object-fit:fill"></video></foreignObject>`);
         }
         mediaLink = true;
       }
     }
-    const line = parseLine([child(spPr, 'a:ln')], [ctx.colors], ctx.part);
-    if (line) parts.push(`<rect width="${n2(box.w)}" height="${n2(box.h)}" fill="none"${strokeAttrs(line, this.doc, 'norm')}/>`);
-    if (!parts.length) return '';
-    let inner = parts.join('');
-    if (box.flipH || box.flipV) inner = `<g${flipTransform(box)}>${inner}</g>`;
+    const style = pc(el, 'style');
+    const lnStyle = styleRef(child(style, 'a:lnRef'), ctx.theme.lineStyles, ctx.colors);
+    const line = parseLine([lnStyle.el, child(spPr, 'a:ln')], [lnStyle.ctx, ctx.colors], ctx.part);
+    if (line) {
+      // 实测：图片的边框整个画在图片外侧（按线宽外扩半个线宽再描边），不压住图片
+      const lw = line.width;
+      const d = buildGeometry(gdef, box.w + lw, box.h + lw, av).paths.map((p) => p.d).join('');
+      parts.push(`<path d="${d}" transform="translate(${n2(-lw / 2)} ${n2(-lw / 2)})" fill="none"${strokeAttrs(line, this.doc, 'norm')}/>`);
+    }
+    if (!parts.length && !mediaParts.length) return '';
+    let visual = parts.join('');
+    if (visual && (box.flipH || box.flipV)) visual = `<g${flipTransform(box)}>${visual}</g>`;
+    // 效果（图片样式常见：映像、柔化边缘、阴影、发光）：图片自己写的 > 主题样式
+    const effRef = styleRef(child(style, 'a:effectRef'), ctx.theme.effectStyles, ctx.colors);
+    const effect = child(spPr, 'a:effectLst') ?? child(effRef.el, 'a:effectLst');
+    const refl = visual ? reflection(child(effect, 'a:reflection'), box.h, this.doc, visual) : '';
+    const filter = visual ? effectFilter(effect, effect === child(spPr, 'a:effectLst') ? ctx.colors : effRef.ctx, this.doc, box.w, box.h) : undefined;
+    if (filter) visual = `<g filter="url(#${filter})">${visual}</g>`;
+    let media = mediaParts.join('');
+    if (media && (box.flipH || box.flipV)) media = `<g${flipTransform(box)}>${media}</g>`;
+    const inner = refl + visual + media;
     // 媒体：点击切换播放（形状本身没有写点击动作时也加上）
     const clickable = mediaLink && !child(nvProps(el), 'a:hlinkClick') ? ' data-link="media" style="cursor:pointer"' : '';
     return withUid(uid, `<g${clickable} transform="${boxTransform(box)}">${inner}</g>`);
@@ -428,3 +453,24 @@ export async function renderSlide(ref: SlideRef, env: RenderEnv): Promise<Render
 }
 
 export type { SlideRenderer };
+
+/** 映像：整个形状（含文字）沿底边翻转到下方，按渐变逐渐透明，可带模糊 */
+function reflection(r: XEl | undefined, h: number, doc: SvgDoc, content: string): string {
+  if (!r || !content) return '';
+  const num = (name: string, def: number) => numAttr(r, name) ?? def;
+  const dist = num('dist', 0) / EMU_PER_PX;
+  const blur = num('blurRad', 0) / EMU_PER_PX;
+  const k = Math.abs(num('sy', -100000) / 100000) || 1;
+  const y0 = h + dist, y1 = h + dist + h * k;
+  const gid = doc.id('rg'), mid = doc.id('rm');
+  doc.addDef(`<linearGradient id="${gid}" gradientUnits="userSpaceOnUse" x1="0" y1="${n2(y0)}" x2="0" y2="${n2(y1)}">`
+    + `<stop offset="${n2(num('stPos', 0) / 100000)}" stop-color="#fff" stop-opacity="${n2(num('stA', 100000) / 100000)}"/>`
+    + `<stop offset="${n2(num('endPos', 100000) / 100000)}" stop-color="#fff" stop-opacity="${n2(num('endA', 0) / 100000)}"/></linearGradient>`);
+  doc.addDef(`<mask id="${mid}" maskUnits="userSpaceOnUse" x="-100000" y="-100000" width="200000" height="200000"><rect x="-100000" y="${n2(y0)}" width="200000" height="${n2(y1 - y0)}" fill="url(#${gid})"/></mask>`);
+  let fid = '';
+  if (blur > 0) {
+    fid = doc.id('rb');
+    doc.addDef(`<filter id="${fid}" x="-10%" y="-10%" width="120%" height="120%"><feGaussianBlur stdDeviation="${n2(blur / 2)}"/></filter>`);
+  }
+  return `<g mask="url(#${mid})" aria-hidden="true"><g transform="matrix(1 0 0 ${n2(-k)} 0 ${n2(y1)})"${fid ? ` filter="url(#${fid})"` : ''}>${content}</g></g>`;
+}
