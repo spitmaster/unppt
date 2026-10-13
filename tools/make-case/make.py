@@ -993,6 +993,24 @@ def anim_text_emphasis(app):
     return p
 
 
+
+def charts_bubble(app):
+    """气泡图：默认示例数据的气泡图、三维气泡图（PowerPoint 画成平面带渐变），以及改了气泡大小比例（50%）的气泡图"""
+    p = new_pres(app, window=True)
+    for kind, scale in ((15, None), (87, None), (15, 50)):
+        s = blank(p)
+        ch = s.Shapes.AddChart2(-1, kind, 80, 40, 800, 460)
+        if scale:
+            try:
+                ch.Chart.ChartGroups(1).BubbleScale = scale
+            except Exception as ex:
+                print("气泡大小比例", ex)
+        try:
+            ch.Chart.ChartData.Workbook.Close()
+        except Exception:
+            pass
+    return p
+
 def fills_patterns(app):
     """图案填充：多种预设图案、不同前景/背景色、不同位置（图案从幻灯片原点对齐），表格单元格的图案填充"""
     p = new_pres(app)
@@ -1572,7 +1590,7 @@ def table_vertical(app):
     return p
 
 
-CASES = [shapes_all, text_sizes, text_align, text_spacing, text_bullets, text_missing_font, shapes_basic, fills_lines, table_basic, group_rotate, anim_basic, anim_auto, charts_basic, pictures, smartart, text_effects, text_layout, table_merge, links, emf_images, anim_advanced, charts_labels, freeform_icons, media_audio, anim_trigger, wmf_images, anim_iterate, picture_transparent, charts_more, shape_effects, equations, anim_path, anim_emphasis, transitions, fills_patterns, text_decoration, anim_entrance, svg_images, charts_markers, hidden_slides, media_background, text_glow_reflection, text_tabs, text_picture_bullets, fills_texture, transition_morph, text_embedded_fonts, text_warp, anim_repeat, charts_sizes, slide_timings, lines_compound, table_diagonal, lines_gradient, fills_radial, fills_rect_gradient, shapes_3d, table_vertical, transitions_more, anim_sound, anim_build, anim_after, anim_text_emphasis]
+CASES = [shapes_all, text_sizes, text_align, text_spacing, text_bullets, text_missing_font, shapes_basic, fills_lines, table_basic, group_rotate, anim_basic, anim_auto, charts_basic, pictures, smartart, text_effects, text_layout, table_merge, links, emf_images, anim_advanced, charts_labels, freeform_icons, media_audio, anim_trigger, wmf_images, anim_iterate, picture_transparent, charts_more, shape_effects, equations, anim_path, anim_emphasis, transitions, fills_patterns, text_decoration, anim_entrance, svg_images, charts_markers, hidden_slides, media_background, text_glow_reflection, text_tabs, text_picture_bullets, fills_texture, transition_morph, text_embedded_fonts, text_warp, anim_repeat, charts_sizes, slide_timings, lines_compound, table_diagonal, lines_gradient, fills_radial, fills_rect_gradient, shapes_3d, table_vertical, transitions_more, anim_sound, anim_build, anim_after, anim_text_emphasis, charts_bubble]
 
 
 def main():

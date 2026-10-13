@@ -7,11 +7,11 @@ import { formatNumber } from './format';
 import type { AxisInfo, AxisMaker, TextStyle } from './model';
 
 /** 坐标轴刻度：按 Excel 的习惯取整（最大值留约 5% 余量，单位取 1/2/5 × 10^n） */
-export function niceScale(min: number, max: number, fixedMin?: number, fixedMax?: number, fixedUnit?: number) {
+export function niceScale(min: number, max: number, fixedMin?: number, fixedMax?: number, fixedUnit?: number, margin = 0.05) {
   let lo = fixedMin ?? (min >= 0 ? 0 : min);
   let hi = fixedMax ?? max;
   if (hi === lo) hi = lo + 1;
-  const span = (fixedMax ?? (hi + (hi - lo) * 0.05)) - lo;
+  const span = (fixedMax ?? (hi + (hi - lo) * margin)) - lo;
   let unit = fixedUnit ?? 0;
   if (!unit) {
     const mag = Math.pow(10, Math.floor(Math.log10(span)));
@@ -20,7 +20,7 @@ export function niceScale(min: number, max: number, fixedMin?: number, fixedMax?
       if (span / unit <= 10) break;
     }
   }
-  if (fixedMax === undefined) hi = Math.ceil((hi + (hi - lo) * 0.05) / unit) * unit;
+  if (fixedMax === undefined) hi = Math.ceil(Math.round(((hi + (hi - lo) * margin) / unit) * 1e9) / 1e9) * unit;
   if (fixedMin === undefined && lo < 0) lo = Math.floor(lo / unit) * unit;
   return { lo, hi, unit };
 }
@@ -37,9 +37,9 @@ export function axesOf(plotArea: XEl | undefined): { valAxes: XEl[]; catAxes: XE
 export const axId = (a: XEl | undefined) => attr(child(a, 'c:axId'), 'val') ?? '';
 
 export function axisMaker(colors: ColorContext, baseText: TextStyle, part: string): AxisMaker {
-  return (ax, vmin, vmax, pct): AxisInfo => {
+  return (ax, vmin, vmax, pct, margin): AxisInfo => {
     const scaling = child(ax, 'c:scaling');
-    const sc = niceScale(vmin, vmax, numAttr(child(scaling, 'c:min'), 'val'), numAttr(child(scaling, 'c:max'), 'val'), numAttr(child(ax, 'c:majorUnit'), 'val'));
+    const sc = niceScale(vmin, vmax, numAttr(child(scaling, 'c:min'), 'val'), numAttr(child(scaling, 'c:max'), 'val'), numAttr(child(ax, 'c:majorUnit'), 'val'), margin);
     const fmt = attr(child(ax, 'c:numFmt'), 'formatCode') ?? (pct ? '0%' : 'General');
     const ticks: number[] = [];
     for (let v = sc.lo; v <= sc.hi + sc.unit * 1e-6; v += sc.unit) ticks.push(Math.round(v / sc.unit) * sc.unit);
