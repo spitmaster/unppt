@@ -6,7 +6,7 @@
  * 元素本身的填充和边框随第一个字出现。
  */
 import type { AnimAction } from '../../../format/src/index';
-import { animEffect } from './effects/effects';
+import { animEffect, effectKeyframes } from './effects/effects';
 
 /** 播放时需要的管理能力：登记正在播的动画、登记翻页时要清理的事、幻灯片尺寸 */
 export interface AnimHost {
@@ -102,7 +102,7 @@ export class TextUnits {
           ? [{ fillOpacity: o0, strokeOpacity: o0 }, { fillOpacity: o0, strokeOpacity: o0, offset: 0.999 }, { fillOpacity: o1, strokeOpacity: o1 }]
           : [{ fillOpacity: o0, strokeOpacity: o0 }, { fillOpacity: o1, strokeOpacity: o1 }];
       } else {
-        ({ frames, easing } = effect.keyframes(a, u, host.slideW, host.slideH));
+        ({ frames, easing } = effectKeyframes(a, u, host.slideW, host.slideH));
       }
       const anim = u.animate(frames, { duration: Math.max(1, a.dur), delay: a.delay + i * a.iterate!.gap, easing, fill: show ? 'backwards' : 'forwards' });
       anims.push(anim);

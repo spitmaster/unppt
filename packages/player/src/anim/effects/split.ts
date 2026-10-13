@@ -1,6 +1,6 @@
 /** 劈裂：竖向 / 横向，向外（从中间往两边展开）或向内（从两边往中间合拢） */
 import { reversible, type AnimEffect } from './anim-effect';
-import { polygon, sample } from './clip';
+import { polygon, sample } from '../../clip';
 
 export const split: AnimEffect = {
   name: 'split',

@@ -86,7 +86,8 @@ npm test                                              # 单元测试
 .venv/Scripts/python tools/compare/offsets.py 编号          # 逐行位置偏差（数字）
 .venv/Scripts/python tools/check-player.py [firefox]        # 播放器端到端测试
 .venv/Scripts/python tools/powerpoint/transitions.py capture FadeSmoothly,PushLeft  # 放映截图
-.venv/Scripts/python tools/powerpoint/transitions.py compare                        # 切换逐帧对照
+.venv/Scripts/python tools/powerpoint/transitions.py capture-anim Fly:Left,Exit:Fade  # 动画放映截图
+.venv/Scripts/python tools/powerpoint/transitions.py compare                        # 切换/动画逐帧对照
 ```
 
 新增或修改测试用例：`tools/make-case/make.py` 加函数 → `make.py 用例名` → `tools/powerpoint/export.py run --set testcases --only 用例名`。

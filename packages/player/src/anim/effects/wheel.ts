@@ -1,6 +1,6 @@
 /** 轮子：从 12 点方向顺时针扫开，轮辐数由 variant 给出 */
 import { reversible, type AnimEffect } from './anim-effect';
-import { sample, wedges } from './clip';
+import { sample, wedges } from '../../clip';
 
 export const wheel: AnimEffect = {
   name: 'wheel',

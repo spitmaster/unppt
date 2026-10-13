@@ -1,6 +1,7 @@
 /** 单个动画效果（p:par 里的一个效果节点）-> AnimAction：效果类型、方向、时长、延迟、终态、逐字 */
 import type { AnimAction, AnimEffect } from '../../../format/src/index';
 import { attr, child, findAll, numAttr, type XEl } from '../io/xml';
+import { compileBehaviors } from './behaviors';
 import { finalState, transformTimeline, type AnimContext } from './emphasis';
 import { delayOf } from './timing-util';
 
@@ -82,6 +83,8 @@ export function effectAction(eff: XEl, base: number, ctx: AnimContext): AnimActi
     ...(variant ? { variant } : {}),
     ...(repeat ? { repeat } : {}),
     ...(autoRev ? { autoRev } : {}),
+    // 进入、退出效果的具体行为（播放器按行为播放，更接近 PowerPoint）；出现（瞬间）不需要
+    ...(dir !== 'emph' && effect !== 'appear' ? compileBehaviors(cTn) ?? {} : {}),
   };
 }
 

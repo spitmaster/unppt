@@ -1,21 +1,11 @@
 /**
- * 图块类切换（溶解、随机线条、棋盘、百叶窗、梳理）的公共工具：每帧把露出的矩形拼成一个 clip-path 多边形。
- * 矩形之间用来回走两遍的零宽连线串起来（面积为零，不影响填充），坐标用百分比。
+ * 图块类切换（溶解、随机线条、棋盘、百叶窗、梳理）的公共工具：每帧把露出的矩形拼成一个 clip-path 多边形
+ * （拼法见 ../clip.ts 的 rectsPolygon），坐标用百分比。
  */
+import { rectsPolygon, type Rect } from '../clip';
 import { driven } from './drive';
 
-/** [左, 上, 右, 下]，单位 %（相对页面） */
-export type Rect = [number, number, number, number];
-
-const f = (v: number) => `${Math.round(v * 100) / 100}%`;
-
-export function rectsPolygon(rects: Rect[]): string {
-  if (!rects.length) return 'polygon(0 0,0 0,0 0)';
-  const pts: string[] = [];
-  for (const [x0, y0, x1, y1] of rects) pts.push(`${f(x0)} ${f(y0)}`, `${f(x1)} ${f(y0)}`, `${f(x1)} ${f(y1)}`, `${f(x0)} ${f(y1)}`, `${f(x0)} ${f(y0)}`);
-  for (let i = rects.length - 2; i >= 0; i--) pts.push(`${f(rects[i][0])} ${f(rects[i][1])}`);
-  return `polygon(${pts.join(',')})`;
-}
+export type { Rect } from '../clip';
 
 /** 同一行里相邻的格子合成一个矩形（少画很多点）：on[r][c] 为真的格子，格子大小 cw x ch（%） */
 export function gridRects(on: (r: number, c: number) => boolean, rows: number, cols: number, cw: number, ch: number): Rect[] {

@@ -121,7 +121,7 @@ window.unppt.on('change', (s) => { /* ... */ });
 | `python tools/powerpoint/export.py run [--set testcases]` | 用 PowerPoint 导出参考图（标准答案） |
 | `python tools/compare/run.py --set testcases\|daily\|all` | 转码、截图、和 PowerPoint 比对、出报告 |
 | `python tools/check-player.py [chromium\|firefox]` | 播放器端到端测试（跨域 iframe、原生桥接等） |
-| `python tools/powerpoint/transitions.py capture 名字,... / compare` | 页面切换对照：PowerPoint 放映逐帧截图，和播放器同一时刻的画面比较 |
+| `python tools/powerpoint/transitions.py capture 名字,... / capture-anim 名字,... / compare` | 页面切换、动画对照：PowerPoint 放映逐帧截图，和播放器同一时刻的画面比较 |
 
 开发工具需要 Windows + PowerPoint + Python（`pip install pywin32 numpy pillow playwright fonttools`）。
 

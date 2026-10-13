@@ -81,6 +81,41 @@ export interface AnimAction {
   repeat?: number;
   /** 播完再倒着播回去（自动翻转）：结束时回到效果开始前的样子 */
   autoRev?: boolean;
+  /**
+   * 进入/退出效果在 PowerPoint 里的具体行为（有它时播放器按行为播放，不看 effect/from/variant）。
+   * 时间都在这个效果里算（毫秒）；accel/decel 是整个效果的加速、减速比例
+   */
+  behaviors?: AnimBehavior[];
+  accel?: number;
+  decel?: number;
+}
+
+/**
+ * 一个动画行为（PowerPoint 的 p:anim / p:animScale / p:animRot / p:animEffect）：在 [delay, delay+dur] 里按关键帧改变一个属性。
+ * 属性：x、y 是元素中心的位置，w、h 是宽高（都是幻灯片宽高的比例）；sx、sy 是再乘上的缩放倍数；
+ * r 是在原角度上加的旋转（度）；o 是不透明度；
+ * reveal 是显现滤镜 filter：进入时按滤镜露出，退出（out）时被隐去的部分按同一个滤镜长大
+ */
+export interface AnimBehavior {
+  prop: 'x' | 'y' | 'w' | 'h' | 'sx' | 'sy' | 'r' | 'o' | 'reveal';
+  delay: number;
+  dur: number;
+  /**
+   * 关键帧 [时间 0~1, 值, 公式?]。值是数字或 PowerPoint 公式（#ppt_x、#ppt_y、#ppt_w、#ppt_h 是元素原来的位置和大小，
+   * 如 "1+#ppt_h/2"）；有公式时，这一段插值出来的数代入公式里的 $
+   */
+  keys?: [number, number | string, string?][];
+  /** reveal 的滤镜，PowerPoint 的写法：wipe(down)、barn(inVertical)、circle(in)、wheel(4)、blinds(horizontal)…… */
+  filter?: string;
+  out?: boolean;
+  /** 时间变换：加速、减速比例；tmFilter 是 [时间, 进度] 折线；往返；重复次数 */
+  accel?: number;
+  decel?: number;
+  tmFilter?: [number, number][];
+  autoRev?: boolean;
+  repeat?: number;
+  /** 离散变化（到时间直接跳到下一个关键帧的值） */
+  discrete?: boolean;
 }
 
 export interface AnimTarget {
