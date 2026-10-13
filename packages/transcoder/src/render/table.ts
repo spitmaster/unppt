@@ -34,7 +34,7 @@ function partStyle(part: XEl | undefined, colors: ColorContext, ctx: SlideContex
     s.fill = parseFill(theme.fillStyles[idx - 1], { ...colors, placeholder: c }, ctx.part) ?? (c ? { kind: 'solid', color: c } : undefined);
   }
   const bdr = child(tc, 'a:tcBdr');
-  for (const side of ['left', 'right', 'top', 'bottom', 'insideH', 'insideV']) {
+  for (const side of ['left', 'right', 'top', 'bottom', 'insideH', 'insideV', 'tl2br', 'tr2bl']) {
     const b = child(bdr, `a:${side}`);
     if (!b) continue;
     const ln = child(b, 'a:ln');
@@ -175,6 +175,9 @@ export async function renderTable(tbl: XEl | undefined, origin: { x: number; y: 
     seg(bottom, x, y + h, x + w, y + h);
     seg(left, x, y, x, y + h);
     seg(right, x + w, y, x + w, y + h);
+    // 斜线表头：左上到右下、左下到右上
+    seg(side('a:lnTlToBr', sb.tl2br), x, y, x + w, y + h);
+    seg(side('a:lnBlToTr', sb.tr2bl), x, y + h, x + w, y);
   }
   return fills.join('') + borders.join('') + texts.join('');
 }
