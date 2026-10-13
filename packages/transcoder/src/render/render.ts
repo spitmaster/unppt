@@ -4,19 +4,16 @@
  */
 import { colorContext, matchPlaceholder, phInfo, type Layout, type Master, type SlideContext, type SlideRef } from '../model/model';
 import { bgStyle, fillAttrs, findFillEl, parseFill, styleRef, type Fill, type ImageResolver } from '../style/fill';
-import { blipFilter } from '../style/blip';
-import { parseLine, strokeAttrs } from '../style/line';
-import { effectFilter } from '../effects/effect-filter';
-import { reflection } from '../effects/reflection';
-import { buildGeometry, parseGeomXml, presetGeometry } from '../geometry/geometry';
-import { colorIn } from '../model/color';
 import { linkAttr } from '../common/links';
-import { esc, n2, SvgDoc } from '../common/svg';
-import { renderText, type StyleChain, type TextEnv } from '../text/text';
+import { SvgDoc } from '../common/svg';
+import { type StyleChain } from '../text/text';
 import { attr, child, children, expandAlternate, numAttr, path, type XEl } from '../io/xml';
-import { boxTransform, flipTransform, nvProps, pc, px, readXfrm, withUid } from './box';
+import { boxTransform, nvProps, pc, readXfrm, withUid } from './box';
 import type { RenderEnv } from './env';
-import type { FrameRenderer } from './frames/frame-handler';
+import type { RenderContext } from './context';
+import { renderGroup } from './elements/group';
+import { renderPicture } from './elements/picture';
+import { renderShape } from './elements/shape';
 import { FRAME_HANDLERS } from './frames/frames';
 
 export type { RenderEnv };
@@ -29,7 +26,7 @@ export interface RenderedSlide {
   hidden: boolean;
 }
 
-class SlideRenderer implements FrameRenderer {
+class SlideRenderer implements RenderContext {
   doc: SvgDoc;
   images: ImageResolver;
 
@@ -98,195 +95,16 @@ class SlideRenderer implements FrameRenderer {
     return id && /^\d{1,10}$/.test(id) ? `s${id}` : undefined;
   }
 
-  async shape(el: XEl, ctx: SlideContext, groupFill?: Fill): Promise<string> {
-    const { layoutPh, masterPh, ph } = this.inherited(el, ctx);
-    // 母版、版式上的占位符本身不显示（只提供继承属性），日期/页脚/页码除外由幻灯片自己放
-    if (ph && !ctx.ownSlide) return '';
-    if (attr(nvProps(el), 'hidden') === '1') return '';
-    const spPr = pc(el, 'spPr');
-    const lSpPr = pc(layoutPh, 'spPr');
-    const mSpPr = pc(masterPh, 'spPr');
-    const box = readXfrm(child(spPr, 'a:xfrm')) ?? readXfrm(child(lSpPr, 'a:xfrm')) ?? readXfrm(child(mSpPr, 'a:xfrm'));
-    if (!box) return '';
-    const style = pc(el, 'style') ?? pc(layoutPh, 'style') ?? pc(masterPh, 'style');
-    const colors = ctx.colors;
-
-    // 填充
-    let fill: Fill | undefined;
-    for (const sp of [spPr, lSpPr, mSpPr]) {
-      fill = parseFill(findFillEl(sp), colors, ctx.part, groupFill);
-      if (fill) break;
-    }
-    if (!fill && style) {
-      const ref = styleRef(child(style, 'a:fillRef'), [], colors);
-      const idx = numAttr(child(style, 'a:fillRef'), 'idx') ?? 0;
-      const sEl = bgStyle(ctx.theme, idx);
-      fill = parseFill(sEl, ref.ctx, ctx.theme.part);
-    }
-    // 线条：主题样式 -> 母版 -> 版式 -> 形状
-    const lnRef = child(style, 'a:lnRef');
-    const lnStyle = styleRef(lnRef, ctx.theme.lineStyles, colors);
-    const line = parseLine(
-      [lnStyle.el, child(mSpPr, 'a:ln'), child(lSpPr, 'a:ln'), child(spPr, 'a:ln')],
-      [lnStyle.ctx, colors, colors, colors], ctx.part,
-    );
-
-    // 几何
-    const geomParts: string[] = [];
-    const prst = child(spPr, 'a:prstGeom') ?? child(lSpPr, 'a:prstGeom') ?? child(mSpPr, 'a:prstGeom');
-    const cust = child(spPr, 'a:custGeom');
-    let def = cust ? parseGeomXml(cust) : prst ? presetGeometry(attr(prst, 'prst') ?? 'rect') : presetGeometry('rect');
-    if (!def) {
-      this.env.pres.warn(`未支持的预设形状：${attr(prst, 'prst')}`);
-      def = presetGeometry('rect')!;
-    }
-    const av = new Map<string, string>();
-    for (const g of children(child(prst ?? cust, 'a:avLst'), 'a:gd')) av.set(attr(g, 'name') ?? '', attr(g, 'fmla') ?? '');
-    const geo = buildGeometry(def, box.w, box.h, av);
-    const paths = geo.paths;
-    // 效果：形状自己写的 > 版式 > 主题样式（effectRef）
-    const effRef = styleRef(child(style, 'a:effectRef'), ctx.theme.effectStyles, colors);
-    const effect = child(spPr, 'a:effectLst') ?? child(lSpPr, 'a:effectLst') ?? child(effRef.el, 'a:effectLst');
-    const filter = effectFilter(effect, effect === child(effRef.el, 'a:effectLst') ? effRef.ctx : colors, this.doc, box.w, box.h);
-    for (const p of paths) {
-      if (!p.d) continue;
-      const fa = p.fill !== 'none' ? await fillAttrs(fill, this.doc, box.w, box.h, p.fill, this.images) : ' fill="none"';
-      const sa = p.stroke ? strokeAttrs(line, this.doc, p.fill) : ' stroke="none"';
-      if (fa === ' fill="none"' && sa === ' stroke="none"') continue;
-      geomParts.push(`<path d="${p.d}"${fa}${sa}${p.d.split('M').length > 2 ? ' fill-rule="evenodd"' : ''}/>`);
-    }
-    let geom = geomParts.join('');
-    if (geom && (box.flipH || box.flipV)) geom = `<g${flipTransform(box)}>${geom}</g>`;
-    if (geom && filter) geom = `<g filter="url(#${filter})">${geom}</g>`;
-
-    // 文字
-    const uid = this.uidOf(el, ctx);
-    const txBody = pc(el, 'txBody');
-    const fontRef = child(style, 'a:fontRef');
-    const textEnv: TextEnv = {
-      colors, theme: ctx.theme, fonts: this.env.fonts, missingFonts: this.env.missingFonts,
-      fontRefColor: colorIn(fontRef, colors), uid, embed: this.env.embed, doc: this.doc,
-      rels: await this.env.pres.pkg.rels(ctx.part),
-    };
-    // SmartArt 的文字框有单独的位置（dsp:txXfrm）
-    const txXfrm = readXfrm(pc(el, 'txXfrm'));
-    const textBox = txXfrm ? { x: txXfrm.x - box.x, y: txXfrm.y - box.y, w: txXfrm.w, h: txXfrm.h } : geo.text;
-    const text = await renderText(
-      txBody, this.textChain(ctx, ph, layoutPh, masterPh),
-      [path(masterPh, 'p:txBody', 'a:bodyPr'), path(layoutPh, 'p:txBody', 'a:bodyPr')],
-      textBox, textEnv,
-    );
-    if (!geom && !text) return '';
-    const refl = reflection(child(effect, 'a:reflection'), box.h, this.doc, `${geom}${text}`);
-    return withUid(uid, `<g transform="${boxTransform(box)}">${refl}${geom}${text}</g>`);
+  shape(el: XEl, ctx: SlideContext, groupFill?: Fill): Promise<string> {
+    return renderShape(this, el, ctx, groupFill);
   }
 
-  async picture(el: XEl, ctx: SlideContext): Promise<string> {
-    const { layoutPh, masterPh, ph } = this.inherited(el, ctx);
-    if (ph && !ctx.ownSlide) return '';
-    const spPr = pc(el, 'spPr');
-    const box = readXfrm(child(spPr, 'a:xfrm')) ?? readXfrm(child(pc(layoutPh, 'spPr'), 'a:xfrm')) ?? readXfrm(child(pc(masterPh, 'spPr'), 'a:xfrm'));
-    if (!box) return '';
-    const uid = this.uidOf(el, ctx);
-    const blipFill = pc(el, 'blipFill');
-    const fill = parseFill(blipFill ? { ...blipFill, name: 'a:blipFill' } : undefined, ctx.colors, ctx.part);
-    const parts: string[] = [];
-    const mediaParts: string[] = [];
-    let poster: string | undefined;
-    // 图片的外形（裁剪和边框都按它画）
-    const prstEl = child(spPr, 'a:prstGeom');
-    const custEl = child(spPr, 'a:custGeom');
-    const prst = attr(prstEl, 'prst') ?? 'rect';
-    const gdef = (custEl ? parseGeomXml(custEl) : presetGeometry(prst)) ?? presetGeometry('rect')!;
-    const av = new Map<string, string>();
-    for (const g of children(child(prstEl ?? custEl, 'a:avLst'), 'a:gd')) av.set(attr(g, 'name') ?? '', attr(g, 'fmla') ?? '');
-    const outlineD = buildGeometry(gdef, box.w, box.h, av).paths.map((p) => p.d).join('');
-    if (fill && fill.kind === 'image') {
-      const href = await this.images.image(ctx.part, fill.rid);
-      poster = href;
-      if (href) {
-        const sr = fill.srcRect ?? { l: 0, t: 0, r: 0, b: 0 };
-        const iw = box.w / Math.max(0.0001, 1 - sr.l - sr.r);
-        const ih = box.h / Math.max(0.0001, 1 - sr.t - sr.b);
-        let clip = '';
-        const needsClip = prst !== 'rect' || !!custEl || sr.l !== 0 || sr.t !== 0 || sr.r !== 0 || sr.b !== 0;
-        if (needsClip) {
-          const id = this.doc.id('c');
-          this.doc.addDef(`<clipPath id="${id}"><path d="${outlineD}"/></clipPath>`);
-          clip = ` clip-path="url(#${id})"`;
-        }
-        const fid = blipFilter(fill.effects, this.doc);
-        parts.push(`<g${clip}><image href="${esc(href)}" x="${n2(-sr.l * iw)}" y="${n2(-sr.t * ih)}" width="${n2(iw)}" height="${n2(ih)}" preserveAspectRatio="none"${fill.alpha < 1 ? ` opacity="${n2(fill.alpha)}"` : ''}${fid ? ` filter="url(#${fid})"` : ''}/></g>`);
-      } else {
-        this.env.pres.warn('图片无法显示（格式不支持或缺失）');
-      }
-    }
-    // 视频 / 音频
-    let mediaLink = false;
-    const nvPr = path(pc(el, 'nvPicPr'), 'p:nvPr');
-    const video = child(nvPr, 'a:videoFile');
-    const audio = child(nvPr, 'a:audioFile');
-    const p14 = (path(nvPr, 'p:extLst')?.children ?? []).flatMap((e) => e.children).find((e) => e.name === 'p14:media');
-    if (video || audio || p14) {
-      const rid = attr(p14, 'r:embed') ?? attr(video ?? audio, 'r:link') ?? '';
-      const href = rid ? await this.env.media.media(ctx.part, rid) : undefined;
-      if (href) {
-        const isAudio = !!audio && !video;
-        if (isAudio) {
-          // 音频：显示 PowerPoint 的图标，音频元素本身不显示，由时间线或点击图标控制播放
-          mediaParts.push(`<foreignObject x="0" y="0" width="1" height="1"><audio xmlns="http://www.w3.org/1999/xhtml" data-media="1" src="${esc(href)}" preload="metadata" style="display:none"></audio></foreignObject>`);
-        } else {
-          // 视频：显示封面帧，不用浏览器自带控件，点击播放/暂停
-          mediaParts.push(`<foreignObject x="0" y="0" width="${n2(box.w)}" height="${n2(box.h)}"><video xmlns="http://www.w3.org/1999/xhtml" data-media="1" src="${esc(href)}" playsinline="" preload="metadata"${poster ? ` poster="${esc(poster)}"` : ''} style="width:100%;height:100%;object-fit:fill"></video></foreignObject>`);
-        }
-        mediaLink = true;
-      }
-    }
-    const style = pc(el, 'style');
-    const lnStyle = styleRef(child(style, 'a:lnRef'), ctx.theme.lineStyles, ctx.colors);
-    const line = parseLine([lnStyle.el, child(spPr, 'a:ln')], [lnStyle.ctx, ctx.colors], ctx.part);
-    if (line) {
-      // 实测：图片的边框整个画在图片外侧（按线宽外扩半个线宽再描边），不压住图片
-      const lw = line.width;
-      const d = buildGeometry(gdef, box.w + lw, box.h + lw, av).paths.map((p) => p.d).join('');
-      parts.push(`<path d="${d}" transform="translate(${n2(-lw / 2)} ${n2(-lw / 2)})" fill="none"${strokeAttrs(line, this.doc, 'norm')}/>`);
-    }
-    if (!parts.length && !mediaParts.length) return '';
-    let visual = parts.join('');
-    if (visual && (box.flipH || box.flipV)) visual = `<g${flipTransform(box)}>${visual}</g>`;
-    // 效果（图片样式常见：映像、柔化边缘、阴影、发光）：图片自己写的 > 主题样式
-    const effRef = styleRef(child(style, 'a:effectRef'), ctx.theme.effectStyles, ctx.colors);
-    const effect = child(spPr, 'a:effectLst') ?? child(effRef.el, 'a:effectLst');
-    const refl = visual ? reflection(child(effect, 'a:reflection'), box.h, this.doc, visual) : '';
-    const filter = visual ? effectFilter(effect, effect === child(spPr, 'a:effectLst') ? ctx.colors : effRef.ctx, this.doc, box.w, box.h) : undefined;
-    if (filter) visual = `<g filter="url(#${filter})">${visual}</g>`;
-    let media = mediaParts.join('');
-    if (media && (box.flipH || box.flipV)) media = `<g${flipTransform(box)}>${media}</g>`;
-    const inner = refl + visual + media;
-    // 媒体：点击切换播放（形状本身没有写点击动作时也加上）
-    const clickable = mediaLink && !child(nvProps(el), 'a:hlinkClick') ? ' data-link="media" style="cursor:pointer"' : '';
-    return withUid(uid, `<g${clickable} transform="${boxTransform(box)}">${inner}</g>`);
+  picture(el: XEl, ctx: SlideContext): Promise<string> {
+    return renderPicture(this, el, ctx);
   }
 
-  async group(el: XEl, ctx: SlideContext, parentFill?: Fill): Promise<string> {
-    const gp = pc(el, 'grpSpPr');
-    const xfrm = child(gp, 'a:xfrm');
-    const box = readXfrm(xfrm);
-    const chOff = child(xfrm, 'a:chOff');
-    const chExt = child(xfrm, 'a:chExt');
-    const groupFill = parseFill(findFillEl(gp), ctx.colors, ctx.part, parentFill) ?? parentFill;
-    const kids = el.children.filter((c) => !c.name.endsWith(':nvGrpSpPr') && !c.name.endsWith(':grpSpPr'));
-    const inner = await this.shapes(kids, ctx, groupFill);
-    if (!inner) return '';
-    const uid = this.uidOf(el, ctx);
-    if (!box) return withUid(uid, inner);
-    const cx = px(numAttr(chOff, 'x')), cy = px(numAttr(chOff, 'y'));
-    const cw = px(numAttr(chExt, 'cx')) || box.w, ch = px(numAttr(chExt, 'cy')) || box.h;
-    const sx = cw ? box.w / cw : 1, sy = ch ? box.h / ch : 1;
-    let t = boxTransform(box);
-    if (box.flipH || box.flipV) t += ` translate(${box.flipH ? n2(box.w) : 0} ${box.flipV ? n2(box.h) : 0}) scale(${box.flipH ? -1 : 1} ${box.flipV ? -1 : 1})`;
-    t += ` scale(${sx} ${sy}) translate(${n2(-cx)} ${n2(-cy)})`;
-    return withUid(uid, `<g transform="${t}">${inner}</g>`);
+  group(el: XEl, ctx: SlideContext, parentFill?: Fill): Promise<string> {
+    return renderGroup(this, el, ctx, parentFill);
   }
 
   async frame(el: XEl, ctx: SlideContext): Promise<string> {
