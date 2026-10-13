@@ -3,13 +3,14 @@ import type { SlideTransition } from '../../../format/src/index';
 import { circle } from './circle';
 import { cover } from './cover';
 import { fade } from './fade';
+import { morph } from './morph';
 import { pull } from './pull';
 import { push } from './push';
 import { split } from './split';
 import type { TransitionEffect } from './transition';
 import { wipe } from './wipe';
 
-const TRANSITIONS: readonly TransitionEffect[] = [fade, push, cover, pull, wipe, split, circle];
+const TRANSITIONS: readonly TransitionEffect[] = [fade, push, cover, pull, wipe, split, circle, morph];
 
 /**
  * 播放切换，结束后移除旧页面。返回切换动画（交给调用方统一管理，翻页时可以直接跳到结束）；

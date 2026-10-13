@@ -49,7 +49,7 @@
     "format": "unppt-deck", "version": 1, "generator": "unppt 0.0.1",
     "width": 1280, "height": 720,            // 幻灯片尺寸（像素，96dpi）
     "slides": [{
-      "svg": "<svg>…</svg>",                 // 这一页的静态内容，元素带 data-uid
+      "svg": "<svg>…</svg>",                 // 这一页的静态内容，元素带 data-uid（动画目标）和 data-name（对象名，平滑切换配对用）
       "steps": [                             // 每次点击执行的动作
         [{ "uid": "s5", "effect": "fade", "dir": "in", "dur": 500, "delay": 0 }]
       ],
@@ -229,6 +229,7 @@ unppt/
 | 纹理（平铺图片）：平铺单元 = 图片像素 × 96 / 图片 DPI（没写按 96）× a:tile 缩放，按对齐方式定位后加偏移 | fills-texture 用例（64 像素、75 DPI 的纹理周期 82 像素） |
 | 自动缩小（`fontScale`）同时缩小字间距（`spc`） | Retrospect 主题节标题页 |
 | WMF 里的文字常把字符集标成 0（西文），实际是生成机器的系统代码页（中文 GBK） | wmf-images 用例 |
+| 平滑切换（Morph，`p159:morph`，默认 2 秒）：前后两页里名字相同的对象配对（重名按顺序），从旧位置、旧大小变到新位置、新大小，颜色等变化表现为渐变；其余对象淡出、淡入 | transition-morph 用例（播放器中途截帧） |
 
 ---
 

@@ -1016,7 +1016,32 @@ def fills_texture(app):
     return p
 
 
-CASES = [shapes_all, text_sizes, text_align, text_spacing, text_bullets, text_missing_font, shapes_basic, fills_lines, table_basic, group_rotate, anim_basic, anim_auto, charts_basic, pictures, smartart, text_effects, text_layout, table_merge, links, emf_images, anim_advanced, charts_labels, freeform_icons, media_audio, anim_trigger, wmf_images, anim_iterate, picture_transparent, charts_more, shape_effects, equations, anim_path, anim_emphasis, transitions, fills_patterns, text_decoration, anim_entrance, svg_images, charts_markers, hidden_slides, media_background, text_glow_reflection, text_tabs, text_picture_bullets, fills_texture]
+def transition_morph(app):
+    """平滑切换：第 2 页里和第 1 页同名的形状移动、缩放、变色；各有一个只在本页出现的形状"""
+    from win32com.client import gencache
+    C = gencache.EnsureModule('{91493440-5A91-11CF-8700-00AA0060263B}', 0, 2, 12).constants
+    p = new_pres(app)
+    s1 = blank(p)
+    a = s1.Shapes.AddShape(9, 80, 80, 160, 160); a.Name = "圆"
+    b = s1.Shapes.AddShape(1, 600, 300, 200, 120); b.Name = "方块"
+    b.Fill.ForeColor.RGB = RGB(192, 0, 0)
+    t = s1.Shapes.AddTextbox(1, 80, 420, 500, 60); t.Name = "标题"
+    t.TextFrame.TextRange.Text = "平滑切换 Morph"
+    t.TextFrame.TextRange.Font.Size = 32
+    x = s1.Shapes.AddShape(5, 400, 60, 120, 80); x.Name = "只在第一页"
+    s2 = blank(p)
+    a2 = s2.Shapes.AddShape(9, 600, 100, 260, 260); a2.Name = "圆"
+    b2 = s2.Shapes.AddShape(1, 100, 320, 300, 160); b2.Name = "方块"
+    b2.Fill.ForeColor.RGB = RGB(0, 112, 192)
+    t2 = s2.Shapes.AddTextbox(1, 300, 40, 500, 60); t2.Name = "标题"
+    t2.TextFrame.TextRange.Text = "平滑切换 Morph"
+    t2.TextFrame.TextRange.Font.Size = 40
+    y = s2.Shapes.AddShape(4, 420, 400, 120, 80); y.Name = "只在第二页"
+    s2.SlideShowTransition.EntryEffect = C.ppEffectMorphByObject
+    return p
+
+
+CASES = [shapes_all, text_sizes, text_align, text_spacing, text_bullets, text_missing_font, shapes_basic, fills_lines, table_basic, group_rotate, anim_basic, anim_auto, charts_basic, pictures, smartart, text_effects, text_layout, table_merge, links, emf_images, anim_advanced, charts_labels, freeform_icons, media_audio, anim_trigger, wmf_images, anim_iterate, picture_transparent, charts_more, shape_effects, equations, anim_path, anim_emphasis, transitions, fills_patterns, text_decoration, anim_entrance, svg_images, charts_markers, hidden_slides, media_background, text_glow_reflection, text_tabs, text_picture_bullets, fills_texture, transition_morph]
 
 
 def main():

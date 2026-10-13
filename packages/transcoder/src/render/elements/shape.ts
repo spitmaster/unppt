@@ -92,5 +92,5 @@ export async function renderShape(r: RenderContext, el: XEl, ctx: SlideContext, 
   );
   if (!geom && !text) return '';
   const refl = reflection(child(effect, 'a:reflection'), box.h, r.doc, `${geom}${text}`);
-  return withUid(uid, `<g transform="${boxTransform(box)}">${refl}${geom}${text}</g>`);
+  return withUid(uid, `<g transform="${boxTransform(box)}">${refl}${geom}${text}</g>`, el);
 }

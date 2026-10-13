@@ -1,0 +1,146 @@
+{
+ "version": 7,
+ "slideWidthPt": 960.0,
+ "slideHeightPt": 540.0,
+ "imageWidth": 1280,
+ "imageHeight": 720,
+ "slides": [
+  {
+   "index": 0,
+   "hidden": false,
+   "shapes": [
+    {
+     "id": 2,
+     "name": "圆",
+     "type": 1,
+     "x": 80.0,
+     "y": 80.0,
+     "w": 160.0,
+     "h": 160.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 9
+    },
+    {
+     "id": 3,
+     "name": "方块",
+     "type": 1,
+     "x": 600.0,
+     "y": 300.0,
+     "w": 200.0,
+     "h": 120.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1
+    },
+    {
+     "id": 4,
+     "name": "标题",
+     "type": 17,
+     "x": 80.0,
+     "y": 420.0,
+     "w": 500.0,
+     "h": 46.045,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 10,
+       "text": "平滑切换 Morph",
+       "x": 87.2,
+       "y": 423.6,
+       "w": 229.755,
+       "h": 38.4
+      }
+     ]
+    },
+    {
+     "id": 5,
+     "name": "只在第一页",
+     "type": 1,
+     "x": 400.0,
+     "y": 60.0,
+     "w": 120.0,
+     "h": 80.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 5
+    }
+   ],
+   "effects": [],
+   "triggerHidden": [],
+   "steps": 0
+  },
+  {
+   "index": 1,
+   "hidden": false,
+   "shapes": [
+    {
+     "id": 2,
+     "name": "圆",
+     "type": 1,
+     "x": 600.0,
+     "y": 100.0,
+     "w": 260.0,
+     "h": 260.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 9
+    },
+    {
+     "id": 3,
+     "name": "方块",
+     "type": 1,
+     "x": 100.0,
+     "y": 320.0,
+     "w": 300.0,
+     "h": 160.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1
+    },
+    {
+     "id": 4,
+     "name": "标题",
+     "type": 17,
+     "x": 300.0,
+     "y": 40.0,
+     "w": 500.0,
+     "h": 55.739,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 10,
+       "text": "平滑切换 Morph",
+       "x": 307.2,
+       "y": 43.6,
+       "w": 287.005,
+       "h": 48.0
+      }
+     ]
+    },
+    {
+     "id": 5,
+     "name": "只在第二页",
+     "type": 1,
+     "x": 420.0,
+     "y": 400.0,
+     "w": 120.0,
+     "h": 80.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 4
+    }
+   ],
+   "effects": [],
+   "triggerHidden": [],
+   "steps": 0
+  }
+ ],
+ "ok": true
+}

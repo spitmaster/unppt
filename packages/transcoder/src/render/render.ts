@@ -120,7 +120,7 @@ class SlideRenderer implements RenderContext {
     }
     const out = await handler.render(gd, box, this, ctx);
     if (out.positioned) return out.svg;
-    return out.svg ? withUid(uid, `<g transform="${boxTransform(box)}">${out.svg}</g>`) : '';
+    return out.svg ? withUid(uid, `<g transform="${boxTransform(box)}">${out.svg}</g>`, el) : '';
   }
 
   async background(ctxs: { xml: XEl; ctx: SlideContext }[], w: number, h: number): Promise<string> {
