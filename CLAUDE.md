@@ -27,6 +27,9 @@ unppt：把 .pptx 转成静态产物（SVG + JSON + 资源），由一个可 ifr
 3. **纯自研**：第三方渲染项目只能在评测里作为对比，不能当依赖，也不能复制代码。
 4. **转码器是纯函数**：字节进、文件出，不读写磁盘、不联网；字体只接收字节。
 5. **不刷分**：自动优化时，只改产品代码来提高分数，不改评测工具、阈值或参考结果；需要改时停下来找人确认。
+6. **架构（SOLID）**：加新能力优先走扩展点（新文件 + 注册表一行），不往大文件、大 `switch` 里堆；模块只依赖下层和窄接口。扩展点和分层见 [docs/architecture.md](docs/architecture.md)，分层规则由 `scripts/check-deps.mjs` 在 `npm test` 里自动检查。
+7. **架构图随代码迭代**：改了模块结构、加了扩展点，**同一个提交**里更新 `docs/architecture.md` 的图和表。
+8. **重构不改行为**：纯重构前 `node scripts/golden.mjs save`，改完 `node scripts/golden.mjs check` 必须逐字节一致（播放器重构只允许"内嵌播放器"一项变化，并且 `tools/check-player.py` 在 Chrome、Firefox 都通过）。
 
 ---
 
@@ -66,7 +69,10 @@ unppt：把 .pptx 转成静态产物（SVG + JSON + 资源），由一个可 ifr
 ### 代码规范
 
 - 新功能先更新 SPEC.md，再动手；
-- 保持简单，不提前引入用不到的东西。
+- 保持简单，不提前引入用不到的东西；
+- 一个文件一个职责，超过约 300 行就考虑拆；`tsconfig` 开了 `noUnusedLocals` / `noUnusedParameters`，不留无用代码；
+- 实测得到的 PowerPoint 规则写进 SPEC 第 7 节，代码里的校准常数注明"实测"和依据；
+- 多人协作的约定见 [CONTRIBUTING.md](CONTRIBUTING.md)。
 
 ---
 
