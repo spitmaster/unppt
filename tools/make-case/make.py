@@ -907,7 +907,7 @@ def hidden_slides(app):
 
 
 def media_background(app):
-    """背景音乐：第 1 页自动开始，跨 3 页播放、循环直到停止，放映时隐藏图标"""
+    """背景音乐：跨 3 页播放、循环直到停止、剪裁掉开头 0.3 秒和结尾 0.2 秒，放映时隐藏图标"""
     tmp = TESTCASES.parent / ".cache" / "media"
     tmp.mkdir(parents=True, exist_ok=True)
     wav = tmp / "tone.wav"
@@ -921,6 +921,8 @@ def media_background(app):
     ps.HideWhileNotPlaying = -1
     ps.LoopUntilStopped = -1
     ps.StopAfterSlides = 3
+    a.MediaFormat.StartPoint = 300          # 剪裁：从 0.3 秒开始，结尾剪掉 0.2 秒
+    a.MediaFormat.EndPoint = a.MediaFormat.Length - 200
     for i in range(2, 5):
         s = blank(p)
         textbox(s, 60, 60, 600, 60, f"第 {i} 页", size=28)

@@ -11,12 +11,33 @@ export function mediaCommand(el: Element, cmd: MediaCmd, start?: number) {
   if (m) run(m, cmd, start);
 }
 
+/** 剪裁（秒）：data-trim-start 从开头剪掉，data-trim-end 从结尾剪掉 */
+const trimOf = (m: HTMLMediaElement) => ({ st: Number(m.dataset.trimStart) || 0, end: Number(m.dataset.trimEnd) || 0 });
+
+/** 第一次播放前挂上剪裁：播到剪裁终点就停（循环时回到剪裁起点） */
+function prepare(m: HTMLMediaElement) {
+  if (m.dataset.trimReady) return;
+  m.dataset.trimReady = '1';
+  const { st, end } = trimOf(m);
+  if (!st && !end) return;
+  m.addEventListener('timeupdate', () => {
+    // 循环时浏览器从 0 秒重新开始：拉回剪裁起点
+    if (st && m.currentTime < st - 0.05) { m.currentTime = st; return; }
+    if (!end || !m.duration || m.currentTime < m.duration - end) return;
+    if (m.loop) m.currentTime = st;
+    else m.pause();
+  });
+}
+
 function run(m: HTMLMediaElement, cmd: MediaCmd, start?: number) {
   try {
-    if (cmd === 'play') { if (start !== undefined) m.currentTime = start; void m.play().catch(() => {}); }
+    prepare(m);
+    const { st } = trimOf(m);
+    // playFrom(x) 的 x 从剪裁起点算；还没播过时也从剪裁起点开始
+    if (cmd === 'play') { if (start !== undefined || (st && m.currentTime < st)) m.currentTime = st + (start ?? 0); void m.play().catch(() => {}); }
     else if (cmd === 'pause') m.pause();
-    else if (cmd === 'stop') { m.pause(); m.currentTime = 0; }
-    else if (m.paused) void m.play().catch(() => {}); else m.pause();
+    else if (cmd === 'stop') { m.pause(); m.currentTime = st; }
+    else if (m.paused) { if (st && m.currentTime < st) m.currentTime = st; void m.play().catch(() => {}); } else m.pause();
   } catch { /* 浏览器可能阻止自动播放 */ }
 }
 

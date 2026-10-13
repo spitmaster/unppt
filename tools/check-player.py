@@ -226,6 +226,10 @@ def main():
             page10.evaluate(f"window.unppt.goto({k}, 0)")
             r10.append(page10.evaluate(outside))
         check(r10 == [[True], [True], [True], []], f"背景音乐跨页、循环、超出范围停止：{r10}")
+        page10.evaluate("window.unppt.goto(0, 0)")
+        page10.evaluate("window.unppt.next()")
+        t10 = page10.evaluate("(() => { const a = document.querySelector('audio'); return [a.dataset.trimStart, a.dataset.trimEnd, Math.round(a.currentTime * 100) / 100]; })()")
+        check(t10 == ['0.3', '0.2', 0.3], f"剪裁过的音频从剪裁起点开始：{t10}")
 
         # ---------------- 移动端视口
         mobile = {"is_mobile": True} if BROWSER != "firefox" else {}

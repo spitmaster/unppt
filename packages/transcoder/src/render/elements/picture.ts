@@ -7,7 +7,7 @@ import { effectFilter } from '../../effects/effect-filter';
 import { reflection } from '../../effects/reflection';
 import { buildGeometry, parseGeomXml, presetGeometry } from '../../geometry/geometry';
 import { esc, n2 } from '../../common/svg';
-import { attr, child, children, path, type XEl } from '../../io/xml';
+import { attr, child, children, numAttr, path, type XEl } from '../../io/xml';
 import { boxTransform, flipTransform, nvProps, pc, readXfrm, withUid } from '../box';
 import type { RenderContext } from '../context';
 
@@ -57,6 +57,10 @@ export async function renderPicture(r: RenderContext, el: XEl, ctx: SlideContext
   const video = child(nvPr, 'a:videoFile');
   const audio = child(nvPr, 'a:audioFile');
   const p14 = (path(nvPr, 'p:extLst')?.children ?? []).flatMap((e) => e.children).find((e) => e.name === 'p14:media');
+  // 剪裁（毫秒）：st 从开头剪掉、end 从结尾剪掉；写成秒交给播放器
+  const trimEl = child(p14, 'p14:trim');
+  const trimSt = (numAttr(trimEl, 'st') ?? 0) / 1000, trimEnd = (numAttr(trimEl, 'end') ?? 0) / 1000;
+  const trim = `${trimSt > 0 ? ` data-trim-start="${n2(trimSt)}"` : ''}${trimEnd > 0 ? ` data-trim-end="${n2(trimEnd)}"` : ''}`;
   if (video || audio || p14) {
     const rid = attr(p14, 'r:embed') ?? attr(video ?? audio, 'r:link') ?? '';
     const href = rid ? await r.env.media.media(ctx.part, rid) : undefined;
@@ -64,10 +68,10 @@ export async function renderPicture(r: RenderContext, el: XEl, ctx: SlideContext
       const isAudio = !!audio && !video;
       if (isAudio) {
         // 音频：显示 PowerPoint 的图标，音频元素本身不显示，由时间线或点击图标控制播放
-        mediaParts.push(`<foreignObject x="0" y="0" width="1" height="1"><audio xmlns="http://www.w3.org/1999/xhtml" data-media="1" src="${esc(href)}" preload="metadata" style="display:none"></audio></foreignObject>`);
+        mediaParts.push(`<foreignObject x="0" y="0" width="1" height="1"><audio xmlns="http://www.w3.org/1999/xhtml" data-media="1"${trim} src="${esc(href)}" preload="metadata" style="display:none"></audio></foreignObject>`);
       } else {
         // 视频：显示封面帧，不用浏览器自带控件，点击播放/暂停
-        mediaParts.push(`<foreignObject x="0" y="0" width="${n2(box.w)}" height="${n2(box.h)}"><video xmlns="http://www.w3.org/1999/xhtml" data-media="1" src="${esc(href)}" playsinline="" preload="metadata"${poster ? ` poster="${esc(poster)}"` : ''} style="width:100%;height:100%;object-fit:fill"></video></foreignObject>`);
+        mediaParts.push(`<foreignObject x="0" y="0" width="${n2(box.w)}" height="${n2(box.h)}"><video xmlns="http://www.w3.org/1999/xhtml" data-media="1"${trim} src="${esc(href)}" playsinline="" preload="metadata"${poster ? ` poster="${esc(poster)}"` : ''} style="width:100%;height:100%;object-fit:fill"></video></foreignObject>`);
       }
       mediaLink = true;
     }
