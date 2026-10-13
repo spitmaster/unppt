@@ -125,10 +125,16 @@ export interface AnimTarget {
   rotate?: number;
   /** 移动距离（像素，相对当前） */
   move?: [number, number];
-  /** 路径动画经过的点（像素，相对当前位置），最后一个点就是 move */
+  /** 路径动画经过的点（像素，相对当前位置），最后一个点就是 move；沿路径按长度匀速走 */
   path?: [number, number][];
-  /** 过程不是从头到尾直线变化的强调动画（脉冲、跷跷板等）：按时间采样的缩放和旋转（相对当前状态） */
-  keys?: { o: number; s: [number, number]; r: number }[];
+  /**
+   * 过程不是从头到尾匀速变化的强调动画（脉冲、跷跷板、带加减速的旋转等）：按时间采样的缩放、旋转（相对当前状态），
+   * a 是此刻的不透明度倍数（闪光灯、透明这类过程中变化、结束恢复的效果）
+   */
+  keys?: { o: number; s: [number, number]; r: number; a?: number }[];
+  /** 移动、路径、缩放旋转过渡的加速、减速比例（PowerPoint 的"平滑开始/平滑结束"） */
+  accel?: number;
+  decel?: number;
   /** 新的填充颜色 */
   fill?: string;
   /** 新的文字颜色 */

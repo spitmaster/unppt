@@ -2,7 +2,7 @@
 import type { AnimAction, AnimEffect } from '../../../format/src/index';
 import { attr, child, findAll, numAttr, type XEl } from '../io/xml';
 import { compileBehaviors } from './behaviors';
-import { finalState, transformTimeline, type AnimContext } from './emphasis';
+import { emphasisDuration, finalState, type AnimContext } from './emphasis';
 import { delayOf } from './timing-util';
 
 /** PowerPoint 的预设效果编号 -> 播放器的效果（没列出的进入/退出效果按淡入淡出） */
@@ -68,7 +68,7 @@ export function effectAction(eff: XEl, base: number, ctx: AnimContext): AnimActi
   if (effect === 'appear') dur = 0;
   const to = dir === 'emph' ? finalState(cTn, ctx) : undefined;
   // 往返、重复的行为实际时长比单段 dur 长
-  if (dir === 'emph') dur = Math.max(dur, transformTimeline(cTn).end);
+  if (dir === 'emph') dur = Math.max(dur, emphasisDuration(cTn));
   const iterate = iterateOf(cTn, dur);
   const variant = dir === 'emph' ? undefined : variantOf(id, effect, numAttr(cTn, 'presetSubtype'));
   // 重复：repeatCount 的单位是千分之一次，indefinite 是"直到下一次单击"
