@@ -457,7 +457,16 @@ export class Player {
     if (to.move || to.scale || to.rotate) {
       const from = this.transformOf(cur), end = this.transformOf(next);
       h.style.transform = end;
-      if (canAnimate) this.running.push(h.animate([{ transform: from }, { transform: end }], { duration: dur, delay, easing: 'ease-in-out', fill: 'backwards' }));
+      if (canAnimate && to.path && to.path.length > 2) {
+        // 沿路径移动：按累计长度分配关键帧，速度均匀，整体缓入缓出
+        const lens = [0];
+        for (let i = 1; i < to.path.length; i++) lens.push(lens[i - 1] + Math.hypot(to.path[i][0] - to.path[i - 1][0], to.path[i][1] - to.path[i - 1][1]));
+        const total = lens[lens.length - 1] || 1;
+        const frames = to.path.map((p, i) => ({ transform: this.transformOf({ ...next, tx: cur.tx + p[0], ty: cur.ty + p[1] }), offset: lens[i] / total }));
+        frames[0].transform = from;
+        frames[frames.length - 1].transform = end;
+        this.running.push(h.animate(frames, { duration: dur, delay, easing: 'ease-in-out', fill: 'backwards' }));
+      } else if (canAnimate) this.running.push(h.animate([{ transform: from }, { transform: end }], { duration: dur, delay, easing: 'ease-in-out', fill: 'backwards' }));
     }
     if (to.opacity !== undefined) {
       const from = h.style.opacity || '1';

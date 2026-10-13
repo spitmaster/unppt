@@ -56,6 +56,7 @@ def main():
     shutil.copy(ROOT / "examples/iframe-host.html", host_dir / "index.html")
     shutil.copy(ROOT / "packages/player/dist/host.js", host_dir / "host.js")
     subprocess.run(["node", "packages/transcoder/dist/cli.js", "convert", "testcases/anim-iterate.pptx", "-o", str(player_dir / "iterate.html"), "-q"], cwd=ROOT, check=True)
+    subprocess.run(["node", "packages/transcoder/dist/cli.js", "convert", "testcases/anim-path.pptx", "-o", str(player_dir / "path.html"), "-q"], cwd=ROOT, check=True)
     s1, player_url = serve(player_dir)
     s2, host_url = serve(host_dir)
 
@@ -130,6 +131,20 @@ def main():
         page4.wait_for_timeout(100)
         hidden = page4.locator("[data-uid].unppt-hide").count()
         check(hidden == 0, f"退回上一步后全部可见：{hidden}")
+
+        # ---------------- 5. 路径动画沿路径移动（第一个是闭合的圆形路径，终点回到原处）
+        page5 = b.new_page()
+        page5.goto(f"{player_url}/path.html")
+        page5.wait_for_function("window.unppt !== undefined")
+        page5.evaluate("window.unppt.next()")
+        page5.wait_for_timeout(700)
+        mid = page5.evaluate("""(() => { const el = document.querySelector('.unppt-slide [data-uid]');
+          const m = new DOMMatrix(getComputedStyle(el).transform); return [m.e, m.f]; })()""")
+        page5.wait_for_timeout(2500)
+        end = page5.evaluate("""(() => { const el = document.querySelector('.unppt-slide [data-uid]');
+          const m = new DOMMatrix(getComputedStyle(el).transform); return [m.e, m.f]; })()""")
+        check(abs(mid[0]) + abs(mid[1]) > 20, f"圆形路径播放中途离开了原位：{[round(v) for v in mid]}")
+        check(abs(end[0]) + abs(end[1]) < 2, f"圆形路径播完回到原位：{[round(v) for v in end]}")
 
         # ---------------- 移动端视口
         mobile = {"is_mobile": True} if BROWSER != "firefox" else {}

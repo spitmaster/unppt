@@ -1,0 +1,110 @@
+{
+ "version": 7,
+ "slideWidthPt": 960.0,
+ "slideHeightPt": 540.0,
+ "imageWidth": 1280,
+ "imageHeight": 720,
+ "slides": [
+  {
+   "index": 0,
+   "hidden": false,
+   "shapes": [
+    {
+     "id": 2,
+     "name": "Oval 1",
+     "type": 1,
+     "x": 60.0,
+     "y": 80.0,
+     "w": 70.0,
+     "h": 70.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 9
+    },
+    {
+     "id": 3,
+     "name": "Oval 2",
+     "type": 1,
+     "x": 280.0,
+     "y": 80.0,
+     "w": 70.0,
+     "h": 70.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 9
+    },
+    {
+     "id": 4,
+     "name": "Oval 3",
+     "type": 1,
+     "x": 500.0,
+     "y": 80.0,
+     "w": 70.0,
+     "h": 70.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 9
+    },
+    {
+     "id": 5,
+     "name": "Oval 4",
+     "type": 1,
+     "x": 720.0,
+     "y": 80.0,
+     "w": 70.0,
+     "h": 70.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 9
+    }
+   ],
+   "effects": [
+    {
+     "index": 1,
+     "type": 86,
+     "exit": false,
+     "trigger": 1,
+     "dur": 2.0,
+     "delay": 0.0,
+     "shapeId": 2,
+     "paragraph": 0
+    },
+    {
+     "index": 2,
+     "type": 127,
+     "exit": false,
+     "trigger": 1,
+     "dur": 2.0,
+     "delay": 0.0,
+     "shapeId": 3,
+     "paragraph": 0
+    },
+    {
+     "index": 3,
+     "type": 108,
+     "exit": false,
+     "trigger": 1,
+     "dur": 2.0,
+     "delay": 0.0,
+     "shapeId": 4,
+     "paragraph": 0
+    },
+    {
+     "index": 4,
+     "type": 147,
+     "exit": false,
+     "trigger": 1,
+     "dur": 2.0,
+     "delay": 0.0,
+     "shapeId": 5,
+     "paragraph": 0
+    }
+   ],
+   "triggerHidden": [],
+   "steps": 4,
+   "approxSteps": false,
+   "stepSource": "slideshow"
+  }
+ ],
+ "ok": true
+}
