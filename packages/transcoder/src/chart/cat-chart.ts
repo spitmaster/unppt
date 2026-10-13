@@ -56,6 +56,10 @@ export function renderCategoryChart(plots: Plot[], plotArea: XEl | undefined, ar
   const primRange = rangeOf(plots.filter((p) => !onSecondary(p)));
   const secRange = rangeOf(plots.filter(onSecondary));
   const catDeleted = attr(child(catAx, 'c:delete'), 'val') === '1';
+  // 底部分类标签带的高度、标签中心离轴的距离：带中文的标签和纯数字（日期等）不同（实测）
+  const cjk = cats.some((c) => /[\u2e80-\u9fff\uf900-\ufaff\uff00-\uffef]/.test(c));
+  const catH = (s: number) => (cjk ? catBand(s) : valBand(s));
+  const catC = (s: number) => (cjk ? catCenter(s) : valCenter(s));
   const catLabels = !catDeleted && tickLblPos(catAx) !== 'none';
   // 按数值轴的长度 len 算刻度并排出绘图区（len 不给时用默认刻度）
   const place = (len?: number) => {
@@ -86,8 +90,8 @@ export function renderCategoryChart(plots: Plot[], plotArea: XEl | undefined, ar
       if (sec && !sec.deleted) right = fromRight() - maxW(sec.labels, sec.style.size) - sideGap(sec.style.size);
       if (catLabels) {
         if (sides.catMid) bottom -= emptySidePad(catStyle.size);
-        else if (sides.cat === 'b') bottom -= catBand(catStyle.size);
-        else top += catBand(catStyle.size);
+        else if (sides.cat === 'b') bottom -= catH(catStyle.size);
+        else top += catH(catStyle.size);
       }
     } else {
       if (catLabels) {
@@ -104,8 +108,8 @@ export function renderCategoryChart(plots: Plot[], plotArea: XEl | undefined, ar
     // 分类标签落在坐标轴两端（面积图等 midCat）时，给首尾标签各留半个标签宽度
     const between = attr(child(primaryAx, 'c:crossBetween'), 'val') !== 'midCat';
     if (!between && !horizontal && catLabels && cats.length) {
-      left = Math.max(left, PAD + tw(cats[0], catStyle.size) / 2 - 4);
-      right = Math.min(right, w - PAD - tw(cats[cats.length - 1], catStyle.size) / 2 + 4);
+      left = Math.max(left, PAD + tw(cats[0], catStyle.size) / 2);
+      right = Math.min(right, w - PAD - tw(cats[cats.length - 1], catStyle.size) / 2);
     }
     return { prim, sec, left, top, right, bottom, sides, unit, edgeLeft, edgeRight, valLabels, valStyle, tickLabels, between };
   };
@@ -146,7 +150,7 @@ export function renderCategoryChart(plots: Plot[], plotArea: XEl | undefined, ar
     const edge = sides.catMid ? frame.valPx(prim.pos(sides.catCross)) : sides.cat === 'b' ? bottom : sides.cat === 't' ? top : sides.cat === 'l' ? left : right;
     cats.forEach((c, i) => {
       const at = frame.catPx(bandCenter(i));
-      if (!horizontal) out.push(label(c, at, sides.cat === 'b' ? edge + catCenter(catStyle.size) : edge - catCenter(catStyle.size), catStyle));
+      if (!horizontal) out.push(label(c, at, sides.cat === 'b' ? edge + catC(catStyle.size) : edge - catC(catStyle.size), catStyle));
       else out.push(sides.cat === 'l' ? label(c, edge - sideAnchor(catStyle.size), at, catStyle, 'end') : label(c, edge + sideAnchor(catStyle.size), at, catStyle, 'start'));
     });
   }
