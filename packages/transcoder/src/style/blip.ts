@@ -37,8 +37,9 @@ const f01 = (v: number) => (Math.round(v / 255 * 1000) / 1000).toString();
 
 /**
  * 透明色的容差：三个通道与目标色的差之和达到 255/CLR_CHANGE_GAIN 时完全不透明。
- * 实测 PowerPoint 是硬阈值（每个通道差不超过 1 才透明），但它在原图像素上抠完再缩放；
- * SVG 滤镜作用在缩放后的像素上，边缘混进了白色，硬阈值会留一圈亮边，所以这里用渐变近似。
+ * 实测 PowerPoint 是硬阈值（每个通道差不超过 1 才透明），但它在原图像素上抠完再缩放。
+ * PNG 已经在原图上抠（media/png-key.ts，见 fill.ts 的 blipImage）；这里只给做不了的图片（JPEG 等）近似：
+ * SVG 滤镜作用在缩放后的像素上，边缘混进了白色，硬阈值会留一圈亮边，所以用渐变近似。
  */
 const CLR_CHANGE_GAIN = 4;
 
