@@ -10,6 +10,7 @@ import { n2 } from '../common/svg';
 import { attr, child, type XEl } from '../io/xml';
 import type { Line } from '../style/line';
 import type { AxisInfo, Rect } from './model';
+import type { PixelGrid } from './pixel-grid';
 
 export type Side = 'l' | 'r' | 't' | 'b';
 const OPP: Record<Side, Side> = { l: 'r', r: 'l', t: 'b', b: 't' };
@@ -61,28 +62,32 @@ export function catMapping(b: Rect, horizontal: boolean, rev: boolean): { catPx(
     : { catPx: (d) => b.bottom - d, catSpan: (d, len) => [b.bottom - d - len, len] };
 }
 
-/** 一条网格线：柱形图是横线（v 是 y），条形图是竖线（v 是 x） */
-export function gridLine(v: number, line: Line | undefined, horizontal: boolean, b: Rect): string {
+/** 一条网格线：柱形图是横线（v 是 y），条形图是竖线（v 是 x）；对齐整像素 */
+export function gridLine(v: number, line: Line | undefined, horizontal: boolean, b: Rect, g: PixelGrid): string {
   if (!line?.color) return '';
-  return horizontal
-    ? `<line x1="${n2(v)}" y1="${n2(b.top)}" x2="${n2(v)}" y2="${n2(b.bottom)}" stroke="${css(line.color)}" stroke-width="${n2(line.width)}"/>`
-    : `<line x1="${n2(b.left)}" y1="${n2(v)}" x2="${n2(b.right)}" y2="${n2(v)}" stroke="${css(line.color)}" stroke-width="${n2(line.width)}"/>`;
+  return axisLine(horizontal ? 'v' : 'h', v, b, line, g);
 }
 
-/** 坐标轴线：dir 是轴的走向（h 横、v 竖），at 是它所在的 y（横）或 x（竖） */
-export function axisLine(dir: 'h' | 'v', at: number, b: Rect, line: Line): string {
-  return dir === 'h'
-    ? `<line x1="${n2(b.left)}" y1="${n2(at)}" x2="${n2(b.right)}" y2="${n2(at)}" stroke="${css(line.color!)}" stroke-width="${n2(line.width)}"/>`
-    : `<line x1="${n2(at)}" y1="${n2(b.top)}" x2="${n2(at)}" y2="${n2(b.bottom)}" stroke="${css(line.color!)}" stroke-width="${n2(line.width)}"/>`;
+/** 坐标轴线：dir 是轴的走向（h 横、v 竖），at 是它所在的 y（横）或 x（竖）；对齐整像素 */
+export function axisLine(dir: 'h' | 'v', at: number, b: Rect, line: Line, g: PixelGrid): string {
+  if (dir === 'h') {
+    const y = n2(g.line('y', at, line.width));
+    return `<line x1="${n2(b.left)}" y1="${y}" x2="${n2(b.right)}" y2="${y}" stroke="${css(line.color!)}" stroke-width="${n2(line.width)}"/>`;
+  }
+  const x = n2(g.line('x', at, line.width));
+  return `<line x1="${x}" y1="${n2(b.top)}" x2="${x}" y2="${n2(b.bottom)}" stroke="${css(line.color!)}" stroke-width="${n2(line.width)}"/>`;
 }
 
 /** 坐标轴朝外的方向（+1 是往右 / 往下） */
 export const outward = (s: Side) => (s === 'b' || s === 'r' ? 1 : -1);
 
 /** 刻度线：kind 是 out（朝外）/ in（朝里）/ cross（穿过轴线）/ none；positions 是沿轴的坐标 */
-export function tickMarks(positions: number[], at: number, dir: 'h' | 'v', sign: number, kind: string, line: Line): string {
+export function tickMarks(positions: number[], at: number, dir: 'h' | 'v', sign: number, kind: string, line: Line, g: PixelGrid): string {
   if (kind === 'none' || !positions.length) return '';
   const [a, b] = kind === 'cross' ? [-TICK, TICK] : kind === 'in' ? [0, -sign * TICK] : [0, sign * TICK];
-  const d = positions.map((p) => (dir === 'h' ? `M${n2(p)} ${n2(at + a)}V${n2(at + b)}` : `M${n2(at + a)} ${n2(p)}H${n2(at + b)}`)).join('');
+  // 刻度线沿轴的位置对齐整像素，从轴线（对齐后）的位置往外伸
+  const along = (p: number) => g.line(dir === 'h' ? 'x' : 'y', p, line.width);
+  const base = dir === 'h' ? g.y(at) : g.x(at);
+  const d = positions.map((p) => (dir === 'h' ? `M${n2(along(p))} ${n2(base + a)}V${n2(base + b)}` : `M${n2(base + a)} ${n2(along(p))}H${n2(base + b)}`)).join('');
   return `<path d="${d}" fill="none" stroke="${css(line.color!)}" stroke-width="${n2(line.width)}"/>`;
 }

@@ -7,6 +7,7 @@
 import type { Rgba } from '../model/color';
 import type { XEl } from '../io/xml';
 import type { AxisInfo, ChartContext, Plot, Rect, Series } from './model';
+import type { PixelGrid } from './pixel-grid';
 
 /** 读系列时和类型有关的规则 */
 export interface SeriesRules {
@@ -34,6 +35,8 @@ export interface CategoryFrame {
   catSpan(d: number, len: number): [number, number];
   /** 数值位置（0~1，AxisInfo.pos 的结果）在数值方向上的坐标（柱形图是 y，条形图是 x） */
   valPx(f: number): number;
+  /** 整像素对齐（柱子的边用） */
+  snap: PixelGrid;
 }
 
 export interface ChartType {

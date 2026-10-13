@@ -1,6 +1,6 @@
 /** 柱形图、条形图（簇状、堆积、百分比堆积）：画在共享的分类轴上 */
 import { n2 } from '../../common/svg';
-import { cpart, label, paintOf, strokeOf } from '../draw';
+import { cpart, label, lineOf, paintOf, strokeOf } from '../draw';
 import { labelText } from '../format';
 import { errRanges, errSvg } from '../error-bars';
 import type { ChartType } from '../chart-type';
@@ -51,8 +51,13 @@ export const barType: ChartType = {
         const text = lb ? labelText(lb, raw, totals[i], s.cats[i] ?? '', s.name, valFmt) : '';
         const inside = stacked || lb?.pos === 'ctr' || lb?.pos === 'inEnd' || lb?.pos === 'inBase';
         // 柱子在分类方向上的一段、在数值方向上的两端（坐标轴逆序时由 frame 换算）
-        const [c1, cl] = f.catSpan(offset, barW);
-        const va = f.valPx(fa), vb = f.valPx(fb);
+        // 柱子的边对齐整像素（pixel-grid.ts）：没有边框时填充的边对齐像素边界，有边框时矩形放在边框线（按线的规则对齐）的中心
+        const [cs, csl] = f.catSpan(offset, barW);
+        const sw = lineOf(s, i)?.width ?? 0;
+        const edge = (axis: 'x' | 'y', v: number) => (sw ? f.snap.line(axis, v, sw) : f.snap[axis](v));
+        const cAxis = horizontal ? 'y' : 'x', vAxis = horizontal ? 'x' : 'y';
+        const c1 = edge(cAxis, cs), cl = edge(cAxis, cs + csl) - c1;
+        const va = edge(vAxis, f.valPx(fa)), vb = edge(vAxis, f.valPx(fb));
         const v1 = Math.min(va, vb), v2 = Math.max(va, vb);
         // 内侧末端 / 内侧底部（非堆积）：离柱子那一头 1.1 倍字号（柱形图，到标签中心）或 0.5 倍字号（条形图，到文字边，实测）
         const at = !stacked && (lb?.pos === 'inEnd' || lb?.pos === 'inBase') ? lb.pos : undefined;

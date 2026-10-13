@@ -2,6 +2,7 @@
 import type { ColorContext, Rgba } from '../model/color';
 import type { Line } from '../style/line';
 import type { XEl } from '../io/xml';
+import type { PixelGrid } from './pixel-grid';
 
 export interface TextStyle { size: number; color: Rgba; bold: boolean; font: string; }
 
@@ -178,6 +179,8 @@ export interface ChartContext {
   zh?: boolean;
   /** 绘图区的背景和边框（c:plotArea 的 c:spPr），画在网格线下面 */
   plotBg?: (r: Rect) => string;
+  /** 整像素对齐（pixel-grid.ts）；不给时不对齐 */
+  snap?: PixelGrid;
 }
 
 /** 页面里的 defs：唯一编号、加一条定义 */

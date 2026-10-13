@@ -11,6 +11,7 @@ import { areaRect } from './area-fill';
 import { attr, child, findAll, numAttr, path, type XEl } from '../io/xml';
 import { axisMaker } from './axis';
 import { renderCategoryChart } from './cat-chart';
+import { pixelGrid } from './pixel-grid';
 import { chartTypeOf } from './chart-types';
 import { gradientRef, label, textStyle, textWidth } from './draw';
 import { BOTTOM_PAD, PAD, type TextWidth } from './layout';
@@ -29,6 +30,8 @@ export interface ChartEnv {
   defs?: SvgDefs;
   /** 页面的 SVG 文档（图表区、绘图区的渐变背景放定义用） */
   doc?: SvgDoc;
+  /** 图表里的坐标到幻灯片像素的换算（幻灯片 x = x + sx × 图表 x）：网格线、柱子的边按它对齐整像素；不知道时不给 */
+  origin?: { x: number; y: number; sx: number; sy: number };
 }
 
 export function renderChart(space: XEl | undefined, w: number, h: number, env: ChartEnv): string {
@@ -82,8 +85,8 @@ export function renderChart(space: XEl | undefined, w: number, h: number, env: C
     const rr = rich ? findAll(rich, 'a:rPr')[0] ?? findAll(rich, 'a:defRPr')[0] : undefined;
     const tst: TextStyle = rr ? { ...ts, size: numAttr(rr, 'sz') ? numAttr(rr, 'sz')! / 100 * 96 / 72 : ts.size } : ts;
     out.push(label(titleText, w / 2, top + tst.size * 0.6, tst));
-    // 实测：带坐标轴的图标题下方多留约 10 像素，饼图不多留
-    top += tst.size * 1.2 + (type0.hasAxes ? 16 : 6);
+    // 实测：带坐标轴的图标题下方多留约 10 像素，饼图不多留（COM 读 18.62 磅标题的绘图区上沿校准到 0.01 像素）
+    top += tst.size * 1.2 + (type0.hasAxes ? 16.16 : 6);
   }
 
   // ---------------- 图例
@@ -101,20 +104,21 @@ export function renderChart(space: XEl | undefined, w: number, h: number, env: C
 
   const makeAxis = axisMaker(colors, baseText, env.part, lang);
   const plotBg = (r: Rect) => areaRect(child(plotArea, 'c:spPr'), r, colors, env.part, env.doc);
+  const snap = env.origin && pixelGrid(env.origin.x, env.origin.y, env.origin.sx, env.origin.sy);
   const view3D = plots.some((p) => p.is3D) ? readView3D(child(chart, 'c:view3D'), type0.kind === 'pie') : undefined;
   if (type0.layout === 'standalone') {
     const legendEl = child(chart, 'c:legend');
     const ctx: ChartContext = {
       colors, part: env.part, baseText, plotArea, makeAxis, width: tw, box: { w, h }, defs: env.defs,
       legendPos: legendEl ? attr(child(legendEl, 'c:legendPos'), 'val') ?? 'r' : undefined, hasTitle: !!titleText, manual: !!(ml && numAttr(child(ml, 'c:w'), 'val') !== undefined),
-      view3D, zh: lang.startsWith('zh'), plotBg,
+      view3D, zh: lang.startsWith('zh'), plotBg, snap,
     };
     // 雷达、散点的网格和坐标轴在类型自己的输出里：整段当背景，数据部分嵌在里面（背景总是第一步显示，不影响逐个出现）
     out.push(type0.render!(plots[0], { left, top, right, bottom }, ctx));
     return groupBackground(out);
   }
 
-  renderCategoryChart(plots, plotArea, { left, top, right, bottom }, { colors, part: env.part, baseText, makeAxis, tw, w, view: view3D, zh: lang.startsWith('zh'), plotBg }, out);
+  renderCategoryChart(plots, plotArea, { left, top, right, bottom }, { colors, part: env.part, baseText, makeAxis, tw, w, view: view3D, zh: lang.startsWith('zh'), plotBg, snap }, out);
   return groupBackground(out);
 }
 

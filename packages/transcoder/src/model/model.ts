@@ -232,7 +232,14 @@ export interface SlideContext {
   ownSlide: boolean;
   /** 所在的三维场景（SmartArt 三维样式整张图共用的相机，w、h 是场景的大小）：拉伸的侧面按它的视角画 */
   scene?: { scene3d: XEl; w: number; h: number };
+  /**
+   * 当前坐标系到幻灯片像素的换算（幻灯片 x = x + sx × 当前 x）：顶层不写（就是幻灯片坐标）；
+   * 在转动、翻转的组合里是 null（换算不是简单的平移缩放）。图表按它对齐整像素
+   */
+  toSlide?: SlideMapping | null;
 }
+
+export interface SlideMapping { x: number; y: number; sx: number; sy: number }
 
 export function colorContext(theme: Theme, clrMap: Record<string, string>): ColorContext {
   return { scheme: theme.colors, map: clrMap };

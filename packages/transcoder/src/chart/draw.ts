@@ -124,9 +124,15 @@ export function paintOf(s: Series, i: number, color: Rgba): string {
 
 /** 第 i 个数据点的边框（柱子、扇区）：数据点自己写的 > 系列的；没有时返回 undefined，fallback 是都没写时用的（饼图的白线） */
 export function strokeOf(s: Series, i: number, fallback?: Line): string {
+  const ln = lineOf(s, i, fallback);
+  return ln ? ` stroke="${css(ln.color!)}" stroke-width="${n2(ln.width)}"` : '';
+}
+
+/** 系列（或第 i 个数据点）画出来的边框线；没有边框时 undefined */
+export function lineOf(s: Series, i: number, fallback?: Line): Line | undefined {
   const pl = s.pointLines?.get(i);
   const ln = pl !== undefined ? pl : s.noLine ? null : s.line ?? fallback ?? null;
-  return ln?.color ? ` stroke="${css(ln.color)}" stroke-width="${n2(ln.width)}"` : '';
+  return ln?.color ? ln : undefined;
 }
 
 /** 多行标签（文字里有换行）：每行居中对齐，行距 1.44 × 字号（实测饼图标签），整体以 (x, y) 为中心 */

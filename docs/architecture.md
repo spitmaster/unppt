@@ -42,7 +42,7 @@ flowchart TB
   entry["入口 index.ts / cli.ts<br/>convert：逐页、流式输出 HTML 或数据"]
   anim["anim/<br/>时间线编排 anim.ts、单个效果 effect.ts<br/>进入/退出的行为 behaviors.ts（关键帧、公式、时间变换原样带给播放器）<br/>时间设置和变换 timing-util.ts、动画和切换的声音 sound.ts<br/>音视频放映选项 media-opts.ts<br/>强调终态 emphasis.ts、运动路径 motion.ts、切换 transition.ts"]
   render["render/<br/>render.ts 分派、继承；context.ts 渲染能力接口<br/>elements/ 形状、图片、组合；table.ts 表格；box.ts 位置框<br/>controls.ts ActiveX 控件预览图；projection.ts 透视相机下逐点投影<br/>frames/ ← FrameHandler 扩展点"]
-  chart["chart/<br/>图表：chart.ts 标题和编排、legend.ts 图例<br/>cat-chart.ts 分类轴图、cat3d.ts 三维簇状/堆积柱形图、cat3d-depth.ts 系列沿深度排的三维柱形图、box3d.ts 立方体和墙网格线、sides.ts 坐标轴在哪一侧和刻度线<br/>axis.ts 刻度（对数、逆序、显示单位）、xy.ts 数值×数值坐标<br/>trendline.ts 趋势线、error-bars.ts 误差线、data-table.ts 数据表、axis-title.ts 坐标轴标题、area-fill.ts 图表区和绘图区背景<br/>layout.ts 实测间距规律、types/ ← ChartType 扩展点"]
+  chart["chart/<br/>图表：chart.ts 标题和编排、legend.ts 图例<br/>cat-chart.ts 分类轴图、cat3d.ts 三维簇状/堆积柱形图、cat3d-depth.ts 系列沿深度排的三维柱形图、box3d.ts 立方体和墙网格线、sides.ts 坐标轴在哪一侧和刻度线、pixel-grid.ts 整像素对齐<br/>axis.ts 刻度（对数、逆序、显示单位）、xy.ts 数值×数值坐标<br/>trendline.ts 趋势线、error-bars.ts 误差线、data-table.ts 数据表、axis-title.ts 坐标轴标题、area-fill.ts 图表区和绘图区背景<br/>layout.ts 实测间距规律、types/ ← ChartType 扩展点"]
   media["media/<br/>图片、音视频、共享资源<br/>decoders ← ImageDecoder 扩展点<br/>color-key.ts 在原图上抠透明色（png-key.ts、jpeg.ts 自研 JPEG 解码、png.ts 编码）"]
   text["text/<br/>文本框属性 → 逐段排版（测量、断行、项目符号）→ 排位置 placeLines → 输出 SVG<br/>艺术字变形 warp.ts（字形轮廓弯进包络 / 沿路径排）"]
   effects["effects/<br/>← ShapeEffect 扩展点（形状、文字共用）、映像"]

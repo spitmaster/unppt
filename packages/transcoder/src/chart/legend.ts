@@ -86,8 +86,8 @@ export function renderLegend(legend: XEl | undefined, plots: Plot[], area: Rect,
       out.push(label(e.name, x + keyW + kGap, y, legendText, 'start'));
       y += row;
     }
-    // 左侧图例和数值标签之间是图表留白（PAD）；右侧图例和绘图区之间 legendPlotGap
-    if (legendPos === 'l') left += lw + PAD;
+    // 左侧图例和数值标签之间是图表留白（PAD，COM 读 12 磅时少 0.7 像素）；右侧图例和绘图区之间 legendPlotGap
+    if (legendPos === 'l') left += lw + PAD - 0.7;
     else right -= lw + legendPlotGap(sz, anyLine);
   }
   return { left, top, right, bottom };
