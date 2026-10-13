@@ -1,7 +1,7 @@
 /**
  * 三维形状（a:sp3d：棱台、拉伸等）的光照。PowerPoint 用默认的"三点"灯光渲染三维形状，
  * 正面会被照亮一点。实测（10 种颜色，有无棱台高度都一样；文字的三维效果也一样）：每个通道 min(255, 1.036 × 原值 + 5)。
- * 棱台边缘的高光、阴影还没画。
+ * 棱台边缘的高光、阴影见 effects/bevel.ts。
  */
 import { child, type XEl } from '../io/xml';
 import type { Rgba } from '../model/color';

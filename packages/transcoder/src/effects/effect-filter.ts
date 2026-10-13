@@ -5,22 +5,26 @@ import type { ColorContext } from '../model/color';
 import { n2, type SvgDoc } from '../common/svg';
 import { child, type XEl } from '../io/xml';
 import { SHAPE_EFFECTS } from './effects';
-import type { ShapeEffect } from './shape-effect';
+import type { FilterLayer, ShapeEffect } from './shape-effect';
 
-/** w/h 是形状尺寸（像素），用来确定滤镜区域；返回 filter id，没有效果时返回 undefined */
+/**
+ * w/h 是形状尺寸（像素），用来确定滤镜区域；extra 是不在 effectLst 里的层（三维棱台），排在最后。
+ * 返回 filter id，没有效果时返回 undefined
+ */
 export function effectFilter(
   effectLst: XEl | undefined, colors: ColorContext, doc: SvgDoc, w: number, h: number,
-  effects: readonly ShapeEffect[] = SHAPE_EFFECTS,
+  effects: readonly ShapeEffect[] = SHAPE_EFFECTS, extra: readonly (FilterLayer | undefined)[] = [],
 ): string | undefined {
-  if (!effectLst) return undefined;
   const parts: string[] = [];
   const under: string[] = [];
   const over: string[] = [];
   let src = 'SourceGraphic';
   let pad = 0;
-  for (const effect of effects) {
+  const layers = [...effects.map((effect) => {
     const el = child(effectLst, effect.tag);
-    const layer = el && effect.build(el, colors);
+    return el && effect.build(el, colors);
+  }), ...extra];
+  for (const layer of layers) {
     if (!layer) continue;
     parts.push(layer.primitives);
     pad = Math.max(pad, layer.extent);
