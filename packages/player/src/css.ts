@@ -4,6 +4,7 @@ const CSS = `
 .unppt-stage{position:absolute;left:0;top:0;transform-origin:0 0;overflow:hidden;background:#fff}
 .unppt-slide{position:absolute;left:0;top:0;width:100%;height:100%}
 .unppt-slide>svg{display:block;width:100%;height:100%}
+.unppt-full{position:absolute;left:0;top:0;width:100%;height:100%;background:#000;object-fit:contain;z-index:5}
 .unppt-slide [data-uid],.unppt-slide .unppt-unit{transform-box:fill-box;transform-origin:center}
 .unppt-hide{visibility:hidden}
 .unppt-trigger{cursor:pointer}
