@@ -9,13 +9,13 @@ import { EMU_PER_PX, type SlideContext } from '../model/model';
 import { n2 } from '../common/svg';
 import { renderText, type TextEnv } from '../text/text';
 import { attr, child, children, numAttr, type XEl } from '../io/xml';
-import type { SlideRenderer } from './render';
+import type { FrameRenderer } from './frames/frame-handler';
 
 const px = (v: number | undefined) => (v ?? 0) / EMU_PER_PX;
 
 interface CellStyle { fill?: Fill; borders: Record<string, Line | undefined>; bold?: boolean; color?: XEl; }
 
-async function tableStyles(r: SlideRenderer): Promise<XEl | undefined> {
+async function tableStyles(r: FrameRenderer): Promise<XEl | undefined> {
   const pres = r.env.pres;
   const rel = await pres.pkg.relByType(pres.presPart, 'tableStyles');
   return rel ? pres.pkg.xml(rel.target) : undefined;
@@ -55,7 +55,7 @@ function mergeStyle(into: CellStyle, s: CellStyle) {
   if (s.color) into.color = s.color;
 }
 
-export async function renderTable(tbl: XEl | undefined, _w: number, _h: number, r: SlideRenderer, ctx: SlideContext): Promise<string> {
+export async function renderTable(tbl: XEl | undefined, _w: number, _h: number, r: FrameRenderer, ctx: SlideContext): Promise<string> {
   if (!tbl) return '';
   const colors = ctx.colors;
   const tblPr = child(tbl, 'a:tblPr');

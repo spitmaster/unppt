@@ -1,0 +1,46 @@
+/** 元素的位置框（a:xfrm）和输出时用的变换 */
+import { n2 } from '../common/svg';
+import { boolAttr, child, numAttr, type XEl } from '../io/xml';
+import { EMU_PER_PX } from '../model/model';
+
+export interface Box { x: number; y: number; w: number; h: number; rot: number; flipH: boolean; flipV: boolean; }
+
+export const px = (emu: number | undefined) => (emu ?? 0) / EMU_PER_PX;
+
+/** 兼容 p: 和 dsp:（SmartArt 绘图）两种前缀的子元素查找 */
+export function pc(el: XEl | undefined, local: string): XEl | undefined {
+  return child(el, `p:${local}`) ?? child(el, `dsp:${local}`);
+}
+
+export function readXfrm(xfrm: XEl | undefined): Box | undefined {
+  if (!xfrm) return undefined;
+  const off = child(xfrm, 'a:off');
+  const ext = child(xfrm, 'a:ext');
+  if (!off && !ext) return undefined;
+  return {
+    x: px(numAttr(off, 'x')), y: px(numAttr(off, 'y')), w: px(numAttr(ext, 'cx')), h: px(numAttr(ext, 'cy')),
+    rot: (numAttr(xfrm, 'rot') ?? 0) / 60000,
+    flipH: boolAttr(xfrm, 'flipH') ?? false, flipV: boolAttr(xfrm, 'flipV') ?? false,
+  };
+}
+
+export function nvProps(el: XEl): XEl | undefined {
+  const nv = el.children.find((c) => c.name.endsWith(':nvSpPr') || c.name.endsWith(':nvPicPr') || c.name.endsWith(':nvGrpSpPr') || c.name.endsWith(':nvCxnSpPr') || c.name.endsWith(':nvGraphicFramePr'));
+  return nv?.children.find((c) => c.name.endsWith(':cNvPr'));
+}
+
+/** 动画目标外包一层不带 transform 的 g，播放器用 CSS 动画时不会覆盖元素自己的位置变换 */
+export function withUid(uid: string | undefined, inner: string): string {
+  return uid ? `<g data-uid="${uid}">${inner}</g>` : inner;
+}
+
+export function boxTransform(b: Box): string {
+  let t = `translate(${n2(b.x)} ${n2(b.y)})`;
+  if (b.rot) t += ` rotate(${n2(b.rot)} ${n2(b.w / 2)} ${n2(b.h / 2)})`;
+  return t;
+}
+
+export function flipTransform(b: Box): string {
+  if (!b.flipH && !b.flipV) return '';
+  return ` transform="translate(${b.flipH ? n2(b.w) : 0} ${b.flipV ? n2(b.h) : 0}) scale(${b.flipH ? -1 : 1} ${b.flipV ? -1 : 1})"`;
+}
