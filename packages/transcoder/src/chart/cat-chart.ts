@@ -20,7 +20,7 @@ import { extraValues, trendlines } from './extras';
 import { dataTableSize, readDataTable, renderDataTable } from './data-table';
 import { readAxisTitle, renderAxisTitles, reserveAxisTitles, type AxisTitles } from './axis-title';
 
-export interface CatEnv { colors: ColorContext; part: string; baseText: TextStyle; makeAxis: AxisMaker; tw: TextWidth; w: number; view?: View3D; zh?: boolean }
+export interface CatEnv { colors: ColorContext; part: string; baseText: TextStyle; makeAxis: AxisMaker; tw: TextWidth; w: number; view?: View3D; zh?: boolean; plotBg?: (r: Rect) => string }
 
 export function renderCategoryChart(plots: Plot[], plotArea: XEl | undefined, area0: Rect, env: CatEnv, out: string[]): void {
   const { colors, baseText, makeAxis, tw, w } = env;
@@ -156,6 +156,8 @@ export function renderCategoryChart(plots: Plot[], plotArea: XEl | undefined, ar
 
   // 坐标轴标签画在系列和轴线上面（实测：分类轴在中间时标签盖在柱子上）
   const axisText: string[] = [];
+  // 绘图区的背景和边框在最下面
+  if (env.plotBg) out.push(env.plotBg(box));
   // 网格线（次要的在下面）和数值标签
   for (const t of prim.minor) out.push(gridLine(frame.valPx(prim.pos(t)), prim.minorGrid, horizontal, box));
   prim.ticks.forEach((t, i) => {

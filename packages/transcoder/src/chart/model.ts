@@ -165,6 +165,8 @@ export interface ChartContext {
   defs?: SvgDefs;
   /** 中文界面（坐标轴标题没写文字时显示"坐标轴标题"） */
   zh?: boolean;
+  /** 绘图区的背景和边框（c:plotArea 的 c:spPr），画在网格线下面 */
+  plotBg?: (r: Rect) => string;
 }
 
 /** 页面里的 defs：唯一编号、加一条定义 */

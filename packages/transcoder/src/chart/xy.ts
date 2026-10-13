@@ -65,6 +65,7 @@ export function renderXY(p: Plot, ctx: ChartContext, area0: Rect, marks: XYMarks
   const f = layout(r0, { x: f0.pw, y: f0.ph });
   const { left, top, right, bottom, pw, ph, X, Y } = f;
   const out: string[] = [];
+  if (ctx.plotBg) out.push(ctx.plotBg({ left, top, right, bottom }));
   renderAxisTitles(titles, { left, top, right, bottom }, area0, out);
   Y.ticks.forEach((t, i) => {
     const y = bottom - Y.pos(t) * ph;
