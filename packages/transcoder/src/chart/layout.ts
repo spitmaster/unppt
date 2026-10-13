@@ -36,8 +36,8 @@ export const legendLineKey = (s: number) => 1.75 * s;
 
 /** 数值轴在上面（条形图分类轴逆序）时占的高度（实测 12 磅一个字号） */
 export const valBandTop = (s: number) => 1.19 * s;
-/** 这时底部没有标签，但绘图区下边仍比图例多留一点 */
-export const valBandBottom = (s: number) => 0.5 * s;
+/** 坐标轴标签不在这一侧时（数值轴跑到上面、分类标签挨着中间的 0 线），绘图区这一侧仍留 0.5s（实测两种情况） */
+export const emptySidePad = (s: number) => 0.5 * s;
 /** 显示单位标签（竖排的"千"等，s 是它的字号）：占的宽度、字的中心到图表边的距离、上端到绘图区顶边的距离（实测 14 磅一个字号） */
 export const unitBand = (s: number) => 2.0 * s;
 export const unitCenter = (s: number) => 1.08 * s;

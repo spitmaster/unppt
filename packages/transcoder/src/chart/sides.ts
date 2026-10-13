@@ -27,6 +27,8 @@ export interface Sides {
   catRev: boolean;
   /** 分类轴线所在的数值 */
   catCross: number;
+  /** 分类轴线在绘图区中间（数值有正有负）：标签紧挨着它，原来那一侧不留标签带 */
+  catMid: boolean;
 }
 
 export function axisSides(horizontal: boolean, catRev: boolean, val: AxisInfo, catCrosses: AxisInfo['crosses'], catLblPos: string): Sides {
@@ -39,11 +41,12 @@ export function axisSides(horizontal: boolean, catRev: boolean, val: AxisInfo, c
   const clamp = (v: number) => Math.max(val.lo, Math.min(val.hi, v));
   const cross = catCrosses === 'min' ? val.lo : catCrosses === 'max' ? val.hi : typeof catCrosses === 'number' ? clamp(catCrosses) : clamp(0);
   const minSide: Side = horizontal ? (val.reversed ? 'r' : 'l') : (val.reversed ? 't' : 'b');
-  // 分类轴交叉在最大值一端时标签在另一侧；交叉在中间（有负数）时仍放在最小值一侧
+  // 分类轴交叉在最大值一端时标签在另一侧；交叉在中间（有负数）时标签挨着轴线、在它朝最小值的一侧
   let catSide = cross >= val.hi && val.hi > val.lo ? OPP[minSide] : minSide;
   if (catLblPos === 'low') catSide = minSide;
   else if (catLblPos === 'high') catSide = OPP[minSide];
-  return { val: valSide, cat: catSide, catRev, catCross: cross };
+  const catMid = catLblPos === 'nextTo' && cross > val.lo && cross < val.hi;
+  return { val: valSide, cat: catSide, catRev, catCross: cross, catMid };
 }
 
 /** 分类方向的换算：从第一个分类的起点量起（逆序时从另一头量） */

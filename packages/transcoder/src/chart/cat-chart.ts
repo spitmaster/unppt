@@ -10,7 +10,7 @@ import { axesOf, axId, axisCrosses, axisReversed, tickMark } from './axis';
 import type { CategoryFrame } from './chart-type';
 import { chartTypeOf } from './chart-types';
 import { label, textStyle } from './draw';
-import { catBand, catCenter, PAD, RIGHT_LABEL_PAD, SIDE_LABEL_PAD, sideAnchor, sideGap, topForLabel, unitBand, unitCenter, unitTop, valBand, valBandBottom, valBandTop, valCenter, type TextWidth } from './layout';
+import { catBand, catCenter, PAD, RIGHT_LABEL_PAD, SIDE_LABEL_PAD, sideAnchor, sideGap, topForLabel, unitBand, unitCenter, unitTop, valBand, valBandTop, emptySidePad, valCenter, type TextWidth } from './layout';
 import { axisLine, axisSides, catMapping, gridLine, outward, tickLblPos, tickMarks } from './sides';
 import type { AxisMaker, Plot, Rect, TextStyle } from './model';
 import { lineType } from './types/line-area';
@@ -81,17 +81,19 @@ export function renderCategoryChart(plots: Plot[], plotArea: XEl | undefined, ar
     }
     if (sec && !sec.deleted) right = fromRight() - maxW(sec.labels, sec.style.size) - sideGap(sec.style.size);
     if (catLabels) {
-      if (sides.cat === 'b') bottom -= catBand(catStyle.size);
+      if (sides.catMid) bottom -= emptySidePad(catStyle.size);
+      else if (sides.cat === 'b') bottom -= catBand(catStyle.size);
       else top += catBand(catStyle.size);
     }
   } else {
     if (catLabels) {
-      if (sides.cat === 'l') left = edgeLeft + maxW(cats, catStyle.size) + sideGap(catStyle.size);
+      if (sides.catMid) left += emptySidePad(catStyle.size);
+      else if (sides.cat === 'l') left = edgeLeft + maxW(cats, catStyle.size) + sideGap(catStyle.size);
       else right = edgeRight - maxW(cats, catStyle.size) - sideGap(catStyle.size);
     }
     if (valLabels) {
       if (sides.val === 'b') bottom -= valBand(valStyle.size);
-      else { top += valBandTop(valStyle.size); bottom -= valBandBottom(valStyle.size); }
+      else { top += valBandTop(valStyle.size); bottom -= emptySidePad(valStyle.size); }
       right = Math.min(right, w - RIGHT_LABEL_PAD - tw(tickLabels[tickLabels.length - 1] ?? '', valStyle.size) / 2);
     }
   }
@@ -129,12 +131,13 @@ export function renderCategoryChart(plots: Plot[], plotArea: XEl | undefined, ar
     sec.ticks.forEach((t, i) => out.push(label(sec.labels[i], right + sideAnchor(sec.style.size), frame.valPx(sec.pos(t)), sec.style, 'start')));
   }
 
-  // 分类轴标签
+  // 分类轴标签：挨着绘图区的边，或者挨着中间的分类轴线
   if (catLabels) {
+    const edge = sides.catMid ? frame.valPx(prim.pos(sides.catCross)) : sides.cat === 'b' ? bottom : sides.cat === 't' ? top : sides.cat === 'l' ? left : right;
     cats.forEach((c, i) => {
       const at = frame.catPx(bandCenter(i));
-      if (!horizontal) out.push(label(c, at, sides.cat === 'b' ? bottom + catCenter(catStyle.size) : top - catCenter(catStyle.size), catStyle));
-      else out.push(sides.cat === 'l' ? label(c, left - sideAnchor(catStyle.size), at, catStyle, 'end') : label(c, right + sideAnchor(catStyle.size), at, catStyle, 'start'));
+      if (!horizontal) out.push(label(c, at, sides.cat === 'b' ? edge + catCenter(catStyle.size) : edge - catCenter(catStyle.size), catStyle));
+      else out.push(sides.cat === 'l' ? label(c, edge - sideAnchor(catStyle.size), at, catStyle, 'end') : label(c, edge + sideAnchor(catStyle.size), at, catStyle, 'start'));
     });
   }
 
