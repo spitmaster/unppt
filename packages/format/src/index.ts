@@ -88,6 +88,14 @@ export interface AnimAction {
   behaviors?: AnimBehavior[];
   accel?: number;
   decel?: number;
+  /** 动画附带的声音（PowerPoint 的"声音"效果选项）：动作开始时播放；新的声音会停掉正在播的声音 */
+  sound?: Sound;
+}
+
+/** 一段声音：src 是媒体文件路径；loop 时一直循环到下一个声音 */
+export interface Sound {
+  src: string;
+  loop?: true;
 }
 
 /**
@@ -150,7 +158,7 @@ export interface SlideTransition {
    * circle 圆形、diamond 菱形、plus 加号、zoom 盒状、wheel 轮子（spokes 条轮辐，ccw 逆时针）、wedge 扇形、newsflash 新闻快报、
    * blinds 百叶窗、checker 棋盘、comb 梳理、randomBar 随机线条、dissolve 溶解；
    * morph 平滑切换：前后两页里同名（data-name）的顶层对象从旧位置、旧大小变到新位置、新大小，其余内容淡入。
-   * 播放器不认识的类型按 fade 播放
+   * 播放器不认识的类型按 fade 播放；none 时没有切换效果，但仍可能带声音
    */
   type:
     | 'none' | 'fade' | 'cut' | 'flash' | 'push' | 'wipe' | 'cover' | 'pull' | 'split' | 'strips'
@@ -169,6 +177,9 @@ export interface SlideTransition {
   spokes?: number;
   /** 轮子：逆时针 */
   ccw?: true;
+  /** 切换时播放的声音；stopSound 是"停止前一声音" */
+  sound?: Sound;
+  stopSound?: true;
 }
 
 export interface DeckFont {

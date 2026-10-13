@@ -1,6 +1,7 @@
 /** 页面切换（p:transition）-> SlideTransition */
 import type { DeckSlide, SlideTransition } from '../../../format/src/index';
 import { attr, numAttr, type XEl } from '../io/xml';
+import { transitionSound } from './sound';
 
 type Kind = Omit<SlideTransition, 'dur'>;
 type Dir = NonNullable<SlideTransition['dir']>;
@@ -60,16 +61,19 @@ const KINDS: Record<string, (k: XEl) => Kind> = {
   prstTrans: (k) => (attr(k, 'prst') === 'curtains' ? { type: 'split', orient: 'vert', inOut: 'out' } : { type: 'fade' }),
 };
 
-export function compileTransition(tr: XEl | undefined): SlideTransition | undefined {
+/** sounds：切换声音的关系编号 -> 媒体文件路径 */
+export function compileTransition(tr: XEl | undefined, sounds?: Map<string, string>): SlideTransition | undefined {
   if (!tr) return undefined;
   const spd = attr(tr, 'spd');
   const durAttr = numAttr(tr, 'p14:dur') ?? numAttr(tr, 'dur');
   const dur = durAttr ?? (spd === 'fast' ? 500 : spd === 'slow' ? 1000 : 750);
-  const kind = tr.children.find((c) => /^p(14|15|159)?:/.test(c.name));
-  if (!kind) return undefined;
+  const snd = transitionSound(tr, sounds);
+  // 声音（p:sndAc）和扩展（p:extLst）不是切换效果
+  const kind = tr.children.find((c) => /^p(14|15|159)?:/.test(c.name) && c.name !== 'p:sndAc' && c.name !== 'p:extLst');
+  if (!kind) return snd.sound || snd.stopSound ? { type: 'none', dur: 0, ...snd } : undefined;
   const local = kind.name.slice(kind.name.indexOf(':') + 1);
   const spec: Kind = Object.prototype.hasOwnProperty.call(KINDS, local) ? KINDS[local](kind) : { type: 'fade' };
-  return spec.type === 'none' ? { type: 'none', dur: 0 } : { ...spec, dur };
+  return spec.type === 'none' ? { type: 'none', dur: 0, ...snd } : { ...spec, dur, ...snd };
 }
 
 /** 换片方式：p:transition 上的 advTm（自动换片时间，毫秒）、advClick（单击是否换片，默认是） */

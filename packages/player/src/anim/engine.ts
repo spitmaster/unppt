@@ -69,6 +69,10 @@ export class AnimationEngine implements AnimHost {
     for (const a of actions) {
       const el = this.scene.find(a.uid);
       if (!el) continue;
+      if (a.sound && this.media.sound) {
+        const s = a.sound, run = () => this.media.sound?.(s);
+        if (a.delay) { const t = setTimeout(run, a.delay); this.cleanupLater(() => clearTimeout(t)); } else run();
+      }
       if (a.to) { applyTarget(el, a.to, true, a.dur, a.delay, this.states, this.trackFn, repeatOptions(a)); continue; }
       if (a.media) {
         const run = () => this.media.command(el, a);

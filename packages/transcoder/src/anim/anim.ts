@@ -10,6 +10,7 @@ import { delayOf, isClick } from './timing-util';
 
 export type { AnimContext } from './emphasis';
 export { compileAdvance, compileTransition } from './transition';
+export { soundRids } from './sound';
 
 export interface CompiledAnim {
   triggers: { uid: string; steps: AnimAction[][] }[];

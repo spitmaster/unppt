@@ -67,6 +67,7 @@ def main():
     subprocess.run(["node", "packages/transcoder/dist/cli.js", "convert", "testcases/text-embedded-fonts.pptx", "-o", str(player_dir / "embfont.html"), "-q"], cwd=ROOT, check=True)
     subprocess.run(["node", "packages/transcoder/dist/cli.js", "convert", "testcases/anim-repeat.pptx", "-o", str(player_dir / "repeat.html"), "-q"], cwd=ROOT, check=True)
     subprocess.run(["node", "packages/transcoder/dist/cli.js", "convert", "testcases/slide-timings.pptx", "-o", str(player_dir / "timing.html"), "-q"], cwd=ROOT, check=True)
+    subprocess.run(["node", "packages/transcoder/dist/cli.js", "convert", "testcases/anim-sound.pptx", "-o", str(player_dir / "sound.html"), "-q"], cwd=ROOT, check=True)
     s1, player_url = serve(player_dir)
     s2, host_url = serve(host_dir)
 
@@ -319,6 +320,21 @@ def main():
         page14b.wait_for_function("window.unppt !== undefined")
         page14b.wait_for_timeout(3500)
         check(page14b.evaluate("window.unppt.getState()")["slide"] == 0, "用 slide 参数打开到某页时不自动放映（截图、预览用）")
+
+        # ---------------- 15. 动画声音、切换声音：点击动画时出声，切换到带声音的页时换成循环的切换声音，"停止前一声音"的页停掉
+        page15 = b.new_page()
+        page15.goto(f"{player_url}/sound.html")
+        page15.wait_for_function("window.unppt !== undefined && !!document.querySelector('div.unppt-slide')")
+        js15 = "(() => { const a = document.querySelectorAll('audio[data-unppt-sound]'); return [a.length, a.length ? a[0].getAttribute('src') : '', a.length ? a[0].loop : null]; })()"
+        before15 = page15.evaluate(js15)
+        page15.evaluate("window.unppt.next()")
+        s1_15 = page15.evaluate(js15)
+        page15.evaluate("window.unppt.next()")
+        s2_15 = page15.evaluate(js15)
+        page15.evaluate("window.unppt.next()")
+        s3_15 = page15.evaluate(js15)
+        check(before15[0] == 0 and s1_15[0] == 1 and s1_15[1].endswith(".wav") and not s1_15[2] and s2_15[0] == 1 and s2_15[2] is True and s3_15[0] == 0,
+              f"动画声音 {s1_15}、循环的切换声音 {s2_15}、停止前一声音 {s3_15}")
 
         # ---------------- 移动端视口
         mobile = {"is_mobile": True} if BROWSER != "firefox" else {}

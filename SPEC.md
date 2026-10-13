@@ -69,6 +69,7 @@
 - HTML 模式下，同一张图片只存一份：页面 SVG 里写 `unppt:asset/编号`，图片数据放在 `<script class="unppt-asset" data-id="编号">`，播放器显示前替换；只输出数据（`--data`）时图片一律写成 `media/` 下的文件；
 - `privateFonts`：观看端没有的字体（例如本机 Office 自带的私有字体、云字体），排版用它，用到的字总是嵌入产物；命令行 `--system-fonts` 会把这些目录作为 privateFonts 传入；
 - 演示文稿里嵌入的字体（`ppt/fonts/*.fntdata`，EOT 外壳 + MicroType Express 压缩）由转码器自己解压还原成 TrueType，同名时优先使用，并且总是做成子集嵌入产物（不受 `embedFonts` 开关影响：作者已经把字体放进了文件，观看端多半没装）；
+- 动画附带的声音（`p:sndTgt`）和切换声音（`p:sndAc`，含循环到下一个声音、停止前一声音）写成 `media/` 下的文件，播放器在动作开始、翻页时播放，同一时间只有一个声音（新的停掉旧的），翻页不停；跳转和深链接打开时不出声；
 - 缺字体不报错，在 `report` 里列出缺失项；
 - 附带一个薄的命令行：`unppt convert in.pptx -o out.html [--fonts 目录] [--data]`。
 - 老格式 `.ppt` 第一版不支持（开发工具会用 PowerPoint 把样本里的 `.ppt` 另存为 `.pptx` 再测）。

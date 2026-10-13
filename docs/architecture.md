@@ -40,7 +40,7 @@ flowchart LR
 ```mermaid
 flowchart TB
   entry["入口 index.ts / cli.ts<br/>convert：逐页、流式输出 HTML 或数据"]
-  anim["anim/<br/>时间线编排 anim.ts、单个效果 effect.ts<br/>进入/退出的行为 behaviors.ts（关键帧、公式、时间变换原样带给播放器）<br/>强调终态 emphasis.ts、运动路径 motion.ts、切换 transition.ts"]
+  anim["anim/<br/>时间线编排 anim.ts、单个效果 effect.ts<br/>进入/退出的行为 behaviors.ts（关键帧、公式、时间变换原样带给播放器）<br/>时间设置和变换 timing-util.ts、动画和切换的声音 sound.ts<br/>强调终态 emphasis.ts、运动路径 motion.ts、切换 transition.ts"]
   render["render/<br/>render.ts 分派、继承；context.ts 渲染能力接口<br/>elements/ 形状、图片、组合；table.ts 表格；box.ts 位置框<br/>frames/ ← FrameHandler 扩展点"]
   chart["chart/<br/>图表：chart.ts 公共布局、layout.ts 实测间距规律<br/>types/ ← ChartType 扩展点"]
   media["media/<br/>图片、音视频、共享资源<br/>decoders ← ImageDecoder 扩展点"]
@@ -81,7 +81,7 @@ flowchart TB
   units["anim/text-units.ts<br/>逐字 / 逐词：淡入拆 tspan，<br/>飞入等带位移的拆成单独摆放的 text"]
   trans["transitions/<br/>← TransitionEffect 扩展点（22 种）<br/>位移类用关键帧；软边类 soft-edge.ts 逐帧遮罩渐变；<br/>图块类 tiles.ts 逐帧裁剪；drive.ts 逐帧驱动"]
   ui["ui/controls.ts 按钮<br/>ui/input.ts 点击、键盘、触屏"]
-  deck["deck.ts 数据接口、字体<br/>media.ts 音视频命令<br/>css.ts 样式"]
+  deck["deck.ts 数据接口、字体<br/>media.ts 音视频命令、动画和切换的声音<br/>css.ts 样式"]
   entry --> boot & bridge & core
   boot --> core & bridge & deck
   bridge --> core

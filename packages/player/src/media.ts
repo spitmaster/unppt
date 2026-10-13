@@ -2,7 +2,7 @@
  * 音频 / 视频：动画时间线和点击媒体图标都通过这里控制。
  * 跨幻灯片播放（背景音乐）的媒体会被移到常驻容器里，翻页时不停，超出页数范围或跳到范围外时停止。
  */
-import type { AnimAction } from '../../format/src/index';
+import type { AnimAction, Sound } from '../../format/src/index';
 
 export type MediaCmd = NonNullable<AnimAction['media']>;
 
@@ -44,6 +44,9 @@ function run(m: HTMLMediaElement, cmd: MediaCmd, start?: number) {
 /** 动画引擎看到的媒体控制 */
 export interface MediaHost {
   command(el: Element, a: AnimAction): void;
+  /** 动画、切换附带的声音：新的声音会停掉正在播的声音 */
+  sound?(s: Sound): void;
+  stopSound?(): void;
 }
 
 /** 跨页播放的媒体：从第 from 页播到第 to 页 */
@@ -81,5 +84,30 @@ export class MediaPlayer implements MediaHost {
 
   stopAll() {
     this.enter(-1);
+    this.stopSound();
+  }
+
+  private soundEl?: HTMLAudioElement;
+
+  /** 动画、切换附带的声音：同一时间只有一个，翻页不停（和 PowerPoint 一样），浏览器阻止自动播放时忽略 */
+  sound(s: Sound) {
+    this.stopSound();
+    const doc = this.keep.ownerDocument;
+    const a = doc.createElement('audio');
+    a.setAttribute('data-unppt-sound', '');
+    a.src = s.src;
+    if (s.loop) a.loop = true;
+    a.addEventListener('ended', () => { if (this.soundEl === a) this.stopSound(); });
+    this.keep.appendChild(a);
+    this.soundEl = a;
+    try { void a.play().catch(() => {}); } catch { /* 忽略 */ }
+  }
+
+  stopSound() {
+    const a = this.soundEl;
+    this.soundEl = undefined;
+    if (!a) return;
+    try { a.pause(); } catch { /* 忽略 */ }
+    a.remove();
   }
 }
