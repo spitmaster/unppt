@@ -34,6 +34,8 @@ export interface DeckSlide {
   triggers?: { uid: string; steps: AnimAction[][] }[];
   /** 页面切换效果 */
   transition?: SlideTransition;
+  /** 隐藏的幻灯片：顺序放映时跳过，但可以通过超链接、动作按钮或 goto 跳过去 */
+  skip?: boolean;
 }
 
 export type AnimEffect =

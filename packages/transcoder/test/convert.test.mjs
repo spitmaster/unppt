@@ -32,11 +32,13 @@ test('所有测试用例都能转码，页数正确', async () => {
     const ref = JSON.parse(await readFile(new URL(`${n.replace('.pptx', '')}/ref.json`, TC), 'utf8'));
     const w = memoryWriter();
     const r = await convert(await readFile(new URL(n, TC)), { write: w.write });
-    const visible = ref.slides.filter((s) => !s.hidden).length;
-    assert.equal(r.slides, visible, n);
+    // 隐藏的幻灯片也输出（带 skip 标记，放映时跳过），页数和原文件一致
+    assert.equal(r.slides, ref.slides.length, n);
     const html = w.files.get('index.html').toString('utf8');
     assert.ok(html.startsWith('<!doctype html>'), n);
-    assert.equal(slidesOf(html).length, visible, n);
+    const out = slidesOf(html);
+    assert.equal(out.length, ref.slides.length, n);
+    ref.slides.forEach((s, i) => assert.equal(!!out[i].skip, !!s.hidden, `${n} 第 ${i + 1} 页的隐藏标记`));
   }
 });
 

@@ -111,14 +111,16 @@ export async function convert(input: InputSource, options: ConvertOptions): Prom
       }
       done++;
       options.onProgress?.(done, total);
-      if (r.hidden) continue;
       const uids = new Set<string>();
       for (const m of r.svg.matchAll(/data-uid="([^"]+)"/g)) uids.add(m[1]);
       const anim = compileTiming(r.timing, uids, { width: pres.width, height: pres.height, colors: r.colors ?? { scheme: {}, map: {} } });
       for (const w of anim.warnings) pres.warn(w);
       count++;
       slideParts.push(ref.part);
-      yield { svg: r.svg, steps: anim.steps, auto: anim.auto, hidden: anim.hidden, transition: compileTransition(r.transition), ...(anim.triggers.length ? { triggers: anim.triggers } : {}) };
+      yield {
+        svg: r.svg, steps: anim.steps, auto: anim.auto, hidden: anim.hidden, transition: compileTransition(r.transition),
+        ...(anim.triggers.length ? { triggers: anim.triggers } : {}), ...(r.hidden ? { skip: true } : {}),
+      };
     }
   }
 
