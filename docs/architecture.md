@@ -66,12 +66,34 @@ flowchart TB
   common --> io
 ```
 
+## 2b. 播放器内部
+
+```mermaid
+flowchart TB
+  entry["player.ts 入口<br/>导出 mount / Player / installBridge，自动启动"]
+  boot["boot.ts<br/>从 HTML 读数据（按需解析、只缓存附近几页）/ mount"]
+  bridge["bridge.ts<br/>window.unppt、postMessage、原生 WebView"]
+  core["core/player.ts<br/>翻页状态、显示页面、事件、超链接、触发器"]
+  engine["anim/engine.ts<br/>播放 / 瞬时应用 / 结束正在播的动画"]
+  effects["anim/effects/<br/>← AnimEffect 扩展点"]
+  target["anim/target.ts<br/>强调、路径（沿路径、往返关键帧）"]
+  units["anim/text-units.ts<br/>逐字 / 逐词"]
+  trans["transitions/<br/>← TransitionEffect 扩展点"]
+  ui["ui/controls.ts 按钮<br/>ui/input.ts 点击、键盘、触屏"]
+  deck["deck.ts 数据接口、字体<br/>media.ts 音视频命令<br/>css.ts 样式"]
+  entry --> boot & bridge & core
+  boot --> core & bridge & deck
+  bridge --> core
+  core --> engine & trans & ui & deck
+  engine --> effects & target & units & deck
+```
+
 ### 重构前的问题和进度（2026-10-13 评估）
 
 | 位置 | 问题 | 违反的原则 |
 |---|---|---|
-| `player.ts`（约 800 行） | 一个类包了翻页、动画引擎、切换、界面、键盘触屏、bridge、自动启动 | 单一职责 |
-| `player.ts` 切换、`anim` 效果 | `switch` 分支，加一种效果要改核心代码 | 开闭 |
+| ~~`player.ts`（约 800 行）~~ | ~~一个类包了所有事~~ → 已拆成 core / anim / transitions / ui / bridge / boot | 单一职责 |
+| ~~播放器切换、动画效果~~ | ~~`switch` 分支~~ → 已改为 `TransitionEffect`、`AnimEffect` 注册表 | 开闭 |
 | ~~`chart.ts`（约 740 行）~~ | ~~巨型函数、if/else~~ → 已拆成读取 / 格式 / 坐标轴 / 绘制工具 / 编排，每种图表一个文件 | 单一职责、开闭 |
 | `text.ts`（约 690 行） | 字体替代、测量、断行、SVG 输出混在一起 | 单一职责 |
 | ~~`render.ts`~~ | ~~分派写死、和 `table.ts` 循环依赖~~ → 已改为 `FrameHandler` 注册表，表格只依赖 `FrameRenderer` 接口 | 开闭、依赖倒置 |
@@ -100,8 +122,8 @@ flowchart TB
 | 形状效果 | `ShapeEffect`（`effects/shape-effect.ts`） | 新建 `effects/xxx.ts` 导出一个 `ShapeEffect`（返回一层滤镜：画在形状下面 / 替换形状 / 盖在上面），在 `effects/effects.ts` 按叠放顺序加一行。例：`glow.ts`、`soft-edge.ts`、`outer-shadow.ts`、`inner-shadow.ts` |
 | graphicFrame 内容 | `FrameHandler`（`render/frames/frame-handler.ts`） | 新建 `render/frames/xxx-frame.ts` 导出一个 `FrameHandler`（按 `a:graphicData` 的 uri 结尾匹配），在 `render/frames/frames.ts` 加一行。handler 只依赖窄接口 `FrameRenderer`。例：表格、图表、SmartArt、OLE |
 | 图表类型 | `ChartType`（`chart/chart-type.ts`） | 新建 `chart/types/xxx.ts` 导出一个 `ChartType`：声明对应的 XML 元素名、读系列的规则、图例样式；占满绘图区的图实现 `render`，画在共享分类轴上（可组合）的图实现 `renderOnAxes`。在 `chart/chart-types.ts` 加一行。例：`bar.ts`、`line-area.ts`、`pie.ts`、`scatter.ts`、`radar.ts` |
-| 页面切换 | `Transition` | 待实现 |
-| 进入/退出动画效果 | `AnimEffect` | 待实现 |
+| 页面切换（播放器） | `TransitionEffect`（`player/src/transitions/transition.ts`） | 新建 `transitions/xxx.ts` 导出一个 `TransitionEffect`，在 `transitions/transitions.ts` 加一行；没注册的按淡入。例：`push.ts`、`wipe.ts`、`split.ts` |
+| 进入/退出动画效果（播放器） | `AnimEffect`（`player/src/anim/effects/anim-effect.ts`） | 新建 `anim/effects/xxx.ts` 导出一个 `AnimEffect`（给出关键帧，退出自动倒放），在 `anim/effects/effects.ts` 加一行；没注册的按淡入淡出。例：`fly.ts`、`wipe.ts`、`zoom.ts` |
 
 重构的安全网：`node scripts/golden.mjs save` 记录全部测试用例的输出，重构后 `node scripts/golden.mjs check` 必须**逐字节一致**；行为改动（修 bug、加功能）不走这条路，走比对和逐页回归。
 
