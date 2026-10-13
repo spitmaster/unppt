@@ -1202,7 +1202,31 @@ def lines_compound(app):
     return p
 
 
-CASES = [shapes_all, text_sizes, text_align, text_spacing, text_bullets, text_missing_font, shapes_basic, fills_lines, table_basic, group_rotate, anim_basic, anim_auto, charts_basic, pictures, smartart, text_effects, text_layout, table_merge, links, emf_images, anim_advanced, charts_labels, freeform_icons, media_audio, anim_trigger, wmf_images, anim_iterate, picture_transparent, charts_more, shape_effects, equations, anim_path, anim_emphasis, transitions, fills_patterns, text_decoration, anim_entrance, svg_images, charts_markers, hidden_slides, media_background, text_glow_reflection, text_tabs, text_picture_bullets, fills_texture, transition_morph, text_embedded_fonts, text_warp, anim_repeat, charts_sizes, slide_timings, lines_compound]
+def table_diagonal(app):
+    """斜线表头：课表左上角单元格的左上到右下斜线，另一个单元格左下到右上斜线"""
+    p = new_pres(app)
+    s = blank(p)
+    t = s.Shapes.AddTable(4, 5, 60, 60, 840, 320).Table
+    heads = ["", "周一", "周二", "周三", "周四"]
+    for c, h in enumerate(heads):
+        t.Cell(1, c + 1).Shape.TextFrame.TextRange.Text = h
+    for r in range(2, 5):
+        t.Cell(r, 1).Shape.TextFrame.TextRange.Text = f"第 {r - 1} 节"
+        for c in range(2, 6):
+            t.Cell(r, c).Shape.TextFrame.TextRange.Text = "语文" if (r + c) % 2 else "数学"
+    t.Cell(1, 1).Shape.TextFrame.TextRange.Text = "节次  星期"
+    b = t.Cell(1, 1).Borders(5)
+    b.Visible = -1
+    b.Weight = 1.5
+    b.ForeColor.RGB = RGB(0, 0, 0)
+    b2 = t.Cell(3, 3).Borders(6)
+    b2.Visible = -1
+    b2.Weight = 2
+    b2.ForeColor.RGB = RGB(192, 0, 0)
+    return p
+
+
+CASES = [shapes_all, text_sizes, text_align, text_spacing, text_bullets, text_missing_font, shapes_basic, fills_lines, table_basic, group_rotate, anim_basic, anim_auto, charts_basic, pictures, smartart, text_effects, text_layout, table_merge, links, emf_images, anim_advanced, charts_labels, freeform_icons, media_audio, anim_trigger, wmf_images, anim_iterate, picture_transparent, charts_more, shape_effects, equations, anim_path, anim_emphasis, transitions, fills_patterns, text_decoration, anim_entrance, svg_images, charts_markers, hidden_slides, media_background, text_glow_reflection, text_tabs, text_picture_bullets, fills_texture, transition_morph, text_embedded_fonts, text_warp, anim_repeat, charts_sizes, slide_timings, lines_compound, table_diagonal]
 
 
 def main():
