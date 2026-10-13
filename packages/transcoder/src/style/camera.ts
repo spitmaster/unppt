@@ -80,6 +80,16 @@ function cameraOf(scene3d: XEl | undefined): { rx: number; ry: number; rz: numbe
   return { rx, ry, rz, fov: fovAttr !== undefined ? fovAttr / 60000 : p?.[3] ?? 45, persp };
 }
 
+/**
+ * 形状开了三维相机（非默认的预设，或者写了转角）：PowerPoint 用三维渲染画它，正面和带棱台的形状一样被灯光提亮
+ * （实测：纯灰 128 不转 128、透视正面 139、等轴测 133~135——等轴测的朝向几乎不影响亮度）
+ */
+export function hasCamera(scene3d: XEl | undefined): boolean {
+  const cam = child(scene3d, 'a:camera');
+  if (!cam) return false;
+  return (attr(cam, 'prst') ?? 'orthographicFront') !== 'orthographicFront' || !!cameraOf(scene3d);
+}
+
 /** 先绕竖轴、再绕横轴、最后在平面内转 */
 const rotationOf = (c: { rx: number; ry: number; rz: number }): M3 => mul(rot('z', c.rz), mul(rot('x', -c.ry), rot('y', c.rx)));
 
