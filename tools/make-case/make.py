@@ -780,6 +780,31 @@ def anim_emphasis(app):
     return p
 
 
+def anim_group_emphasis(app):
+    """作用在组合上的强调动画：更改填充颜色、变暗、变淡、不饱和、对比色、更改线条颜色（组合里两个形状）。
+    PowerPoint 放映实测这些效果作用在组合上都不变色，静态导出的参考图（不变色）正好和放映一致"""
+    p = new_pres(app)
+    s = blank(p)
+    seq = s.TimeLine.MainSequence
+    for i, eff in enumerate([54, 73, 78, 74, 70, 60]):
+        x, y = 40 + (i % 3) * 300, 60 + (i // 3) * 230
+        a = s.Shapes.AddShape(1, x, y, 120, 90)
+        b = s.Shapes.AddShape(9, x + 130, y + 40, 110, 110)
+        a.Fill.ForeColor.RGB = RGB(70, 120, 200)
+        b.Fill.ForeColor.RGB = RGB(230, 140, 40)
+        for sh in (a, b):
+            sh.Line.Weight = 3
+            sh.Line.ForeColor.RGB = RGB(40, 40, 40)
+        g = s.Shapes.Range([a.Name, b.Name]).Group()
+        e = seq.AddEffect(g, eff, 0, 1)
+        if eff in (54, 60):
+            try:
+                e.EffectParameters.Color2.RGB = RGB(200, 30, 30)
+            except Exception as ex:
+                print("颜色参数", eff, ex)
+    return p
+
+
 def transitions(app):
     """页面切换：无、淡入、推入（左/上/右）、擦除（左/上）、分割（横向向内/纵向向外）、覆盖、揭开、随机线条、圆形"""
     p = new_pres(app)
@@ -1815,7 +1840,7 @@ def table_vertical(app):
     return p
 
 
-CASES = [shapes_all, text_sizes, text_align, text_spacing, text_bullets, text_missing_font, shapes_basic, fills_lines, table_basic, group_rotate, anim_basic, anim_auto, charts_basic, pictures, smartart, text_effects, text_layout, table_merge, links, emf_images, anim_advanced, charts_labels, freeform_icons, media_audio, anim_trigger, wmf_images, anim_iterate, picture_transparent, charts_more, shape_effects, equations, anim_path, anim_emphasis, transitions, fills_patterns, text_decoration, anim_entrance, svg_images, charts_markers, hidden_slides, media_background, text_glow_reflection, text_tabs, text_picture_bullets, fills_texture, transition_morph, text_embedded_fonts, text_warp, anim_repeat, charts_sizes, slide_timings, lines_compound, table_diagonal, lines_gradient, fills_radial, fills_rect_gradient, shapes_3d, table_vertical, transitions_more, anim_sound, anim_build, anim_after, anim_text_emphasis, charts_bubble, media_video, charts_options, charts_negative, shapes_bevel, charts_legend, shapes_3d_rotation, smartart_3d, charts_ofpie, charts_3d]
+CASES = [shapes_all, text_sizes, text_align, text_spacing, text_bullets, text_missing_font, shapes_basic, fills_lines, table_basic, group_rotate, anim_basic, anim_auto, charts_basic, pictures, smartart, text_effects, text_layout, table_merge, links, emf_images, anim_advanced, charts_labels, freeform_icons, media_audio, anim_trigger, wmf_images, anim_iterate, picture_transparent, charts_more, shape_effects, equations, anim_path, anim_emphasis, transitions, fills_patterns, text_decoration, anim_entrance, svg_images, charts_markers, hidden_slides, media_background, text_glow_reflection, text_tabs, text_picture_bullets, fills_texture, transition_morph, text_embedded_fonts, text_warp, anim_repeat, charts_sizes, slide_timings, lines_compound, table_diagonal, lines_gradient, fills_radial, fills_rect_gradient, shapes_3d, table_vertical, transitions_more, anim_sound, anim_build, anim_after, anim_text_emphasis, charts_bubble, media_video, charts_options, charts_negative, shapes_bevel, charts_legend, shapes_3d_rotation, smartart_3d, charts_ofpie, charts_3d, anim_group_emphasis]
 
 
 def main():

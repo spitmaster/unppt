@@ -7,7 +7,7 @@ import { bgStyle, fillAttrs, findFillEl, parseFill, styleRef, type Fill, type Im
 import { linkAttr } from '../common/links';
 import { SvgDoc } from '../common/svg';
 import { type StyleChain } from '../text/text';
-import { attr, child, children, expandAlternate, numAttr, path, type XEl } from '../io/xml';
+import { attr, child, children, expandAlternate, findAll, numAttr, path, type XEl } from '../io/xml';
 import { boxTransform, nvProps, pc, readXfrm, withUid } from './box';
 import type { RenderEnv } from './env';
 import type { RenderContext } from './context';
@@ -24,6 +24,8 @@ export interface RenderedSlide {
   timing?: XEl;
   transition?: XEl;
   hidden: boolean;
+  /** 组合（含嵌套的）的动画编号：颜色类动画作用在组合上不起作用 */
+  groups?: Set<string>;
 }
 
 class SlideRenderer implements RenderContext {
@@ -169,7 +171,9 @@ export async function renderSlide(ref: SlideRef, env: RenderEnv): Promise<Render
   if (showMaster) {
     parts.push(await r.shapes(children(path(layout.xml, 'p:cSld', 'p:spTree')), mk(layout.part, false)));
   }
-  parts.push(await r.shapes(children(path(xml, 'p:cSld', 'p:spTree')), mk(ref.part, true)));
+  const tree = path(xml, 'p:cSld', 'p:spTree');
+  parts.push(await r.shapes(children(tree), mk(ref.part, true)));
+  const groups = new Set(findAll(tree, 'p:grpSp').map((g) => r.uidOf(g, mk(ref.part, true))).filter((u): u is string => !!u));
 
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}">${r.doc.defsXml()}${parts.join('')}</svg>`;
   return {
@@ -178,6 +182,7 @@ export async function renderSlide(ref: SlideRef, env: RenderEnv): Promise<Render
     timing: child(xml, 'p:timing'),
     transition: expandAlternate(xml.children).find((c) => c.name === 'p:transition'),
     hidden: attr(xml, 'show') === '0',
+    groups,
   };
 }
 

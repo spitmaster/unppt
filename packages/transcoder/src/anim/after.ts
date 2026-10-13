@@ -1,6 +1,7 @@
 /**
  * "动画播放后"选项（效果节点下的 p:subTnLst，afterEffect="1"）：播放后隐藏、下次单击后隐藏、变暗成某个颜色。
- * masterRel="sameClick" 在这个效果结束时执行，"nextClick" 在下一次单击时执行（实测 PowerPoint 写法）
+ * masterRel="sameClick" 在这个效果结束时执行，"nextClick" 在下一次单击时执行（实测 PowerPoint 写法）；
+ * 变暗作用在组合上不起作用（实测放映）
  */
 import type { AnimAction } from '../../../format/src/index';
 import { colorIn, css } from '../model/color';
@@ -18,7 +19,7 @@ export function afterEffects(eff: XEl, a: AnimAction, ctx: AnimContext): { same:
     let act: AnimAction | undefined;
     if (sub.name === 'p:set' && names.includes('style.visibility') && attr(path(sub, 'p:to', 'p:strVal'), 'val') === 'hidden') {
       act = { uid: a.uid, effect: 'appear', dir: 'out', dur: 0, delay };
-    } else if (sub.name === 'p:animClr') {
+    } else if (sub.name === 'p:animClr' && !ctx.groups?.has(a.uid)) {
       const col = colorIn(child(sub, 'p:to'), ctx.colors);
       if (col) act = { uid: a.uid, effect: 'emphasis', dir: 'emph', dur: 0, delay, to: { dim: css(col) } };
     }
