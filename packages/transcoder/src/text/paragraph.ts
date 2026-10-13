@@ -5,7 +5,7 @@ import { makeBullet, type BulletNumbering } from './bullets';
 import { breakLines, trimmedWidth } from './linebreak';
 import { layoutTabs, tabStops } from './tabs';
 import { makeAtoms, type Measurer } from './measure';
-import { levelPPr, merge, runStyle } from './style';
+import { kernOn, levelPPr, merge, runStyle } from './style';
 import type { Atom, Line, ParagraphLayout, RunStyle, StyleChain, TextEnv } from './types';
 
 /** 排一个文本框里所有段落时共用的东西 */
@@ -18,6 +18,15 @@ export interface ParagraphContext {
   contentW: number;
   wrap: boolean;
   numbering: BulletNumbering;
+}
+
+const effSize = (a: Atom) => (a.style.baseline ? a.style.size * 0.67 : a.style.size);
+
+/** 字距调整跨文字段也要做（实测 PowerPoint：前一段的空格和后一段的 T 照样按字体的成对调整挤近） */
+async function kernAcross(prev: Atom | undefined, next: Atom | undefined) {
+  if (!prev || !next || !prev.face || prev.face !== next.face || effSize(prev) !== effSize(next)) return;
+  if (!kernOn(prev.style) || !kernOn(next.style)) return;
+  prev.width += (await prev.face.load()).kern(prev.cp, next.cp) * effSize(prev);
 }
 
 export async function layoutParagraph(p: XEl, pi: number, ctx: ParagraphContext): Promise<ParagraphLayout> {
@@ -35,7 +44,9 @@ export async function layoutParagraph(p: XEl, pi: number, ctx: ParagraphContext)
     if (r.name === 'a:r' || r.name === 'a:fld') {
       const style = runStyle(merge([defRPr, child(r, 'a:rPr')]), env, fontScale);
       firstStyle ??= style;
-      atoms.push(...await makeAtoms(child(r, 'a:t')?.text ?? '', style, measurer));
+      const runAtoms = await makeAtoms(child(r, 'a:t')?.text ?? '', style, measurer);
+      await kernAcross(atoms[atoms.length - 1], runAtoms[0]);
+      atoms.push(...runAtoms);
     } else if (r.name === 'a:br') {
       const style = runStyle(merge([defRPr, child(r, 'a:rPr')]), env, fontScale);
       firstStyle ??= style;
