@@ -72,3 +72,23 @@ test('解不开的返回 undefined：不是 JPEG、截断、算术编码', () =>
   assert.equal(decodeJpeg(new Uint8Array([0xff, 0xd8, 0xff, 0xc0, 0x00, 0x30])), undefined);
   assert.equal(decodeJpeg(new Uint8Array([0xff, 0xd8, 0xff, 0xc9, 0x00, 0x0b, 8, 0, 1, 0, 1, 1, 1, 0x11, 0])), undefined);
 });
+
+test('损坏的 JPEG（随机改字节、截断）不会出错、不会卡住', async () => {
+  const names = ['baseline-420', 'progressive', 'restart', 'cmyk'];
+  let seed = 12345;
+  const rnd = () => ((seed = (seed * 1103515245 + 12345) & 0x7fffffff) / 0x7fffffff);
+  const t0 = Date.now();
+  for (const name of names) {
+    const src = new Uint8Array(await readFile(new URL(`${name}.jpg`, DIR)));
+    for (let k = 0; k < 150; k++) {
+      let b = src.slice();
+      if (k % 3 === 0) b = b.subarray(0, Math.floor(rnd() * b.length));
+      const flips = 1 + Math.floor(rnd() * 8);
+      for (let f = 0; f < flips && b.length; f++) b[Math.floor(rnd() * b.length)] = Math.floor(rnd() * 256);
+      const img = decodeJpeg(b);
+      if (img) assert.equal(img.data.length, img.width * img.height * 3);
+      await colorKey(b, { r: 255, g: 255, b: 255, a: 1 });
+    }
+  }
+  assert.ok(Date.now() - t0 < 20000, '太慢');
+});

@@ -7,7 +7,7 @@
 export interface RgbImage { width: number; height: number; data: Uint8Array }
 
 /** 像素数超过这个的不解（防止异常文件占满内存） */
-const MAX_PIXELS = 40_000_000;
+const MAX_PIXELS = 16_000_000;
 
 /** 之字形顺序 -> 8×8 块里的位置 */
 const ZIGZAG = Int8Array.from([
