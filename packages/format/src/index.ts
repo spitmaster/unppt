@@ -66,6 +66,8 @@ export interface AnimTarget {
   rotate?: number;
   /** 移动距离（像素，相对当前） */
   move?: [number, number];
+  /** 路径动画经过的点（像素，相对当前位置），最后一个点就是 move */
+  path?: [number, number][];
   /** 新的填充颜色 */
   fill?: string;
   /** 新的文字颜色 */
