@@ -1,0 +1,23 @@
+/** 播放器的样式（只注入一次） */
+const CSS = `
+.unppt-root{position:relative;width:100%;height:100%;overflow:hidden;background:#000;user-select:none;-webkit-user-select:none;-webkit-tap-highlight-color:transparent;touch-action:pan-y pinch-zoom}
+.unppt-stage{position:absolute;left:0;top:0;transform-origin:0 0;overflow:hidden;background:#fff}
+.unppt-slide{position:absolute;left:0;top:0;width:100%;height:100%}
+.unppt-slide>svg{display:block;width:100%;height:100%}
+.unppt-slide [data-uid]{transform-box:fill-box;transform-origin:center}
+.unppt-hide{visibility:hidden}
+.unppt-trigger{cursor:pointer}
+.unppt-ui{position:absolute;right:12px;bottom:12px;display:flex;gap:6px;align-items:center;opacity:0;transition:opacity .3s;font:13px/1 system-ui,sans-serif;z-index:2}
+.unppt-root:hover .unppt-ui,.unppt-ui.unppt-show{opacity:1}
+.unppt-ui button{border:0;border-radius:4px;background:rgba(0,0,0,.55);color:#fff;width:34px;height:30px;font-size:16px;cursor:pointer}
+.unppt-ui span{background:rgba(0,0,0,.55);color:#fff;border-radius:4px;padding:8px 10px}
+.unppt-error{color:#fff;font:15px system-ui,sans-serif;padding:24px}
+`;
+
+export function injectCss(doc: Document) {
+  if (doc.getElementById('unppt-css')) return;
+  const s = doc.createElement('style');
+  s.id = 'unppt-css';
+  s.textContent = CSS;
+  doc.head.appendChild(s);
+}
