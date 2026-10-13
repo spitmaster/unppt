@@ -122,6 +122,26 @@ test('恶意文件不能往页面里注入代码', async () => {
   assert.ok(!/<img|<script/i.test(slides), '文字没有转义');
 });
 
+test('画不了的新内容（墨迹）改用 PowerPoint 存的备用图形', async () => {
+  // 在测试用例里插一段 mc:AlternateContent：Choice 是墨迹（p14:contentPart），Fallback 是一个特殊颜色的矩形
+  const src = await readFile(new URL('shapes-basic.pptx', TC));
+  const { inflateRawSync, deflateRawSync } = await import('node:zlib');
+  const entries = readZip(src, inflateRawSync);
+  let xml = entries.get('ppt/slides/slide1.xml').toString('utf8');
+  const alt = '<mc:AlternateContent xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006">'
+    + '<mc:Choice xmlns:p14="http://schemas.microsoft.com/office/powerpoint/2010/main" Requires="p14">'
+    + '<p:contentPart p14:bwMode="auto" r:id="rId99"><p14:nvContentPartPr><p14:cNvPr id="900" name="墨迹"/><p14:cNvContentPartPr/><p14:nvPr/></p14:nvContentPartPr>'
+    + '<p14:xfrm><a:off x="0" y="0"/><a:ext cx="914400" cy="914400"/></p14:xfrm></p:contentPart></mc:Choice>'
+    + '<mc:Fallback><p:sp><p:nvSpPr><p:cNvPr id="901" name="备用"/><p:cNvSpPr/><p:nvPr/></p:nvSpPr><p:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="914400" cy="914400"/></a:xfrm>'
+    + '<a:prstGeom prst="rect"><a:avLst/></a:prstGeom><a:solidFill><a:srgbClr val="ABCDEF"/></a:solidFill></p:spPr></p:sp></mc:Fallback></mc:AlternateContent>';
+  xml = xml.replace('</p:spTree>', `${alt}</p:spTree>`);
+  entries.set('ppt/slides/slide1.xml', Buffer.from(xml, 'utf8'));
+  const w = memoryWriter();
+  await convert(writeZip(entries, deflateRawSync), { write: w.write });
+  const svg = slidesOf(w.files.get('index.html').toString('utf8'))[0].svg;
+  assert.ok(svg.includes('#abcdef'), '没有画出备用图形');
+});
+
 function readZip(buf, inflate) {
   const out = new Map();
   let eocd = buf.length - 22;

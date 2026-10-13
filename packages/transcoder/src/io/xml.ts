@@ -202,6 +202,8 @@ export function findAll(el: XEl | undefined, name: string, out: XEl[] = []): XEl
  * 只认我们理解的命名空间；否则用 mc:Fallback。返回展开后的子元素列表。
  */
 const SUPPORTED_REQUIRES = new Set(['p14', 'p15', 'a14', 'a16', 'v', 'mc']);
+/** 这些命名空间里我们不画的元素：Choice 里出现时改用 Fallback（Office 数学公式、墨迹） */
+const UNRENDERED = ['a14:m', 'p14:contentPart', 'p:contentPart'];
 
 export function expandAlternate(list: XEl[]): XEl[] {
   const out: XEl[] = [];
@@ -210,8 +212,8 @@ export function expandAlternate(list: XEl[]): XEl[] {
     const choice = c.children.find((x) => x.name === 'mc:Choice'
       && (x.attrs.Requires ?? '').split(/\s+/).every((r) => SUPPORTED_REQUIRES.has(r)));
     const fallback = child(c, 'mc:Fallback');
-    // 公式（a14:m）我们不排版，用 Fallback 里 PowerPoint 存好的公式图片
-    const picked = choice && fallback && findAll(choice, 'a14:m').length ? fallback : choice ?? fallback;
+    // Choice 里有我们画不了的内容（公式、墨迹）时，用 Fallback 里 PowerPoint 存好的图片
+    const picked = choice && fallback && UNRENDERED.some((n) => findAll(choice, n).length) ? fallback : choice ?? fallback;
     if (picked) out.push(...expandAlternate(picked.children));
   }
   return out;
