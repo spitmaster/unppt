@@ -153,6 +153,7 @@ async function tileFill(fill: Extract<Fill, { kind: 'image' }>, tile: Tile, href
 export function gradientPaint(fill: Extract<Fill, { kind: 'grad' }>, doc: SvgDoc, w: number, h: number, mode: string): string {
   const id = doc.id('g');
   const stops = gradientStops(fill.stops, (c) => adjustForPathMode(c, mode));
+  if (fill.path === 'rect' || fill.path === 'shape') return rectGradient(fill, doc, w, h, stops);
   if (fill.path) {
     // 实测（6 种焦点 × 正方形和 2:1 矩形，吻合到抖动噪声水平）：渐变的终点是形状的外接圆
     // （圆心在形状中心、半径是半条对角线），起点是焦点矩形的中心——正好是 SVG 径向渐变的焦点（fx/fy）
@@ -179,6 +180,36 @@ export function gradientPaint(fill: Extract<Fill, { kind: 'grad' }>, doc: SvgDoc
     doc.addDef(`<linearGradient id="${id}" gradientUnits="userSpaceOnUse" x1="${n2(cx + dx * lo)}" y1="${n2(cy + dy * lo)}" x2="${n2(cx + dx * hi)}" y2="${n2(cy + dy * hi)}">${stops}</linearGradient>`);
   }
   return `url(#${id})`;
+}
+
+/**
+ * 矩形（path=rect）渐变：实测 t = max(水平距离, 垂直距离)，距离从焦点矩形量起、按那一侧到边框的距离归一化，
+ * 等值线是从焦点矩形放大到外框的一圈圈矩形。SVG 没有这种渐变：用图案拼出上下左右四个梯形，各自是线性渐变
+ * （梯形之间的分界是焦点矩形角到外框角的连线）；"形状"路径（path=shape）也按矩形画。
+ */
+function rectGradient(fill: Extract<Fill, { kind: 'grad' }>, doc: SvgDoc, w: number, h: number, stops: string): string {
+  const r = fill.rect ?? { l: 0.5, t: 0.5, r: 0.5, b: 0.5 };
+  const x0 = r.l * w, x1 = Math.max(r.l, 1 - r.r) * w, y0 = r.t * h, y1 = Math.max(r.t, 1 - r.b) * h;
+  const pid = doc.id('rg');
+  const parts: string[] = [];
+  const P = (pts: number[][]) => pts.map(([x, y]) => `${n2(x)},${n2(y)}`).join(' ');
+  // 一个梯形：渐变从 (ax, ay)（焦点矩形边）到 (bx, by)（外框）
+  const side = (pts: number[][], ax: number, ay: number, bx: number, by: number) => {
+    if (Math.hypot(bx - ax, by - ay) < 0.01) return;
+    const gid = doc.id('g');
+    doc.addDef(`<linearGradient id="${gid}" gradientUnits="userSpaceOnUse" x1="${n2(ax)}" y1="${n2(ay)}" x2="${n2(bx)}" y2="${n2(by)}">${stops}</linearGradient>`);
+    parts.push(`<polygon points="${P(pts)}" fill="url(#${gid})"/>`);
+  };
+  side([[0, 0], [x0, y0], [x0, y1], [0, h]], x0, 0, 0, 0);
+  side([[w, 0], [x1, y0], [x1, y1], [w, h]], x1, 0, w, 0);
+  side([[0, 0], [w, 0], [x1, y0], [x0, y0]], 0, y0, 0, 0);
+  side([[0, h], [w, h], [x1, y1], [x0, y1]], 0, y1, 0, h);
+  // 焦点矩形里面是起点颜色
+  const first = /stop-color="([^"]+)"(?: stop-opacity="([^"]+)")?/.exec(stops);
+  if (first && x1 > x0 && y1 > y0) parts.push(`<rect x="${n2(x0)}" y="${n2(y0)}" width="${n2(x1 - x0)}" height="${n2(y1 - y0)}" fill="${first[1]}"${first[2] ? ` fill-opacity="${first[2]}"` : ''}/>`);
+  // 不抗锯齿：相邻梯形在分界处颜色相同，抗锯齿反而会露出缝
+  doc.addDef(`<pattern id="${pid}" patternUnits="userSpaceOnUse" width="${n2(w)}" height="${n2(h)}"><g shape-rendering="crispEdges">${parts.join('')}</g></pattern>`);
+  return `url(#${pid})`;
 }
 
 /**
