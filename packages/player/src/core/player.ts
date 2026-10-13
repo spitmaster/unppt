@@ -8,6 +8,7 @@ import { injectCss } from '../css';
 import type { DeckLike } from '../deck';
 import { MediaPlayer, mediaCommand } from '../media';
 import { MediaBar } from '../ui/media-bar';
+import { BlankScreen } from '../ui/blank-screen';
 import { runTransition } from '../transitions/transitions';
 import { Controls } from '../ui/controls';
 import { bindInput, type InputOptions } from '../ui/input';
@@ -39,6 +40,7 @@ export class Player {
   /** 音视频（含跨页播放的背景音乐） */
   private media: MediaPlayer;
   private mediaBar: MediaBar;
+  private blankScreen: BlankScreen;
   /** 每个触发器已经播到第几组（换页时清零） */
   private triggerIdx = new Map<string, number>();
   /** 按计时自动放映 */
@@ -67,12 +69,17 @@ export class Player {
     }, opts.timings !== false && deck.show?.useTimings !== false);
     if (opts.ui !== false) this.controls = new Controls(this.root, () => this.prev(), () => this.next());
     this.mediaBar = new MediaBar(this.root);
+    this.blankScreen = new BlankScreen(this.root);
     this.cleanup.push(...bindInput(this.root, opts, {
       click: (t) => this.click(t),
       next: () => this.next(),
       prev: () => this.prev(),
       first: () => this.goto(this.visibleFrom(0, 1) ?? 0, 0),
       last: () => this.goto(this.visibleFrom(this.deck.slideCount - 1, -1) ?? this.deck.slideCount - 1, 0),
+      blank: (color) => this.blankScreen.show(color),
+      blanked: () => this.blankScreen.active,
+      unblank: () => this.blankScreen.hide(),
+      jump: (n) => { if (n >= 1 && n <= this.deck.slideCount) this.goto(n - 1, 0); },
     }));
     this.fit();
     const win = host.ownerDocument.defaultView;
@@ -140,6 +147,7 @@ export class Player {
 
   destroy() {
     this.mediaBar.destroy();
+    this.blankScreen.destroy();
     this.auto.stop();
     this.engine.finishRunning();
     this.media.stopAll();
