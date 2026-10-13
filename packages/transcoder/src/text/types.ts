@@ -58,7 +58,8 @@ export interface RunStyle {
   /** 字体的 PANOSE 字重 ≥ 7（粗体）：缺字体时用替代字体的粗体 */
   panoseBold: boolean;
   outline?: { color: Rgba; width: number };
-  shadow?: XEl;
+  /** 文字效果（a:effectLst）：阴影、发光、内阴影、映像…… */
+  effects?: XEl;
   grad?: XEl;
   /** 超链接属性（data-link / data-href） */
   link?: string;

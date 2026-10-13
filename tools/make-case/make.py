@@ -929,7 +929,34 @@ def media_background(app):
     return p
 
 
-CASES = [shapes_all, text_sizes, text_align, text_spacing, text_bullets, text_missing_font, shapes_basic, fills_lines, table_basic, group_rotate, anim_basic, anim_auto, charts_basic, pictures, smartart, text_effects, text_layout, table_merge, links, emf_images, anim_advanced, charts_labels, freeform_icons, media_audio, anim_trigger, wmf_images, anim_iterate, picture_transparent, charts_more, shape_effects, equations, anim_path, anim_emphasis, transitions, fills_patterns, text_decoration, anim_entrance, svg_images, charts_markers, hidden_slides, media_background]
+def text_glow_reflection(app):
+    """文字的发光、映像、内阴影（艺术字样式常用）"""
+    p = new_pres(app)
+    s = blank(p)
+    rows = [("发光文字 Glow", "glow"), ("映像文字 Reflection", "refl"), ("发光加映像 Both", "both"), ("内阴影文字 Inner", "inner")]
+    for i, (text, kind) in enumerate(rows):
+        tb = s.Shapes.AddTextbox(1, 60, 30 + i * 125, 800, 100)
+        tr = tb.TextFrame2.TextRange
+        tr.Text = text
+        f = tr.Font
+        f.Size = 48
+        f.Bold = -1
+        f.Fill.ForeColor.RGB = RGB(31, 78, 121)
+        if kind in ("glow", "both"):
+            f.Glow.Radius = 8
+            f.Glow.Color.RGB = RGB(255, 192, 0)
+        if kind in ("refl", "both"):
+            f.Reflection.Type = 2
+        if kind == "inner":
+            f.Shadow.Visible = -1
+            f.Shadow.Style = 1
+            f.Shadow.Blur = 4
+            f.Shadow.OffsetX = 2
+            f.Shadow.OffsetY = 2
+    return p
+
+
+CASES = [shapes_all, text_sizes, text_align, text_spacing, text_bullets, text_missing_font, shapes_basic, fills_lines, table_basic, group_rotate, anim_basic, anim_auto, charts_basic, pictures, smartart, text_effects, text_layout, table_merge, links, emf_images, anim_advanced, charts_labels, freeform_icons, media_audio, anim_trigger, wmf_images, anim_iterate, picture_transparent, charts_more, shape_effects, equations, anim_path, anim_emphasis, transitions, fills_patterns, text_decoration, anim_entrance, svg_images, charts_markers, hidden_slides, media_background, text_glow_reflection]
 
 
 def main():

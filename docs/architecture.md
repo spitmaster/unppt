@@ -45,7 +45,7 @@ flowchart TB
   chart["chart/<br/>图表"]
   media["media/<br/>图片、音视频、共享资源<br/>decoders ← ImageDecoder 扩展点"]
   text["text/<br/>文本框属性 → 逐段排版（测量、断行、项目符号）→ 定位输出"]
-  effects["effects/<br/>← ShapeEffect 扩展点、映像、文字阴影"]
+  effects["effects/<br/>← ShapeEffect 扩展点（形状、文字共用）、映像"]
   style["style/<br/>fill 填充、pattern 图案（实测点阵）<br/>line 线条、blip 图片调整"]
   font["font/<br/>TrueType 解析、字距、子集化"]
   geometry["geometry/<br/>公式引擎、187 种预设形状"]

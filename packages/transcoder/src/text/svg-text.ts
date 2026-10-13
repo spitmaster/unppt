@@ -1,7 +1,12 @@
 /** 输出：一段同样式的文字 -> SVG <text>（字体、颜色、装饰线、描边、渐变、阴影、超链接） */
 import { colorIn, css } from '../model/color';
 import { esc, n2 } from '../common/svg';
-import { shadowFilter } from '../effects/text-shadow';
+import { effectFilter } from '../effects/effect-filter';
+import { TEXT_EFFECTS } from '../effects/effects';
+import type { SvgDoc } from '../common/svg';
+
+/** 同一页里同样的文字效果只生成一个滤镜 */
+const textFilters = new WeakMap<SvgDoc, Map<string, string>>();
 import { child, children, numAttr } from '../io/xml';
 import { kernOn } from './style';
 import type { RunStyle, TextEnv } from './types';
@@ -37,8 +42,17 @@ export function textEl(txt: string, x: number, y: number, s: RunStyle, family: s
     doc.addDef(`<linearGradient id="${id}" gradientUnits="userSpaceOnUse" x1="${n2((0.5 - dx) * gb.w)}" y1="${n2((0.5 - dy) * gb.h)}" x2="${n2((0.5 + dx) * gb.w)}" y2="${n2((0.5 + dy) * gb.h)}">${stops}</linearGradient>`);
     a = a.replace(/ fill="[^"]*"( fill-opacity="[^"]*")?/, ` fill="url(#${id})"`);
   }
-  if (doc && s.shadow && env) {
-    const fid = shadowFilter({ name: 'a:effectLst', attrs: {}, text: '', children: [s.shadow] }, env.colors, doc);
+  if (doc && s.effects && env) {
+    // 阴影、发光、内阴影：和形状效果用同一套滤镜（ShapeEffect），滤镜区域取文本框；映像由 emit.ts 按行处理
+    const gb = env.gradBox ?? { w: 1, h: 1 };
+    const key = `${JSON.stringify(s.effects)}|${n2(gb.w)}|${n2(gb.h)}`;
+    let byDoc = textFilters.get(doc);
+    if (!byDoc) { byDoc = new Map(); textFilters.set(doc, byDoc); }
+    let fid = byDoc.get(key);
+    if (fid === undefined) {
+      fid = effectFilter(s.effects, env.colors, doc, gb.w, gb.h, TEXT_EFFECTS) ?? '';
+      byDoc.set(key, fid);
+    }
     if (fid) a += ` filter="url(#${fid})"`;
   }
   return `<text ${a} xml:space="preserve">${esc(txt)}</text>`;
