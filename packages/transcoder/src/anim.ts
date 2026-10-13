@@ -329,6 +329,16 @@ export function compileTransition(tr: XEl | undefined): SlideTransition | undefi
   const kind = tr.children.find((c) => c.name.startsWith('p:') || c.name.startsWith('p14:') || c.name.startsWith('p15:'));
   if (!kind) return undefined;
   const local = kind.name.slice(kind.name.indexOf(':') + 1);
-  const type: SlideTransition['type'] = local === 'push' ? 'push' : local === 'wipe' ? 'wipe' : local === 'cover' || local === 'pull' ? 'cover' : 'fade';
-  return { type, dur };
+  const MAP: Record<string, SlideTransition['type']> = { cut: 'none', push: 'push', wipe: 'wipe', cover: 'cover', pull: 'pull', split: 'split', circle: 'circle' };
+  const type = MAP[local] ?? 'fade';
+  if (type === 'none') return { type, dur: 0 };
+  const out: SlideTransition = { type, dur };
+  const dir = attr(kind, 'dir');
+  if (type === 'push' || type === 'wipe' || type === 'cover' || type === 'pull') {
+    out.dir = dir === 'r' || dir === 'u' || dir === 'd' ? dir : 'l';
+  } else if (type === 'split') {
+    out.orient = attr(kind, 'orient') === 'vert' ? 'vert' : 'horz';
+    out.inOut = dir === 'in' ? 'in' : 'out';
+  }
+  return out;
 }

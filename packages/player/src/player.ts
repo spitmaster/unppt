@@ -303,16 +303,43 @@ export class Player {
     if (typeof el.animate !== 'function') { old.remove(); return; }
     const dur = Math.max(100, Math.min(3000, t.dur));
     let a: Animation;
+    // 方向 l 表示向左运动：新页从右边进来，旧页往左出去
+    const dir = t.dir ?? 'l';
+    const off = dir === 'l' ? 'translateX(100%)' : dir === 'r' ? 'translateX(-100%)' : dir === 'u' ? 'translateY(100%)' : 'translateY(-100%)';
+    const away = dir === 'l' ? 'translateX(-100%)' : dir === 'r' ? 'translateX(100%)' : dir === 'u' ? 'translateY(-100%)' : 'translateY(100%)';
+    const none = 'translate(0,0)';
     switch (t.type) {
       case 'push':
-        old.animate([{ transform: 'translateX(0)' }, { transform: 'translateX(-100%)' }], { duration: dur, easing: 'ease-in-out' });
-        a = el.animate([{ transform: 'translateX(100%)' }, { transform: 'translateX(0)' }], { duration: dur, easing: 'ease-in-out' });
-        break;
-      case 'wipe':
-        a = el.animate([{ clipPath: 'inset(0 100% 0 0)' }, { clipPath: 'inset(0 0 0 0)' }], { duration: dur });
+        old.animate([{ transform: none }, { transform: away }], { duration: dur, easing: 'ease-in-out' });
+        a = el.animate([{ transform: off }, { transform: none }], { duration: dur, easing: 'ease-in-out' });
         break;
       case 'cover':
-        a = el.animate([{ transform: 'translateX(100%)' }, { transform: 'translateX(0)' }], { duration: dur, easing: 'ease-out' });
+        a = el.animate([{ transform: off }, { transform: none }], { duration: dur, easing: 'ease-out' });
+        break;
+      case 'pull':
+        // 揭开：旧页在上面移走，露出下面的新页
+        old.style.zIndex = '1';
+        a = old.animate([{ transform: none }, { transform: away }], { duration: dur, easing: 'ease-in', fill: 'forwards' });
+        break;
+      case 'wipe': {
+        // 擦除从运动方向的反侧开始：向左擦除时从右边缘露出
+        const start = dir === 'l' ? 'inset(0 0 0 100%)' : dir === 'r' ? 'inset(0 100% 0 0)' : dir === 'u' ? 'inset(100% 0 0 0)' : 'inset(0 0 100% 0)';
+        a = el.animate([{ clipPath: start }, { clipPath: 'inset(0 0 0 0)' }], { duration: dur });
+        break;
+      }
+      case 'split': {
+        const closed = t.orient === 'vert' ? 'inset(0 50% 0 50%)' : 'inset(50% 0 50% 0)';
+        if (t.inOut === 'in') {
+          // 向内合拢：旧页从两边往中间收拢消失
+          old.style.zIndex = '1';
+          a = old.animate([{ clipPath: 'inset(0 0 0 0)' }, { clipPath: closed }], { duration: dur, fill: 'forwards' });
+        } else {
+          a = el.animate([{ clipPath: closed }, { clipPath: 'inset(0 0 0 0)' }], { duration: dur });
+        }
+        break;
+      }
+      case 'circle':
+        a = el.animate([{ clipPath: 'circle(0% at 50% 50%)' }, { clipPath: 'circle(71% at 50% 50%)' }], { duration: dur });
         break;
       default:
         a = el.animate([{ opacity: 0 }, { opacity: 1 }], { duration: dur });

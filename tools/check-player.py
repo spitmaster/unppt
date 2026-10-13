@@ -58,6 +58,7 @@ def main():
     subprocess.run(["node", "packages/transcoder/dist/cli.js", "convert", "testcases/anim-iterate.pptx", "-o", str(player_dir / "iterate.html"), "-q"], cwd=ROOT, check=True)
     subprocess.run(["node", "packages/transcoder/dist/cli.js", "convert", "testcases/anim-path.pptx", "-o", str(player_dir / "path.html"), "-q"], cwd=ROOT, check=True)
     subprocess.run(["node", "packages/transcoder/dist/cli.js", "convert", "testcases/anim-emphasis.pptx", "-o", str(player_dir / "emph.html"), "-q"], cwd=ROOT, check=True)
+    subprocess.run(["node", "packages/transcoder/dist/cli.js", "convert", "testcases/transitions.pptx", "-o", str(player_dir / "trans.html"), "-q"], cwd=ROOT, check=True)
     s1, player_url = serve(player_dir)
     s2, host_url = serve(host_dir)
 
@@ -159,6 +160,23 @@ def main():
         page6.wait_for_timeout(1000)
         end = page6.evaluate(js6)
         check(mid > 1.01 and abs(end - 1) < 0.001, f"脉冲中途放大、播完复原：{mid:.3f} -> {end:.3f}")
+
+        # ---------------- 7. 各种页面切换：翻页播完后只剩新的一页，没有脚本错误
+        page7 = b.new_page()
+        errors = []
+        page7.on("pageerror", lambda e: errors.append(str(e)))
+        page7.goto(f"{player_url}/trans.html")
+        page7.wait_for_function("window.unppt !== undefined && !!document.querySelector('div.unppt-slide')")
+        n = page7.evaluate("window.unppt.getState()")["slideCount"]
+        bad = []
+        for k in range(1, n):
+            page7.evaluate("window.unppt.next()")
+            page7.wait_for_timeout(2300)
+            st = page7.evaluate("window.unppt.getState()")["slide"]
+            left = page7.evaluate("document.querySelectorAll('div.unppt-slide').length")
+            if st != k or left != 1:
+                bad.append((k, st, left))
+        check(n > 10 and not bad and not errors, f"{n - 1} 种切换都正常结束：{bad} {errors[:2]}")
 
         # ---------------- 移动端视口
         mobile = {"is_mobile": True} if BROWSER != "firefox" else {}
