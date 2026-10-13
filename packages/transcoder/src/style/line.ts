@@ -16,6 +16,8 @@ export interface Line {
   join: string;
   head?: { type: string; w: string; len: string };
   tail?: { type: string; w: string; len: string };
+  /** 复合线型：dbl 双线、thickThin 外粗内细、thinThick 外细内粗、tri 三线（单线时不写） */
+  cmpd?: string;
 }
 
 const DASH: Record<string, number[]> = {
@@ -29,6 +31,7 @@ export function parseLine(lns: (XEl | undefined)[], ctxs: ColorContext[], part: 
   let fill: Fill | undefined;
   let dash: string | undefined;
   let cap = 'flat', join = 'round';
+  let cmpd = 'sng';
   let head, tail;
   let any = false;
   lns.forEach((ln, i) => {
@@ -42,6 +45,8 @@ export function parseLine(lns: (XEl | undefined)[], ctxs: ColorContext[], part: 
     if (pd) dash = pd;
     const c = attr(ln, 'cap');
     if (c) cap = c;
+    const cm = attr(ln, 'cmpd');
+    if (cm) cmpd = cm;
     if (child(ln, 'a:round')) join = 'round';
     else if (child(ln, 'a:bevel')) join = 'bevel';
     else if (child(ln, 'a:miter')) join = 'miter';
@@ -58,7 +63,34 @@ export function parseLine(lns: (XEl | undefined)[], ctxs: ColorContext[], part: 
     dash: dash && dash !== 'solid' && DASH[dash] ? DASH[dash].map((d) => n2(d * px)).join(' ') : undefined,
     cap: cap === 'rnd' ? 'round' : cap === 'sq' ? 'square' : 'butt',
     join, head, tail,
+    ...(cmpd !== 'sng' && ['dbl', 'thickThin', 'thinThick', 'tri'].includes(cmpd) ? { cmpd } : {}),
   };
+}
+
+/**
+ * 复合线型：用遮罩把整条粗线挖出线间的空隙（实测 PowerPoint 的比例：双线 1:1:1，三线 1:1:2:1:1，
+ * 粗细线 3:1:1 且第一个词说的是外侧）。粗细线要分内外：闭合路径按形状内部区域区分，不闭合的按双线画。
+ * 返回加在描边元素上的 mask 属性；不是复合线型时返回空串。
+ */
+export function compoundMask(line: Line, d: string, doc: SvgDoc, box: { w: number; h: number }): string {
+  if (!line.cmpd) return '';
+  const w = line.width;
+  const id = doc.id('cm');
+  const m = w * 2;
+  const stroke = (width: number, color: string, clip = '') => `<path d="${d}" fill="none" stroke="${color}" stroke-width="${n2(width)}"${clip}/>`;
+  const closed = /z\s*$/i.test(d.trim());
+  let body = stroke(w, '#fff');
+  if (line.cmpd === 'tri') body += stroke(w * 4 / 6, '#000') + stroke(w * 2 / 6, '#fff');
+  else if (line.cmpd === 'dbl' || !closed) body += stroke(w / 3, '#000');
+  else {
+    // 空隙在细线那一侧：外细时空隙在形状外面，外粗时在里面
+    const cid = doc.id('cc');
+    const outside = line.cmpd === 'thinThick';
+    doc.addDef(`<clipPath id="${cid}"><path d="${outside ? `M${n2(-m)} ${n2(-m)}H${n2(box.w + m)}V${n2(box.h + m)}H${n2(-m)}Z` : ''}${d}" clip-rule="evenodd"/></clipPath>`);
+    body += stroke(w * 0.6, '#000', ` clip-path="url(#${cid})"`) + stroke(w * 0.2, '#fff');
+  }
+  doc.addDef(`<mask id="${id}" maskUnits="userSpaceOnUse" x="${n2(-m)}" y="${n2(-m)}" width="${n2(box.w + m * 2)}" height="${n2(box.h + m * 2)}">${body}</mask>`);
+  return ` mask="url(#${id})"`;
 }
 
 function markerSize(sz: string) {

@@ -1,0 +1,163 @@
+{
+ "version": 7,
+ "slideWidthPt": 960.0,
+ "slideHeightPt": 540.0,
+ "imageWidth": 1280,
+ "imageHeight": 720,
+ "slides": [
+  {
+   "index": 0,
+   "hidden": false,
+   "shapes": [
+    {
+     "id": 2,
+     "name": "Rectangle 1",
+     "type": 1,
+     "x": 40.0,
+     "y": 40.0,
+     "w": 150.0,
+     "h": 150.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1
+    },
+    {
+     "id": 3,
+     "name": "Rectangle 2",
+     "type": 1,
+     "x": 220.0,
+     "y": 40.0,
+     "w": 150.0,
+     "h": 150.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1
+    },
+    {
+     "id": 4,
+     "name": "Rectangle 3",
+     "type": 1,
+     "x": 400.0,
+     "y": 40.0,
+     "w": 150.0,
+     "h": 150.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1
+    },
+    {
+     "id": 5,
+     "name": "Rectangle 4",
+     "type": 1,
+     "x": 580.0,
+     "y": 40.0,
+     "w": 150.0,
+     "h": 150.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1
+    },
+    {
+     "id": 6,
+     "name": "Rectangle 5",
+     "type": 1,
+     "x": 760.0,
+     "y": 40.0,
+     "w": 150.0,
+     "h": 150.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1
+    },
+    {
+     "id": 7,
+     "name": "Rectangle 6",
+     "type": 1,
+     "x": 40.0,
+     "y": 230.0,
+     "w": 150.0,
+     "h": 150.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1
+    },
+    {
+     "id": 8,
+     "name": "Rectangle 7",
+     "type": 1,
+     "x": 220.0,
+     "y": 230.0,
+     "w": 150.0,
+     "h": 150.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1
+    },
+    {
+     "id": 9,
+     "name": "Rectangle 8",
+     "type": 1,
+     "x": 400.0,
+     "y": 230.0,
+     "w": 150.0,
+     "h": 150.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1
+    },
+    {
+     "id": 10,
+     "name": "Rectangle 9",
+     "type": 1,
+     "x": 580.0,
+     "y": 230.0,
+     "w": 150.0,
+     "h": 150.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1
+    },
+    {
+     "id": 11,
+     "name": "Rectangle 10",
+     "type": 1,
+     "x": 760.0,
+     "y": 230.0,
+     "w": 150.0,
+     "h": 150.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1
+    },
+    {
+     "id": 12,
+     "name": "Oval 11",
+     "type": 1,
+     "x": 60.0,
+     "y": 420.0,
+     "w": 200.0,
+     "h": 100.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 9
+    },
+    {
+     "id": 13,
+     "name": "Straight Connector 12",
+     "type": 9,
+     "x": 320.0,
+     "y": 470.0,
+     "w": 580.0,
+     "h": 0.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": -2
+    }
+   ],
+   "effects": [],
+   "triggerHidden": [],
+   "steps": 0
+  }
+ ],
+ "ok": true
+}
