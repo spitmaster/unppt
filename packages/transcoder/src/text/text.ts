@@ -2,14 +2,14 @@
  * 文字排版：在转码时用字体的真实字宽算好每一行，输出每行（每段样式）一个 SVG <text>。
  * 这样换行位置固定，不依赖观看者浏览器的排版。
  */
-import { colorIn, css, type ColorContext, type Rgba } from './color';
-import { fallbackAdvance, isWide, type FontFace, type FontLibrary, type FontMetrics } from './font';
-import { EMU_PER_PX, type Theme } from './model';
-import { esc, n2, type SvgDoc } from './svg';
-import { shadowFilter } from './fill';
-import type { Rel } from './package';
-import { linkAttr } from './links';
-import { attr, child, children, numAttr, type XEl } from './xml';
+import { colorIn, css, type ColorContext, type Rgba } from '../model/color';
+import { fallbackAdvance, isWide, type FontFace, type FontLibrary, type FontMetrics } from '../font/font';
+import { EMU_PER_PX, type Theme } from '../model/model';
+import { esc, n2, type SvgDoc } from '../common/svg';
+import { shadowFilter } from '../style/fill';
+import type { Rel } from '../io/package';
+import { linkAttr } from '../common/links';
+import { attr, child, children, numAttr, type XEl } from '../io/xml';
 
 export interface TextEnv {
   colors: ColorContext;

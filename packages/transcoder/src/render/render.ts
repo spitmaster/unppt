@@ -2,18 +2,18 @@
  * 把一页幻灯片渲染成 SVG。
  * 顺序：背景 -> 母版元素 -> 版式元素 -> 幻灯片元素。占位符的属性沿 幻灯片 -> 版式 -> 母版 继承。
  */
-import { colorContext, matchPlaceholder, phInfo, EMU_PER_PX, type Layout, type Master, type Presentation, type SlideContext, type SlideRef } from './model';
-import { bgStyle, blipFilter, effectFilter, fillAttrs, findFillEl, parseFill, parseLine, strokeAttrs, styleRef, type Fill, type ImageResolver } from './fill';
-import { buildGeometry, parseGeomXml, presetGeometry } from './geometry';
-import { colorIn } from './color';
-import type { FontLibrary } from './font';
-import type { MediaStore } from './media';
-import { linkAttr } from './links';
-import { esc, n2, SvgDoc } from './svg';
-import { renderText, type FontEmbedder, type StyleChain, type TextEnv } from './text';
-import { attr, boolAttr, child, children, expandAlternate, numAttr, path, type XEl } from './xml';
+import { colorContext, matchPlaceholder, phInfo, EMU_PER_PX, type Layout, type Master, type Presentation, type SlideContext, type SlideRef } from '../model/model';
+import { bgStyle, blipFilter, effectFilter, fillAttrs, findFillEl, parseFill, parseLine, strokeAttrs, styleRef, type Fill, type ImageResolver } from '../style/fill';
+import { buildGeometry, parseGeomXml, presetGeometry } from '../geometry/geometry';
+import { colorIn } from '../model/color';
+import type { FontLibrary } from '../font/font';
+import type { MediaStore } from '../media/media';
+import { linkAttr } from '../common/links';
+import { esc, n2, SvgDoc } from '../common/svg';
+import { renderText, type FontEmbedder, type StyleChain, type TextEnv } from '../text/text';
+import { attr, boolAttr, child, children, expandAlternate, numAttr, path, type XEl } from '../io/xml';
 import { renderTable } from './table';
-import { renderChart } from './chart';
+import { renderChart } from '../chart/chart';
 
 export interface RenderEnv {
   pres: Presentation;
@@ -25,7 +25,7 @@ export interface RenderEnv {
 
 export interface RenderedSlide {
   svg: string;
-  colors?: import('./color').ColorContext;
+  colors?: import('../model/color').ColorContext;
   timing?: XEl;
   transition?: XEl;
   hidden: boolean;

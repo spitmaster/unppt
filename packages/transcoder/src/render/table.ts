@@ -2,12 +2,12 @@
  * 表格：列宽来自 a:tblGrid，行高取"设定行高"和"文字实际高度"的较大值；
  * 表格样式（ppt/tableStyles.xml）按 整表 -> 条纹 -> 首尾列 -> 首尾行 的顺序叠加，单元格自己的设置最后覆盖。
  */
-import { colorIn, type ColorContext } from './color';
-import { fillAttrs, findFillEl, parseFill, parseLine, strokeAttrs, type Fill, type Line } from './fill';
-import { EMU_PER_PX, type SlideContext } from './model';
-import { n2 } from './svg';
-import { renderText, type TextEnv } from './text';
-import { attr, child, children, numAttr, type XEl } from './xml';
+import { colorIn, type ColorContext } from '../model/color';
+import { fillAttrs, findFillEl, parseFill, parseLine, strokeAttrs, type Fill, type Line } from '../style/fill';
+import { EMU_PER_PX, type SlideContext } from '../model/model';
+import { n2 } from '../common/svg';
+import { renderText, type TextEnv } from '../text/text';
+import { attr, child, children, numAttr, type XEl } from '../io/xml';
 import type { SlideRenderer } from './render';
 
 const px = (v: number | undefined) => (v ?? 0) / EMU_PER_PX;

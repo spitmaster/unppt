@@ -2,7 +2,7 @@
  * TrueType 字体子集化（零依赖）：只保留用到的字，打包成 WOFF（压缩用内置的 CompressionStream）。
  * 只支持 glyf 轮廓的字体（.ttf / .ttc 里的 TrueType）；CFF 轮廓（多数 .otf）返回 undefined。
  */
-import type { RandomAccessSource } from './source';
+import type { RandomAccessSource } from '../io/source';
 
 const be16 = (b: Uint8Array, o: number) => (b[o] << 8) | b[o + 1];
 const bes16 = (b: Uint8Array, o: number) => { const v = be16(b, o); return v & 0x8000 ? v - 0x10000 : v; };

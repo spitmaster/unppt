@@ -1,11 +1,11 @@
 /**
  * 填充、线条、阴影 -> SVG 属性和 defs。
  */
-import { colorIn, css, parseColorEl, type ColorContext, type Rgba } from './color';
-import type { SvgDoc } from './svg';
-import { esc, n2 } from './svg';
-import { attr, child, children, numAttr, type XEl } from './xml';
-import { EMU_PER_PX, type Theme } from './model';
+import { colorIn, css, parseColorEl, type ColorContext, type Rgba } from '../model/color';
+import type { SvgDoc } from '../common/svg';
+import { esc, n2 } from '../common/svg';
+import { attr, child, children, numAttr, type XEl } from '../io/xml';
+import { EMU_PER_PX, type Theme } from '../model/model';
 
 export type Fill =
   | { kind: 'none' }

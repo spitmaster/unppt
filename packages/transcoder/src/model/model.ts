@@ -3,8 +3,8 @@
  * 母版、版式、主题会缓存（数量少）；幻灯片逐页读取、用完即丢。
  */
 import type { ColorContext } from './color';
-import { OpcPackage } from './package';
-import { attr, child, children, expandAlternate, numAttr, path, type XEl } from './xml';
+import { OpcPackage } from '../io/package';
+import { attr, child, children, expandAlternate, numAttr, path, type XEl } from '../io/xml';
 
 export const EMU_PER_PX = 9525;
 

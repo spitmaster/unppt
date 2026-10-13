@@ -1,8 +1,8 @@
 /**
  * 媒体（图片、视频、音频）：小文件内联成 data URI，大文件以数据流方式写到 media/ 目录。
  */
-import type { OpcPackage } from './package';
-import type { Presentation } from './model';
+import type { OpcPackage } from '../io/package';
+import type { Presentation } from '../model/model';
 import { emfToSvg } from './emf';
 import { wmfToSvg } from './wmf';
 

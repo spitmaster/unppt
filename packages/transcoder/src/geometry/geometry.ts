@@ -2,7 +2,7 @@
  * DrawingML 形状几何：公式引擎 + 路径生成。
  * 预设形状（prstGeom）和自定义形状（custGeom）用同一套引擎计算，输出 SVG path。
  */
-import { attr, child, children, type XEl } from './xml';
+import { attr, child, children, type XEl } from '../io/xml';
 import { PRESETS } from './presets';
 
 export interface GeomCmd { op: 'M' | 'L' | 'A' | 'C' | 'Q' | 'Z'; args: string[]; }
