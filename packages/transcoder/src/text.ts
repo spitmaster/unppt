@@ -90,6 +90,8 @@ interface RunStyle {
   strike: boolean;
   baseline: number;       // 上下标，百分比（正数上标）
   spc: number;            // 字间距，像素
+  /** 字距调整（kerning）从多大字号开始（磅）；没写就不调整 */
+  kern?: number;
   caps: 'none' | 'all' | 'small';
   /** 西文字体标记的是东亚字符集（如 GB2312）：缺字体时西文也用东亚字体替代 */
   latinEaCharset: boolean;
@@ -144,6 +146,7 @@ function runStyle(r: XEl, env: TextEnv, scale: number): RunStyle {
     baseline: (numAttr(r, 'baseline') ?? 0) / 1000,
     // 自动缩小时字间距也按同样比例缩小
     spc: ((numAttr(r, 'spc') ?? 0) / 100) * scale * 96 / 72,
+    kern: numAttr(r, 'kern') !== undefined ? numAttr(r, 'kern')! / 100 : undefined,
     caps: (attr(r, 'cap') as RunStyle['caps']) ?? 'none',
     latinEaCharset: EA_CHARSETS.has(attr(child(r, 'a:latin'), 'charset') ?? ''),
     panoseBold: panoseWeight(attr(child(r, 'a:ea'), 'panose') ?? attr(child(r, 'a:latin'), 'panose')) >= 7,
@@ -208,6 +211,11 @@ const LATIN_SUBS = ['Calibri', 'Arial', 'Liberation Sans', 'Helvetica'];
 // 实测：字体标了中文字符集且本机缺失时，PowerPoint 用微软雅黑替代（样本换行 40/40 一致）
 const EA_SUBS = ['Microsoft YaHei', '微软雅黑', 'DengXian', '等线', 'PingFang SC', 'Noto Sans CJK SC', 'Source Han Sans SC'];
 
+/** 这段文字是否做字距调整：PowerPoint 只对字号不小于 kern 的文字调整 */
+function kernOn(s: RunStyle): boolean {
+  return s.kern !== undefined && s.size * 72 / 96 >= s.kern - 0.01;
+}
+
 async function makeAtoms(text: string, style: RunStyle, m: Measurer): Promise<Atom[]> {
   const out: Atom[] = [];
   // 缺字体时按 PowerPoint 的做法替代：西文用 Calibri（字体标了东亚字符集时也用雅黑），中文用雅黑
@@ -225,6 +233,8 @@ async function makeAtoms(text: string, style: RunStyle, m: Measurer): Promise<At
   const [eaM, eaFam] = style.ea === style.latin ? [latinM, latinFam] : await pick(style.ea, EA_SUBS);
   let src = text;
   if (style.caps === 'all') src = src.toUpperCase();
+  const kerning = kernOn(style);
+  let prevM: Measured | undefined;
   for (const ch of src) {
     const cp = ch.codePointAt(0)!;
     const wide = isWide(cp);
@@ -241,6 +251,10 @@ async function makeAtoms(text: string, style: RunStyle, m: Measurer): Promise<At
     if (usedM && adv !== undefined && m.embed && cp > 0x20) m.embed.use(usedM.face, cp);
     const size = style.baseline ? style.size * 0.67 : style.size;
     const width = (adv ?? fallbackAdvance(cp)) * size + style.spc;
+    // 字距调整：和前一个字同一个字体时，把成对调整量加到前一个字的宽度上
+    const prevAtom = out[out.length - 1];
+    if (kerning && prevAtom && adv !== undefined && usedM && usedM === prevM) prevAtom.width += usedM.metrics.kern(prevAtom.cp, cp) * size;
+    prevM = adv !== undefined ? usedM : undefined;
     out.push({
       text: ch, cp, width, style, family, face: adv !== undefined ? usedM?.face : undefined,
       ascent: (used?.ascent ?? 0.92) * style.size,
@@ -648,7 +662,11 @@ function textEl(txt: string, x: number, y: number, s: RunStyle, family: string, 
   if (deco) a += ` text-decoration="${deco}"`;
   if (s.spc) a += ` letter-spacing="${n2(s.spc)}"`;
   if (anchor) a += ` text-anchor="${anchor}"`;
-  if (s.link) a += `${s.link} style="cursor:pointer"`;
+  const css2: string[] = [];
+  if (s.link) { a += s.link; css2.push('cursor:pointer'); }
+  // 浏览器默认会做字距调整；PowerPoint 没开的地方关掉，保持和排版时算的宽度一致
+  if (!kernOn(s)) css2.push('font-kerning:none');
+  if (css2.length) a += ` style="${css2.join(';')}"`;
   if (s.outline) a += ` stroke="${css(s.outline.color)}" stroke-width="${n2(s.outline.width)}"${s.outline.color.a < 0.999 ? ` stroke-opacity="${n2(s.outline.color.a)}"` : ''} paint-order="stroke"`;
   const doc = env?.doc;
   if (doc && s.grad) {
