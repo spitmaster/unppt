@@ -2,17 +2,19 @@
 import { attr, child } from '../../io/xml';
 import { css } from '../../model/color';
 import { n2 } from '../../common/svg';
-import { label, markerSvg, textStyle, textWidth } from '../draw';
+import { label, markerSvg, textStyle } from '../draw';
+import { sideGap, type TextWidth } from '../layout';
 import { axesOf } from '../axis';
 import type { AxisInfo, Plot, TextStyle } from '../model';
 import type { ChartType } from '../chart-type';
 
 /** 雷达图：分类沿圆周均匀分布，从正上方顺时针；网格是多边形 */
-function renderRadar(p: Plot, A: AxisInfo, catStyle: TextStyle, catDeleted: boolean, left: number, top: number, right: number, bottom: number): string {
+function renderRadar(p: Plot, A: AxisInfo, catStyle: TextStyle, catDeleted: boolean, tw: TextWidth, left: number, top: number, right: number, bottom: number): string {
   const cats = p.series[0]?.cats ?? [];
   const n = Math.max(1, ...p.series.map((s) => s.vals.length));
-  const maxW = catDeleted ? 0 : Math.max(0, ...cats.map((c) => textWidth(c, catStyle.size)));
-  const gap = 6;
+  const maxW = catDeleted ? 0 : Math.max(0, ...cats.map((c) => tw(c, catStyle.size)));
+  // 标签和图形之间的间隙：和坐标轴标签同一规律（0.8 倍字号）
+  const gap = sideGap(catStyle.size);
   // 按多边形顶点实际伸出的范围留标签空间（五边形左右顶点只到半径的 0.951 倍）
   let sMax = 0, cMax = 0;
   for (let i = 0; i < n; i++) {
@@ -79,6 +81,6 @@ export const radarType: ChartType = {
     let vmin = 0, vmax = 0;
     for (const s of p.series) for (const v of s.vals) if (v !== null) { vmax = Math.max(vmax, v); vmin = Math.min(vmin, v); }
     const rStyle = textStyle(child(catAxes[0], 'c:txPr'), ctx.colors, ctx.baseText);
-    return renderRadar(p, ctx.makeAxis(valAxes[0], vmin, vmax, false), rStyle, attr(child(catAxes[0], 'c:delete'), 'val') === '1', a.left, a.top, a.right, a.bottom);
+    return renderRadar(p, ctx.makeAxis(valAxes[0], vmin, vmax, false), rStyle, attr(child(catAxes[0], 'c:delete'), 'val') === '1', ctx.width, a.left, a.top, a.right, a.bottom);
   },
 };

@@ -14,6 +14,7 @@ import { axesOf, axId, axisMaker } from './axis';
 import type { CategoryFrame } from './chart-type';
 import { chartTypeOf } from './chart-types';
 import { accentColor, label, legendKey, textStyle, textWidth } from './draw';
+import { catBand, catCenter, legendBand, legendCenter, PAD, RIGHT_LABEL_PAD, SIDE_LABEL_PAD, sideAnchor, sideGap, topForLabel, valBand, valCenter, type TextWidth } from './layout';
 import type { ChartContext, Plot, Series, TextStyle } from './model';
 import { readPlots } from './read';
 import { lineType } from './types/line-area';
@@ -23,6 +24,8 @@ export interface ChartEnv {
   theme: Theme;
   part: string;
   warn(msg: string): void;
+  /** 量文字宽度（有字体文件时用真实字宽）；不给时估算 */
+  measure?: TextWidth;
 }
 
 export function renderChart(space: XEl | undefined, w: number, h: number, env: ChartEnv): string {
@@ -30,6 +33,7 @@ export function renderChart(space: XEl | undefined, w: number, h: number, env: C
   const chart = child(space, 'c:chart');
   const plotArea = child(chart, 'c:plotArea');
   const { colors, theme } = env;
+  const tw = env.measure ?? textWidth;
   const out: string[] = [];
 
   // 整个图表区的背景和边框
@@ -49,7 +53,6 @@ export function renderChart(space: XEl | undefined, w: number, h: number, env: C
 
   // ---------------- 标题
   // 实测：图表区四周留白约 11 磅
-  const PAD = 11 * 96 / 72;
   let top = PAD, bottom = h - PAD, left = PAD, right = w - PAD;
   const titleEl = child(chart, 'c:title');
   const autoDeleted = attr(child(chart, 'c:autoTitleDeleted'), 'val') === '1';
@@ -92,17 +95,17 @@ export function renderChart(space: XEl | undefined, w: number, h: number, env: C
       if (type0.legendReversed?.(plots[0])) entries.reverse();
     }
     const ks = legendText.size * 0.6;
-    const itemW = entries.map((e) => (e.line ? ks * 3 : ks) + 4 + textWidth(e.name, legendText.size) + 10);
+    const itemW = entries.map((e) => (e.line ? ks * 3 : ks) + 4 + tw(e.name, legendText.size) + 10);
     if (legendPos === 'b' || legendPos === 't') {
       const total = itemW.reduce((a, b) => a + b, 0);
       let x = (w - total) / 2;
-      const y = legendPos === 'b' ? bottom - legendText.size * 0.6 : top + legendText.size * 0.6;
+      const y = legendPos === 'b' ? bottom - legendCenter(legendText.size) : top + legendText.size * 0.6;
       entries.forEach((e, i) => {
         out.push(legendKey(e, x, y, ks));
         out.push(label(e.name, x + (e.line ? ks * 3 : ks) + 4, y, legendText, 'start'));
         x += itemW[i];
       });
-      if (legendPos === 'b') bottom -= legendText.size * 1.2 + 11;
+      if (legendPos === 'b') bottom -= legendBand(legendText.size);
       else top += legendText.size * 1.2 + 8;
     } else {
       const lw = Math.max(...itemW);
@@ -129,7 +132,7 @@ export function renderChart(space: XEl | undefined, w: number, h: number, env: C
 
   const makeAxis = axisMaker(colors, baseText, env.part);
   if (type0.layout === 'standalone') {
-    const ctx: ChartContext = { colors, part: env.part, baseText, plotArea, makeAxis };
+    const ctx: ChartContext = { colors, part: env.part, baseText, plotArea, makeAxis, width: tw, box: { w, h } };
     out.push(type0.render!(plots[0], { left, top, right, bottom }, ctx));
     return out.join('');
   }
@@ -173,20 +176,24 @@ export function renderChart(space: XEl | undefined, w: number, h: number, env: C
   const valDeleted = prim.deleted;
   const catDeleted = attr(child(catAx, 'c:delete'), 'val') === '1';
 
-  // 留出坐标轴标签的空间
+  // 留出坐标轴标签的空间（实测规律见 layout.ts）：左右两侧的标签从图表边 SIDE_LABEL_PAD 处排起
+  const sideLeft = (labels: string[], s: number) => (left === PAD ? SIDE_LABEL_PAD : left) + Math.max(0, ...labels.map((t) => tw(t, s))) + sideGap(s);
   if (!horizontal) {
-    if (!valDeleted) left += Math.max(...tickLabels.map((t) => textWidth(t, valStyle.size))) + 6;
-    if (sec && !sec.deleted) right -= Math.max(...sec.labels.map((t) => textWidth(t, sec.style.size))) + 6;
-    if (!catDeleted) bottom -= catStyle.size * 1.2 + 8;
+    if (!valDeleted) { left = sideLeft(tickLabels, valStyle.size); top = Math.max(top, topForLabel(valStyle.size)); }
+    if (sec && !sec.deleted) right = (right === w - PAD ? w - SIDE_LABEL_PAD : right) - Math.max(0, ...sec.labels.map((t) => tw(t, sec.style.size))) - sideGap(sec.style.size);
+    if (!catDeleted) bottom -= catBand(catStyle.size);
   } else {
-    if (!catDeleted) left += Math.max(...cats.map((c) => textWidth(c, catStyle.size))) + 8;
-    if (!valDeleted) bottom -= valStyle.size * 1.2 + 4;
+    if (!catDeleted) left = sideLeft(cats, catStyle.size);
+    if (!valDeleted) {
+      bottom -= valBand(valStyle.size);
+      right = Math.min(right, w - RIGHT_LABEL_PAD - tw(tickLabels[tickLabels.length - 1] ?? '', valStyle.size) / 2);
+    }
   }
   // 分类标签落在坐标轴两端（面积图等 midCat）时，给首尾标签各留半个标签宽度
   const between = attr(child(primaryAx, 'c:crossBetween'), 'val') !== 'midCat';
   if (!between && !horizontal && !catDeleted && cats.length) {
-    left = Math.max(left, PAD + textWidth(cats[0], catStyle.size) / 2 - 4);
-    right = Math.min(right, w - PAD - textWidth(cats[cats.length - 1], catStyle.size) / 2 + 4);
+    left = Math.max(left, PAD + tw(cats[0], catStyle.size) / 2 - 4);
+    right = Math.min(right, w - PAD - tw(cats[cats.length - 1], catStyle.size) / 2 + 4);
   }
   const pw = Math.max(1, right - left), ph = Math.max(1, bottom - top);
 
@@ -198,30 +205,30 @@ export function renderChart(space: XEl | undefined, w: number, h: number, env: C
     if (!horizontal) {
       const y = bottom - f * ph;
       if (gridLine?.color) out.push(`<line x1="${n2(left)}" y1="${n2(y)}" x2="${n2(right)}" y2="${n2(y)}" stroke="${css(gridLine.color)}" stroke-width="${n2(gridLine.width)}"/>`);
-      if (!valDeleted) out.push(label(tickLabels[i], left - 6, y, valStyle, 'end'));
+      if (!valDeleted) out.push(label(tickLabels[i], left - sideAnchor(valStyle.size), y, valStyle, 'end'));
     } else {
       const x = left + f * pw;
       if (gridLine?.color) out.push(`<line x1="${n2(x)}" y1="${n2(top)}" x2="${n2(x)}" y2="${n2(bottom)}" stroke="${css(gridLine.color)}" stroke-width="${n2(gridLine.width)}"/>`);
-      if (!valDeleted) out.push(label(tickLabels[i], x, bottom + valStyle.size * 0.8, valStyle));
+      if (!valDeleted) out.push(label(tickLabels[i], x, bottom + valCenter(valStyle.size), valStyle));
     }
   });
   if (sec && !sec.deleted && !horizontal) {
-    sec.ticks.forEach((t, i) => out.push(label(sec.labels[i], right + 6, bottom - sec.pos(t) * ph, sec.style, 'start')));
+    sec.ticks.forEach((t, i) => out.push(label(sec.labels[i], right + sideAnchor(sec.style.size), bottom - sec.pos(t) * ph, sec.style, 'start')));
   }
 
   // 分类轴
   const catLine = parseLine([child(child(catAx, 'c:spPr'), 'a:ln')], [colors], env.part);
   const band = (horizontal ? ph : pw) / (between ? nCat : Math.max(1, nCat - 1));
-  const catCenter = (i: number) => (between ? (i + 0.5) * band : i * band);
+  const bandCenter = (i: number) => (between ? (i + 0.5) * band : i * band);
   if (!catDeleted) {
     cats.forEach((c, i) => {
-      if (!horizontal) out.push(label(c, left + catCenter(i), bottom + catStyle.size * 0.8, catStyle));
-      else out.push(label(c, left - 8, bottom - catCenter(i), catStyle, 'end'));
+      if (!horizontal) out.push(label(c, left + bandCenter(i), bottom + catCenter(catStyle.size), catStyle));
+      else out.push(label(c, left - sideAnchor(catStyle.size), bottom - bandCenter(i), catStyle, 'end'));
     });
   }
 
   // ---------------- 系列（数据标签最后画，盖在图形上面）
-  const frame: CategoryFrame = { left, top, right, bottom, pw, ph, band, catCenter, nCat, horizontal };
+  const frame: CategoryFrame = { left, top, right, bottom, pw, ph, band, catCenter: bandCenter, nCat, horizontal };
   const labelsOut: string[] = [];
   const zeroF = vpos(Math.max(prim.lo, Math.min(prim.hi, 0)));
   for (const p of plots) {

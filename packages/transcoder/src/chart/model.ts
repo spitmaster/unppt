@@ -58,4 +58,8 @@ export interface ChartContext {
   baseText: TextStyle;
   plotArea?: XEl;
   makeAxis: AxisMaker;
+  /** 量文字宽度 */
+  width: (s: string, size: number) => number;
+  /** 整个图表区的大小 */
+  box: { w: number; h: number };
 }
