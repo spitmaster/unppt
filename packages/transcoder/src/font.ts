@@ -1,8 +1,10 @@
 /**
  * 字体：自己解析 TrueType / OpenType / TTC，只读排版需要的表：
- *   name（字体名，中英文都收录）、cmap（字符 -> 字形）、hmtx/hhea（字宽）、head、OS/2（行高）。
+ *   name（字体名，中英文都收录）、cmap（字符 -> 字形）、hmtx/hhea（字宽）、head、OS/2（行高）、
+ *   GPOS / kern（字距调整）。
  * 字体通过 RandomAccessSource 懒加载：建索引时只读表目录和 name 表，真正用到才读字宽数据。
  */
+import { buildKerning } from './kern';
 import { toSource, type InputSource, type RandomAccessSource } from './source';
 
 export interface FontFace {
@@ -24,6 +26,8 @@ export interface FontMetrics {
   lineGap: number;
   /** 返回字符宽度（单位 em）；字体里没有这个字时返回 undefined */
   advance(codePoint: number): number | undefined;
+  /** 两个字符之间的字距调整（单位 em，负数是挤近）；字体没有字距数据时为 0 */
+  kern(left: number, right: number): number;
 }
 
 const be16 = (b: Uint8Array, o: number) => (b[o] << 8) | b[o + 1];
@@ -119,6 +123,9 @@ async function loadMetrics(src: RandomAccessSource, tables: Map<string, TableRec
   const cmap = await get('cmap');
   const lookup = buildCmap(cmap);
   const cache = new Map<number, number | undefined>();
+  const kernRec = tables.get('GPOS'), kernOld = tables.get('kern');
+  const kernFn = kernRec || kernOld ? buildKerning(kernRec ? await get('GPOS') : undefined, kernOld ? await get('kern') : undefined) : undefined;
+  const kernCache = new Map<number, number>();
   return {
     unitsPerEm: upem, ascent, descent, lineGap,
     advance(cp) {
@@ -131,6 +138,18 @@ async function loadMetrics(src: RandomAccessSource, tables: Map<string, TableRec
       }
       cache.set(cp, w);
       return w;
+    },
+    kern(left, right) {
+      if (!kernFn) return 0;
+      const key = left * 0x110000 + right;
+      let v = kernCache.get(key);
+      if (v === undefined) {
+        const g1 = lookup(left), g2 = lookup(right);
+        try { v = g1 && g2 ? kernFn(g1, g2) / upem : 0; } catch { v = 0; }
+        if (!Number.isFinite(v)) v = 0;
+        kernCache.set(key, v);
+      }
+      return v;
     },
   };
 }

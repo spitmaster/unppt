@@ -1,12 +1,12 @@
 {
- "date": "2026-10-13 10:20",
+ "date": "2026-10-13 10:27",
  "set": "testcases",
  "files": 42,
  "failedToConvert": 0,
  "pages": 123,
  "passed": 103,
  "passRate": 0.8374,
- "meanSsim": 0.9719,
+ "meanSsim": 0.9722,
  "passLine": 0.95,
  "issues": {},
  "missingFontCount": 9
