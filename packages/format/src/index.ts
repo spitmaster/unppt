@@ -68,6 +68,8 @@ export interface AnimTarget {
   move?: [number, number];
   /** 路径动画经过的点（像素，相对当前位置），最后一个点就是 move */
   path?: [number, number][];
+  /** 过程不是从头到尾直线变化的强调动画（脉冲、跷跷板等）：按时间采样的缩放和旋转（相对当前状态） */
+  keys?: { o: number; s: [number, number]; r: number }[];
   /** 新的填充颜色 */
   fill?: string;
   /** 新的文字颜色 */

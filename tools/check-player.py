@@ -57,6 +57,7 @@ def main():
     shutil.copy(ROOT / "packages/player/dist/host.js", host_dir / "host.js")
     subprocess.run(["node", "packages/transcoder/dist/cli.js", "convert", "testcases/anim-iterate.pptx", "-o", str(player_dir / "iterate.html"), "-q"], cwd=ROOT, check=True)
     subprocess.run(["node", "packages/transcoder/dist/cli.js", "convert", "testcases/anim-path.pptx", "-o", str(player_dir / "path.html"), "-q"], cwd=ROOT, check=True)
+    subprocess.run(["node", "packages/transcoder/dist/cli.js", "convert", "testcases/anim-emphasis.pptx", "-o", str(player_dir / "emph.html"), "-q"], cwd=ROOT, check=True)
     s1, player_url = serve(player_dir)
     s2, host_url = serve(host_dir)
 
@@ -145,6 +146,19 @@ def main():
           const m = new DOMMatrix(getComputedStyle(el).transform); return [m.e, m.f]; })()""")
         check(abs(mid[0]) + abs(mid[1]) > 20, f"圆形路径播放中途离开了原位：{[round(v) for v in mid]}")
         check(abs(end[0]) + abs(end[1]) < 2, f"圆形路径播完回到原位：{[round(v) for v in end]}")
+
+        # ---------------- 6. 脉冲（放大再复原）：中途放大，播完复原
+        page6 = b.new_page()
+        page6.goto(f"{player_url}/emph.html?slide=0&step=1")
+        page6.wait_for_function("window.unppt !== undefined")
+        page6.evaluate("window.unppt.next()")
+        page6.wait_for_timeout(250)
+        js6 = """(() => { const el = Array.from(document.querySelectorAll('.unppt-slide [data-uid]')).filter(e => /^s[0-9]+$/.test(e.getAttribute('data-uid')))[1];
+          const m = new DOMMatrix(getComputedStyle(el).transform); return m.a; })()"""
+        mid = page6.evaluate(js6)
+        page6.wait_for_timeout(1000)
+        end = page6.evaluate(js6)
+        check(mid > 1.01 and abs(end - 1) < 0.001, f"脉冲中途放大、播完复原：{mid:.3f} -> {end:.3f}")
 
         # ---------------- 移动端视口
         mobile = {"is_mobile": True} if BROWSER != "firefox" else {}

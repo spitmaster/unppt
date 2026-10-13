@@ -454,10 +454,15 @@ export class Player {
     this.states.set(el, next);
     const h = el as HTMLElement;
     const canAnimate = animate && typeof h.animate === 'function' && dur > 0;
-    if (to.move || to.scale || to.rotate) {
+    if (to.move || to.scale || to.rotate || to.keys) {
       const from = this.transformOf(cur), end = this.transformOf(next);
       h.style.transform = end;
-      if (canAnimate && to.path && to.path.length > 2) {
+      if (canAnimate && to.keys && to.keys.length > 1) {
+        // 脉冲、跷跷板这类过程有往返的强调动画：按采样的关键帧播放
+        const frames = to.keys.map((k) => ({ transform: this.transformOf({ ...cur, sx: cur.sx * k.s[0], sy: cur.sy * k.s[1], rot: cur.rot + k.r }), offset: k.o }));
+        frames[frames.length - 1].transform = end;
+        this.running.push(h.animate(frames, { duration: dur, delay, fill: 'backwards' }));
+      } else if (canAnimate && to.path && to.path.length > 2) {
         // 沿路径移动：按累计长度分配关键帧，速度均匀，整体缓入缓出
         const lens = [0];
         for (let i = 1; i < to.path.length; i++) lens.push(lens[i - 1] + Math.hypot(to.path[i][0] - to.path[i - 1][0], to.path[i][1] - to.path[i - 1][1]));
