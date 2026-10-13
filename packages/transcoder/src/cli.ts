@@ -47,11 +47,29 @@ async function listFonts(dir: string, out: string[] = []): Promise<string[]> {
   return out;
 }
 
+/** 本机系统字体目录（装进了系统，本机浏览器也能用） */
 function systemFontDirs(): string[] {
+  const env = process.env;
   switch (platform()) {
-    case 'win32': return [join(process.env.WINDIR ?? 'C:\\Windows', 'Fonts'), join(process.env.LOCALAPPDATA ?? '', 'Microsoft', 'Windows', 'Fonts')];
+    case 'win32': return [join(env.WINDIR ?? 'C:\\Windows', 'Fonts'), join(env.LOCALAPPDATA ?? '', 'Microsoft', 'Windows', 'Fonts')];
     case 'darwin': return ['/System/Library/Fonts', '/Library/Fonts', join(homedir(), 'Library/Fonts')];
     default: return ['/usr/share/fonts', '/usr/local/share/fonts', join(homedir(), '.fonts'), join(homedir(), '.local/share/fonts')];
+  }
+}
+
+/**
+ * Office 自带的私有字体和云字体缓存：PowerPoint 能用，但没装进系统，浏览器用不了，所以用到时要嵌入产物
+ * （Aptos、Gill Sans MT、Tw Cen MT 等主题字体都在这里）
+ */
+function officeFontDirs(): string[] {
+  const env = process.env;
+  switch (platform()) {
+    case 'win32': return [
+      ...[env.ProgramFiles, env['ProgramFiles(x86)']].filter((p): p is string => !!p).map((p) => join(p, 'Microsoft Office', 'root', 'vfs', 'Fonts', 'private')),
+      join(env.LOCALAPPDATA ?? '', 'Microsoft', 'FontCache', '4', 'CloudFonts'),
+    ];
+    case 'darwin': return ['/Applications/Microsoft PowerPoint.app/Contents/Resources/DFonts'];
+    default: return [];
   }
 }
 
@@ -82,7 +100,7 @@ function usage(): never {
 选项：
   -o, --out <文件>        输出文件，默认和输入同名的 .html（--data 时为 .json）
   --fonts <目录>          字体目录（可以写多次），用来按真实字宽排版
-  --system-fonts          使用本机系统字体目录
+  --system-fonts          使用本机系统字体目录（另外 Office 自带的私有字体、云字体用到时嵌入产物）
   --embed-fonts           把用到的字做成字体子集嵌入（观看端无需安装字体；商业字体注意授权）
   --data                  只输出演示数据 deck.json，交给单独部署的播放器
   --inline-limit <字节>   小于这个大小的图片内联进 HTML，默认 2097152
@@ -97,6 +115,7 @@ async function main() {
   const input = resolve(args[1]);
   let out = '';
   const fontDirs: string[] = [];
+  const privateDirs: string[] = [];
   let dataOnly = false;
   let embedFonts = false;
   let inlineLimit: number | undefined;
@@ -106,7 +125,7 @@ async function main() {
     const a = args[i];
     if (a === '-o' || a === '--out') out = args[++i];
     else if (a === '--fonts') fontDirs.push(args[++i]);
-    else if (a === '--system-fonts') fontDirs.push(...systemFontDirs());
+    else if (a === '--system-fonts') { fontDirs.push(...systemFontDirs()); privateDirs.push(...officeFontDirs()); }
     else if (a === '--data') dataOnly = true;
     else if (a === '--embed-fonts') embedFonts = true;
     else if (a === '--inline-limit') inlineLimit = Number(args[++i]);
@@ -120,13 +139,15 @@ async function main() {
   const st = await stat(input);
   const fontFiles = (await Promise.all(fontDirs.map((d) => listFonts(d)))).flat();
   const fonts = await Promise.all(fontFiles.map(async (f) => fileSource(f, (await stat(f)).size)));
+  const privateFiles = (await Promise.all(privateDirs.map((d) => listFonts(d)))).flat();
+  const privateFonts = await Promise.all(privateFiles.map(async (f) => fileSource(f, (await stat(f)).size)));
   const t0 = Date.now();
   let peak = 0;
   const sample = () => { peak = Math.max(peak, process.memoryUsage().rss); };
   const timer = stats ? setInterval(sample, 20) : undefined;
   const result = await convert(fileSource(input, st.size), {
     write: (rel, data) => writeTo(dirname(out), rel === 'index.html' || rel === 'deck.json' ? basename(out) : rel, data),
-    fonts,
+    fonts, privateFonts,
     output: dataOnly ? 'data' : 'html',
     embedFonts,
     fileName: dataOnly ? 'deck.json' : 'index.html',

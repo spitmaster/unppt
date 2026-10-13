@@ -34,6 +34,11 @@ export interface ConvertOptions {
   write: WriteFn;
   /** 字体文件（ttf / otf / ttc） */
   fonts?: InputSource[];
+  /**
+   * 观看端没有的字体（例如 Office 自带的私有字体、云字体）：排版用它，用到的字总是嵌入产物，
+   * 不受 embedFonts 开关影响（否则浏览器显示时只能用别的字体，和排版对不上）
+   */
+  privateFonts?: InputSource[];
   /** html：自包含的 HTML（默认）；data：只输出 deck.json，交给单独部署的播放器 */
   output?: 'html' | 'data';
   /** 输出文件名，默认 index.html 或 deck.json */
@@ -67,7 +72,7 @@ export async function convert(input: InputSource, options: ConvertOptions): Prom
   await pres.load();
 
   const fonts = new FontLibrary();
-  // 演示文稿里嵌入的字体先加（同名时优先用它），并且总是嵌入产物：观看端多半没装这些字体
+  // 演示文稿里嵌入的字体先加（同名时优先用它），并且总是嵌入产物：观看端多半没装这些字体（私有字体同样）
   const docFaces = new Set<FontFace>();
   for (const ef of pres.embeddedFonts) {
     const bytes = await pkg.zip.read(ef.part);
@@ -77,6 +82,11 @@ export async function convert(input: InputSource, options: ConvertOptions): Prom
     fonts.add(faces);
   }
   for (const f of options.fonts ?? []) fonts.add(await loadFontFile(f));
+  for (const f of options.privateFonts ?? []) {
+    const faces = await loadFontFile(f);
+    for (const face of faces) docFaces.add(face);
+    fonts.add(faces);
+  }
   const missingFonts = new Set<string>();
   // 只输出演示数据时，图片一律写成单独文件（不在内存里攒）
   const inlineLimit = (options.output ?? 'html') === 'data' ? -1 : options.inlineLimit ?? 2 * 1024 * 1024;

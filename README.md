@@ -24,7 +24,7 @@ node packages/transcoder/dist/cli.js convert 演示文稿.pptx -o out/index.html
 |---|---|
 | `-o, --out <文件>` | 输出文件，默认与输入同名的 `.html` |
 | `--fonts <目录>` | 字体目录（可写多次），转码时按真实字宽排版 |
-| `--system-fonts` | 使用本机系统字体目录 |
+| `--system-fonts` | 使用本机系统字体目录；Office 自带的私有字体、云字体（Aptos、Gill Sans MT 等）也会用上，并且用到时嵌入产物（浏览器用不了这些没装进系统的字体） |
 | `--embed-fonts` | 把用到的字做成字体子集嵌入（观看端不需要安装字体，显示与转码时一致；商业字体请注意分发授权） |
 | `--data` | 只输出演示数据 `deck.json`，交给单独部署的播放器 |
 | `--inline-limit <字节>` | 小于这个大小的图片内联进 HTML，默认 2MB；视频音频总是单独输出到 `media/` |
