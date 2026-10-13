@@ -36,7 +36,8 @@ function renderLineArea(p: Plot, f: CategoryFrame, A: AxisInfo, out: string[], l
       const d = `M${pts.map((q) => `${n2(q[0])} ${n2(q[1])}`).join('L')}L${base.reverse().map((q) => `${n2(q[0])} ${n2(q[1])}`).join('L')}Z`;
       if (s.fill) drawn.push(cpart(`${s.index}s`, `<path d="${d}" fill="${css(s.fill)}"/>`));
     } else {
-      const lc = s.noLine ? undefined : s.line?.color ?? s.fill;
+      // 无线条的系列不画线；三维折线图是用填充色画的带子，按平面画时仍用填充色画线
+      const lc = s.noLine && !p.is3D ? undefined : s.line?.color ?? s.fill;
       if (lc) drawn.push(cpart(`${s.index}s`, `<path d="${linePath(pts, s.smooth)}" fill="none" stroke="${css(lc)}" stroke-width="${n2(s.line?.width ?? 3)}" stroke-linejoin="round" stroke-linecap="round"/>`));
       if (s.marker && (lc || s.markerFill || s.markerLine)) pts.forEach((q, k) => drawn.push(cpart(`${s.index}x${ptCat[k]}`, markerSvg(s, q[0], q[1]))));
       if (p.grouping === 'standard') {
