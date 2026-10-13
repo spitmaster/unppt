@@ -1,6 +1,8 @@
 /**
  * 表格：列宽来自 a:tblGrid，行高取"设定行高"和"文字实际高度"的较大值；
  * 表格样式（ppt/tableStyles.xml）按 整表 -> 条纹 -> 首尾列 -> 首尾行 的顺序叠加，单元格自己的设置最后覆盖。
+ * 样式里每个部分的边框作用在它自己的区域上：top/bottom/left/right 是区域的外边，insideH/insideV 是区域内部的边
+ * （标题行的 bottom 就是标题行和正文之间那条线，压过整表的 insideH）。
  */
 import { colorIn, type ColorContext } from '../model/color';
 import { fillAttrs, findFillEl, parseFill, type Fill } from '../style/fill';
@@ -50,9 +52,29 @@ function partStyle(part: XEl | undefined, colors: ColorContext, ctx: SlideContex
 
 function mergeStyle(into: CellStyle, s: CellStyle) {
   if (s.fill) into.fill = s.fill;
-  Object.assign(into.borders, Object.fromEntries(Object.entries(s.borders).filter(([, v]) => v !== undefined || true)));
   if (s.bold !== undefined) into.bold = s.bold;
   if (s.color) into.color = s.color;
+}
+
+/** 样式的一个部分和它作用的区域（行、列范围，含两端） */
+interface StylePart { s: CellStyle; r0: number; r1: number; c0: number; c1: number }
+
+/** 单元格四条边（和两条斜线）的边框：按部分的先后，后面的部分写了这条边就覆盖前面的（写了"无线条"也算） */
+function cellBorders(parts: StylePart[], ri: number, ci: number, rowSpan: number, span: number): Record<string, Line | undefined> {
+  const out: Record<string, Line | undefined> = {};
+  const rb = ri + rowSpan - 1, cr = ci + span - 1;
+  const take = (edge: string, b: Record<string, Line | undefined>, key: string) => { if (key in b) out[edge] = b[key]; };
+  for (const { s, r0, r1, c0, c1 } of parts) {
+    if (ri > r1 || rb < r0 || ci > c1 || cr < c0) continue;
+    const b = s.borders;
+    take('top', b, ri === r0 ? 'top' : 'insideH');
+    take('bottom', b, rb === r1 ? 'bottom' : 'insideH');
+    take('left', b, ci === c0 ? 'left' : 'insideV');
+    take('right', b, cr === c1 ? 'right' : 'insideV');
+    take('tl2br', b, 'tl2br');
+    take('tr2bl', b, 'tr2bl');
+  }
+  return out;
 }
 
 /** origin 是表格在幻灯片上的位置（图案填充从幻灯片原点对齐） */
@@ -76,23 +98,28 @@ export async function renderTable(tbl: XEl | undefined, origin: { x: number; y: 
   const colX = [0];
   for (const c of cols) colX.push(colX[colX.length - 1] + c);
 
-  // 每个单元格的样式
-  const cellStyle = (ri: number, ci: number): CellStyle => {
-    const s: CellStyle = { borders: {} };
-    const get = (name: string) => partStyle(child(style, `a:${name}`), colors, ctx, ctx.theme);
-    mergeStyle(s, get('wholeTbl'));
+  // 每个单元格用到的样式部分（按叠加顺序）和合成的样式
+  const get = (name: string) => partStyle(child(style, `a:${name}`), colors, ctx, ctx.theme);
+  const stylePartsOf = (ri: number, ci: number): StylePart[] => {
+    const parts: StylePart[] = [{ s: get('wholeTbl'), r0: 0, r1: nR - 1, c0: 0, c1: nC - 1 }];
     if (flags.bandRow) {
       const idx = ri - (flags.firstRow ? 1 : 0);
-      if (idx >= 0) mergeStyle(s, get(idx % 2 === 0 ? 'band1H' : 'band2H'));
+      if (idx >= 0) parts.push({ s: get(idx % 2 === 0 ? 'band1H' : 'band2H'), r0: ri, r1: ri, c0: 0, c1: nC - 1 });
     }
     if (flags.bandCol) {
       const idx = ci - (flags.firstCol ? 1 : 0);
-      if (idx >= 0) mergeStyle(s, get(idx % 2 === 0 ? 'band1V' : 'band2V'));
+      if (idx >= 0) parts.push({ s: get(idx % 2 === 0 ? 'band1V' : 'band2V'), r0: 0, r1: nR - 1, c0: ci, c1: ci });
     }
-    if (flags.firstCol && ci === 0) mergeStyle(s, get('firstCol'));
-    if (flags.lastCol && ci === nC - 1) mergeStyle(s, get('lastCol'));
-    if (flags.firstRow && ri === 0) mergeStyle(s, get('firstRow'));
-    if (flags.lastRow && ri === nR - 1) mergeStyle(s, get('lastRow'));
+    if (flags.firstCol && ci === 0) parts.push({ s: get('firstCol'), r0: 0, r1: nR - 1, c0: 0, c1: 0 });
+    if (flags.lastCol && ci === nC - 1) parts.push({ s: get('lastCol'), r0: 0, r1: nR - 1, c0: nC - 1, c1: nC - 1 });
+    if (flags.firstRow && ri === 0) parts.push({ s: get('firstRow'), r0: 0, r1: 0, c0: 0, c1: nC - 1 });
+    if (flags.lastRow && ri === nR - 1) parts.push({ s: get('lastRow'), r0: nR - 1, r1: nR - 1, c0: 0, c1: nC - 1 });
+    return parts;
+  };
+  const cellStyle = (ri: number, ci: number, rowSpan = 1, span = 1): CellStyle => {
+    const parts = stylePartsOf(ri, ci);
+    const s: CellStyle = { borders: cellBorders(parts, ri, ci, rowSpan, span) };
+    for (const p of parts) mergeStyle(s, p.s);
     return s;
   };
 
@@ -127,7 +154,7 @@ export async function renderTable(tbl: XEl | undefined, origin: { x: number; y: 
       if (attr(tc, 'hMerge') === '1' || attr(tc, 'vMerge') === '1') continue;
       const span = numAttr(tc, 'gridSpan') ?? 1;
       const rowSpan = numAttr(tc, 'rowSpan') ?? 1;
-      const style = cellStyle(ri, ci);
+      const style = cellStyle(ri, ci, rowSpan, span);
       const cell: Cell = { ri, ci, span, rowSpan, tc, style, textH: 0 };
       cells.push(cell);
       const w = colX[Math.min(nC, ci + span)] - colX[ci];
@@ -166,10 +193,10 @@ export async function renderTable(tbl: XEl | undefined, origin: { x: number; y: 
       return styleSide;
     };
     const sb = c.style.borders;
-    const left = side('a:lnL', c.ci === 0 ? sb.left : sb.insideV ?? sb.left);
-    const right = side('a:lnR', c.ci + c.span >= nC ? sb.right : sb.insideV ?? sb.right);
-    const top = side('a:lnT', c.ri === 0 ? sb.top : sb.insideH ?? sb.top);
-    const bottom = side('a:lnB', c.ri + c.rowSpan >= nR ? sb.bottom : sb.insideH ?? sb.bottom);
+    const left = side('a:lnL', sb.left);
+    const right = side('a:lnR', sb.right);
+    const top = side('a:lnT', sb.top);
+    const bottom = side('a:lnB', sb.bottom);
     const seg = (l: Line | undefined, x1: number, y1: number, x2: number, y2: number) => {
       if (l) borders.push(`<line x1="${n2(x1)}" y1="${n2(y1)}" x2="${n2(x2)}" y2="${n2(y2)}"${strokeAttrs({ ...l, head: undefined, tail: undefined }, r.doc, 'norm')}/>`);
     };
