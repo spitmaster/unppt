@@ -8,7 +8,8 @@ import { buildGeometry, parseGeomXml, presetGeometry } from '../../geometry/geom
 import { esc, n2 } from '../../common/svg';
 import { attr, child, children, numAttr, path, type XEl } from '../../io/xml';
 import { flipTransform, nvProps, pc, placeBox, readXfrm, withUid } from '../box';
-import { cameraLightFilter, cameraTransform } from '../../style/camera';
+import { cameraLightFilter, cameraTransform, hasCamera } from '../../style/camera';
+import { faceLightFilter, has3d } from '../../style/lighting';
 import { baseProjection } from '../projection';
 import type { RenderContext } from '../context';
 
@@ -107,7 +108,12 @@ export async function renderPicture(r: RenderContext, el: XEl, ctx: SlideContext
   const scene3d = child(spPr, 'a:scene3d') ?? child(effRef.el, 'a:scene3d');
   const cam = cameraTransform(scene3d, box.w, box.h, r.env.pres.width);
   const light = cameraLightFilter(scene3d, r.doc);
+  // 开了三维（相机或棱台）的图片和形状一样，正面按灯光提亮（实测：透视正面下灰 128 -> 139）
+  const sp3d = child(spPr, 'a:sp3d') ?? child(effRef.el, 'a:sp3d');
+  const lit3d = hasCamera(scene3d) || has3d(sp3d) ? faceLightFilter(attr(child(scene3d, 'a:lightRig'), 'rig'), attr(sp3d, 'prstMaterial'), r.doc) : undefined;
+
   // 透视（自己的相机，或者所在 SmartArt 场景的）：按网格三角形画
   const proj = baseProjection(box, scene3d, ctx.scene, r.env.pres.width)?.base;
-  return withUid(uid, placeBox(box, light ? `<g filter="url(#${light})">${inner}</g>` : inner, r.doc, cam, proj, clickable), el);
+  const lit = lit3d ? `<g filter="url(#${lit3d})">${inner}</g>` : inner;
+  return withUid(uid, placeBox(box, light ? `<g filter="url(#${light})">${lit}</g>` : lit, r.doc, cam, proj, clickable), el);
 }
