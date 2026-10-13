@@ -633,7 +633,67 @@ def charts_more(app):
     return p
 
 
-CASES = [shapes_all, text_sizes, text_align, text_spacing, text_bullets, text_missing_font, shapes_basic, fills_lines, table_basic, group_rotate, anim_basic, anim_auto, charts_basic, pictures, smartart, text_effects, text_layout, table_merge, links, emf_images, anim_advanced, charts_labels, freeform_icons, media_audio, anim_trigger, wmf_images, anim_iterate, picture_transparent, charts_more]
+def shape_effects(app):
+    """形状效果：发光、柔化边缘、映像、内阴影、外阴影，以及带效果的主题形状样式"""
+    p = new_pres(app)
+    s = blank(p)
+    def shp(i, kind=1):
+        sh = s.Shapes.AddShape(kind, 60 + (i % 4) * 225, 60 + (i // 4) * 240, 160, 120)
+        sh.Fill.ForeColor.RGB = RGB(70, 120, 200)
+        sh.Line.Visible = 0
+        return sh
+    a = shp(0)
+    a.Glow.Radius = 10
+    a.Glow.Color.RGB = RGB(255, 192, 0)
+    b = shp(1, 9)
+    b.Glow.Radius = 18
+    b.Glow.Color.RGB = RGB(112, 48, 160)
+    b.Glow.Transparency = 0.4
+    c = shp(2)
+    c.SoftEdge.Radius = 10
+    d = shp(3, 9)
+    d.SoftEdge.Radius = 25
+    e = shp(4)
+    e.Reflection.Type = 1
+    f = shp(5)
+    f.Reflection.Type = 5
+    g = shp(6)
+    g.Shadow.Style = 1          # 内阴影
+    g.Shadow.Visible = -1
+    g.Shadow.Blur = 8
+    g.Shadow.OffsetX = 4
+    g.Shadow.OffsetY = 4
+    g.Shadow.ForeColor.RGB = RGB(0, 0, 0)
+    g.Shadow.Transparency = 0.4
+    h = shp(7)
+    h.ShapeStyle = 41           # 带阴影的主题样式（强烈效果，effectRef idx=3）
+    # 第 2 页：图片上的效果（常见的图片样式：圆角+边框、映像、柔化边缘、阴影、发光）
+    img = str((TESTCASES / "shapes-basic" / "slide-001.png").resolve())
+    s = blank(p)
+    pics = []
+    for i in range(6):
+        pic = s.Shapes.AddPicture(img, 0, -1, 40 + (i % 3) * 310, 40 + (i // 3) * 260, 260, 146)
+        pics.append(pic)
+    pics[0].AutoShapeType = 5
+    pics[0].Line.Visible = -1
+    pics[0].Line.Weight = 6
+    pics[0].Line.ForeColor.RGB = RGB(40, 40, 40)
+    pics[1].Reflection.Type = 2
+    pics[2].SoftEdge.Radius = 12
+    pics[3].Shadow.Visible = -1
+    pics[3].Shadow.Blur = 10
+    pics[3].Shadow.OffsetX = 6
+    pics[3].Shadow.OffsetY = 6
+    pics[4].Glow.Radius = 8
+    pics[4].Glow.Color.RGB = RGB(0, 176, 80)
+    pics[5].AutoShapeType = 9
+    pics[5].Line.Visible = -1
+    pics[5].Line.Weight = 4
+    pics[5].Line.ForeColor.RGB = RGB(192, 0, 0)
+    return p
+
+
+CASES = [shapes_all, text_sizes, text_align, text_spacing, text_bullets, text_missing_font, shapes_basic, fills_lines, table_basic, group_rotate, anim_basic, anim_auto, charts_basic, pictures, smartart, text_effects, text_layout, table_merge, links, emf_images, anim_advanced, charts_labels, freeform_icons, media_audio, anim_trigger, wmf_images, anim_iterate, picture_transparent, charts_more, shape_effects]
 
 
 def main():
