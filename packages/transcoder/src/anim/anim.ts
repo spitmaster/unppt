@@ -5,7 +5,8 @@
 import type { AnimAction } from '../../../format/src/index';
 import { attr, child, children, findAll, numAttr, type XEl } from '../io/xml';
 import type { AnimContext } from './emphasis';
-import { effectAction } from './effect';
+import { chartTarget, effectAction } from './effect';
+import { chartStepMatcher } from '../common/uid';
 import { delayOf, isClick } from './timing-util';
 
 export type { AnimContext } from './emphasis';
@@ -34,6 +35,17 @@ export function compileTiming(timing: XEl | undefined, existing: Set<string>, ct
       for (const eff of children(child(sTn, 'p:childTnLst'), 'p:par')) {
         const a = effectAction(eff, base, ctx);
         if (!a) continue;
+        // 图表"按系列""按类别"：这一步对应图表里的一组部分，每个部分一个动作
+        const ct = chartTarget(eff);
+        const parts = ct ? [...existing].filter(chartStepMatcher(a.uid, ct.series, ct.category, ct.step)) : [];
+        if (parts.length) {
+          for (const u of parts) {
+            const b = { ...a, uid: u };
+            if (!firstSeen.has(u)) firstSeen.set(u, b);
+            actions.push(b);
+          }
+          continue;
+        }
         if (!existing.has(a.uid)) {
           // 段落动画的目标如果不存在（比如段落是空的），退回到整个形状；SmartArt 里找不到的形状（比如背景）不做
           if (/d[0-9a-f]{32}$/.test(a.uid)) continue;

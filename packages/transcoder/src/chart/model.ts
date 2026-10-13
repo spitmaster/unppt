@@ -8,6 +8,8 @@ export interface TextStyle { size: number; color: Rgba; bold: boolean; font: str
 export interface Labels { val: boolean; pct: boolean; cat: boolean; ser: boolean; pos?: string; fmt?: string; style: TextStyle; }
 
 export interface Series {
+  /** 在整个图表里的序号（按读到的顺序，多个图叠在一起时连续编号）：按系列动画用 */
+  index: number;
   labels?: Labels;
   name: string;
   cats: string[];

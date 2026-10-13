@@ -95,6 +95,13 @@ export function effectAction(eff: XEl, base: number, ctx: AnimContext): AnimActi
   };
 }
 
+/** 图表"按系列""按类别"动画的目标（p:graphicEl/a:chart）：系列、分类序号和步骤类型 */
+export function chartTarget(eff: XEl): { series: number; category: number; step: string } | undefined {
+  const c = path(findAll(child(eff, 'p:cTn'), 'p:spTgt')[0], 'p:graphicEl', 'a:chart');
+  if (!c) return undefined;
+  return { series: numAttr(c, 'seriesIdx') ?? -1, category: numAttr(c, 'categoryIdx') ?? -1, step: attr(c, 'bldStep') ?? 'allPts' };
+}
+
 /** 逐字/逐词：间隔是 tmAbs（毫秒）或 tmPct（单个字时长的百分比，单位 1/1000 %） */
 function iterateOf(cTn: XEl | undefined, dur: number): AnimAction['iterate'] {
   const it = child(cTn, 'p:iterate');

@@ -4,6 +4,7 @@ import { renderChart } from '../../chart/chart';
 import type { TextWidth } from '../../chart/layout';
 import { fallbackAdvance, isWide, type FontLibrary, type FontMetrics } from '../../font/font';
 import type { Theme } from '../../model/model';
+import { chartUid } from '../../common/uid';
 import type { FrameHandler } from './frame-handler';
 
 /** 图表文字用主题字体：先把字体读好，量宽度时就能同步取真实字宽（没有字体文件时估算） */
@@ -24,13 +25,15 @@ async function chartMeasure(fonts: FontLibrary, theme: Theme): Promise<TextWidth
 
 export const chartFrame: FrameHandler = {
   uri: '/chart',
-  async render(gd, box, r, ctx) {
+  async render(gd, box, r, ctx, uid) {
     const pkg = r.env.pres.pkg;
     const rid = attr(child(gd, 'c:chart'), 'r:id');
     const rel = rid ? await pkg.rel(ctx.part, rid) : undefined;
     const xml = rel ? await pkg.xml(rel.target, false) : undefined;
     if (!xml) { r.env.pres.warn('图表数据缺失'); return { svg: '' }; }
     const measure = await chartMeasure(r.env.fonts, ctx.theme);
-    return { svg: renderChart(xml, box.w, box.h, { colors: ctx.colors, theme: ctx.theme, part: rel!.target, warn: (m) => r.env.pres.warn(m), measure }) };
+    const svg = renderChart(xml, box.w, box.h, { colors: ctx.colors, theme: ctx.theme, part: rel!.target, warn: (m) => r.env.pres.warn(m), measure });
+    // 数据部分的标记换成动画编号（"按系列""按类别"动画用）；不是幻灯片自己的图表就去掉
+    return { svg: svg.replace(/ data-cpart="([0-9a-z]{1,16})"/g, (_m, key: string) => (uid ? ` data-uid="${chartUid(uid, key)}"` : '')) };
   },
 };

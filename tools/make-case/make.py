@@ -843,60 +843,81 @@ def anim_sound(app):
 
 
 def anim_build(app):
-    """SmartArt 逐个淡入（COM 做不出来，保存后补时间线，见 _patch_smartart_one_by_one）"""
+    """SmartArt 逐个淡入；簇状柱形图按系列擦除、按类别擦除。COM 做不出这些动画，保存后补时间线（见 _patch_builds）"""
     p = new_pres(app, window=True)
     s = blank(p)
     sa = s.Shapes.AddSmartArt(app.SmartArtLayouts(1), 60, 40, 840, 460)
     nodes = sa.SmartArt.AllNodes
     for k in range(1, min(nodes.Count, 5) + 1):
         nodes(k).TextFrame2.TextRange.Text = f"项目 {k}"
+    for _ in range(2):
+        s2 = blank(p)
+        ch = s2.Shapes.AddChart2(-1, 51, 80, 40, 800, 460)
+        try:
+            ch.Chart.ChartData.Workbook.Close()
+        except Exception:
+            pass
     return p
 
 
-def _patch_smartart_one_by_one(path):
-    """第 1 页的 SmartArt 逐个淡入：目标是绘图里每个形状的 modelId（PowerPoint 放映实测认这个）"""
+def _build_timing(spid, targets, preset, filt, bld):
+    """每个目标一次单击的进入动画（targets 是 p:graphicEl 里的内容）"""
+    n = [3]
+
+    def tn():
+        n[0] += 1
+        return n[0]
+    pars = []
+    for g in targets:
+        tgt = f'<p:tgtEl><p:spTgt spid="{spid}"><p:graphicEl>{g}</p:graphicEl></p:spTgt></p:tgtEl>'
+        pars.append(
+            f'<p:par><p:cTn id="{tn()}" fill="hold"><p:stCondLst><p:cond delay="indefinite"/></p:stCondLst><p:childTnLst>'
+            f'<p:par><p:cTn id="{tn()}" fill="hold"><p:stCondLst><p:cond delay="0"/></p:stCondLst><p:childTnLst>'
+            f'<p:par><p:cTn id="{tn()}" presetID="{preset[0]}" presetClass="entr" presetSubtype="{preset[1]}" fill="hold" grpId="0" nodeType="clickEffect">'
+            f'<p:stCondLst><p:cond delay="0"/></p:stCondLst><p:childTnLst>'
+            f'<p:set><p:cBhvr><p:cTn id="{tn()}" dur="1" fill="hold"><p:stCondLst><p:cond delay="0"/></p:stCondLst></p:cTn>{tgt}'
+            f'<p:attrNameLst><p:attrName>style.visibility</p:attrName></p:attrNameLst></p:cBhvr><p:to><p:strVal val="visible"/></p:to></p:set>'
+            f'<p:animEffect transition="in" filter="{filt}"><p:cBhvr><p:cTn id="{tn()}" dur="500"/>{tgt}</p:cBhvr></p:animEffect>'
+            f'</p:childTnLst></p:cTn></p:par></p:childTnLst></p:cTn></p:par></p:childTnLst></p:cTn></p:par>')
+    return ('<p:timing><p:tnLst><p:par><p:cTn id="1" dur="indefinite" restart="never" nodeType="tmRoot"><p:childTnLst>'
+            '<p:seq concurrent="1" nextAc="seek"><p:cTn id="2" dur="indefinite" nodeType="mainSeq"><p:childTnLst>' + "".join(pars) +
+            '</p:childTnLst></p:cTn><p:prevCondLst><p:cond evt="onPrev" delay="0"><p:tgtEl><p:sldTgt/></p:tgtEl></p:cond></p:prevCondLst>'
+            '<p:nextCondLst><p:cond evt="onNext" delay="0"><p:tgtEl><p:sldTgt/></p:tgtEl></p:cond></p:nextCondLst></p:seq></p:childTnLst></p:cTn></p:par></p:tnLst>'
+            f'<p:bldLst><p:bldGraphic spid="{spid}" grpId="0"><p:bldSub>{bld}</p:bldSub></p:bldGraphic></p:bldLst></p:timing>')
+
+
+def _patch_builds(path):
+    """第 1 页 SmartArt 逐个淡入：目标是绘图里每个形状的 modelId（PowerPoint 放映实测认这个）；
+    第 2、3 页图表按系列、按类别擦除：先背景（gridLegend），再逐个系列 / 分类（同样用放映截图验证过）"""
     import re
     import zipfile
     tmp = path.with_suffix(".tmp")
     with zipfile.ZipFile(path) as zin:
         drawing = [n for n in zin.namelist() if n.startswith("ppt/diagrams/drawing")][0]
         ids = re.findall(r'<dsp:sp modelId="([^"]+)"', zin.read(drawing).decode())
-        slide = zin.read("ppt/slides/slide1.xml").decode()
-        spid = re.search(r'<p:graphicFrame>.*?<p:cNvPr id="(\d+)"', slide, re.S).group(1)
-        n = [3]
-
-        def tn():
-            n[0] += 1
-            return n[0]
-        pars = []
-        for g in ids:
-            tgt = f'<p:tgtEl><p:spTgt spid="{spid}"><p:graphicEl><a:dgm id="{g}"/></p:graphicEl></p:spTgt></p:tgtEl>'
-            pars.append(
-                f'<p:par><p:cTn id="{tn()}" fill="hold"><p:stCondLst><p:cond delay="indefinite"/></p:stCondLst><p:childTnLst>'
-                f'<p:par><p:cTn id="{tn()}" fill="hold"><p:stCondLst><p:cond delay="0"/></p:stCondLst><p:childTnLst>'
-                f'<p:par><p:cTn id="{tn()}" presetID="10" presetClass="entr" presetSubtype="0" fill="hold" grpId="0" nodeType="clickEffect">'
-                f'<p:stCondLst><p:cond delay="0"/></p:stCondLst><p:childTnLst>'
-                f'<p:set><p:cBhvr><p:cTn id="{tn()}" dur="1" fill="hold"><p:stCondLst><p:cond delay="0"/></p:stCondLst></p:cTn>{tgt}'
-                f'<p:attrNameLst><p:attrName>style.visibility</p:attrName></p:attrNameLst></p:cBhvr><p:to><p:strVal val="visible"/></p:to></p:set>'
-                f'<p:animEffect transition="in" filter="fade"><p:cBhvr><p:cTn id="{tn()}" dur="500"/>{tgt}</p:cBhvr></p:animEffect>'
-                f'</p:childTnLst></p:cTn></p:par></p:childTnLst></p:cTn></p:par></p:childTnLst></p:cTn></p:par>')
-        timing = ('<p:timing><p:tnLst><p:par><p:cTn id="1" dur="indefinite" restart="never" nodeType="tmRoot"><p:childTnLst>'
-                  '<p:seq concurrent="1" nextAc="seek"><p:cTn id="2" dur="indefinite" nodeType="mainSeq"><p:childTnLst>' + "".join(pars) +
-                  '</p:childTnLst></p:cTn><p:prevCondLst><p:cond evt="onPrev" delay="0"><p:tgtEl><p:sldTgt/></p:tgtEl></p:cond></p:prevCondLst>'
-                  '<p:nextCondLst><p:cond evt="onNext" delay="0"><p:tgtEl><p:sldTgt/></p:tgtEl></p:cond></p:nextCondLst></p:seq></p:childTnLst></p:cTn></p:par></p:tnLst>'
-                  f'<p:bldLst><p:bldGraphic spid="{spid}" grpId="0"><p:bldSub><a:bldDgm bld="one"/></p:bldSub></p:bldGraphic></p:bldLst></p:timing>')
-        slide = re.sub(r"<p:timing>.*?</p:timing>", "", slide, flags=re.S)
-        slide = slide.replace("</p:clrMapOvr>", "</p:clrMapOvr>" + timing) if "</p:clrMapOvr>" in slide else slide.replace("</p:sld>", timing + "</p:sld>")
+        slides = {no: zin.read(f"ppt/slides/slide{no}.xml").decode() for no in (1, 2, 3)}
+        spid = {no: re.search(r'<p:graphicFrame>.*?<p:cNvPr id="(\d+)"', x, re.S).group(1) for no, x in slides.items()}
+        timings = {
+            1: _build_timing(spid[1], [f'<a:dgm id="{g}"/>' for g in ids], (10, 0), "fade", '<a:bldDgm bld="one"/>'),
+            2: _build_timing(spid[2], ['<a:chart seriesIdx="-3" categoryIdx="-3" bldStep="gridLegend"/>'] +
+                             [f'<a:chart seriesIdx="{k}" categoryIdx="-4" bldStep="series"/>' for k in range(3)], (22, 4), "wipe(down)", '<a:bldChart bld="series"/>'),
+            3: _build_timing(spid[3], ['<a:chart seriesIdx="-3" categoryIdx="-3" bldStep="gridLegend"/>'] +
+                             [f'<a:chart seriesIdx="-4" categoryIdx="{k}" bldStep="category"/>' for k in range(4)], (22, 4), "wipe(down)", '<a:bldChart bld="category"/>'),
+        }
+        for no, x in slides.items():
+            x = re.sub(r"<p:timing>.*?</p:timing>", "", x, flags=re.S)
+            slides[no] = x.replace("</p:clrMapOvr>", "</p:clrMapOvr>" + timings[no]) if "</p:clrMapOvr>" in x else x.replace("</p:sld>", timings[no] + "</p:sld>")
         with zipfile.ZipFile(tmp, "w", zipfile.ZIP_DEFLATED) as zout:
             for item in zin.infolist():
                 data = zin.read(item.filename)
-                if item.filename == "ppt/slides/slide1.xml":
-                    data = slide.encode()
+                m = re.match(r"ppt/slides/slide(\d+)\.xml$", item.filename)
+                if m and int(m.group(1)) in slides:
+                    data = slides[int(m.group(1))].encode()
                 zout.writestr(item, data)
     tmp.replace(path)
 
 
-anim_build.patch = _patch_smartart_one_by_one
+anim_build.patch = _patch_builds
 
 def fills_patterns(app):
     """图案填充：多种预设图案、不同前景/背景色、不同位置（图案从幻灯片原点对齐），表格单元格的图案填充"""

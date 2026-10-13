@@ -2,7 +2,7 @@
 import { attr, child, type XEl } from '../../io/xml';
 import { css } from '../../model/color';
 import { n2 } from '../../common/svg';
-import { label, markerSvg } from '../draw';
+import { cpart, label, markerSvg } from '../draw';
 import { PAD, RIGHT_LABEL_PAD, SIDE_LABEL_PAD, sideAnchor, sideGap, topForLabel, valBand, valCenter, type TextWidth } from '../layout';
 import { axesOf } from '../axis';
 import type { AxisMaker, Plot } from '../model';
@@ -48,14 +48,16 @@ function renderScatter(p: Plot, valAxes: XEl[], makeAxis: AxisMaker, tw: TextWid
   if (Y.axisLine?.color && !Y.deleted) out.push(`<line x1="${n2(left + x0f * pw)}" y1="${n2(top)}" x2="${n2(left + x0f * pw)}" y2="${n2(bottom)}" stroke="${css(Y.axisLine.color)}" stroke-width="${n2(Y.axisLine.width)}"/>`);
   for (const s of p.series) {
     const pts: [number, number][] = [];
+    const ptIdx: number[] = [];
     s.vals.forEach((v, i) => {
       const x = s.xs?.[i];
       if (v === null || x === null || x === undefined) return;
       pts.push([left + X.pos(x) * pw, bottom - Y.pos(v) * ph]);
+      ptIdx.push(i);
     });
     if (!pts.length) continue;
-    if (s.line?.color) out.push(`<path d="M${pts.map((q) => `${n2(q[0])} ${n2(q[1])}`).join('L')}" fill="none" stroke="${css(s.line.color)}" stroke-width="${n2(s.line.width)}" stroke-linejoin="round" stroke-linecap="round"/>`);
-    if (s.marker) for (const q of pts) out.push(markerSvg(s, q[0], q[1]));
+    if (s.line?.color) out.push(cpart(`${s.index}s`, `<path d="M${pts.map((q) => `${n2(q[0])} ${n2(q[1])}`).join('L')}" fill="none" stroke="${css(s.line.color)}" stroke-width="${n2(s.line.width)}" stroke-linejoin="round" stroke-linecap="round"/>`));
+    if (s.marker) pts.forEach((q, k) => out.push(cpart(`${s.index}x${ptIdx[k]}`, markerSvg(s, q[0], q[1]))));
   }
   return out.join('');
 }
