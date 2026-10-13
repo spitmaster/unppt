@@ -24,8 +24,8 @@ export interface TextEnv {
   gradBox?: { w: number; h: number };
   /** 正在输出的这一行的外框（横向是文字宽度，竖向是行高）：渐变文字按行铺（见 svg-text.ts 的 textGradient） */
   lineBox?: { x: number; y: number; w: number; h: number };
-  /** 文字开了三维效果（文本框属性里的 a:sp3d）：颜色按三维光照提亮；sp3d 用来画棱台边缘 */
-  lit3d?: boolean;
+  /** 文字开了三维效果（文本框属性里的 a:sp3d 或三维相机）：颜色按灯光方案、材质提亮（style/lighting.ts）；sp3d 用来画棱台边缘 */
+  lit3d?: (c: Rgba) => Rgba;
   sp3d?: XEl;
   /** 当前部件的关系，用来解析文字上的超链接 */
   rels?: Rel[];

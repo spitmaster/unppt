@@ -4,9 +4,10 @@
  * 流程：body.ts 文本框属性 -> paragraph.ts 逐段排版（measure / linebreak / bullets）-> emit.ts 定位输出。
  */
 import { n2 } from '../common/svg';
-import { child, children, type XEl } from '../io/xml';
+import { attr, child, children, type XEl } from '../io/xml';
 import { readBody } from './body';
-import { has3d } from '../style/lighting';
+import { faceLighting, has3d } from '../style/lighting';
+import { hasCamera } from '../style/camera';
 import { BulletNumbering } from './bullets';
 import { emitParagraphs, placeLines } from './emit';
 import { makeMeasurer } from './measure';
@@ -37,7 +38,7 @@ export async function renderText(
 
   const b = readBody(bodyPrs, child(txBody, 'a:bodyPr'));
   // 文字的三维效果（棱台等）：颜色按三维光照提亮
-  if (has3d(b.sp3d)) env = { ...env, lit3d: true, sp3d: b.sp3d };
+  if (has3d(b.sp3d) || hasCamera(b.scene3d)) env = { ...env, lit3d: faceLighting(attr(child(b.scene3d, 'a:lightRig'), 'rig'), attr(b.sp3d, 'prstMaterial')), sp3d: b.sp3d };
   const { lIns, rIns, wrap, vert, fontScale, lnReduce, vertical, numCol, spcCol } = b;
 
   const outer = vertical ? { x: 0, y: 0, w: box.h, h: box.w } : { x: 0, y: 0, w: box.w, h: box.h };
