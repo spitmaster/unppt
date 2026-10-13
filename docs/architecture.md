@@ -42,7 +42,7 @@ flowchart TB
   entry["入口 index.ts / cli.ts<br/>convert：逐页、流式输出 HTML 或数据"]
   anim["anim/<br/>时间线编排 anim.ts、单个效果 effect.ts<br/>强调终态 emphasis.ts、运动路径 motion.ts、切换 transition.ts"]
   render["render/<br/>render.ts 分派、继承；context.ts 渲染能力接口<br/>elements/ 形状、图片、组合；table.ts 表格；box.ts 位置框<br/>frames/ ← FrameHandler 扩展点"]
-  chart["chart/<br/>图表"]
+  chart["chart/<br/>图表：chart.ts 公共布局、layout.ts 实测间距规律<br/>types/ ← ChartType 扩展点"]
   media["media/<br/>图片、音视频、共享资源<br/>decoders ← ImageDecoder 扩展点"]
   text["text/<br/>文本框属性 → 逐段排版（测量、断行、项目符号）→ 排位置 placeLines → 输出 SVG<br/>艺术字变形 warp.ts（字形轮廓弯进包络 / 沿路径排）"]
   effects["effects/<br/>← ShapeEffect 扩展点（形状、文字共用）、映像"]

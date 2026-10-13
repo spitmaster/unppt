@@ -1135,7 +1135,22 @@ def _patch_until_click(path):
 anim_repeat.patch = _patch_until_click
 
 
-CASES = [shapes_all, text_sizes, text_align, text_spacing, text_bullets, text_missing_font, shapes_basic, fills_lines, table_basic, group_rotate, anim_basic, anim_auto, charts_basic, pictures, smartart, text_effects, text_layout, table_merge, links, emf_images, anim_advanced, charts_labels, freeform_icons, media_audio, anim_trigger, wmf_images, anim_iterate, picture_transparent, charts_more, shape_effects, equations, anim_path, anim_emphasis, transitions, fills_patterns, text_decoration, anim_entrance, svg_images, charts_markers, hidden_slides, media_background, text_glow_reflection, text_tabs, text_picture_bullets, fills_texture, transition_morph, text_embedded_fonts, text_warp, anim_repeat]
+def charts_sizes(app):
+    """图表文字字号对布局的影响：9、20、28 磅下的簇状柱形图和簇状条形图（坐标轴标签、图例的间距都随字号变化）"""
+    p = new_pres(app, window=True)
+    for size in (9, 20, 28):
+        s = blank(p)
+        for i, kind in enumerate([51, 57]):
+            ch = s.Shapes.AddChart2(-1, kind, 20 + i * 470, 40, 450, 440)
+            ch.Chart.ChartArea.Format.TextFrame2.TextRange.Font.Size = size
+            try:
+                ch.Chart.ChartData.Workbook.Close()
+            except Exception:
+                pass
+    return p
+
+
+CASES = [shapes_all, text_sizes, text_align, text_spacing, text_bullets, text_missing_font, shapes_basic, fills_lines, table_basic, group_rotate, anim_basic, anim_auto, charts_basic, pictures, smartart, text_effects, text_layout, table_merge, links, emf_images, anim_advanced, charts_labels, freeform_icons, media_audio, anim_trigger, wmf_images, anim_iterate, picture_transparent, charts_more, shape_effects, equations, anim_path, anim_emphasis, transitions, fills_patterns, text_decoration, anim_entrance, svg_images, charts_markers, hidden_slides, media_background, text_glow_reflection, text_tabs, text_picture_bullets, fills_texture, transition_morph, text_embedded_fonts, text_warp, anim_repeat, charts_sizes]
 
 
 def main():
