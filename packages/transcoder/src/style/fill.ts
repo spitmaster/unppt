@@ -154,12 +154,16 @@ export function gradientPaint(fill: Extract<Fill, { kind: 'grad' }>, doc: SvgDoc
   const id = doc.id('g');
   const stops = gradientStops(fill.stops, (c) => adjustForPathMode(c, mode));
   if (fill.path) {
+    // 实测（6 种焦点 × 正方形和 2:1 矩形，吻合到抖动噪声水平）：渐变的终点是形状的外接圆
+    // （圆心在形状中心、半径是半条对角线），起点是焦点矩形的中心——正好是 SVG 径向渐变的焦点（fx/fy）
     const r = fill.rect ?? { l: 0.5, t: 0.5, r: 0.5, b: 0.5 };
     // 焦点矩形是四边的内缩比例；左右（上下）内缩加起来超过 100% 时矩形倒置，收拢到左（上）边
-    const cx = (r.l + Math.max(r.l, 1 - r.r)) / 2 * w;
-    const cy = (r.t + Math.max(r.t, 1 - r.b)) / 2 * h;
-    const rad = Math.sqrt(Math.max(cx, w - cx) ** 2 + Math.max(cy, h - cy) ** 2);
-    doc.addDef(`<radialGradient id="${id}" gradientUnits="userSpaceOnUse" cx="${n2(cx)}" cy="${n2(cy)}" r="${n2(rad)}">${stops}</radialGradient>`);
+    let fx = (r.l + Math.max(r.l, 1 - r.r)) / 2 * w;
+    let fy = (r.t + Math.max(r.t, 1 - r.b)) / 2 * h;
+    const cx = w / 2, cy = h / 2, rad = Math.hypot(w, h) / 2;
+    // 焦点在角上时正好落在圆上，往圆心挪一点点，避免渐变退化
+    fx = cx + (fx - cx) * 0.995; fy = cy + (fy - cy) * 0.995;
+    doc.addDef(`<radialGradient id="${id}" gradientUnits="userSpaceOnUse" cx="${n2(cx)}" cy="${n2(cy)}" r="${n2(rad)}" fx="${n2(fx)}" fy="${n2(fy)}">${stops}</radialGradient>`);
   } else {
     const a = fill.angle * Math.PI / 180;
     let dx = Math.cos(a), dy = Math.sin(a);

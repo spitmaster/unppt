@@ -1267,7 +1267,48 @@ def _patch_gradient_lines(path):
 lines_gradient.patch = _patch_gradient_lines
 
 
-CASES = [shapes_all, text_sizes, text_align, text_spacing, text_bullets, text_missing_font, shapes_basic, fills_lines, table_basic, group_rotate, anim_basic, anim_auto, charts_basic, pictures, smartart, text_effects, text_layout, table_merge, links, emf_images, anim_advanced, charts_labels, freeform_icons, media_audio, anim_trigger, wmf_images, anim_iterate, picture_transparent, charts_more, shape_effects, equations, anim_path, anim_emphasis, transitions, fills_patterns, text_decoration, anim_entrance, svg_images, charts_markers, hidden_slides, media_background, text_glow_reflection, text_tabs, text_picture_bullets, fills_texture, transition_morph, text_embedded_fonts, text_warp, anim_repeat, charts_sizes, slide_timings, lines_compound, table_diagonal, lines_gradient]
+def fills_radial(app):
+    """径向（路径）渐变：焦点在中心（正方形、2:1 矩形）、顶边中间、左上角、顶边一段（Gallery 主题背景那种）、
+    右下角；两色、三色（COM 设不了焦点矩形，保存后改 XML）"""
+    p = new_pres(app)
+    s = blank(p)
+    specs = [(30, 30, 200, 200), (260, 30, 400, 200), (700, 30, 200, 200), (30, 280, 200, 200), (260, 280, 400, 200), (700, 280, 200, 200)]
+    for i, (x, y, w, h) in enumerate(specs):
+        sh = s.Shapes.AddShape(1, x, y, w, h)
+        sh.Line.Visible = 0
+        sh.Fill.ForeColor.RGB = RGB(i + 21, i + 21, i + 21)
+    return p
+
+
+def _patch_radial(path):
+    import zipfile
+    def g(stops, ftr):
+        gs = "".join(f'<a:gs pos="{p}"><a:srgbClr val="{c}"/></a:gs>' for p, c in stops)
+        return f'<a:gradFill rotWithShape="1"><a:gsLst>{gs}</a:gsLst><a:path path="circle"><a:fillToRect {ftr}/></a:path></a:gradFill>'.encode()
+    wb = [(0, "FFFFFF"), (100000, "1F3864")]
+    reps = {
+        "151515": g(wb, 'l="50000" t="50000" r="50000" b="50000"'),
+        "161616": g([(0, "FFF2CC"), (100000, "C55A11")], 'l="50000" t="50000" r="50000" b="50000"'),
+        "171717": g(wb, 'l="50000" r="50000" b="100000"'),
+        "181818": g([(0, "E2F0D9"), (100000, "385723")], 'r="100000" b="100000"'),
+        "191919": g([(0, "FFFFFF"), (100000, "A6A6A6")], 'l="43000" r="43000" b="100000"'),
+        "1A1A1A": g([(0, "FFFFFF"), (50000, "9DC3E6"), (100000, "1F4E79")], 'l="100000" t="100000"'),
+    }
+    tmp = path.with_suffix(".tmp")
+    with zipfile.ZipFile(path) as zin, zipfile.ZipFile(tmp, "w", zipfile.ZIP_DEFLATED) as zout:
+        for item in zin.infolist():
+            data = zin.read(item.filename)
+            if item.filename.startswith("ppt/slides/slide"):
+                for k, v in reps.items():
+                    data = data.replace(b'<a:solidFill><a:srgbClr val="' + k.encode() + b'"/></a:solidFill>', v)
+            zout.writestr(item, data)
+    tmp.replace(path)
+
+
+fills_radial.patch = _patch_radial
+
+
+CASES = [shapes_all, text_sizes, text_align, text_spacing, text_bullets, text_missing_font, shapes_basic, fills_lines, table_basic, group_rotate, anim_basic, anim_auto, charts_basic, pictures, smartart, text_effects, text_layout, table_merge, links, emf_images, anim_advanced, charts_labels, freeform_icons, media_audio, anim_trigger, wmf_images, anim_iterate, picture_transparent, charts_more, shape_effects, equations, anim_path, anim_emphasis, transitions, fills_patterns, text_decoration, anim_entrance, svg_images, charts_markers, hidden_slides, media_background, text_glow_reflection, text_tabs, text_picture_bullets, fills_texture, transition_morph, text_embedded_fonts, text_warp, anim_repeat, charts_sizes, slide_timings, lines_compound, table_diagonal, lines_gradient, fills_radial]
 
 
 def main():
