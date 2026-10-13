@@ -32,7 +32,7 @@ export const chartFrame: FrameHandler = {
     const xml = rel ? await pkg.xml(rel.target, false) : undefined;
     if (!xml) { r.env.pres.warn('图表数据缺失'); return { svg: '' }; }
     const measure = await chartMeasure(r.env.fonts, ctx.theme);
-    const svg = renderChart(xml, box.w, box.h, { colors: ctx.colors, theme: ctx.theme, part: rel!.target, warn: (m) => r.env.pres.warn(m), measure, defs: { id: (k) => r.doc.id(k), add: (x) => r.doc.addDef(x) } });
+    const svg = renderChart(xml, box.w, box.h, { colors: ctx.colors, theme: ctx.theme, part: rel!.target, warn: (m) => r.env.pres.warn(m), measure, defs: { id: (k) => r.doc.id(k), add: (x) => r.doc.addDef(x) }, doc: r.doc });
     // 数据部分的标记换成动画编号（"按系列""按类别"动画用）；不是幻灯片自己的图表就去掉
     return { svg: svg.replace(/ data-cpart="([0-9a-z]{1,16})"/g, (_m, key: string) => (uid ? ` data-uid="${chartUid(uid, key)}"` : '')) };
   },

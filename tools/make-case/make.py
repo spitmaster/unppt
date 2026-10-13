@@ -1346,6 +1346,37 @@ def charts_axis_titles(app):
     chart(s, 1, 4, None, "温度 (°C)", 16)
     return p
 
+def charts_fills(app):
+    """图表区、绘图区的填充和边框：灰色绘图区加边框（Excel 2003 风格）的柱形图；
+    渐变图表区、浅色绘图区的折线图；散点图的绘图区填充"""
+    p = new_pres(app, window=True)
+    def chart(s, i, kind):
+        ch = s.Shapes.AddChart2(-1, kind, 20 + i * 470, 40, 450, 440)
+        _close_data(ch)
+        return ch.Chart
+    s = blank(p)
+    a = chart(s, 0, 51)
+    a.PlotArea.Format.Fill.Visible = -1
+    a.PlotArea.Format.Fill.Solid()
+    a.PlotArea.Format.Fill.ForeColor.RGB = RGB(192, 192, 192)
+    a.PlotArea.Format.Line.Visible = -1
+    a.PlotArea.Format.Line.ForeColor.RGB = RGB(128, 128, 128)
+    a.ChartArea.Format.Line.Visible = -1
+    a.ChartArea.Format.Line.ForeColor.RGB = RGB(0, 0, 0)
+    b = chart(s, 1, 4)
+    b.ChartArea.Format.Fill.TwoColorGradient(1, 1)
+    b.ChartArea.Format.Fill.ForeColor.RGB = RGB(222, 235, 247)
+    b.ChartArea.Format.Fill.BackColor.RGB = RGB(255, 255, 255)
+    b.PlotArea.Format.Fill.Visible = -1
+    b.PlotArea.Format.Fill.Solid()
+    b.PlotArea.Format.Fill.ForeColor.RGB = RGB(255, 250, 230)
+    s = blank(p)
+    c = chart(s, 0, -4169)
+    c.PlotArea.Format.Fill.Visible = -1
+    c.PlotArea.Format.Fill.Solid()
+    c.PlotArea.Format.Fill.ForeColor.RGB = RGB(235, 241, 222)
+    return p
+
 def charts_negative(app):
     """带负数的图表：簇状柱形、条形、折线、堆积柱形（分类轴在 0 线上，标签默认挨着它）；
     柱形图把分类标签设成"低"（放到底部）"""
@@ -1946,7 +1977,7 @@ def table_vertical(app):
     return p
 
 
-CASES = [shapes_all, text_sizes, text_align, text_spacing, text_bullets, text_missing_font, shapes_basic, fills_lines, table_basic, group_rotate, anim_basic, anim_auto, charts_basic, pictures, smartart, text_effects, text_layout, table_merge, links, emf_images, anim_advanced, charts_labels, freeform_icons, media_audio, anim_trigger, wmf_images, anim_iterate, picture_transparent, charts_more, shape_effects, equations, anim_path, anim_emphasis, transitions, fills_patterns, text_decoration, anim_entrance, svg_images, charts_markers, hidden_slides, media_background, text_glow_reflection, text_tabs, text_picture_bullets, fills_texture, transition_morph, text_embedded_fonts, text_warp, anim_repeat, charts_sizes, slide_timings, lines_compound, table_diagonal, lines_gradient, fills_radial, fills_rect_gradient, shapes_3d, table_vertical, transitions_more, anim_sound, anim_build, anim_after, anim_text_emphasis, charts_bubble, media_video, charts_options, charts_negative, shapes_bevel, charts_legend, shapes_3d_rotation, smartart_3d, charts_ofpie, charts_3d, anim_group_emphasis, activex_controls, charts_extras, charts_axis_titles]
+CASES = [shapes_all, text_sizes, text_align, text_spacing, text_bullets, text_missing_font, shapes_basic, fills_lines, table_basic, group_rotate, anim_basic, anim_auto, charts_basic, pictures, smartart, text_effects, text_layout, table_merge, links, emf_images, anim_advanced, charts_labels, freeform_icons, media_audio, anim_trigger, wmf_images, anim_iterate, picture_transparent, charts_more, shape_effects, equations, anim_path, anim_emphasis, transitions, fills_patterns, text_decoration, anim_entrance, svg_images, charts_markers, hidden_slides, media_background, text_glow_reflection, text_tabs, text_picture_bullets, fills_texture, transition_morph, text_embedded_fonts, text_warp, anim_repeat, charts_sizes, slide_timings, lines_compound, table_diagonal, lines_gradient, fills_radial, fills_rect_gradient, shapes_3d, table_vertical, transitions_more, anim_sound, anim_build, anim_after, anim_text_emphasis, charts_bubble, media_video, charts_options, charts_negative, shapes_bevel, charts_legend, shapes_3d_rotation, smartart_3d, charts_ofpie, charts_3d, anim_group_emphasis, activex_controls, charts_extras, charts_axis_titles, charts_fills]
 
 
 def main():

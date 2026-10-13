@@ -4,11 +4,10 @@
  * 每种图表怎么画由 ChartType 决定（chart-type.ts，注册在 chart-types.ts）。
  * 布局按 PowerPoint 默认的自动布局近似实现。
  */
-import { css, type ColorContext } from '../model/color';
-import { findFillEl, parseFill } from '../style/fill';
-import { parseLine } from '../style/line';
+import type { ColorContext } from '../model/color';
 import type { Theme } from '../model/model';
-import { n2 } from '../common/svg';
+import type { SvgDoc } from '../common/svg';
+import { areaRect } from './area-fill';
 import { attr, child, findAll, numAttr, path, type XEl } from '../io/xml';
 import { axisMaker } from './axis';
 import { renderCategoryChart } from './cat-chart';
@@ -16,7 +15,7 @@ import { chartTypeOf } from './chart-types';
 import { label, textStyle, textWidth } from './draw';
 import { BOTTOM_PAD, PAD, type TextWidth } from './layout';
 import { renderLegend } from './legend';
-import type { ChartContext, Plot, SvgDefs, TextStyle, View3D } from './model';
+import type { ChartContext, Plot, Rect, SvgDefs, TextStyle, View3D } from './model';
 import { readPlots } from './read';
 
 export interface ChartEnv {
@@ -28,6 +27,8 @@ export interface ChartEnv {
   measure?: TextWidth;
   /** 渐变等定义：取一个页面里唯一的编号、把定义放进页面的 defs（不给时不用渐变） */
   defs?: SvgDefs;
+  /** 页面的 SVG 文档（图表区、绘图区的渐变背景放定义用） */
+  doc?: SvgDoc;
 }
 
 export function renderChart(space: XEl | undefined, w: number, h: number, env: ChartEnv): string {
@@ -38,12 +39,8 @@ export function renderChart(space: XEl | undefined, w: number, h: number, env: C
   const tw = env.measure ?? textWidth;
   const out: string[] = [];
 
-  // 整个图表区的背景和边框
-  const csSpPr = child(space, 'c:spPr');
-  const bgFill = parseFill(findFillEl(csSpPr), colors, env.part);
-  const bgLine = parseLine([child(csSpPr, 'a:ln')], [colors], env.part);
-  if (bgFill && bgFill.kind === 'solid') out.push(`<rect width="${n2(w)}" height="${n2(h)}" fill="${css(bgFill.color)}"/>`);
-  if (bgLine?.color) out.push(`<rect width="${n2(w)}" height="${n2(h)}" fill="none" stroke="${css(bgLine.color)}" stroke-width="${n2(bgLine.width)}"/>`);
+  // 整个图表区的背景和边框（纯色、渐变）
+  out.push(areaRect(child(space, 'c:spPr'), { left: 0, top: 0, right: w, bottom: h }, colors, env.part, env.doc));
 
   const baseText: TextStyle = textStyle(child(space, 'c:txPr'), colors, {
     size: 10 * 96 / 72, color: { r: 89, g: 89, b: 89, a: 1 }, bold: false, font: theme.minorLatin || 'Calibri',
@@ -95,20 +92,21 @@ export function renderChart(space: XEl | undefined, w: number, h: number, env: C
   }
 
   const makeAxis = axisMaker(colors, baseText, env.part, lang);
+  const plotBg = (r: Rect) => areaRect(child(plotArea, 'c:spPr'), r, colors, env.part, env.doc);
   const view3D = plots.some((p) => p.is3D) ? readView3D(child(chart, 'c:view3D'), type0.kind === 'pie') : undefined;
   if (type0.layout === 'standalone') {
     const legendEl = child(chart, 'c:legend');
     const ctx: ChartContext = {
       colors, part: env.part, baseText, plotArea, makeAxis, width: tw, box: { w, h }, defs: env.defs,
       legendPos: legendEl ? attr(child(legendEl, 'c:legendPos'), 'val') ?? 'r' : undefined, hasTitle: !!titleText, manual: !!(ml && numAttr(child(ml, 'c:w'), 'val') !== undefined),
-      view3D, zh: lang.startsWith('zh'),
+      view3D, zh: lang.startsWith('zh'), plotBg,
     };
     // 雷达、散点的网格和坐标轴在类型自己的输出里：整段当背景，数据部分嵌在里面（背景总是第一步显示，不影响逐个出现）
     out.push(type0.render!(plots[0], { left, top, right, bottom }, ctx));
     return groupBackground(out);
   }
 
-  renderCategoryChart(plots, plotArea, { left, top, right, bottom }, { colors, part: env.part, baseText, makeAxis, tw, w, view: view3D, zh: lang.startsWith('zh') }, out);
+  renderCategoryChart(plots, plotArea, { left, top, right, bottom }, { colors, part: env.part, baseText, makeAxis, tw, w, view: view3D, zh: lang.startsWith('zh'), plotBg }, out);
   return groupBackground(out);
 }
 
