@@ -149,6 +149,8 @@ export interface AnimTarget {
   color?: string;
   /** 新的透明度 0~1 */
   opacity?: number;
+  /** "动画播放后变暗"的颜色：文字改成这个颜色，没有文字时改形状的填充 */
+  dim?: string;
 }
 
 export interface SlideTransition {

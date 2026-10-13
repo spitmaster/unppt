@@ -919,6 +919,65 @@ def _patch_builds(path):
 
 anim_build.patch = _patch_builds
 
+def anim_after(app):
+    """"动画播放后"选项：第 1 页三段文字按段淡入，每段在下次单击时变暗成灰色；
+    第 2 页三个形状依次淡入：第一个播放后隐藏，第二个下次单击后隐藏，第三个不变（选项在保存后补，见 _patch_after）"""
+    p = new_pres(app)
+    s = blank(p)
+    t = s.Shapes.AddTextbox(1, 100, 80, 760, 360)
+    t.TextFrame.TextRange.Text = "第一条要点\r第二条要点\r第三条要点"
+    t.TextFrame.TextRange.Font.Size = 40
+    t.TextFrame.TextRange.Font.Color.RGB = RGB(0, 0, 0)
+    s.TimeLine.MainSequence.AddEffect(t, 10, 2, 1)
+    s2 = blank(p)
+    for k in range(3):
+        sh = s2.Shapes.AddShape(1, 80 + k * 300, 180, 240, 160)
+        s2.TimeLine.MainSequence.AddEffect(sh, 10, 0, 1)
+    return p
+
+
+def _patch_after(path):
+    import re
+    import zipfile
+
+    def sub(tgt, kind, rel, tn_after):
+        cond = f'<p:stCondLst><p:cond evt="end" delay="0"><p:tn val="{tn_after}"/></p:cond></p:stCondLst>' if rel == "sameClick" else ""
+        tn = f'<p:cTn dur="1" fill="hold" display="0" masterRel="{rel}" afterEffect="1">{cond}</p:cTn>' if cond else f'<p:cTn dur="1" fill="hold" display="0" masterRel="{rel}" afterEffect="1"/>'
+        if kind == "dim":
+            return (f'<p:animClr clrSpc="rgb" dir="cw"><p:cBhvr override="childStyle">{tn}{tgt}<p:attrNameLst><p:attrName>ppt_c</p:attrName></p:attrNameLst></p:cBhvr>'
+                    f'<p:to><a:srgbClr val="A6A6A6"/></p:to></p:animClr>')
+        return (f'<p:set><p:cBhvr override="childStyle">{tn}{tgt}<p:attrNameLst><p:attrName>style.visibility</p:attrName></p:attrNameLst></p:cBhvr>'
+                f'<p:to><p:strVal val="hidden"/></p:to></p:set>')
+
+    def patch_slide(x, plan):
+        effects = list(re.finditer(r'<p:par><p:cTn id="(\d+)" presetID="\d+" presetClass="entr".*?</p:childTnLst>', x, re.S))
+        out, last = [], 0
+        for i, m in enumerate(effects):
+            if i >= len(plan) or not plan[i]:
+                continue
+            kind, rel = plan[i]
+            tgt = re.search(r"<p:tgtEl>.*?</p:tgtEl>", m.group(0), re.S).group(0)
+            out.append(x[last:m.end()])
+            out.append(f"<p:subTnLst>{sub(tgt, kind, rel, m.group(1))}</p:subTnLst>")
+            last = m.end()
+        out.append(x[last:])
+        return "".join(out)
+
+    tmp = path.with_suffix(".tmp")
+    with zipfile.ZipFile(path) as zin, zipfile.ZipFile(tmp, "w", zipfile.ZIP_DEFLATED) as zout:
+        for item in zin.infolist():
+            data = zin.read(item.filename)
+            if item.filename == "ppt/slides/slide1.xml":
+                data = patch_slide(data.decode(), [("dim", "nextClick")] * 3).encode()
+            elif item.filename == "ppt/slides/slide2.xml":
+                data = patch_slide(data.decode(), [("hide", "sameClick"), ("hide", "nextClick"), None]).encode()
+            zout.writestr(item, data)
+    tmp.replace(path)
+
+
+anim_after.patch = _patch_after
+
+
 def fills_patterns(app):
     """图案填充：多种预设图案、不同前景/背景色、不同位置（图案从幻灯片原点对齐），表格单元格的图案填充"""
     p = new_pres(app)
@@ -1498,7 +1557,7 @@ def table_vertical(app):
     return p
 
 
-CASES = [shapes_all, text_sizes, text_align, text_spacing, text_bullets, text_missing_font, shapes_basic, fills_lines, table_basic, group_rotate, anim_basic, anim_auto, charts_basic, pictures, smartart, text_effects, text_layout, table_merge, links, emf_images, anim_advanced, charts_labels, freeform_icons, media_audio, anim_trigger, wmf_images, anim_iterate, picture_transparent, charts_more, shape_effects, equations, anim_path, anim_emphasis, transitions, fills_patterns, text_decoration, anim_entrance, svg_images, charts_markers, hidden_slides, media_background, text_glow_reflection, text_tabs, text_picture_bullets, fills_texture, transition_morph, text_embedded_fonts, text_warp, anim_repeat, charts_sizes, slide_timings, lines_compound, table_diagonal, lines_gradient, fills_radial, fills_rect_gradient, shapes_3d, table_vertical, transitions_more, anim_sound, anim_build]
+CASES = [shapes_all, text_sizes, text_align, text_spacing, text_bullets, text_missing_font, shapes_basic, fills_lines, table_basic, group_rotate, anim_basic, anim_auto, charts_basic, pictures, smartart, text_effects, text_layout, table_merge, links, emf_images, anim_advanced, charts_labels, freeform_icons, media_audio, anim_trigger, wmf_images, anim_iterate, picture_transparent, charts_more, shape_effects, equations, anim_path, anim_emphasis, transitions, fills_patterns, text_decoration, anim_entrance, svg_images, charts_markers, hidden_slides, media_background, text_glow_reflection, text_tabs, text_picture_bullets, fills_texture, transition_morph, text_embedded_fonts, text_warp, anim_repeat, charts_sizes, slide_timings, lines_compound, table_diagonal, lines_gradient, fills_radial, fills_rect_gradient, shapes_3d, table_vertical, transitions_more, anim_sound, anim_build, anim_after]
 
 
 def main():

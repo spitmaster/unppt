@@ -98,4 +98,6 @@ export function applyTarget(
   };
   if (to.fill) recolor('path,rect,ellipse,circle,polygon', to.fill);
   if (to.color) recolor('text', to.color);
+  // 播放后变暗：有文字时改文字颜色，没有文字时改形状的填充
+  if (to.dim) recolor(el.querySelector('text') ? 'text' : 'path,rect,ellipse,circle,polygon', to.dim);
 }

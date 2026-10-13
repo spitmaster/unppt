@@ -187,7 +187,8 @@ def compare(browser, save):
     mask = np.ones((H, W), bool)
     mask[: H // 4, : W // 3] = False   # 标记所在的角不算
     with sync_playwright() as pw:
-        b = getattr(pw, browser).launch()
+        mute = {"args": ["--mute-audio"]} if browser == "chromium" else {"firefox_user_prefs": {"media.volume_scale": "0.0"}}
+        b = getattr(pw, browser).launch(**mute)
         pg = b.new_page(viewport={"width": W, "height": H})
         pg.goto(html.resolve().as_uri() + "?timings=0")
         pg.wait_for_function("window.unppt !== undefined && !!document.querySelector('div.unppt-slide')")

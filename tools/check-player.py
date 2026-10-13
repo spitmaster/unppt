@@ -69,11 +69,14 @@ def main():
     subprocess.run(["node", "packages/transcoder/dist/cli.js", "convert", "testcases/slide-timings.pptx", "-o", str(player_dir / "timing.html"), "-q"], cwd=ROOT, check=True)
     subprocess.run(["node", "packages/transcoder/dist/cli.js", "convert", "testcases/anim-sound.pptx", "-o", str(player_dir / "sound.html"), "-q"], cwd=ROOT, check=True)
     subprocess.run(["node", "packages/transcoder/dist/cli.js", "convert", "testcases/anim-build.pptx", "-o", str(player_dir / "build.html"), "-q"], cwd=ROOT, check=True)
+    subprocess.run(["node", "packages/transcoder/dist/cli.js", "convert", "testcases/anim-after.pptx", "-o", str(player_dir / "after.html"), "-q"], cwd=ROOT, check=True)
     s1, player_url = serve(player_dir)
     s2, host_url = serve(host_dir)
 
     with sync_playwright() as p:
-        b = getattr(p, BROWSER).launch()
+        # 静音：测试会播放动画声音和切换声音（其中有循环的），不能吵到人
+        mute = {"args": ["--mute-audio"]} if BROWSER == "chromium" else {"firefox_user_prefs": {"media.volume_scale": "0.0"}}
+        b = getattr(p, BROWSER).launch(**mute)
         print(f"浏览器：{BROWSER}")
         # ---------------- 1. 跨域 iframe
         page = b.new_page()
@@ -361,6 +364,25 @@ def main():
                 seq.append(page16.evaluate(jsc))
             charts16.append(seq)
         check(charts16 == [[0, 2, 6, 10, 14], [0, 2, 5, 8, 11, 14]], f"图表按系列 {charts16[0]}、按类别 {charts16[1]} 逐个出现")
+
+        # ---------------- 17. 动画播放后：下次单击时变暗；播放后隐藏；下次单击后隐藏
+        page17 = b.new_page()
+        page17.goto(f"{player_url}/after.html")
+        page17.wait_for_function("window.unppt !== undefined && !!document.querySelector('div.unppt-slide')")
+        jsdim = "['s2p0','s2p1','s2p2'].map((u) => { const t = document.querySelector('[data-uid=\"' + u + '\"] text'); return t ? getComputedStyle(t).fill : ''; })"
+        dims = []
+        for _ in range(3):
+            page17.evaluate("window.unppt.next()")
+            page17.wait_for_timeout(800)
+            dims.append([c == "rgb(166, 166, 166)" for c in page17.evaluate(jsdim)])
+        page17.evaluate("window.unppt.goto(1, 0)")
+        vis = []
+        for _ in range(3):
+            page17.evaluate("window.unppt.next()")
+            page17.wait_for_timeout(900)
+            vis.append(page17.evaluate("['s2','s3','s4'].filter((u) => { const e = document.querySelector('[data-uid=\"' + u + '\"]'); return e && !e.closest('.unppt-hide'); })"))
+        check(dims == [[False, False, False], [True, False, False], [True, True, False]] and vis == [[], ["s3"], ["s4"]],
+              f"播放后变暗 {dims}、播放后隐藏 / 下次单击后隐藏 {vis}")
 
         # ---------------- 移动端视口
         mobile = {"is_mobile": True} if BROWSER != "firefox" else {}

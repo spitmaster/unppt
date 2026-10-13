@@ -1,0 +1,170 @@
+{
+ "version": 7,
+ "slideWidthPt": 960.0,
+ "slideHeightPt": 540.0,
+ "imageWidth": 1280,
+ "imageHeight": 720,
+ "slides": [
+  {
+   "index": 0,
+   "hidden": false,
+   "shapes": [
+    {
+     "id": 2,
+     "name": "TextBox 1",
+     "type": 17,
+     "x": 100.0,
+     "y": 80.0,
+     "w": 760.0,
+     "h": 152.677,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 6,
+       "text": "第一条要点\r",
+       "x": 107.2,
+       "y": 83.6,
+       "w": 211.0,
+       "h": 48.0
+      },
+      {
+       "start": 6,
+       "len": 6,
+       "text": "第二条要点\r",
+       "x": 107.2,
+       "y": 131.6,
+       "w": 211.0,
+       "h": 48.0
+      },
+      {
+       "start": 12,
+       "len": 5,
+       "text": "第三条要点",
+       "x": 107.2,
+       "y": 179.6,
+       "w": 200.005,
+       "h": 48.0
+      }
+     ]
+    }
+   ],
+   "effects": [
+    {
+     "index": 1,
+     "type": 10,
+     "exit": false,
+     "trigger": 1,
+     "dur": 0.5,
+     "delay": 0.0,
+     "shapeId": 2,
+     "paragraph": 1
+    },
+    {
+     "index": 2,
+     "type": 10,
+     "exit": false,
+     "trigger": 1,
+     "dur": 0.5,
+     "delay": 0.0,
+     "shapeId": 2,
+     "paragraph": 2
+    },
+    {
+     "index": 3,
+     "type": 10,
+     "exit": false,
+     "trigger": 1,
+     "dur": 0.5,
+     "delay": 0.0,
+     "shapeId": 2,
+     "paragraph": 3
+    }
+   ],
+   "triggerHidden": [],
+   "steps": 3,
+   "approxSteps": true,
+   "stepSource": "slideshow"
+  },
+  {
+   "index": 1,
+   "hidden": false,
+   "shapes": [
+    {
+     "id": 2,
+     "name": "Rectangle 1",
+     "type": 1,
+     "x": 80.0,
+     "y": 180.0,
+     "w": 240.0,
+     "h": 160.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1
+    },
+    {
+     "id": 3,
+     "name": "Rectangle 2",
+     "type": 1,
+     "x": 380.0,
+     "y": 180.0,
+     "w": 240.0,
+     "h": 160.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1
+    },
+    {
+     "id": 4,
+     "name": "Rectangle 3",
+     "type": 1,
+     "x": 680.0,
+     "y": 180.0,
+     "w": 240.0,
+     "h": 160.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1
+    }
+   ],
+   "effects": [
+    {
+     "index": 1,
+     "type": 10,
+     "exit": false,
+     "trigger": 1,
+     "dur": 0.5,
+     "delay": 0.0,
+     "shapeId": 2,
+     "paragraph": 0
+    },
+    {
+     "index": 2,
+     "type": 10,
+     "exit": false,
+     "trigger": 1,
+     "dur": 0.5,
+     "delay": 0.0,
+     "shapeId": 3,
+     "paragraph": 0
+    },
+    {
+     "index": 3,
+     "type": 10,
+     "exit": false,
+     "trigger": 1,
+     "dur": 0.5,
+     "delay": 0.0,
+     "shapeId": 4,
+     "paragraph": 0
+    }
+   ],
+   "triggerHidden": [],
+   "steps": 3,
+   "approxSteps": false
+  }
+ ],
+ "ok": true
+}

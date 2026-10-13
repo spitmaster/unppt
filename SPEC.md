@@ -267,6 +267,7 @@ unppt/
 | 强调和路径动画的过程：行为同样带加减速和时间折线——陀螺旋、放大/缩小是匀速的；路径预设带 50% 的平滑开始和结束（SMIL 匀加减速），沿路径按长度匀速走（试过"每段等时"，只对少数路径更准）；闪光灯 = 淡出滤镜按时间折线先降到一半、再恢复，同时放大 105% 再缩回；透明 = 立刻变成设定的透明度，效果节点没有 fill="hold" 时到时间恢复 | `capture-anim` 22 种强调和路径：陀螺旋 0.079 -> 0.027、透明 0.052 -> 0.010、闪光灯 0.089 -> 0.012，路径 0.02~0.05 |
 | SmartArt 的"逐个"动画：目标写成 `p:spTgt/p:graphicEl/a:dgm`，id 是绘图缓存（dsp:drawing）里形状的 modelId（数据模型里"呈现点"的 id），不是数据节点的 id——写数据节点 id 时 PowerPoint 放映不认、整体直接显示 | 手写时间线让 PowerPoint 放映逐步截图对比两种 id |
 | 图表的"按系列""按类别"动画：目标写成 `p:graphicEl/a:chart`，第一步 `seriesIdx="-3" categoryIdx="-3" bldStep="gridLegend"` 显示背景（坐标轴、网格、图例、标签），之后 `bldStep="series"`（seriesIdx 是系列序号）或 `bldStep="category"`（categoryIdx 是分类序号）逐组显示数据点 | 手写时间线让 PowerPoint 放映逐步截图（3 个系列 × 4 个分类的簇状柱形图） |
+| "动画播放后"选项写在效果节点的 `p:subTnLst` 里（`afterEffect="1"`）：`masterRel="sameClick"` 的在这个效果结束时执行（播放后隐藏），`masterRel="nextClick"` 的在下一次单击时执行（下次单击后隐藏、变暗）；变暗是 `p:animClr` 改 `ppt_c`，文字变成这个颜色 | PowerPoint 放映逐步截图（三段文字逐段变暗、三个形状的两种隐藏） |
 | 平滑切换（Morph，`p159:morph`，默认 2 秒）：前后两页里名字相同的对象配对（重名按顺序），从旧位置、旧大小变到新位置、新大小，颜色等变化表现为渐变；其余对象淡出、淡入 | transition-morph 用例（播放器中途截帧） |
 
 ---
