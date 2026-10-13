@@ -1101,7 +1101,41 @@ def text_warp(app):
     return p
 
 
-CASES = [shapes_all, text_sizes, text_align, text_spacing, text_bullets, text_missing_font, shapes_basic, fills_lines, table_basic, group_rotate, anim_basic, anim_auto, charts_basic, pictures, smartart, text_effects, text_layout, table_merge, links, emf_images, anim_advanced, charts_labels, freeform_icons, media_audio, anim_trigger, wmf_images, anim_iterate, picture_transparent, charts_more, shape_effects, equations, anim_path, anim_emphasis, transitions, fills_patterns, text_decoration, anim_entrance, svg_images, charts_markers, hidden_slides, media_background, text_glow_reflection, text_tabs, text_picture_bullets, fills_texture, transition_morph, text_embedded_fonts, text_warp]
+def anim_repeat(app):
+    """动画重复和自动翻转：进入重复 2 次、放大后自动翻转回原大小、旋转重复 3 次、正圆一直旋转到下一次单击"""
+    p = new_pres(app)
+    s = blank(p)
+    seq = s.TimeLine.MainSequence
+    specs = [(1, 2, 2, False), (1, 59, 1, True), (1, 61, 3, False), (9, 61, 9999, False)]
+    for i, (kind, eff, rep, rev) in enumerate(specs):
+        sh = s.Shapes.AddShape(kind, 60 + i * 220, 200, 140, 140 if kind == 9 else 100)
+        if kind != 9:
+            sh.TextFrame.TextRange.Text = f"重复 {i + 1}"
+        e = seq.AddEffect(sh, eff, 0, 1)
+        if rep > 1:
+            e.Timing.RepeatCount = rep
+        if rev:
+            e.Timing.AutoReverse = -1
+    return p
+
+
+def _patch_until_click(path):
+    """COM 只能设到重复 9999 次；改成 PowerPoint 界面里"直到下一次单击"写出的 indefinite"""
+    import zipfile
+    tmp = path.with_suffix(".tmp")
+    with zipfile.ZipFile(path) as zin, zipfile.ZipFile(tmp, "w", zipfile.ZIP_DEFLATED) as zout:
+        for item in zin.infolist():
+            data = zin.read(item.filename)
+            if item.filename.startswith("ppt/slides/slide"):
+                data = data.replace(b'repeatCount="9999000"', b'repeatCount="indefinite"')
+            zout.writestr(item, data)
+    tmp.replace(path)
+
+
+anim_repeat.patch = _patch_until_click
+
+
+CASES = [shapes_all, text_sizes, text_align, text_spacing, text_bullets, text_missing_font, shapes_basic, fills_lines, table_basic, group_rotate, anim_basic, anim_auto, charts_basic, pictures, smartart, text_effects, text_layout, table_merge, links, emf_images, anim_advanced, charts_labels, freeform_icons, media_audio, anim_trigger, wmf_images, anim_iterate, picture_transparent, charts_more, shape_effects, equations, anim_path, anim_emphasis, transitions, fills_patterns, text_decoration, anim_entrance, svg_images, charts_markers, hidden_slides, media_background, text_glow_reflection, text_tabs, text_picture_bullets, fills_texture, transition_morph, text_embedded_fonts, text_warp, anim_repeat]
 
 
 def main():
@@ -1134,6 +1168,9 @@ def main():
             else:
                 p.SaveAs(str(out.resolve()))
             p.Close()
+            # 有些设置 COM 做不到：保存后直接改 XML
+            if getattr(fn, "patch", None):
+                fn.patch(out)
             print("生成", out.name)
     finally:
         # 生成用例出错中断时，这次新建、还没关的演示文稿不保存直接关掉（运行前就打开的不动）
