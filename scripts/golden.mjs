@@ -3,6 +3,7 @@
  *   node scripts/golden.mjs save    记录当前输出为基准（.cache/golden.json）
  *   node scripts/golden.mjs check   和基准比较，有任何不同就列出来并以非 0 退出
  * 重构（不该改变行为的改动）必须 check 通过。
+ * HTML 里内嵌的播放器代码单独比较（显示为"(内嵌播放器)"）：重构播放器时只允许它变，播放器行为由 tools/check-player.py 保证。
  */
 import { createHash } from 'node:crypto';
 import { execFileSync } from 'node:child_process';
@@ -22,7 +23,14 @@ const hashDir = (dir, prefix) => {
   for (const name of readdirSync(dir, { withFileTypes: true })) {
     const p = join(dir, name.name);
     if (name.isDirectory()) hashDir(p, `${prefix}${name.name}/`);
-    else hashes[`${prefix}${name.name}`] = createHash('sha256').update(readFileSync(p)).digest('hex').slice(0, 16);
+    else if (name.name.endsWith('.html')) {
+      // 内嵌的播放器代码单独记一个哈希：重构播放器时只有它会变，页面数据部分必须不变
+      const html = readFileSync(p, 'utf8');
+      const m = /<script>([\s\S]*?)<\/script><\/body>/.exec(html);
+      const player = m ? m[1] : '';
+      hashes[`${prefix}${name.name}`] = createHash('sha256').update(html.replace(player, '')).digest('hex').slice(0, 16);
+      hashes['(内嵌播放器)'] = createHash('sha256').update(player).digest('hex').slice(0, 16);
+    } else hashes[`${prefix}${name.name}`] = createHash('sha256').update(readFileSync(p)).digest('hex').slice(0, 16);
   }
 };
 for (const f of readdirSync(cases).filter((n) => n.endsWith('.pptx')).sort()) {
