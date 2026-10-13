@@ -44,7 +44,7 @@ flowchart TB
   render["render/<br/>SlideRenderer：形状 / 图片 / 组合<br/>box.ts 位置框、table.ts 表格<br/>frames/ ← FrameHandler 扩展点"]
   chart["chart/<br/>图表"]
   media["media/<br/>图片、音视频、共享资源<br/>decoders ← ImageDecoder 扩展点"]
-  text["text/<br/>字体替代、测量、断行、SVG 文字"]
+  text["text/<br/>文本框属性 → 逐段排版（测量、断行、项目符号）→ 定位输出"]
   effects["effects/<br/>← ShapeEffect 扩展点、映像、文字阴影"]
   style["style/<br/>fill 填充、line 线条、blip 图片调整"]
   font["font/<br/>TrueType 解析、字距、子集化"]
@@ -95,7 +95,7 @@ flowchart TB
 | ~~`player.ts`（约 800 行）~~ | ~~一个类包了所有事~~ → 已拆成 core / anim / transitions / ui / bridge / boot | 单一职责 |
 | ~~播放器切换、动画效果~~ | ~~`switch` 分支~~ → 已改为 `TransitionEffect`、`AnimEffect` 注册表 | 开闭 |
 | ~~`chart.ts`（约 740 行）~~ | ~~巨型函数、if/else~~ → 已拆成读取 / 格式 / 坐标轴 / 绘制工具 / 编排，每种图表一个文件 | 单一职责、开闭 |
-| `text.ts`（约 690 行） | 字体替代、测量、断行、SVG 输出混在一起 | 单一职责 |
+| ~~`text.ts`（约 690 行）~~ | ~~混在一起~~ → 已拆成 body（文本框属性）/ style（样式合并）/ measure（测量、字体替代、字距）/ linebreak（断行禁则）/ bullets（项目符号编号）/ paragraph（单段排版）/ emit（定位输出）/ svg-text | 单一职责 |
 | ~~`render.ts`~~ | ~~分派写死、和 `table.ts` 循环依赖~~ → 已改为 `FrameHandler` 注册表，表格只依赖 `FrameRenderer` 接口 | 开闭、依赖倒置 |
 | ~~`fill.ts`~~ | ~~填充、线条、图片调整、形状效果混在一起~~ → 已拆成 `style/fill.ts`、`style/line.ts`、`style/blip.ts` 和 `effects/` | 单一职责 |
 | ~~`media.ts`~~ | ~~图片格式写死~~ → 已改为 `ImageDecoder` 注册表 | 开闭 |
