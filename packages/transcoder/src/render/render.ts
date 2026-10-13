@@ -118,7 +118,7 @@ class SlideRenderer implements RenderContext {
       this.env.pres.warn(`未支持的图形：${uri.slice(uri.lastIndexOf('/') + 1)}`);
       return '';
     }
-    const out = await handler.render(gd, box, this, ctx);
+    const out = await handler.render(gd, box, this, ctx, uid);
     if (out.positioned) return out.svg;
     return out.svg ? withUid(uid, `<g transform="${boxTransform(box)}">${out.svg}</g>`, el) : '';
   }

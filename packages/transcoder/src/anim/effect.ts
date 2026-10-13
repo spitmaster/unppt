@@ -1,6 +1,7 @@
 /** 单个动画效果（p:par 里的一个效果节点）-> AnimAction：效果类型、方向、时长、延迟、终态、逐字 */
 import type { AnimAction, AnimEffect } from '../../../format/src/index';
-import { attr, child, findAll, numAttr, type XEl } from '../io/xml';
+import { dgmUid } from '../common/uid';
+import { attr, child, findAll, numAttr, path, type XEl } from '../io/xml';
 import { compileBehaviors } from './behaviors';
 import { effectSound } from './sound';
 import { emphasisDuration, finalState, type AnimContext } from './emphasis';
@@ -48,7 +49,10 @@ export function effectAction(eff: XEl, base: number, ctx: AnimContext): AnimActi
   if (!spid || !/^\d{1,10}$/.test(spid)) return undefined;
   const pRg = child(child(spTgt, 'p:txEl'), 'p:pRg');
   const st = attr(pRg, 'st') ?? '0';
-  const uid = pRg && /^\d{1,6}$/.test(st) ? `s${spid}p${st}` : `s${spid}`;
+  // SmartArt 里的单个形状（"逐个"动画）
+  const dgm = attr(path(spTgt, 'p:graphicEl', 'a:dgm'), 'id');
+  const uid = dgm !== undefined ? dgmUid(`s${spid}`, dgm) : pRg && /^\d{1,6}$/.test(st) ? `s${spid}p${st}` : `s${spid}`;
+  if (!uid) return undefined;
   let dur = 0;
   for (const b of findAll(cTn, 'p:cTn')) {
     const d = attr(b, 'dur');
