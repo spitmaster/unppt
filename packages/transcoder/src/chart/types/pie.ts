@@ -6,6 +6,22 @@ import { labelText } from '../format';
 import type { Plot } from '../model';
 import type { ChartType } from '../chart-type';
 
+/** 扇区（圆环时带内圆）的路径：从角 a1 顺时针到 a2（弧度，0 在右边）；full 是整圆 */
+export function slicePath(cx: number, cy: number, r: number, ri: number, a1: number, a2: number, full: boolean): string {
+  if (full) {
+    let d = `M${n2(cx - r)} ${n2(cy)}A${n2(r)} ${n2(r)} 0 1 1 ${n2(cx + r)} ${n2(cy)}A${n2(r)} ${n2(r)} 0 1 1 ${n2(cx - r)} ${n2(cy)}Z`;
+    if (ri) d += `M${n2(cx - ri)} ${n2(cy)}A${n2(ri)} ${n2(ri)} 0 1 0 ${n2(cx + ri)} ${n2(cy)}A${n2(ri)} ${n2(ri)} 0 1 0 ${n2(cx - ri)} ${n2(cy)}Z`;
+    return d;
+  }
+  const large = a2 - a1 > Math.PI ? 1 : 0;
+  const p1 = [cx + r * Math.cos(a1), cy + r * Math.sin(a1)], p2 = [cx + r * Math.cos(a2), cy + r * Math.sin(a2)];
+  if (ri) {
+    const q1 = [cx + ri * Math.cos(a2), cy + ri * Math.sin(a2)], q2 = [cx + ri * Math.cos(a1), cy + ri * Math.sin(a1)];
+    return `M${n2(p1[0])} ${n2(p1[1])}A${n2(r)} ${n2(r)} 0 ${large} 1 ${n2(p2[0])} ${n2(p2[1])}L${n2(q1[0])} ${n2(q1[1])}A${n2(ri)} ${n2(ri)} 0 ${large} 0 ${n2(q2[0])} ${n2(q2[1])}Z`;
+  }
+  return `M${n2(cx)} ${n2(cy)}L${n2(p1[0])} ${n2(p1[1])}A${n2(r)} ${n2(r)} 0 ${large} 1 ${n2(p2[0])} ${n2(p2[1])}Z`;
+}
+
 function renderPie(p: Plot, x: number, y: number, w: number, h: number, colors: ColorContext): string {
   const s = p.series[0];
   if (!s) return '';
@@ -23,19 +39,8 @@ function renderPie(p: Plot, x: number, y: number, w: number, h: number, colors: 
   vals.forEach((v, i) => {
     if (!v) return;
     const a2 = ang + (v / total) * Math.PI * 2;
-    const large = a2 - ang > Math.PI ? 1 : 0;
-    const p1 = [cx + r * Math.cos(ang), cy + r * Math.sin(ang)], p2 = [cx + r * Math.cos(a2), cy + r * Math.sin(a2)];
     const color = s.pointFills.get(i) ?? (p.varyColors || p.kind === 'pie' || p.kind === 'doughnut' ? accentColor(i, colors) : s.fill) ?? accentColor(i, colors);
-    let d: string;
-    if (v === total) {
-      d = `M${n2(cx - r)} ${n2(cy)}A${n2(r)} ${n2(r)} 0 1 1 ${n2(cx + r)} ${n2(cy)}A${n2(r)} ${n2(r)} 0 1 1 ${n2(cx - r)} ${n2(cy)}Z`;
-      if (ri) d += `M${n2(cx - ri)} ${n2(cy)}A${n2(ri)} ${n2(ri)} 0 1 0 ${n2(cx + ri)} ${n2(cy)}A${n2(ri)} ${n2(ri)} 0 1 0 ${n2(cx - ri)} ${n2(cy)}Z`;
-    } else if (ri) {
-      const q1 = [cx + ri * Math.cos(a2), cy + ri * Math.sin(a2)], q2 = [cx + ri * Math.cos(ang), cy + ri * Math.sin(ang)];
-      d = `M${n2(p1[0])} ${n2(p1[1])}A${n2(r)} ${n2(r)} 0 ${large} 1 ${n2(p2[0])} ${n2(p2[1])}L${n2(q1[0])} ${n2(q1[1])}A${n2(ri)} ${n2(ri)} 0 ${large} 0 ${n2(q2[0])} ${n2(q2[1])}Z`;
-    } else {
-      d = `M${n2(cx)} ${n2(cy)}L${n2(p1[0])} ${n2(p1[1])}A${n2(r)} ${n2(r)} 0 ${large} 1 ${n2(p2[0])} ${n2(p2[1])}Z`;
-    }
+    const d = slicePath(cx, cy, r, ri, ang, a2, v === total);
     // 分离的扇区沿角平分线移出 explosion% 个半径（实测：饼图本身不缩小）
     const ex = v === total ? 0 : s.explosion(i) / 100 * r, mid = (ang + a2) / 2;
     const move = ex ? ` transform="translate(${n2(ex * Math.cos(mid))} ${n2(ex * Math.sin(mid))})"` : '';
@@ -60,5 +65,5 @@ const pieBase = {
   render: (p: Plot, a: { left: number; top: number; right: number; bottom: number }, ctx: { colors: ColorContext }) => renderPie(p, a.left, a.top, a.right - a.left, a.bottom - a.top, ctx.colors),
 };
 
-export const pieType: ChartType = { ...pieBase, kind: 'pie', tags: ['pieChart', 'pie3DChart', 'ofPieChart'] };
+export const pieType: ChartType = { ...pieBase, kind: 'pie', tags: ['pieChart', 'pie3DChart'] };
 export const doughnutType: ChartType = { ...pieBase, kind: 'doughnut', tags: ['doughnutChart'] };

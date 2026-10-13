@@ -7,7 +7,7 @@ import { legendBand, legendCenter, legendItemGap, legendKeyGap, legendLineKey, l
 import type { Plot, Rect, Series, TextStyle } from './model';
 import { dashAttr } from './trendline';
 
-export interface LegendEntry { name: string; color: Rgba; line: boolean; marker: boolean; series?: Series; width?: number; dash?: string }
+export interface LegendEntry { name: string; color: Rgba; line: boolean; marker: boolean; series?: Series; width?: number; dash?: string; none?: boolean }
 
 /** 图例里的各项（按显示顺序） */
 function entriesOf(plots: Plot[], colors: ColorContext): LegendEntry[] {
@@ -23,7 +23,7 @@ function entriesOf(plots: Plot[], colors: ColorContext): LegendEntry[] {
     for (const s of p.series) {
       const k = t.legendKey(p, s);
       // 图例里的线和系列一样粗（实测）
-      entries.push({ name: s.name, color: k.color ?? accentColor(0, colors), line: k.line, marker: s.marker || !!k.dot, ...(k.dot ? {} : { series: s }), ...(k.line && s.line ? { width: s.line.width } : {}) });
+      entries.push({ name: s.name, color: k.color ?? accentColor(0, colors), line: k.line, marker: s.marker || !!k.dot, ...(k.dot ? {} : { series: s }), ...(k.line && s.line ? { width: s.line.width } : {}), ...(k.none ? { none: true } : {}) });
     }
   }
   if (type0.legendReversed?.(plots[0])) entries.reverse();
@@ -57,7 +57,7 @@ export function renderLegend(legend: XEl | undefined, plots: Plot[], area: Rect,
     // 上方图例：中心在 9 磅 + 0.515 倍字号处，下沿（12 磅 + 1.03 倍字号）再往下 11 磅才是绘图区（COM 读 3 种字号，导出图核对）
     const y = legendPos === 'b' ? bottom - legendCenter(sz) : top - PAD + legendTopCenter(sz);
     entries.forEach((e, i) => {
-      out.push(anyLine ? legendKey(e, x, y, legendSquare(sz), keyW(e)) : legendKey(e, x, y, e.line ? ks : legendSquare(sz)));
+      if (!e.none) out.push(anyLine ? legendKey(e, x, y, legendSquare(sz), keyW(e)) : legendKey(e, x, y, e.line ? ks : legendSquare(sz)));
       out.push(label(e.name, x + keyW(e) + legendKeyGap(sz), y, legendText, 'start'));
       x += parts[i] + gap;
     });
@@ -74,7 +74,7 @@ export function renderLegend(legend: XEl | undefined, plots: Plot[], area: Rect,
     const x = legendPos === 'l' ? left : right - lw;
     let y = (top + bottom) / 2 - (entries.length * row) / 2 + row / 2;
     for (const e of entries) {
-      out.push(anyLine ? legendKey(e, x, y, legendSquare(sz), keyW) : legendKey(e, x, y, legendSquare(sz)));
+      if (!e.none) out.push(anyLine ? legendKey(e, x, y, legendSquare(sz), keyW) : legendKey(e, x, y, legendSquare(sz)));
       out.push(label(e.name, x + keyW + legendKeyGap(sz), y, legendText, 'start'));
       y += row;
     }

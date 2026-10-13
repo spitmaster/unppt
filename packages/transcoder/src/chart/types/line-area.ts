@@ -36,9 +36,9 @@ function renderLineArea(p: Plot, f: CategoryFrame, A: AxisInfo, out: string[], l
       const d = `M${pts.map((q) => `${n2(q[0])} ${n2(q[1])}`).join('L')}L${base.reverse().map((q) => `${n2(q[0])} ${n2(q[1])}`).join('L')}Z`;
       if (s.fill) drawn.push(cpart(`${s.index}s`, `<path d="${d}" fill="${css(s.fill)}"/>`));
     } else {
-      const lc = s.line?.color ?? s.fill;
+      const lc = s.noLine ? undefined : s.line?.color ?? s.fill;
       if (lc) drawn.push(cpart(`${s.index}s`, `<path d="${linePath(pts, s.smooth)}" fill="none" stroke="${css(lc)}" stroke-width="${n2(s.line?.width ?? 3)}" stroke-linejoin="round" stroke-linecap="round"/>`));
-      if (s.marker && lc) pts.forEach((q, k) => drawn.push(cpart(`${s.index}x${ptCat[k]}`, markerSvg(s, q[0], q[1]))));
+      if (s.marker && (lc || s.markerFill || s.markerLine)) pts.forEach((q, k) => drawn.push(cpart(`${s.index}x${ptCat[k]}`, markerSvg(s, q[0], q[1]))));
       if (p.grouping === 'standard') {
         for (const e of s.errBars) {
           errRanges(e, s.vals).forEach((r, i) => {

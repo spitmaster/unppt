@@ -25,6 +25,12 @@ export function readLabels(d: XEl | undefined, base: Labels | undefined, colors:
   return l.val || l.pct || l.cat || l.ser ? l : undefined;
 }
 
+/** spPr 里的纯色填充 */
+function solidOf(spPr: XEl | undefined, colors: ColorContext, part: string): Rgba | undefined {
+  const f = parseFill(findFillEl(spPr), colors, part);
+  return f?.kind === 'solid' ? f.color : undefined;
+}
+
 /** 气泡大小（缺的、不是数字的记 null） */
 function sizesOf(el: XEl | undefined, n: number): (number | null)[] {
   const c = cacheValues(el);
@@ -93,6 +99,7 @@ export function readPlots(plotArea: XEl | undefined, colors: ColorContext, part:
         fill: fill?.kind === 'solid' ? fill.color : fill?.kind === 'none' ? undefined : accent,
         // 线条写了"无线条"（散点图只画点）时不画线
         line: child(child(spPr, 'a:ln'), 'a:noFill') ? undefined : line ?? (hasLine ? { color: accent, width: 2.25 * 96 / 72, cap: 'round', join: 'round' } : undefined),
+        ...(child(child(spPr, 'a:ln'), 'a:noFill') ? { noLine: true } : {}),
         marker,
         smooth: attr(child(s, 'c:smooth'), 'val') === '1',
         markerSymbol: symbol && symbol !== 'none' && symbol !== 'auto' ? symbol : 'circle',
@@ -120,6 +127,30 @@ export function readPlots(plotArea: XEl | undefined, colors: ColorContext, part:
       varyColors: attr(child(p, 'c:varyColors'), 'val') === '1',
       bubbleScale: numAttr(child(p, 'c:bubbleScale'), 'val') ?? 100,
       sizeRepresents: attr(child(p, 'c:sizeRepresents'), 'val') ?? 'area',
+      ...(local === 'stockChart' ? {
+        stock: {
+          hiLow: child(p, 'c:hiLowLines') ? parseLine([child(child(child(p, 'c:hiLowLines'), 'c:spPr'), 'a:ln')], [colors], part) ?? { color: { r: 64, g: 64, b: 64, a: 1 }, width: 1, cap: 'butt', join: 'round' } : undefined,
+          ...(child(p, 'c:upDownBars') ? {
+            upDown: {
+              gap: numAttr(child(child(p, 'c:upDownBars'), 'c:gapWidth'), 'val') ?? 150,
+              up: solidOf(child(child(child(p, 'c:upDownBars'), 'c:upBars'), 'c:spPr'), colors, part),
+              down: solidOf(child(child(child(p, 'c:upDownBars'), 'c:downBars'), 'c:spPr'), colors, part),
+              line: parseLine([child(child(child(child(p, 'c:upDownBars'), 'c:upBars'), 'c:spPr'), 'a:ln')], [colors], part)?.color,
+            },
+          } : {}),
+        },
+      } : {}),
+      ...(local === 'ofPieChart' ? {
+        ofPie: {
+          type: attr(child(p, 'c:ofPieType'), 'val') ?? 'pie',
+          splitType: attr(child(p, 'c:splitType'), 'val') ?? 'auto',
+          splitPos: numAttr(child(p, 'c:splitPos'), 'val') ?? 0,
+          custom: children(child(p, 'c:custSplit'), 'c:secondPiePt').map((e) => numAttr(e, 'val') ?? -1),
+          second: numAttr(child(p, 'c:secondPieSize'), 'val') ?? 75,
+          gap: numAttr(child(p, 'c:gapWidth'), 'val') ?? 150,
+          lines: parseLine([child(child(child(p, 'c:serLines'), 'c:spPr'), 'a:ln')], [colors], part),
+        },
+      } : {}),
       series,
     });
   }

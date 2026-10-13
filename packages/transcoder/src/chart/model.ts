@@ -21,6 +21,8 @@ export interface Series {
   bubble3D?: boolean;
   fill?: Rgba;
   line?: Line;
+  /** 线条明确设成了"无线条"（折线图不画线，只画标记） */
+  noLine?: boolean;
   marker: boolean;
   /** 平滑线（c:smooth） */
   smooth: boolean;
@@ -85,6 +87,10 @@ export interface Plot {
   /** 气泡图：气泡大小比例（%）、大小代表面积（area）还是直径（w） */
   bubbleScale: number;
   sizeRepresents: string;
+  /** 股价图：最高最低连线、涨跌柱（间隙宽度%、涨柱和跌柱的填充、边框） */
+  stock?: { hiLow?: Line; upDown?: { gap: number; up?: Rgba; down?: Rgba; line?: Rgba } };
+  /** 复合饼图、复合条饼图：右图类型、怎么拆（auto / pos / val / percent / cust）、拆分值、右图大小%、间隙宽度%、连接线 */
+  ofPie?: { type: string; splitType: string; splitPos: number; custom: number[]; second: number; gap: number; lines?: Line };
   series: Series[];
 }
 
