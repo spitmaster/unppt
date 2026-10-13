@@ -64,6 +64,10 @@ export interface AnimAction {
   /** 媒体命令：播放（从 start 秒开始）、暂停、停止 */
   media?: 'play' | 'pause' | 'stop' | 'toggle';
   start?: number;
+  /** 媒体连续播放的页数（含本页，"跨幻灯片播放"），大于 1 时翻页不停 */
+  across?: number;
+  /** 媒体循环播放直到停止 */
+  loop?: boolean;
   /** 文字逐字（letter）/ 逐词（word）播放：每个字（词）各自播 dur，相邻两个间隔 gap 毫秒 */
   iterate?: { by: 'letter' | 'word'; gap: number };
 }

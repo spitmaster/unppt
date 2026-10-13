@@ -906,7 +906,28 @@ def hidden_slides(app):
     return p
 
 
-CASES = [shapes_all, text_sizes, text_align, text_spacing, text_bullets, text_missing_font, shapes_basic, fills_lines, table_basic, group_rotate, anim_basic, anim_auto, charts_basic, pictures, smartart, text_effects, text_layout, table_merge, links, emf_images, anim_advanced, charts_labels, freeform_icons, media_audio, anim_trigger, wmf_images, anim_iterate, picture_transparent, charts_more, shape_effects, equations, anim_path, anim_emphasis, transitions, fills_patterns, text_decoration, anim_entrance, svg_images, charts_markers, hidden_slides]
+def media_background(app):
+    """背景音乐：第 1 页自动开始，跨 3 页播放、循环直到停止，放映时隐藏图标"""
+    tmp = TESTCASES.parent / ".cache" / "media"
+    tmp.mkdir(parents=True, exist_ok=True)
+    wav = tmp / "tone.wav"
+    make_tone(wav)
+    p = new_pres(app, window=True)
+    s1 = blank(p)
+    textbox(s1, 60, 60, 700, 60, "背景音乐从这页开始，跨 3 页播放", size=28)
+    a = s1.Shapes.AddMediaObject2(str(wav.resolve()), 0, -1, 800, 420, 48, 48)
+    ps = a.AnimationSettings.PlaySettings
+    ps.PlayOnEntry = -1
+    ps.HideWhileNotPlaying = -1
+    ps.LoopUntilStopped = -1
+    ps.StopAfterSlides = 3
+    for i in range(2, 5):
+        s = blank(p)
+        textbox(s, 60, 60, 600, 60, f"第 {i} 页", size=28)
+    return p
+
+
+CASES = [shapes_all, text_sizes, text_align, text_spacing, text_bullets, text_missing_font, shapes_basic, fills_lines, table_basic, group_rotate, anim_basic, anim_auto, charts_basic, pictures, smartart, text_effects, text_layout, table_merge, links, emf_images, anim_advanced, charts_labels, freeform_icons, media_audio, anim_trigger, wmf_images, anim_iterate, picture_transparent, charts_more, shape_effects, equations, anim_path, anim_emphasis, transitions, fills_patterns, text_decoration, anim_entrance, svg_images, charts_markers, hidden_slides, media_background]
 
 
 def main():

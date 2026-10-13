@@ -61,6 +61,7 @@ def main():
     subprocess.run(["node", "packages/transcoder/dist/cli.js", "convert", "testcases/transitions.pptx", "-o", str(player_dir / "trans.html"), "-q"], cwd=ROOT, check=True)
     subprocess.run(["node", "packages/transcoder/dist/cli.js", "convert", "testcases/anim-entrance.pptx", "-o", str(player_dir / "entr.html"), "-q"], cwd=ROOT, check=True)
     subprocess.run(["node", "packages/transcoder/dist/cli.js", "convert", "testcases/hidden-slides.pptx", "-o", str(player_dir / "hidden.html"), "-q"], cwd=ROOT, check=True)
+    subprocess.run(["node", "packages/transcoder/dist/cli.js", "convert", "testcases/media-background.pptx", "-o", str(player_dir / "bgm.html"), "-q"], cwd=ROOT, check=True)
     s1, player_url = serve(player_dir)
     s2, host_url = serve(host_dir)
 
@@ -213,6 +214,18 @@ def main():
         seq.append(page9.evaluate("window.unppt.getState()")["slide"])
         seq.append(page9.evaluate("window.unppt.next()")["slide"])
         check(seq == [0, 2, 1, 2], f"隐藏页：顺序翻页跳过、链接能跳过去、之后继续往后：{seq}")
+
+        # ---------------- 10. 背景音乐跨 3 页播放：翻页不停，超出范围停止
+        page10 = b.new_page()
+        page10.goto(f"{player_url}/bgm.html")
+        page10.wait_for_function("window.unppt !== undefined && !!document.querySelector('div.unppt-slide')")
+        outside = """Array.from(document.querySelectorAll('audio')).filter(a => !a.closest('div.unppt-slide')).map(a => a.loop)"""
+        page10.evaluate("window.unppt.next()")
+        r10 = [page10.evaluate(outside)]
+        for k in (1, 2, 3):
+            page10.evaluate(f"window.unppt.goto({k}, 0)")
+            r10.append(page10.evaluate(outside))
+        check(r10 == [[True], [True], [True], []], f"背景音乐跨页、循环、超出范围停止：{r10}")
 
         # ---------------- 移动端视口
         mobile = {"is_mobile": True} if BROWSER != "firefox" else {}
