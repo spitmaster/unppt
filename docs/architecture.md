@@ -21,7 +21,7 @@ flowchart LR
   out --> json[(deck.json + media/)]
   html --> P
   json --> P
-  subgraph P["播放器 @unppt/player（零依赖，约 20KB）"]
+  subgraph P["播放器 @unppt/player（零依赖，约 45KB，gzip 后约 16KB）"]
     direction TB
     nav[翻页 / 步骤] --> engine[动画引擎]
     nav --> trans[页面切换]
