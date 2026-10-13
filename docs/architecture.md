@@ -77,7 +77,7 @@ flowchart TB
   engine["anim/engine.ts<br/>播放 / 瞬时应用 / 结束正在播的动画"]
   effects["anim/effects/<br/>← AnimEffect 扩展点"]
   target["anim/target.ts<br/>强调、路径（沿路径、往返关键帧）"]
-  units["anim/text-units.ts<br/>逐字 / 逐词"]
+  units["anim/text-units.ts<br/>逐字 / 逐词：淡入拆 tspan，<br/>飞入等带位移的拆成单独摆放的 text"]
   trans["transitions/<br/>← TransitionEffect 扩展点<br/>推入、擦除、分割、圆形、平滑切换……"]
   ui["ui/controls.ts 按钮<br/>ui/input.ts 点击、键盘、触屏"]
   deck["deck.ts 数据接口、字体<br/>media.ts 音视频命令<br/>css.ts 样式"]

@@ -26,6 +26,9 @@ export class AnimationEngine implements AnimHost {
   /** media：媒体控制（播放器注入，用来支持跨页播放）；不传时直接控制元素里的音视频 */
   constructor(private scene: Scene, private media: MediaHost = { command: (el, a) => mediaCommand(el, a.media!, a.start) }) {}
 
+  get slideW() { return this.scene.width; }
+  get slideH() { return this.scene.height; }
+
   track(a: Animation) {
     this.running.push(a);
   }
