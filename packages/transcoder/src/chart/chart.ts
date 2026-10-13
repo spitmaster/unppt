@@ -6,7 +6,8 @@
  */
 import { colorIn, css, type ColorContext, type Rgba } from '../model/color';
 import { fallbackAdvance } from '../font/font';
-import { findFillEl, parseFill, parseLine, type Line } from '../style/fill';
+import { findFillEl, parseFill } from '../style/fill';
+import { parseLine, type Line } from '../style/line';
 import { EMU_PER_PX, type Theme } from '../model/model';
 import { esc, n2 } from '../common/svg';
 import { attr, child, children, findAll, numAttr, path, type XEl } from '../io/xml';

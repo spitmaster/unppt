@@ -3,7 +3,8 @@
  * 表格样式（ppt/tableStyles.xml）按 整表 -> 条纹 -> 首尾列 -> 首尾行 的顺序叠加，单元格自己的设置最后覆盖。
  */
 import { colorIn, type ColorContext } from '../model/color';
-import { fillAttrs, findFillEl, parseFill, parseLine, strokeAttrs, type Fill, type Line } from '../style/fill';
+import { fillAttrs, findFillEl, parseFill, type Fill } from '../style/fill';
+import { parseLine, strokeAttrs, type Line } from '../style/line';
 import { EMU_PER_PX, type SlideContext } from '../model/model';
 import { n2 } from '../common/svg';
 import { renderText, type TextEnv } from '../text/text';
