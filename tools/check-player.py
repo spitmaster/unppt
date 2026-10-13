@@ -457,6 +457,17 @@ def main():
         check(bar19 == "flex" and play19 == [True, 0] and t19 > 2 and slide19 == 0,
               f"视频控制条 {bar19}、点击播放 {play19}、拖进度到 {t19:.1f} 秒、进度条上按方向键不翻页 {slide19}")
 
+        # ---------------- 20. 媒体淡入：播放开头音量从 0 慢慢升到 1（淡入时长在元素的 data-fade-in 上）
+        page20 = b.new_page(viewport={"width": 960, "height": 540})
+        page20.goto(f"{player_url}/video.html?timings=0")
+        page20.wait_for_function("window.unppt !== undefined && !!document.querySelector('video')")
+        page20.evaluate("document.querySelector('video').dataset.fadeIn = '3'")
+        vb20 = page20.evaluate("(() => { const r = document.querySelector('video').getBoundingClientRect(); return [r.x + r.width / 2, r.y + r.height / 2]; })()")
+        page20.mouse.click(vb20[0], vb20[1])
+        page20.wait_for_timeout(900)
+        v20 = page20.evaluate("[document.querySelector('video').volume, document.querySelector('video').currentTime]")
+        check(0 < v20[0] < 0.6 and v20[1] > 0.3, f"视频淡入：播放 {v20[1]:.1f} 秒时音量 {v20[0]:.2f}")
+
         # ---------------- 移动端视口
         mobile = {"is_mobile": True} if BROWSER != "firefox" else {}
         page3 = b.new_page(viewport={"width": 390, "height": 844}, has_touch=True, **mobile)
