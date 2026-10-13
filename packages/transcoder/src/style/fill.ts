@@ -7,13 +7,14 @@ import { esc, n2 } from '../common/svg';
 import { attr, child, children, numAttr, type XEl } from '../io/xml';
 import type { Theme } from '../model/model';
 import { blipFilter, parseBlipEffects, type BlipEffects } from './blip';
+import { patternFill } from './pattern';
 
 export type Fill =
   | { kind: 'none' }
   | { kind: 'solid'; color: Rgba }
   | { kind: 'grad'; stops: { pos: number; color: Rgba }[]; angle: number; path?: string; rect?: { l: number; t: number; r: number; b: number } }
   | { kind: 'image'; rid: string; part: string; alpha: number; tile: boolean; srcRect?: { l: number; t: number; r: number; b: number }; effects?: BlipEffects }
-  | { kind: 'pattern'; fg: Rgba; bg: Rgba };
+  | { kind: 'pattern'; prst: string; fg: Rgba; bg: Rgba };
 
 const FILL_NAMES = new Set(['a:noFill', 'a:solidFill', 'a:gradFill', 'a:blipFill', 'a:pattFill', 'a:grpFill']);
 
@@ -65,7 +66,7 @@ export function parseFill(f: XEl | undefined, ctx: ColorContext, part: string, g
     case 'a:pattFill': {
       const fg = colorIn(child(f, 'a:fgClr'), ctx) ?? { r: 0, g: 0, b: 0, a: 1 };
       const bg = colorIn(child(f, 'a:bgClr'), ctx) ?? { r: 255, g: 255, b: 255, a: 1 };
-      return { kind: 'pattern', fg, bg };
+      return { kind: 'pattern', prst: attr(f, 'prst') ?? 'pct5', fg, bg };
     }
   }
   return undefined;
@@ -108,11 +109,19 @@ export interface ImageResolver {
 }
 
 /**
- * 生成 fill 属性。w/h 是形状尺寸（像素），用于渐变方向和图片填充。
+ * 生成 fill 属性。w/h 是形状尺寸（像素），用于渐变方向和图片填充；
+ * origin 是元素坐标原点在幻灯片上的位置（图案填充从幻灯片原点对齐）。
  * 返回形如 ` fill="#fff" fill-opacity="0.5"` 的字符串。
  */
-export async function fillAttrs(fill: Fill | undefined, doc: SvgDoc, w: number, h: number, mode: string, images: ImageResolver): Promise<string> {
+export async function fillAttrs(
+  fill: Fill | undefined, doc: SvgDoc, w: number, h: number, mode: string, images: ImageResolver,
+  origin?: { x: number; y: number },
+): Promise<string> {
   if (!fill || fill.kind === 'none') return ' fill="none"';
+  if (fill.kind === 'pattern' && mode === 'norm') {
+    const id = patternFill(doc, fill.prst, fill.fg, fill.bg, origin);
+    if (id) return ` fill="url(#${id})"`;
+  }
   if (fill.kind === 'solid' || fill.kind === 'pattern') {
     let c = fill.kind === 'solid' ? fill.color : mix(fill.fg, fill.bg.r, 0.5);
     c = adjustForPathMode(c, mode);

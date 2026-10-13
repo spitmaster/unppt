@@ -6,6 +6,6 @@ import type { FrameHandler } from './frame-handler';
 export const tableFrame: FrameHandler = {
   uri: '/table',
   async render(gd, box, r, ctx) {
-    return { svg: await renderTable(child(gd, 'a:tbl'), box.w, box.h, r, ctx) };
+    return { svg: await renderTable(child(gd, 'a:tbl'), box, r, ctx) };
   },
 };

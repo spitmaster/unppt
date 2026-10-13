@@ -779,7 +779,31 @@ def transitions(app):
     return p
 
 
-CASES = [shapes_all, text_sizes, text_align, text_spacing, text_bullets, text_missing_font, shapes_basic, fills_lines, table_basic, group_rotate, anim_basic, anim_auto, charts_basic, pictures, smartart, text_effects, text_layout, table_merge, links, emf_images, anim_advanced, charts_labels, freeform_icons, media_audio, anim_trigger, wmf_images, anim_iterate, picture_transparent, charts_more, shape_effects, equations, anim_path, anim_emphasis, transitions]
+def fills_patterns(app):
+    """图案填充：多种预设图案、不同前景/背景色、不同位置（图案从幻灯片原点对齐），表格单元格的图案填充"""
+    p = new_pres(app)
+    s = blank(p)
+    colors = [(RGB(0, 0, 0), RGB(255, 255, 255)), (RGB(192, 0, 0), RGB(255, 242, 204)), (RGB(31, 78, 121), RGB(221, 235, 247)), (RGB(84, 130, 53), RGB(255, 255, 255))]
+    for k, pat in enumerate([1, 7, 13, 15, 17, 19, 21, 23, 24, 34, 35, 38, 40, 42, 43, 44, 49, 51, 53, 54]):
+        fg, bg = colors[k % 4]
+        sh = s.Shapes.AddShape(1 if k % 3 else 9, 30.3 + (k % 7) * 131.7, 25.6 + (k // 7) * 120.9, 112.5, 101.3)
+        sh.Line.Visible = 0
+        sh.Fill.Patterned(pat)
+        sh.Fill.ForeColor.RGB = fg
+        sh.Fill.BackColor.RGB = bg
+    s2 = blank(p)
+    tb = s2.Shapes.AddTable(3, 3, 100, 100, 600, 240).Table
+    for i in range(1, 4):
+        for j in range(1, 4):
+            c = tb.Cell(i, j).Shape
+            c.Fill.Patterned([2, 22, 36][(i + j) % 3])
+            c.Fill.ForeColor.RGB = RGB(68, 114, 196)
+            c.Fill.BackColor.RGB = RGB(255, 255, 255)
+            c.TextFrame.TextRange.Text = f"{i}-{j}"
+    return p
+
+
+CASES = [shapes_all, text_sizes, text_align, text_spacing, text_bullets, text_missing_font, shapes_basic, fills_lines, table_basic, group_rotate, anim_basic, anim_auto, charts_basic, pictures, smartart, text_effects, text_layout, table_merge, links, emf_images, anim_advanced, charts_labels, freeform_icons, media_audio, anim_trigger, wmf_images, anim_iterate, picture_transparent, charts_more, shape_effects, equations, anim_path, anim_emphasis, transitions, fills_patterns]
 
 
 def main():
