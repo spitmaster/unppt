@@ -150,7 +150,7 @@ export async function convert(input: InputSource, options: ConvertOptions): Prom
       const advance = compileAdvance(r.transition);
       yield {
         svg: r.svg, steps: anim.steps, auto: anim.auto, hidden: anim.hidden, transition: compileTransition(r.transition, sounds),
-        ...(anim.triggers.length ? { triggers: anim.triggers } : {}), ...(r.hidden ? { skip: true } : {}),
+        ...(anim.triggers.length ? { triggers: anim.triggers } : {}), ...(anim.fullScreen.length ? { fullScreen: anim.fullScreen } : {}), ...(r.hidden ? { skip: true } : {}),
         ...(advance ? { advance } : {}),
       };
     }

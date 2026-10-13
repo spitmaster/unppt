@@ -51,7 +51,54 @@ function prepare(m: HTMLMediaElement) {
   });
 }
 
+/** 正在全屏播放的视频：原来的视频 -> 盖在整页上的那一份 */
+const fullCopies = new WeakMap<HTMLMediaElement, HTMLVideoElement>();
+
+/**
+ * 全屏播放（PowerPoint 的"全屏播放"）：在整页上盖一个同样的视频（黑底、等比放满）接着播，
+ * 播完、停止或翻页（整页被移除）时去掉，原来的视频停在播到的位置。点它暂停 / 继续，不翻页
+ */
+function playFull(m: HTMLMediaElement): HTMLVideoElement | undefined {
+  const page = m.closest('.unppt-slide');
+  if (!page) return undefined;
+  const v = m.ownerDocument.createElement('video');
+  v.className = 'unppt-full';
+  v.src = m.currentSrc || m.src;
+  v.playsInline = true;
+  for (const k of ['trimStart', 'trimEnd', 'fadeIn', 'fadeOut'] as const) if (m.dataset[k]) v.dataset[k] = m.dataset[k];
+  const at = m.currentTime;
+  v.addEventListener('loadedmetadata', () => { if (at) v.currentTime = at; }, { once: true });
+  const close = () => {
+    m.currentTime = v.currentTime;
+    fullCopies.delete(m);
+    v.remove();
+  };
+  v.addEventListener('ended', close);
+  // 剪裁的终点由 prepare 暂停：暂停在终点也算播完
+  v.addEventListener('pause', () => {
+    const end = Number(v.dataset.trimEnd) || 0;
+    if (v.duration && v.currentTime >= v.duration - end - 0.1) close();
+  });
+  for (const ev of ['click', 'pointerdown', 'touchstart', 'touchend'] as const) v.addEventListener(ev, (e) => e.stopPropagation());
+  v.addEventListener('click', () => (v.paused ? void v.play().catch(() => {}) : v.pause()));
+  page.appendChild(v);
+  m.pause();
+  fullCopies.set(m, v);
+  return v;
+}
+
 function run(m: HTMLMediaElement, cmd: MediaCmd, start?: number) {
+  // 正在全屏播放：命令转给全屏的那一份（停止时把它去掉）
+  const copy = fullCopies.get(m);
+  if (copy) {
+    if (cmd === 'stop') { copy.pause(); fullCopies.delete(m); copy.remove(); m.currentTime = trimOf(m).st; return; }
+    run(copy, cmd, start);
+    return;
+  }
+  if (m.dataset.fullScreen && (cmd === 'play' || (cmd === 'toggle' && m.paused))) {
+    const v = playFull(m);
+    if (v) { run(v, 'play', start); return; }
+  }
   try {
     prepare(m);
     const { st } = trimOf(m);

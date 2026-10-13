@@ -14,6 +14,7 @@ import shutil
 import subprocess
 import sys
 import threading
+import zipfile
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -104,6 +105,15 @@ def main():
     subprocess.run(["node", "packages/transcoder/dist/cli.js", "convert", "testcases/anim-after.pptx", "-o", str(player_dir / "after.html"), "-q"], cwd=ROOT, check=True)
     subprocess.run(["node", "packages/transcoder/dist/cli.js", "convert", "testcases/anim-text-emphasis.pptx", "-o", str(player_dir / "textemph.html"), "-q"], cwd=ROOT, check=True)
     subprocess.run(["node", "packages/transcoder/dist/cli.js", "convert", "testcases/media-video.pptx", "-o", str(player_dir / "video.html"), "-q"], cwd=ROOT, check=True)
+    # 全屏播放：把 media-video 第 1 页的视频改成"全屏播放"（p:video fullScrn="1"）再转换
+    full = OUT / "video-full.pptx"
+    with zipfile.ZipFile(ROOT / "testcases/media-video.pptx") as zin, zipfile.ZipFile(full, "w", zipfile.ZIP_DEFLATED) as zout:
+        for item in zin.infolist():
+            data = zin.read(item.filename)
+            if item.filename == "ppt/slides/slide1.xml":
+                data = data.replace(b"<p:video>", b'<p:video fullScrn="1">')
+            zout.writestr(item, data)
+    subprocess.run(["node", "packages/transcoder/dist/cli.js", "convert", str(full), "-o", str(player_dir / "videofull.html"), "-q"], cwd=ROOT, check=True)
     s1, player_url = serve(player_dir)
     s2, host_url = serve(host_dir)
 
@@ -467,6 +477,26 @@ def main():
         page20.wait_for_timeout(900)
         v20 = page20.evaluate("[document.querySelector('video').volume, document.querySelector('video').currentTime]")
         check(0 < v20[0] < 0.6 and v20[1] > 0.3, f"视频淡入：播放 {v20[1]:.1f} 秒时音量 {v20[0]:.2f}")
+
+        # ---------------- 21. 全屏播放的视频：点击后整页盖上视频播放、不翻页；点它暂停；翻页后去掉
+        page21 = b.new_page(viewport={"width": 960, "height": 540})
+        page21.goto(f"{player_url}/videofull.html?timings=0")
+        page21.wait_for_function("window.unppt !== undefined && !!document.querySelector('video')")
+        vb21 = page21.evaluate("(() => { const r = document.querySelector('video').getBoundingClientRect(); return [r.x + r.width / 2, r.y + r.height / 2]; })()")
+        page21.mouse.click(vb21[0], vb21[1])
+        page21.wait_for_timeout(1000)
+        f21 = page21.evaluate("""(() => { const v = document.querySelector('video.unppt-full'); if (!v) return null;
+            const r = v.getBoundingClientRect(), p = v.parentElement.getBoundingClientRect();
+            return [!v.paused, Math.round(r.width - p.width), Math.round(r.height - p.height)]; })()""")
+        s21 = page21.evaluate("window.unppt.getState()")["slide"]
+        page21.mouse.click(480, 270)
+        page21.wait_for_timeout(300)
+        p21 = page21.evaluate("document.querySelector('video.unppt-full')?.paused")
+        page21.evaluate("window.unppt.goto({slide: 1})")
+        page21.wait_for_timeout(300)
+        g21 = page21.evaluate("document.querySelectorAll('video.unppt-full').length")
+        check(f21 == [True, 0, 0] and s21 == 0 and p21 is True and g21 == 0,
+              f"全屏播放：盖满整页并播放 {f21}、不翻页 {s21}、点它暂停 {p21}、翻页后去掉 {g21}")
 
         # ---------------- 移动端视口
         mobile = {"is_mobile": True} if BROWSER != "firefox" else {}

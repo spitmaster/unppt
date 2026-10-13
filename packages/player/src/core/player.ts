@@ -243,6 +243,7 @@ export class Player {
     this.stepIdx = Math.max(0, Math.min(data.steps.length, Math.floor(Number(step) || 0)));
     // 初始状态
     for (const uid of data.hidden) this.find(uid)?.classList.add('unppt-hide');
+    for (const uid of data.fullScreen ?? []) this.find(uid)?.querySelector('video')?.setAttribute('data-full-screen', '1');
     for (const tr of data.triggers ?? []) this.find(tr.uid)?.classList.add('unppt-trigger');
     if (animated) this.engine.play(data.auto);
     else this.engine.applyInstant(data.auto);
