@@ -956,7 +956,26 @@ def text_glow_reflection(app):
     return p
 
 
-CASES = [shapes_all, text_sizes, text_align, text_spacing, text_bullets, text_missing_font, shapes_basic, fills_lines, table_basic, group_rotate, anim_basic, anim_auto, charts_basic, pictures, smartart, text_effects, text_layout, table_merge, links, emf_images, anim_advanced, charts_labels, freeform_icons, media_audio, anim_trigger, wmf_images, anim_iterate, picture_transparent, charts_more, shape_effects, equations, anim_path, anim_emphasis, transitions, fills_patterns, text_decoration, anim_entrance, svg_images, charts_markers, hidden_slides, media_background, text_glow_reflection]
+def text_tabs(app):
+    """制表位：默认制表位、自定义左对齐 / 居中 / 右对齐 / 小数点对齐制表位（目录、对齐的多列）"""
+    T, P = chr(9), chr(13)
+    p = new_pres(app)
+    s = blank(p)
+    tb = s.Shapes.AddTextbox(1, 60, 40, 840, 200)
+    tb.TextFrame.TextRange.Text = P.join([f"默认{T}制表位{T}测试", f"第一章{T}概述{T}3", f"第二章{T}方法和步骤{T}12", f"合计{T}1234.5{T}67.89"])
+    tb.TextFrame.TextRange.Font.Size = 24
+    tb2 = s.Shapes.AddTextbox(1, 60, 280, 840, 220)
+    tb2.TextFrame.TextRange.Text = P.join([f"左{T}居中{T}右对齐{T}12.5", f"Left{T}Center text{T}Right{T}1234.75", f"甲{T}乙丙丁{T}戊{T}3.1"])
+    tb2.TextFrame.TextRange.Font.Size = 24
+    r = tb2.TextFrame.Ruler.TabStops
+    r.Add(1, 150)    # ppTabStopLeft
+    r.Add(2, 400)    # ppTabStopCenter
+    r.Add(3, 620)    # ppTabStopRight
+    r.Add(4, 760)    # ppTabStopDecimal
+    return p
+
+
+CASES = [shapes_all, text_sizes, text_align, text_spacing, text_bullets, text_missing_font, shapes_basic, fills_lines, table_basic, group_rotate, anim_basic, anim_auto, charts_basic, pictures, smartart, text_effects, text_layout, table_merge, links, emf_images, anim_advanced, charts_labels, freeform_icons, media_audio, anim_trigger, wmf_images, anim_iterate, picture_transparent, charts_more, shape_effects, equations, anim_path, anim_emphasis, transitions, fills_patterns, text_decoration, anim_entrance, svg_images, charts_markers, hidden_slides, media_background, text_glow_reflection, text_tabs]
 
 
 def main():
