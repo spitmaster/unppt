@@ -1,8 +1,9 @@
 /** 饼图、圆环图：自己占满绘图区，图例按分类列出 */
 import { css, type ColorContext } from '../../model/color';
 import { n2 } from '../../common/svg';
-import { accentColor, cpart, label, strokeOf } from '../draw';
-import { labelText } from '../format';
+import { accentColor, cpart, multiLabel, strokeOf } from '../draw';
+import { labelText, piePercents } from '../format';
+import type { TextWidth } from '../layout';
 import type { ChartContext, Plot, Rect } from '../model';
 import type { Line } from '../../style/line';
 import { renderPie3D } from './pie3d';
@@ -27,10 +28,11 @@ export function slicePath(cx: number, cy: number, r: number, ri: number, a1: num
 /** 没写边框时扇区之间的白线 */
 const PIE_EDGE: Line = { color: { r: 255, g: 255, b: 255, a: 1 }, width: 1.5, cap: 'butt', join: 'round' };
 
-function renderPie(p: Plot, x: number, y: number, w: number, h: number, colors: ColorContext): string {
+function renderPie(p: Plot, x: number, y: number, w: number, h: number, colors: ColorContext, tw: TextWidth): string {
   const s = p.series[0];
   if (!s) return '';
   const vals = s.vals.map((v) => Math.max(0, v ?? 0));
+  const pcts = piePercents(vals);
   const total = vals.reduce((a, b) => a + b, 0);
   if (!total) return '';
   const cx = x + w / 2, cy = y + h / 2;
@@ -52,9 +54,21 @@ function renderPie(p: Plot, x: number, y: number, w: number, h: number, colors: 
     out.push(cpart(`${s.index}x${i}`, `<path d="${d}" fill="${s.pointPaints?.get(i) ?? css(color)}" fill-rule="evenodd"${strokeOf(s, i, PIE_EDGE)}${move}/>`));
     const lb = s.labels;
     if (lb) {
-      // 默认"最佳位置"：扇形内部靠外边缘；圆环在环的中间（随分离的扇区一起移出）
-      const rr = (ri ? (r + ri) / 2 : lb.pos === 'ctr' ? r * 0.5 : lb.pos === 'outEnd' ? r + lb.style.size : r * 0.8) + ex;
-      labels.push(cpart(`${s.index}x${i}l`, label(labelText(lb, v, total, s.cats[i] ?? '', s.name, 'General'), cx + rr * Math.cos(mid), cy + rr * Math.sin(mid), lb.style)));
+      const text = labelText(lb, v, total, s.cats[i] ?? '', s.name, 'General', pcts[i], '\n');
+      const cos = Math.cos(mid), sin = Math.sin(mid);
+      let lx: number, ly: number;
+      if (!ri && lb.pos === 'outEnd') {
+        // 外侧：从圆心沿角平分线走到"半径 + 1.25 × 字号"处，标签往外摆（右边的从这里往右、上面的往上，实测）
+        const lines = text.split('\n');
+        const bw = Math.max(...lines.map((t) => tw(t, lb.style.size))), bh = lines.length * 1.44 * lb.style.size;
+        const d = r + ex + 1.25 * lb.style.size;
+        lx = cx + d * cos + (cos * bw) / 2; ly = cy + d * sin + (sin * bh) / 2;
+      } else {
+        // 默认"最佳位置"：扇形内部靠外边缘；圆环在环的中间（随分离的扇区一起移出）
+        const rr = (ri ? (r + ri) / 2 : lb.pos === 'ctr' ? r * 0.5 : r * 0.8) + ex;
+        lx = cx + rr * cos; ly = cy + rr * sin;
+      }
+      labels.push(cpart(`${s.index}x${i}l`, multiLabel(text, lx, ly, lb.style)));
     }
     ang = a2;
   });
@@ -67,7 +81,7 @@ const pieBase = {
   legendByCategory: true,
   seriesRules: () => ({ xy: false, defaultLine: false, marker: () => false }),
   legendKey: (_p: Plot, s: Plot['series'][number]) => ({ color: s.fill, line: false }),
-  render: (p: Plot, a: Rect, ctx: ChartContext) => (p.is3D && p.kind === 'pie' && ctx.view3D ? renderPie3D(p, a, ctx.view3D, ctx.colors) : renderPie(p, a.left, a.top, a.right - a.left, a.bottom - a.top, ctx.colors)),
+  render: (p: Plot, a: Rect, ctx: ChartContext) => (p.is3D && p.kind === 'pie' && ctx.view3D ? renderPie3D(p, a, ctx.view3D, ctx.colors) : renderPie(p, a.left, a.top, a.right - a.left, a.bottom - a.top, ctx.colors, ctx.width)),
 };
 
 export const pieType: ChartType = { ...pieBase, kind: 'pie', tags: ['pieChart', 'pie3DChart'] };
