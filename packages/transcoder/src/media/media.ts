@@ -6,7 +6,7 @@ import type { Presentation } from '../model/model';
 import { IMAGE_DECODERS } from './decoders';
 import type { ImageDecoder } from './image-decoder';
 import { imageInfo, type ImageInfo } from './image-info';
-import { pngColorKey } from './png-key';
+import { colorKey } from './color-key';
 import type { Rgba } from '../model/color';
 
 export type WriteData = Uint8Array | string | AsyncIterable<Uint8Array>;
@@ -77,8 +77,8 @@ export class MediaStore {
   }
 
   /**
-   * 关系 rid 指向的图片在原图上把 key 颜色抠成透明后的 href（"设置透明色"，见 png-key.ts）；
-   * 不是 PNG、文件太大或这种 PNG 做不了时返回 undefined（调用方退回滤镜近似）
+   * 关系 rid 指向的图片在原图上把 key 颜色抠成透明后的 href（"设置透明色"，见 color-key.ts）；
+   * 不是 PNG / JPEG、文件太大或解不开时返回 undefined（调用方退回滤镜近似）
    */
   async keyed(part: string, rid: string, key: Rgba): Promise<string | undefined> {
     const rel = await this.pkg.rel(part, rid);
@@ -96,7 +96,7 @@ export class MediaStore {
     const entry = this.pkg.zip.entry(target);
     if (!entry || entry.size > KEY_MAX_BYTES) return undefined;
     const bytes = await this.pkg.zip.read(target);
-    const png = bytes ? await pngColorKey(bytes, key) : undefined;
+    const png = bytes ? await colorKey(bytes, key) : undefined;
     if (!png) return undefined;
     if (png.length <= this.inlineLimit) {
       const id = this.nextAsset++;
