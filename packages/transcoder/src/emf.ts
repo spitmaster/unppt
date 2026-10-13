@@ -55,7 +55,16 @@ function dibToBmp(d: DataView, offBmi: number, cbBmi: number, offBits: number, c
   return `data:image/bmp;base64,${base64(out)}`;
 }
 
+/** 解析失败（文件损坏、被截断）时返回 undefined，不抛异常 */
 export function emfToSvg(bytes: Uint8Array): string | undefined {
+  try {
+    return emfToSvgUnsafe(bytes);
+  } catch {
+    return undefined;
+  }
+}
+
+function emfToSvgUnsafe(bytes: Uint8Array): string | undefined {
   const d = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
   if (bytes.length < 88 || d.getUint32(0, true) !== 1 || d.getUint32(40, true) !== 0x464d4520) return undefined;
   const i32 = (o: number) => d.getInt32(o, true);

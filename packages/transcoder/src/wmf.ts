@@ -52,7 +52,16 @@ function dibToBmp(dib: Uint8Array): string | undefined {
   return `data:image/bmp;base64,${base64(out)}`;
 }
 
+/** 解析失败（文件损坏、被截断）时返回 undefined，不抛异常 */
 export function wmfToSvg(bytes: Uint8Array): string | undefined {
+  try {
+    return wmfToSvgUnsafe(bytes);
+  } catch {
+    return undefined;
+  }
+}
+
+function wmfToSvgUnsafe(bytes: Uint8Array): string | undefined {
   const d = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
   if (bytes.length < 18) return undefined;
   const u16 = (o: number) => d.getUint16(o, true);
