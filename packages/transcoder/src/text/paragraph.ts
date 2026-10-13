@@ -38,7 +38,7 @@ export async function layoutParagraph(p: XEl, pi: number, ctx: ParagraphContext)
     } else if (r.name === 'a:br') {
       const style = runStyle(merge([defRPr, child(r, 'a:rPr')]), env, fontScale);
       firstStyle ??= style;
-      atoms.push({ text: '\n', cp: 10, width: 0, style, family: style.latin, ascent: 0, descent: 0, space: false, wide: false, tab: false });
+      atoms.push({ text: '\n', cp: 10, width: 0, style, family: style.latin, ascent: 0, descent: 0, strikeY: 0, space: false, wide: false, tab: false });
     }
   }
   const endStyle = runStyle(merge([defRPr, child(p, 'a:endParaRPr')]), env, fontScale);
@@ -80,7 +80,7 @@ export async function layoutParagraph(p: XEl, pi: number, ctx: ParagraphContext)
     return {
       atoms: vis,
       width: trimmedWidth(vis),
-      size: vis.length ? Math.max(...vis.map((a) => a.style.size)) : endStyle.size,
+      size: vis.length ? Math.max(...vis.map((a) => (a.style.baseline ? a.style.size * 0.67 : a.style.size))) : endStyle.size,
       ascent: vis.length ? Math.max(...vis.map((a) => a.ascent)) : emptyAsc,
       descent: vis.length ? Math.max(...vis.map((a) => a.descent)) : emptyDesc,
       x0: i === 0 ? firstX : marL,

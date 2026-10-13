@@ -1,0 +1,341 @@
+{
+ "version": 7,
+ "slideWidthPt": 960.0,
+ "slideHeightPt": 540.0,
+ "imageWidth": 1280,
+ "imageHeight": 720,
+ "slides": [
+  {
+   "index": 0,
+   "hidden": false,
+   "shapes": [
+    {
+     "id": 2,
+     "name": "TextBox 1",
+     "type": 17,
+     "x": 40.0,
+     "y": 30.0,
+     "w": 440.0,
+     "h": 36.352,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 15,
+       "text": "高亮 Highlight 黄色",
+       "x": 47.2,
+       "y": 33.6,
+       "w": 203.63,
+       "h": 28.8
+      }
+     ]
+    },
+    {
+     "id": 3,
+     "name": "TextBox 2",
+     "type": 17,
+     "x": 40.0,
+     "y": 100.0,
+     "w": 440.0,
+     "h": 36.352,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 15,
+       "text": "高亮 Highlight 青色",
+       "x": 47.2,
+       "y": 103.6,
+       "w": 203.63,
+       "h": 28.8
+      }
+     ]
+    },
+    {
+     "id": 4,
+     "name": "TextBox 3",
+     "type": 17,
+     "x": 40.0,
+     "y": 170.0,
+     "w": 440.0,
+     "h": 36.352,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 11,
+       "text": "单下划线 Single",
+       "x": 47.2,
+       "y": 173.6,
+       "w": 165.13,
+       "h": 28.8
+      }
+     ]
+    },
+    {
+     "id": 5,
+     "name": "TextBox 4",
+     "type": 17,
+     "x": 40.0,
+     "y": 240.0,
+     "w": 440.0,
+     "h": 36.352,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 11,
+       "text": "双下划线 Double",
+       "x": 47.2,
+       "y": 243.6,
+       "w": 177.63,
+       "h": 28.8
+      }
+     ]
+    },
+    {
+     "id": 6,
+     "name": "TextBox 5",
+     "type": 17,
+     "x": 40.0,
+     "y": 310.0,
+     "w": 440.0,
+     "h": 36.352,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 10,
+       "text": "粗下划线 Heavy",
+       "x": 47.2,
+       "y": 313.6,
+       "w": 166.005,
+       "h": 28.8
+      }
+     ]
+    },
+    {
+     "id": 7,
+     "name": "TextBox 6",
+     "type": 17,
+     "x": 40.0,
+     "y": 380.0,
+     "w": 440.0,
+     "h": 36.352,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 11,
+       "text": "点下划线 Dotted",
+       "x": 47.2,
+       "y": 383.6,
+       "w": 174.255,
+       "h": 28.8
+      }
+     ]
+    },
+    {
+     "id": 8,
+     "name": "TextBox 7",
+     "type": 17,
+     "x": 40.0,
+     "y": 450.0,
+     "w": 440.0,
+     "h": 36.352,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 9,
+       "text": "虚下划线 Dash",
+       "x": 47.2,
+       "y": 453.6,
+       "w": 154.13,
+       "h": 28.8
+      }
+     ]
+    },
+    {
+     "id": 9,
+     "name": "TextBox 8",
+     "type": 17,
+     "x": 500.0,
+     "y": 30.0,
+     "w": 440.0,
+     "h": 36.352,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 8,
+       "text": "波浪线 Wavy",
+       "x": 507.2,
+       "y": 33.6,
+       "w": 135.005,
+       "h": 28.8
+      }
+     ]
+    },
+    {
+     "id": 10,
+     "name": "TextBox 9",
+     "type": 17,
+     "x": 500.0,
+     "y": 100.0,
+     "w": 440.0,
+     "h": 36.352,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 10,
+       "text": "删除线 Strike",
+       "x": 507.2,
+       "y": 103.6,
+       "w": 135.755,
+       "h": 28.8
+      }
+     ]
+    },
+    {
+     "id": 11,
+     "name": "TextBox 10",
+     "type": 17,
+     "x": 500.0,
+     "y": 170.0,
+     "w": 440.0,
+     "h": 36.352,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 11,
+       "text": "双删除线 Double",
+       "x": 507.2,
+       "y": 173.6,
+       "w": 177.63,
+       "h": 28.8
+      }
+     ]
+    },
+    {
+     "id": 12,
+     "name": "TextBox 11",
+     "type": 17,
+     "x": 500.0,
+     "y": 240.0,
+     "w": 440.0,
+     "h": 36.352,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 15,
+       "text": "Small Caps 小型大写",
+       "x": 507.2,
+       "y": 243.6,
+       "w": 215.88,
+       "h": 28.8
+      }
+     ]
+    },
+    {
+     "id": 13,
+     "name": "TextBox 12",
+     "type": 17,
+     "x": 500.0,
+     "y": 310.0,
+     "w": 440.0,
+     "h": 36.352,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 13,
+       "text": "All Caps 全部大写",
+       "x": 507.2,
+       "y": 313.6,
+       "w": 202.505,
+       "h": 28.8
+      }
+     ]
+    },
+    {
+     "id": 14,
+     "name": "TextBox 13",
+     "type": 17,
+     "x": 500.0,
+     "y": 380.0,
+     "w": 440.0,
+     "h": 26.658,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 14,
+       "text": "上标 Superscript",
+       "x": 507.2,
+       "y": 383.6,
+       "w": 113.255,
+       "h": 19.2
+      }
+     ]
+    },
+    {
+     "id": 15,
+     "name": "TextBox 14",
+     "type": 17,
+     "x": 500.0,
+     "y": 450.0,
+     "w": 440.0,
+     "h": 26.658,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 12,
+       "text": "下标 Subscript",
+       "x": 507.2,
+       "y": 453.6,
+       "w": 99.63,
+       "h": 19.2
+      }
+     ]
+    }
+   ],
+   "effects": [],
+   "triggerHidden": [],
+   "steps": 0
+  }
+ ],
+ "ok": true
+}

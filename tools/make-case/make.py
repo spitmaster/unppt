@@ -803,7 +803,41 @@ def fills_patterns(app):
     return p
 
 
-CASES = [shapes_all, text_sizes, text_align, text_spacing, text_bullets, text_missing_font, shapes_basic, fills_lines, table_basic, group_rotate, anim_basic, anim_auto, charts_basic, pictures, smartart, text_effects, text_layout, table_merge, links, emf_images, anim_advanced, charts_labels, freeform_icons, media_audio, anim_trigger, wmf_images, anim_iterate, picture_transparent, charts_more, shape_effects, equations, anim_path, anim_emphasis, transitions, fills_patterns]
+def text_decoration(app):
+    """文字装饰：荧光笔高亮、各种下划线、删除线、双删除线、小型大写字母、全部大写、上下标（每行整行设置）"""
+    p = new_pres(app, window=True)
+    s = blank(p)
+    rows = [
+        ("高亮 Highlight 黄色", "hl", RGB(255, 255, 0)), ("高亮 Highlight 青色", "hl", RGB(0, 255, 255)),
+        ("单下划线 Single", "u", 2), ("双下划线 Double", "u", 3), ("粗下划线 Heavy", "u", 4), ("点下划线 Dotted", "u", 5),
+        ("虚下划线 Dash", "u", 7), ("波浪线 Wavy", "u", 15), ("删除线 Strike", "st", 1), ("双删除线 Double", "st", 2),
+        ("Small Caps 小型大写", "caps", 1), ("All Caps 全部大写", "caps", 2), ("上标 Superscript", "sup", 0), ("下标 Subscript", "sub", 0),
+    ]
+    for i, (text, kind, val) in enumerate(rows):
+        tb = s.Shapes.AddTextbox(1, 40 + (i // 7) * 460, 30 + (i % 7) * 70, 440, 50)
+        tr = tb.TextFrame2.TextRange
+        tr.Text = text
+        f = tr.Font
+        f.Size = 24
+        if kind == "hl":
+            f.Highlight.RGB = val
+        elif kind == "u":
+            f.UnderlineStyle = val
+        elif kind == "st":
+            f.Strike = val
+        elif kind == "caps":
+            if val == 1:
+                f.Smallcaps = -1
+            else:
+                f.Allcaps = -1
+        elif kind == "sup":
+            f.Superscript = -1
+        elif kind == "sub":
+            f.Subscript = -1
+    return p
+
+
+CASES = [shapes_all, text_sizes, text_align, text_spacing, text_bullets, text_missing_font, shapes_basic, fills_lines, table_basic, group_rotate, anim_basic, anim_auto, charts_basic, pictures, smartart, text_effects, text_layout, table_merge, links, emf_images, anim_advanced, charts_labels, freeform_icons, media_audio, anim_trigger, wmf_images, anim_iterate, picture_transparent, charts_more, shape_effects, equations, anim_path, anim_emphasis, transitions, fills_patterns, text_decoration]
 
 
 def main():
@@ -811,6 +845,8 @@ def main():
     pythoncom.CoInitialize()
     app = win32com.client.DispatchEx("PowerPoint.Application")
     TESTCASES.mkdir(exist_ok=True)
+    # PowerPoint 是单实例：记下运行前已经打开的演示文稿，结束时只关这次新建的
+    before = {app.Presentations(i).FullName for i in range(1, app.Presentations.Count + 1)}
     try:
         theme_names = [n for n in names if n.startswith("theme-")] if names else None
         for name, p in (make_theme_cases(app, theme_names) if theme_names is None or theme_names else []):
@@ -832,6 +868,12 @@ def main():
             p.Close()
             print("生成", out.name)
     finally:
+        # 生成用例出错中断时，这次新建、还没关的演示文稿不保存直接关掉（运行前就打开的不动）
+        for i in range(app.Presentations.Count, 0, -1):
+            pr = app.Presentations(i)
+            if pr.FullName not in before:
+                pr.Saved = True
+                pr.Close()
         if app.Presentations.Count == 0:
             app.Quit()
 
