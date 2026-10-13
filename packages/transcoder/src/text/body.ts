@@ -24,5 +24,5 @@ export function readBody(bodyPrs: (XEl | undefined)[], own: XEl | undefined) {
   const linesLeftToRight = vert === 'mongolianVert';
   const numCol = vertical ? 1 : Math.max(1, numAttr(bp, 'numCol') ?? 1);
   const spcCol = (numAttr(bp, 'spcCol') ?? 0) / EMU_PER_PX;
-  return { lIns, rIns, tIns, bIns, wrap, anchor, vert, fontScale, lnReduce, vertical, uprightWide, uprightAll, linesLeftToRight, numCol, spcCol };
+  return { lIns, rIns, tIns, bIns, wrap, anchor, vert, fontScale, lnReduce, vertical, uprightWide, uprightAll, linesLeftToRight, numCol, spcCol, sp3d: child(bp, 'a:sp3d') };
 }

@@ -6,6 +6,7 @@
 import { n2 } from '../common/svg';
 import { child, children, type XEl } from '../io/xml';
 import { readBody } from './body';
+import { has3d } from '../style/lighting';
 import { BulletNumbering } from './bullets';
 import { emitParagraphs, placeLines } from './emit';
 import { makeMeasurer } from './measure';
@@ -35,6 +36,8 @@ export async function renderText(
   if (!hasText) return '';
 
   const b = readBody(bodyPrs, child(txBody, 'a:bodyPr'));
+  // 文字的三维效果（棱台等）：颜色按三维光照提亮
+  if (has3d(b.sp3d)) env = { ...env, lit3d: true };
   const { lIns, rIns, wrap, vert, fontScale, lnReduce, vertical, numCol, spcCol } = b;
 
   const outer = vertical ? { x: 0, y: 0, w: box.h, h: box.w } : { x: 0, y: 0, w: box.w, h: box.h };
