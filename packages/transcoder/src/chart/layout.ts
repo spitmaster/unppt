@@ -29,10 +29,16 @@ export const topForLabel = (s: number) => 0.6 * s + 3.5;
 /** 横向数值轴最右边的标签以网格线为中心，右边留出半个标签再加一点 */
 export const RIGHT_LABEL_PAD = 15.5;
 
-/** 横排图例（上、下）：色块边长、色块到文字、项与项之间的间隔；整体按"第一个色块到最后一项文字"居中 */
+/**
+ * 图例键：色块边长 0.48 × 字号；键到文字的空隙（线条键约 1 像素，色块 0.2 × 字号，横排竖排一样）。
+ * 横排图例（上、下）：项与项之间的间隔（色块 0.82 × 字号，线条 7.8 + 0.436 × 字号），
+ * 第一个键左边留空（色块 0.24 × 字号，线条 3.2 像素）后整体居中。
+ * COM 生成 9~28 磅的折线、柱形图图例，导出图上键的位置实测（每项间距、起点误差 ≤ 1 像素）
+ */
 export const legendSquare = (s: number) => 0.48 * s;
-export const legendKeyGap = (s: number) => 0.3 * s;
-export const legendItemGap = (s: number) => 0.68 * s;
+export const legendKeyGap = (s: number, line: boolean) => (line ? 1 : 0.2 * s);
+export const legendItemGap = (s: number, line: boolean) => (line ? 7.8 + 0.436 * s : 0.82 * s);
+export const legendLead = (s: number, line: boolean) => (line ? 3.2 : 0.24 * s);
 /** 图例里有线条项（折线、趋势线）时所有图例键统一的宽度：固定 21 磅，不随字号变（COM 生成 9~20 磅的横排、竖排图例，导出图实测） */
 export const LEGEND_LINE_KEY = 28;
 /** 竖排图例（左、右）：每行的高度（COM 读 3 种字号：1.03 × 字号 + 6 磅）、图例和绘图区之间的距离（导出图实测，像素） */
@@ -40,11 +46,7 @@ export const legendRow = (s: number) => 1.03 * s + 8;
 /** 上方图例：中心离图表上边的距离、图例连同下方留白占的高度（像素） */
 export const legendTopCenter = (s: number) => 12 + 0.515 * s;
 export const legendTopBand = (s: number) => 16 + 1.03 * s;
-/**
- * 竖排图例（左、右）：键到文字的空隙（线条键约 1 像素，方块 0.2 × 字号）、键到绘图区的距离（线条 20，方块 0.19 × 字号 + 18.7）。
- * COM 生成 9~20 磅折线、柱形图的右侧图例，导出图实测
- */
-export const legendKeyGapV = (s: number, line: boolean) => (line ? 1 : 0.2 * s);
+/** 竖排图例（左、右）：键到绘图区的距离（线条 20，方块 0.19 × 字号 + 18.7；COM 生成 9~20 磅右侧图例，导出图实测） */
 export const legendPlotGap = (s: number, line: boolean) => (line ? 20 : 0.19 * s + 18.7);
 
 /**
