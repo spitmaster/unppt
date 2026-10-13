@@ -3,7 +3,8 @@ import type { SlideContext } from '../../model/model';
 import { bgStyle, fillAttrs, findFillEl, parseFill, styleRef, type Fill } from '../../style/fill';
 import { compoundMask, parseLine, strokeAttrs } from '../../style/line';
 import { has3d, litFill } from '../../style/lighting';
-import { cameraLightFilter, cameraTransform } from '../../style/camera';
+import { cameraLightFilter, cameraTransform, extrusionOffset, extrusionSides } from '../../style/camera';
+import { EMU_PER_PX } from '../../model/model';
 import { bevelLayer } from '../../effects/bevel';
 import { effectFilter } from '../../effects/effect-filter';
 import { reflection } from '../../effects/reflection';
@@ -83,6 +84,7 @@ export async function renderShape(r: RenderContext, el: XEl, ctx: SlideContext, 
   }
   let geom = geomParts.join('');
   if (geom && (box.flipH || box.flipV)) geom = `<g${flipTransform(box)}>${geom}</g>`;
+  const plainGeom = geom;
   if (geom && filter) geom = `<g filter="url(#${filter})">${geom}</g>`;
 
   // 文字
@@ -109,6 +111,13 @@ export async function renderShape(r: RenderContext, el: XEl, ctx: SlideContext, 
   const scene3d = child(spPr, 'a:scene3d') ?? child(lSpPr, 'a:scene3d') ?? child(mSpPr, 'a:scene3d') ?? child(effStyle, 'a:scene3d');
   const cam = cameraTransform(scene3d, box.w, box.h, r.env.pres.width);
   const light = cameraLightFilter(scene3d, r.doc);
-  const body = light ? `<g filter="url(#${light})">${refl}${geom}${text}</g>` : `${refl}${geom}${text}`;
+  // 拉伸的侧面：按形状自己转动的视角，或者所在 SmartArt 场景的视角
+  const depth = (numAttr(sp3d, 'extrusionH') ?? 0) / EMU_PER_PX;
+  const ext = depth > 0 && plainGeom
+    ? (cam ? extrusionOffset(scene3d, depth, box.w, box.h, r.env.pres.width) : ctx.scene && extrusionOffset(ctx.scene.scene3d, depth, ctx.scene.w, ctx.scene.h, r.env.pres.width))
+    : undefined;
+  const sides = ext ? extrusionSides(plainGeom, ext, r.doc) : '';
+  const face = `${sides}${refl}${geom}${text}`;
+  const body = light ? `<g filter="url(#${light})">${face}</g>` : face;
   return withUid(uid, `<g transform="${boxTransform(box, cam)}">${body}</g>`, el);
 }

@@ -7,10 +7,11 @@ import { attr, child, children } from '../../io/xml';
 import { dgmUid } from '../../common/uid';
 import type { SlideContext } from '../../model/model';
 import type { FrameHandler } from './frame-handler';
+import { cameraLightFilter, cameraTransform } from '../../style/camera';
 
 export const diagramFrame: FrameHandler = {
   uri: '/diagram',
-  async render(gd, _box, r, ctx, uid) {
+  async render(gd, box, r, ctx, uid) {
     const relIds = child(gd, 'dgm:relIds');
     const dm = attr(relIds, 'r:dm');
     if (!dm) return { svg: '' };
@@ -31,15 +32,25 @@ export const diagramFrame: FrameHandler = {
     }
     const drawing = await pkg.xml(drawingPart, false);
     const tree = child(drawing, 'dsp:spTree');
-    const sub: SlideContext = { ...ctx, part: drawingPart, ownSlide: false };
+    // 三维样式：整张图是一个立体场景，相机写在快速样式（quickStyle）顶层的 dgm:scene3d 里
+    const qs = attr(relIds, 'r:qs');
+    const qsRel = qs ? await pkg.rel(ctx.part, qs) : undefined;
+    const scene3d = qsRel ? child(await pkg.xml(qsRel.target, false), 'dgm:scene3d') : undefined;
+    const sub: SlideContext = { ...ctx, part: drawingPart, ownSlide: false, ...(scene3d ? { scene: { scene3d, w: box.w, h: box.h } } : {}) };
     const kids = children(tree).filter((c) => !c.name.endsWith('nvGrpSpPr') && !c.name.endsWith('grpSpPr'));
-    if (!uid) return { svg: await r.shapes(kids, sub) };
+    const cam = cameraTransform(scene3d, box.w, box.h, r.env.pres.width);
+    const light = cameraLightFilter(scene3d, r.doc);
+    const scene = (svg: string) => {
+      const lit = light ? `<g filter="url(#${light})">${svg}</g>` : svg;
+      return cam ? `<g transform="${cam}">${lit}</g>` : lit;
+    };
+    if (!uid) return { svg: scene(await r.shapes(kids, sub)) };
     const parts: string[] = [];
     for (const k of kids) {
       const svg = await r.shapes([k], sub);
       const id = dgmUid(uid, attr(k, 'modelId'));
       parts.push(svg && id ? `<g data-uid="${id}">${svg}</g>` : svg);
     }
-    return { svg: parts.join('') };
+    return { svg: scene(parts.join('')) };
   },
 };
