@@ -80,6 +80,6 @@ export const radarType: ChartType = {
     let vmin = 0, vmax = 0;
     for (const s of p.series) for (const v of s.vals) if (v !== null) { vmax = Math.max(vmax, v); vmin = Math.min(vmin, v); }
     const rStyle = textStyle(child(catAxes[0], 'c:txPr'), ctx.colors, ctx.baseText);
-    return renderRadar(p, ctx.makeAxis(valAxes[0], vmin, vmax, false), rStyle, attr(child(catAxes[0], 'c:delete'), 'val') === '1', ctx.width, a.left, a.top, a.right, a.bottom);
+    return renderRadar(p, ctx.makeAxis(valAxes[0], vmin, vmax), rStyle, attr(child(catAxes[0], 'c:delete'), 'val') === '1', ctx.width, a.left, a.top, a.right, a.bottom);
   },
 };

@@ -4,25 +4,32 @@ import type { ColorContext } from '../model/color';
 import { parseLine } from '../style/line';
 import { textStyle } from './draw';
 import { formatNumber } from './format';
+import { maxTickLabels } from './layout';
 import type { AxisInfo, AxisMaker, TextStyle } from './model';
 
-/** 坐标轴刻度：按 Excel 的习惯取整（最大值留约 5% 余量，单位取 1/2/5 × 10^n） */
-export function niceScale(min: number, max: number, fixedMin?: number, fixedMax?: number, fixedUnit?: number, margin = 0.05) {
-  let lo = fixedMin ?? (min >= 0 ? 0 : min);
-  let hi = fixedMax ?? max;
-  if (hi === lo) hi = lo + 1;
-  const span = (fixedMax ?? (hi + (hi - lo) * margin)) - lo;
-  let unit = fixedUnit ?? 0;
-  if (!unit) {
-    const mag = Math.pow(10, Math.floor(Math.log10(span)));
-    for (const m of [0.1, 0.2, 0.5, 1, 2, 5, 10]) {
-      unit = m * mag;
-      if (span / unit <= 10) break;
-    }
+/**
+ * 坐标轴刻度：按 Excel 的习惯取整（最大值留约 5% 余量，单位取 1/2/5 × 10^n，不超过 10 个间隔）；
+ * maxLabels 是轴上最多能放几个刻度标签（见 layout.ts 的 maxTickLabels），放不下就换更大的单位
+ */
+export function niceScale(min: number, max: number, fixedMin?: number, fixedMax?: number, fixedUnit?: number, margin = 0.05, maxLabels = Infinity) {
+  const lo0 = fixedMin ?? (min >= 0 ? 0 : min);
+  let hi0 = fixedMax ?? max;
+  if (hi0 === lo0) hi0 = lo0 + 1;
+  const span = (fixedMax ?? (hi0 + (hi0 - lo0) * margin)) - lo0;
+  const ends = (unit: number) => ({
+    lo: fixedMin === undefined && lo0 < 0 ? Math.floor(lo0 / unit) * unit : lo0,
+    hi: fixedMax === undefined ? Math.ceil(Math.round(((hi0 + (hi0 - lo0) * margin) / unit) * 1e9) / 1e9) * unit : hi0,
+  });
+  if (fixedUnit) return { ...ends(fixedUnit), unit: fixedUnit };
+  const mag = Math.pow(10, Math.floor(Math.log10(span)));
+  let pick = { lo: lo0, hi: hi0, unit: mag };
+  for (const m of [0.1, 0.2, 0.5, 1, 2, 5, 10, 20, 50, 100]) {
+    const unit = m * mag;
+    if (span / unit > 10) continue;
+    pick = { ...ends(unit), unit };
+    if (Math.round((pick.hi - pick.lo) / unit) + 1 <= maxLabels) break;
   }
-  if (fixedMax === undefined) hi = Math.ceil(Math.round(((hi + (hi - lo) * margin) / unit) * 1e9) / 1e9) * unit;
-  if (fixedMin === undefined && lo < 0) lo = Math.floor(lo / unit) * unit;
-  return { lo, hi, unit };
+  return pick;
 }
 
 /** 对数刻度：两端取到底数的整数次幂（Excel 的自动范围），刻度是每一次幂 */
@@ -68,7 +75,9 @@ export function axisCrosses(ax: XEl | undefined): 'autoZero' | 'min' | 'max' | n
 export const tickMark = (ax: XEl | undefined, name: 'c:majorTickMark' | 'c:minorTickMark') => attr(child(ax, name), 'val') ?? 'none';
 
 export function axisMaker(colors: ColorContext, baseText: TextStyle, part: string, lang = 'zh'): AxisMaker {
-  return (ax, vmin, vmax, pct, margin, minPos): AxisInfo => {
+  return (ax, vmin, vmax, opts = {}): AxisInfo => {
+    const { pct = false, margin, minPos } = opts;
+    const style = textStyle(child(ax, 'c:txPr'), colors, baseText);
     const scaling = child(ax, 'c:scaling');
     const fixedMin = numAttr(child(scaling, 'c:min'), 'val'), fixedMax = numAttr(child(scaling, 'c:max'), 'val');
     const base = numAttr(child(scaling, 'c:logBase'), 'val');
@@ -86,7 +95,8 @@ export function axisMaker(colors: ColorContext, baseText: TextStyle, part: strin
         for (let k = 2; k < base && v * base <= hi * (1 + 1e-9); k++) minor.push(v * k);
       }
     } else {
-      const sc = niceScale(vmin, vmax, fixedMin, fixedMax, numAttr(child(ax, 'c:majorUnit'), 'val'), margin);
+      const maxLabels = opts.length ? maxTickLabels(opts.length, style.size, !!opts.horizontal) : Infinity;
+      const sc = niceScale(vmin, vmax, fixedMin, fixedMax, numAttr(child(ax, 'c:majorUnit'), 'val'), margin, maxLabels);
       ({ lo, hi } = sc);
       raw = (v) => (v - lo) / (hi - lo);
       for (let v = lo; v <= hi + sc.unit * 1e-6; v += sc.unit) ticks.push(Math.round(v / sc.unit) * sc.unit);
@@ -107,7 +117,6 @@ export function axisMaker(colors: ColorContext, baseText: TextStyle, part: strin
     const lblEl = child(du, 'c:dispUnitsLbl');
     const lblText = findAll(child(lblEl, 'c:tx'), 'a:t').map((t) => t.text).join('') || (unitKey ? UNITS[unitKey]?.[lang.startsWith('zh') ? 1 : 2] : '') || String(divisor);
     const g = child(ax, 'c:majorGridlines'), mg = child(ax, 'c:minorGridlines');
-    const style = textStyle(child(ax, 'c:txPr'), colors, baseText);
     return {
       lo, hi, ticks, labels: ticks.map((t) => formatNumber(divisor === 1 ? t : t / divisor, fmt)), fmt,
       deleted: attr(child(ax, 'c:delete'), 'val') === '1',

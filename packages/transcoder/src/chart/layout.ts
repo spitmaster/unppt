@@ -34,6 +34,12 @@ export const legendItemGap = (s: number) => 0.68 * s;
 /** 图例里有线条项（折线、趋势线）时所有图例键统一的宽度（实测 12 磅，3 个图表；项间隔不变） */
 export const legendLineKey = (s: number) => 1.75 * s;
 
+/**
+ * 数值轴上最多放几个刻度标签：len 是轴长、s 是标签字号（同一单位）。竖轴 0.65·len/s + 2.9、横轴 0.26·len/s + 1.9
+ * （COM 读 480 组"数据 × 图表大小 × 字号"的自动刻度拟合：竖轴 240/240、横轴 234/240 吻合）
+ */
+export const maxTickLabels = (len: number, s: number, horizontal: boolean) => (horizontal ? 0.26 * len / s + 1.9 : 0.65 * len / s + 2.9);
+
 /** 数值轴在上面（条形图分类轴逆序）时占的高度（实测 12 磅一个字号） */
 export const valBandTop = (s: number) => 1.19 * s;
 /** 坐标轴标签不在这一侧时（数值轴跑到上面、分类标签挨着中间的 0 线），绘图区这一侧仍留 0.5s（实测两种情况） */

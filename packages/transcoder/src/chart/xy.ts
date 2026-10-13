@@ -36,8 +36,9 @@ export function renderXY(p: Plot, valAxes: XEl[], makeAxis: AxisMaker, tw: TextW
     // 趋势线、误差线也要放得下
     for (const v of extraValues(s, (i) => s.xs?.[i])) range = { ...range, y0: Math.min(range.y0, v), y1: Math.max(range.y1, v) };
   }
-  const layout = (r: Range): XYFrame => {
-    const X = makeAxis(xAx, r.x0, r.x1, false, r.margin), Y = makeAxis(yAx, r.y0, r.y1, false, r.margin);
+  const layout = (r: Range, len?: { x: number; y: number }): XYFrame => {
+    const X = makeAxis(xAx, r.x0, r.x1, { margin: r.margin, length: len?.x, horizontal: true });
+    const Y = makeAxis(yAx, r.y0, r.y1, { margin: r.margin, length: len?.y });
     let { left, top, right, bottom } = area;
     // 留出坐标轴标签的空间（和分类轴图同一套实测规律，见 layout.ts）
     if (!Y.deleted) {
@@ -50,7 +51,10 @@ export function renderXY(p: Plot, valAxes: XEl[], makeAxis: AxisMaker, tw: TextW
     }
     return { left, top, right, bottom, pw: Math.max(1, right - left), ph: Math.max(1, bottom - top), X, Y };
   };
-  const f = layout(marks.extend ? marks.extend(range) : range);
+  // 自动刻度的疏密取决于轴长（axis.ts）：先按默认刻度排一遍得到轴长，再按轴长选刻度重排
+  const r0 = marks.extend ? marks.extend(range) : range;
+  const f0 = layout(r0);
+  const f = layout(r0, { x: f0.pw, y: f0.ph });
   const { left, top, right, bottom, pw, ph, X, Y } = f;
   const out: string[] = [];
   Y.ticks.forEach((t, i) => {

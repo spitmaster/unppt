@@ -12,7 +12,7 @@ import { chartTypeOf } from './chart-types';
 import { label, textStyle } from './draw';
 import { catBand, catCenter, PAD, RIGHT_LABEL_PAD, SIDE_LABEL_PAD, sideAnchor, sideGap, topForLabel, unitBand, unitCenter, unitTop, valBand, valBandTop, emptySidePad, valCenter, type TextWidth } from './layout';
 import { axisLine, axisSides, catMapping, gridLine, outward, tickLblPos, tickMarks } from './sides';
-import type { AxisMaker, Plot, Rect, TextStyle } from './model';
+import type { AxisMaker, AxisOpts, Plot, Rect, TextStyle } from './model';
 import { lineType } from './types/line-area';
 import { extraValues, trendlines } from './extras';
 
@@ -20,7 +20,6 @@ export interface CatEnv { colors: ColorContext; part: string; baseText: TextStyl
 
 export function renderCategoryChart(plots: Plot[], plotArea: XEl | undefined, area: Rect, env: CatEnv, out: string[]): void {
   const { colors, baseText, makeAxis, tw, w } = env;
-  let { left, top, right, bottom } = area;
   const { valAxes, catAxes } = axesOf(plotArea);
   const axisOf = (p: Plot) => valAxes.find((a) => p.axIds.includes(axId(a))) ?? valAxes[0];
   const catAx = catAxes.find((a) => plots[0].axIds.includes(axId(a))) ?? catAxes[0];
@@ -30,7 +29,7 @@ export function renderCategoryChart(plots: Plot[], plotArea: XEl | undefined, ar
   const nCat = Math.max(1, ...plots.flatMap((p) => p.series.map((s) => s.vals.length)));
 
   // 数值范围（堆积按每个分类求和）；最后一项是最小的正数（对数刻度用）
-  const rangeOf = (ps: Plot[]): [number, number, boolean, number | undefined, number] => {
+  const rangeOf = (ps: Plot[]): [number, number, AxisOpts] => {
     let vmin = 0, vmax = 0, minPos = Infinity;
     for (const p of ps) {
       if (p.grouping === 'percentStacked') { vmax = Math.max(vmax, 1); continue; }
@@ -48,61 +47,72 @@ export function renderCategoryChart(plots: Plot[], plotArea: XEl | undefined, ar
         }
       }
     }
-    return [vmin, vmax, ps.some((p) => p.grouping === 'percentStacked'), undefined, minPos];
+    return [vmin, vmax, { pct: ps.some((p) => p.grouping === 'percentStacked'), minPos }];
   };
   // 主坐标轴和次坐标轴（组合图里某些系列画在右侧的次坐标轴上）
   const primaryAx = axisOf(plots[0]);
   const secondaryAx = valAxes.find((a) => a !== primaryAx && plots.some((p) => axisOf(p) === a));
   const onSecondary = (p: Plot) => !!secondaryAx && axisOf(p) === secondaryAx;
-  const prim = makeAxis(primaryAx, ...rangeOf(plots.filter((p) => !onSecondary(p))));
-  const sec = secondaryAx ? makeAxis(secondaryAx, ...rangeOf(plots.filter(onSecondary))) : undefined;
-  const valStyle = prim.style;
-  const tickLabels = prim.labels;
-  const valLabels = !prim.deleted && prim.lblPos !== 'none';
+  const primRange = rangeOf(plots.filter((p) => !onSecondary(p)));
+  const secRange = rangeOf(plots.filter(onSecondary));
   const catDeleted = attr(child(catAx, 'c:delete'), 'val') === '1';
   const catLabels = !catDeleted && tickLblPos(catAx) !== 'none';
+  // 按数值轴的长度 len 算刻度并排出绘图区（len 不给时用默认刻度）
+  const place = (len?: number) => {
+    const prim = makeAxis(primaryAx, primRange[0], primRange[1], { ...primRange[2], length: len, horizontal });
+    const sec = secondaryAx ? makeAxis(secondaryAx, secRange[0], secRange[1], { ...secRange[2], length: len }) : undefined;
+    let { left, top, right, bottom } = area;
+    const valStyle = prim.style;
+    const tickLabels = prim.labels;
+    const valLabels = !prim.deleted && prim.lblPos !== 'none';
 
-  // 两根轴各在哪一侧（见 sides.ts）
-  const sides = axisSides(horizontal, axisReversed(catAx), prim, axisCrosses(catAx), tickLblPos(catAx));
-  // 显示单位的标签（例如"千"）竖着写在数值标签外侧
-  const unit = valLabels && prim.unitLabel && !horizontal ? prim.unitLabel : undefined;
-  const unitW = unit ? unitBand(unit.style.size) : 0;
+    // 两根轴各在哪一侧（见 sides.ts）
+    const sides = axisSides(horizontal, axisReversed(catAx), prim, axisCrosses(catAx), tickLblPos(catAx));
+    // 显示单位的标签（例如"千"）竖着写在数值标签外侧
+    const unit = valLabels && prim.unitLabel && !horizontal ? prim.unitLabel : undefined;
+    const unitW = unit ? unitBand(unit.style.size) : 0;
 
-  // 留出坐标轴标签的空间（实测规律见 layout.ts）：左右两侧的标签从图表边 SIDE_LABEL_PAD 处排起
-  const maxW = (labels: string[], s: number) => Math.max(0, ...labels.map((t) => tw(t, s)));
-  const fromLeft = () => (left === PAD ? SIDE_LABEL_PAD : left);
-  const fromRight = () => (right === w - PAD ? w - SIDE_LABEL_PAD : right);
-  const edgeLeft = fromLeft(), edgeRight = fromRight();
-  if (!horizontal) {
-    if (valLabels) {
-      if (sides.val === 'l') left = edgeLeft + unitW + maxW(tickLabels, valStyle.size) + sideGap(valStyle.size);
-      else right = edgeRight - unitW - maxW(tickLabels, valStyle.size) - sideGap(valStyle.size);
-      top = Math.max(top, topForLabel(valStyle.size));
+    // 留出坐标轴标签的空间（实测规律见 layout.ts）：左右两侧的标签从图表边 SIDE_LABEL_PAD 处排起
+    const maxW = (labels: string[], s: number) => Math.max(0, ...labels.map((t) => tw(t, s)));
+    const fromLeft = () => (left === PAD ? SIDE_LABEL_PAD : left);
+    const fromRight = () => (right === w - PAD ? w - SIDE_LABEL_PAD : right);
+    const edgeLeft = fromLeft(), edgeRight = fromRight();
+    if (!horizontal) {
+      if (valLabels) {
+        if (sides.val === 'l') left = edgeLeft + unitW + maxW(tickLabels, valStyle.size) + sideGap(valStyle.size);
+        else right = edgeRight - unitW - maxW(tickLabels, valStyle.size) - sideGap(valStyle.size);
+        top = Math.max(top, topForLabel(valStyle.size));
+      }
+      if (sec && !sec.deleted) right = fromRight() - maxW(sec.labels, sec.style.size) - sideGap(sec.style.size);
+      if (catLabels) {
+        if (sides.catMid) bottom -= emptySidePad(catStyle.size);
+        else if (sides.cat === 'b') bottom -= catBand(catStyle.size);
+        else top += catBand(catStyle.size);
+      }
+    } else {
+      if (catLabels) {
+        if (sides.catMid) left += emptySidePad(catStyle.size);
+        else if (sides.cat === 'l') left = edgeLeft + maxW(cats, catStyle.size) + sideGap(catStyle.size);
+        else right = edgeRight - maxW(cats, catStyle.size) - sideGap(catStyle.size);
+      }
+      if (valLabels) {
+        if (sides.val === 'b') bottom -= valBand(valStyle.size);
+        else { top += valBandTop(valStyle.size); bottom -= emptySidePad(valStyle.size); }
+        right = Math.min(right, w - RIGHT_LABEL_PAD - tw(tickLabels[tickLabels.length - 1] ?? '', valStyle.size) / 2);
+      }
     }
-    if (sec && !sec.deleted) right = fromRight() - maxW(sec.labels, sec.style.size) - sideGap(sec.style.size);
-    if (catLabels) {
-      if (sides.catMid) bottom -= emptySidePad(catStyle.size);
-      else if (sides.cat === 'b') bottom -= catBand(catStyle.size);
-      else top += catBand(catStyle.size);
+    // 分类标签落在坐标轴两端（面积图等 midCat）时，给首尾标签各留半个标签宽度
+    const between = attr(child(primaryAx, 'c:crossBetween'), 'val') !== 'midCat';
+    if (!between && !horizontal && catLabels && cats.length) {
+      left = Math.max(left, PAD + tw(cats[0], catStyle.size) / 2 - 4);
+      right = Math.min(right, w - PAD - tw(cats[cats.length - 1], catStyle.size) / 2 + 4);
     }
-  } else {
-    if (catLabels) {
-      if (sides.catMid) left += emptySidePad(catStyle.size);
-      else if (sides.cat === 'l') left = edgeLeft + maxW(cats, catStyle.size) + sideGap(catStyle.size);
-      else right = edgeRight - maxW(cats, catStyle.size) - sideGap(catStyle.size);
-    }
-    if (valLabels) {
-      if (sides.val === 'b') bottom -= valBand(valStyle.size);
-      else { top += valBandTop(valStyle.size); bottom -= emptySidePad(valStyle.size); }
-      right = Math.min(right, w - RIGHT_LABEL_PAD - tw(tickLabels[tickLabels.length - 1] ?? '', valStyle.size) / 2);
-    }
-  }
-  // 分类标签落在坐标轴两端（面积图等 midCat）时，给首尾标签各留半个标签宽度
-  const between = attr(child(primaryAx, 'c:crossBetween'), 'val') !== 'midCat';
-  if (!between && !horizontal && catLabels && cats.length) {
-    left = Math.max(left, PAD + tw(cats[0], catStyle.size) / 2 - 4);
-    right = Math.min(right, w - PAD - tw(cats[cats.length - 1], catStyle.size) / 2 + 4);
-  }
+    return { prim, sec, left, top, right, bottom, sides, unit, edgeLeft, edgeRight, valLabels, valStyle, tickLabels, between };
+  };
+  // 自动刻度的疏密取决于轴长（axis.ts）：先按默认刻度排一遍得到轴长，再按轴长选刻度重排
+  const first = place();
+  const { prim, sec, left, top, right, bottom, sides, unit, edgeLeft, edgeRight, valLabels, valStyle, tickLabels, between } =
+    place(horizontal ? first.right - first.left : first.bottom - first.top);
   const pw = Math.max(1, right - left), ph = Math.max(1, bottom - top);
   const band = (horizontal ? ph : pw) / (between ? nCat : Math.max(1, nCat - 1));
   const bandCenter = (i: number) => (between ? (i + 0.5) * band : i * band);
