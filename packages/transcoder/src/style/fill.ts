@@ -4,7 +4,7 @@
 import { colorIn, css, type ColorContext, type Rgba } from '../model/color';
 import type { SvgDoc } from '../common/svg';
 import { esc, n2 } from '../common/svg';
-import { attr, child, children, numAttr, type XEl } from '../io/xml';
+import { attr, child, children, findAll, numAttr, type XEl } from '../io/xml';
 import type { Theme } from '../model/model';
 import { blipFilter, parseBlipEffects, type BlipEffects } from './blip';
 import { patternFill } from './pattern';
@@ -51,7 +51,8 @@ export function parseFill(f: XEl | undefined, ctx: ColorContext, part: string, g
     }
     case 'a:blipFill': {
       const blip = child(f, 'a:blip');
-      const rid = attr(blip, 'r:embed') ?? '';
+      // PowerPoint 插入的 SVG 图片同时存了 PNG 备用图和原始 SVG（asvg:svgBlip）：用 SVG，放大不糊
+      const rid = attr(findAll(blip, 'asvg:svgBlip')[0], 'r:embed') ?? attr(blip, 'r:embed') ?? '';
       const amf = child(blip, 'a:alphaModFix');
       const sr = child(f, 'a:srcRect');
       return {
