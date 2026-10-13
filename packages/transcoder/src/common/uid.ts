@@ -8,7 +8,7 @@ export function dgmUid(uid: string, modelId: string | undefined): string | undef
 
 /**
  * 图表里一部分的动画编号：框的编号 + c + 部分（背景 g0、g1……；数据点"系列x分类"；整条线"系列s"；
- * 数据标签、误差线在数据点后面加 l、e；趋势线"系列t序号"）
+ * 数据标签、误差线、三维饼图的侧壁在数据点后面加 l、e、r；趋势线"系列t序号"）
  */
 export const chartUid = (uid: string, key: string) => `${uid}c${key}`;
 
@@ -24,7 +24,7 @@ export function chartStepMatcher(uid: string, series: number, category: number, 
     const k = at(u);
     if (k === undefined) return false;
     if (step === 'gridLegend') return /^g\d+$/.test(k);
-    const m = /^(\d+)(?:x(\d+)[le]?|s|t\d+)$/.exec(k);
+    const m = /^(\d+)(?:x(\d+)[ler]?|s|t\d+)$/.exec(k);
     if (!m) return false;
     const si = Number(m[1]), ci = m[2] === undefined ? -1 : Number(m[2]);
     if (step === 'series') return si === series;
