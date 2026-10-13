@@ -48,7 +48,7 @@ export interface ChartType {
   legendReversed?(plot: Plot): boolean;
   seriesRules(plotEl: XEl, tag: string): SeriesRules;
   /** 图例里这个系列的颜色、是否画成线 */
-  legendKey(plot: Plot, s: Series): { color?: Rgba; line: boolean };
+  legendKey(plot: Plot, s: Series): { color?: Rgba; line: boolean; dot?: boolean };
   /** standalone 类型：在绘图区里画出整个图 */
   render?(plot: Plot, area: Rect, ctx: ChartContext): string;
   /** category 类型：按给定的数值轴画系列；图形加到 out，数据标签加到 labelsOut（最后统一盖在上面） */

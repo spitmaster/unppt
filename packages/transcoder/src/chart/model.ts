@@ -16,6 +16,9 @@ export interface Series {
   vals: (number | null)[];
   /** 散点图的 X 值 */
   xs?: (number | null)[];
+  /** 气泡图的气泡大小；bubble3D 时画成有高光的球 */
+  sizes?: (number | null)[];
+  bubble3D?: boolean;
   fill?: Rgba;
   line?: Line;
   marker: boolean;
@@ -41,14 +44,17 @@ export interface Plot {
   holeSize: number;
   firstSliceAng: number;
   varyColors: boolean;
+  /** 气泡图：气泡大小比例（%）、大小代表面积（area）还是直径（w） */
+  bubbleScale: number;
+  sizeRepresents: string;
   series: Series[];
 }
 
 /** 一根数值轴算好的刻度：pos 把数值换成 0~1 的位置 */
 export interface AxisInfo { lo: number; hi: number; ticks: number[]; labels: string[]; fmt: string; deleted: boolean; style: TextStyle; grid?: Line; axisLine?: Line; pos: (v: number) => number }
 
-/** 按坐标轴元素和数值范围算刻度 */
-export type AxisMaker = (ax: XEl | undefined, vmin: number, vmax: number, pct: boolean) => AxisInfo;
+/** 按坐标轴元素和数值范围算刻度；margin 是最大值上方留的余量（默认 5%） */
+export type AxisMaker = (ax: XEl | undefined, vmin: number, vmax: number, pct: boolean, margin?: number) => AxisInfo;
 
 /** 绘图区（像素） */
 export interface Rect { left: number; top: number; right: number; bottom: number }
@@ -64,4 +70,8 @@ export interface ChartContext {
   width: (s: string, size: number) => number;
   /** 整个图表区的大小 */
   box: { w: number; h: number };
+  defs?: SvgDefs;
 }
+
+/** 页面里的 defs：唯一编号、加一条定义 */
+export interface SvgDefs { id(kind: string): string; add(xml: string): void }

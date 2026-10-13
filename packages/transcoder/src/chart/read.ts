@@ -22,6 +22,15 @@ export function readLabels(d: XEl | undefined, base: Labels | undefined, colors:
   return l.val || l.pct || l.cat || l.ser ? l : undefined;
 }
 
+/** 气泡大小（缺的、不是数字的记 null） */
+function sizesOf(el: XEl | undefined, n: number): (number | null)[] {
+  const c = cacheValues(el);
+  return Array.from({ length: Math.max(n, c.count) }, (_, i) => {
+    const v = Number(c.pts.get(i));
+    return c.pts.has(i) && isFinite(v) ? v : null;
+  });
+}
+
 export function readPlots(plotArea: XEl | undefined, colors: ColorContext, part: string, baseText: TextStyle, warn: (m: string) => void): Plot[] {
   const plots: Plot[] = [];
   let serialIdx = 0;
@@ -70,6 +79,7 @@ export function readPlots(plotArea: XEl | undefined, colors: ColorContext, part:
         name: findAll(child(s, 'c:tx'), 'c:v')[0]?.text ?? child(child(s, 'c:tx'), 'c:v')?.text ?? `系列 ${idx + 1}`,
         cats, vals,
         xs: rules.xy ? cats.map((_c, i) => { const v = Number(cat.pts.get(i)); return cat.pts.has(i) && !isNaN(v) ? v : i + 1; }) : undefined,
+        ...(child(s, 'c:bubbleSize') ? { sizes: sizesOf(child(s, 'c:bubbleSize'), n), bubble3D: attr(child(s, 'c:bubble3D'), 'val') === '1' } : {}),
         fill: fill?.kind === 'solid' ? fill.color : fill?.kind === 'none' ? undefined : accent,
         // 线条写了"无线条"（散点图只画点）时不画线
         line: child(child(spPr, 'a:ln'), 'a:noFill') ? undefined : line ?? (hasLine ? { color: accent, width: 2.25 * 96 / 72, cap: 'round', join: 'round' } : undefined),
@@ -92,6 +102,8 @@ export function readPlots(plotArea: XEl | undefined, colors: ColorContext, part:
       holeSize: numAttr(child(p, 'c:holeSize'), 'val') ?? 50,
       firstSliceAng: numAttr(child(p, 'c:firstSliceAng'), 'val') ?? 0,
       varyColors: attr(child(p, 'c:varyColors'), 'val') === '1',
+      bubbleScale: numAttr(child(p, 'c:bubbleScale'), 'val') ?? 100,
+      sizeRepresents: attr(child(p, 'c:sizeRepresents'), 'val') ?? 'area',
       series,
     });
   }

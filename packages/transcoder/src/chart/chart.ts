@@ -15,7 +15,7 @@ import type { CategoryFrame } from './chart-type';
 import { chartTypeOf } from './chart-types';
 import { accentColor, label, legendKey, textStyle, textWidth } from './draw';
 import { catBand, catCenter, legendBand, legendCenter, legendItemGap, legendKeyGap, legendSquare, PAD, RIGHT_LABEL_PAD, SIDE_LABEL_PAD, sideAnchor, sideGap, topForLabel, valBand, valCenter, type TextWidth } from './layout';
-import type { ChartContext, Plot, Series, TextStyle } from './model';
+import type { ChartContext, Plot, Series, SvgDefs, TextStyle } from './model';
 import { readPlots } from './read';
 import { lineType } from './types/line-area';
 
@@ -26,6 +26,8 @@ export interface ChartEnv {
   warn(msg: string): void;
   /** 量文字宽度（有字体文件时用真实字宽）；不给时估算 */
   measure?: TextWidth;
+  /** 渐变等定义：取一个页面里唯一的编号、把定义放进页面的 defs（不给时不用渐变） */
+  defs?: SvgDefs;
 }
 
 export function renderChart(space: XEl | undefined, w: number, h: number, env: ChartEnv): string {
@@ -89,7 +91,7 @@ export function renderChart(space: XEl | undefined, w: number, h: number, env: C
         const t = chartTypeOf(p.kind)!;
         for (const s of p.series) {
           const k = t.legendKey(p, s);
-          entries.push({ name: s.name, color: k.color ?? accentColor(0, colors), line: k.line, marker: s.marker, series: s });
+          entries.push({ name: s.name, color: k.color ?? accentColor(0, colors), line: k.line, marker: s.marker || !!k.dot, ...(k.dot ? {} : { series: s }) });
         }
       }
       if (type0.legendReversed?.(plots[0])) entries.reverse();
@@ -136,7 +138,7 @@ export function renderChart(space: XEl | undefined, w: number, h: number, env: C
 
   const makeAxis = axisMaker(colors, baseText, env.part);
   if (type0.layout === 'standalone') {
-    const ctx: ChartContext = { colors, part: env.part, baseText, plotArea, makeAxis, width: tw, box: { w, h } };
+    const ctx: ChartContext = { colors, part: env.part, baseText, plotArea, makeAxis, width: tw, box: { w, h }, defs: env.defs };
     // 雷达、散点的网格和坐标轴在类型自己的输出里：整段当背景，数据部分嵌在里面（背景总是第一步显示，不影响逐个出现）
     out.push(type0.render!(plots[0], { left, top, right, bottom }, ctx));
     return groupBackground(out);
