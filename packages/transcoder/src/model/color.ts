@@ -2,7 +2,7 @@
  * DrawingML 颜色：srgbClr / schemeClr / sysClr / prstClr / hslClr / scrgbClr，以及各种修饰
  * （lumMod、lumOff、tint、shade、alpha、satMod 等）。
  */
-import type { XEl } from './xml';
+import type { XEl } from '../io/xml';
 
 export interface Rgba { r: number; g: number; b: number; a: number; }
 

@@ -9,20 +9,20 @@
  * 纯函数：不读写磁盘、不联网。大文件请传 { size, read(offset, length) }，转码器只按需读取。
  */
 import { DECK_FORMAT, DECK_FORMAT_VERSION, UNPPT_VERSION, type DeckReport, type DeckSlide } from '../../format/src/index';
-import { compileTiming, compileTransition } from './anim';
-import { FontLibrary, loadFontFile, type FontFace } from './font';
-import { subsetFont } from './subset';
-import { base64 } from './media';
+import { compileTiming, compileTransition } from './anim/anim';
+import { FontLibrary, loadFontFile, type FontFace } from './font/font';
+import { subsetFont } from './font/subset';
+import { base64 } from './media/media';
 import type { DeckFont } from '../../format/src/index';
-import { MediaStore, type WriteData, type WriteFn } from './media';
-import { Presentation } from './model';
-import { OpcPackage } from './package';
-import { renderSlide } from './render';
-import { toSource, type InputSource } from './source';
-import { ZipReader } from './zip';
+import { MediaStore, type WriteData, type WriteFn } from './media/media';
+import { Presentation } from './model/model';
+import { OpcPackage } from './io/package';
+import { renderSlide } from './render/render';
+import { toSource, type InputSource } from './io/source';
+import { ZipReader } from './io/zip';
 
-export type { InputSource, RandomAccessSource } from './source';
-export type { WriteData, WriteFn } from './media';
+export type { InputSource, RandomAccessSource } from './io/source';
+export type { WriteData, WriteFn } from './media/media';
 export { UNPPT_VERSION };
 
 declare const __UNPPT_PLAYER__: string;

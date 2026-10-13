@@ -4,7 +4,7 @@
 （Part 1 压缩包里的 OfficeOpenXML-DrawingMLGeometries.zip）
 
 用法：python tools/gen-presets.py <presetShapeDefinitions.xml 路径>
-输出：packages/transcoder/src/presets-data.ts
+输出：packages/transcoder/src/geometry/presets-data.ts
 """
 import sys
 import xml.etree.ElementTree as ET
@@ -59,7 +59,7 @@ def main(src: str):
         "// 生成脚本：tools/gen-presets.py\n"
         f"export const PRESET_SRC = `\n{body}`;\n"
     )
-    (ROOT / "packages/transcoder/src/presets-data.ts").write_text(ts, encoding="utf-8", newline="\n")
+    (ROOT / "packages/transcoder/src/geometry/presets-data.ts").write_text(ts, encoding="utf-8", newline="\n")
     print(f"生成 {len(tree.getroot())} 个预设形状")
 
 

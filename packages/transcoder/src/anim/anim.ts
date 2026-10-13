@@ -1,9 +1,9 @@
 /**
  * 动画编译：p:timing（主序列）-> 每次点击要执行的动作；p:transition -> 页面切换效果。
  */
-import type { AnimAction, AnimEffect, AnimTarget, SlideTransition } from '../../format/src/index';
-import { colorIn, css, type ColorContext } from './color';
-import { attr, child, children, findAll, numAttr, path, type XEl } from './xml';
+import type { AnimAction, AnimEffect, AnimTarget, SlideTransition } from '../../../format/src/index';
+import { colorIn, css, type ColorContext } from '../model/color';
+import { attr, child, children, findAll, numAttr, path, type XEl } from '../io/xml';
 
 export interface CompiledAnim {
   triggers: { uid: string; steps: AnimAction[][] }[];

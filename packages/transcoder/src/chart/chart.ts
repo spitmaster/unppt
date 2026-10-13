@@ -4,12 +4,12 @@
  * 以及柱形+折线的组合图（含次坐标轴）。
  * 布局（标题、图例、坐标轴、绘图区）按 PowerPoint 默认的自动布局近似实现。
  */
-import { colorIn, css, type ColorContext, type Rgba } from './color';
-import { fallbackAdvance } from './font';
-import { findFillEl, parseFill, parseLine, type Line } from './fill';
-import { EMU_PER_PX, type Theme } from './model';
-import { esc, n2 } from './svg';
-import { attr, child, children, findAll, numAttr, path, type XEl } from './xml';
+import { colorIn, css, type ColorContext, type Rgba } from '../model/color';
+import { fallbackAdvance } from '../font/font';
+import { findFillEl, parseFill, parseLine, type Line } from '../style/fill';
+import { EMU_PER_PX, type Theme } from '../model/model';
+import { esc, n2 } from '../common/svg';
+import { attr, child, children, findAll, numAttr, path, type XEl } from '../io/xml';
 
 interface Labels { val: boolean; pct: boolean; cat: boolean; ser: boolean; pos?: string; fmt?: string; style: TextStyle; }
 

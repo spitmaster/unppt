@@ -5,7 +5,7 @@
  * 字体通过 RandomAccessSource 懒加载：建索引时只读表目录和 name 表，真正用到才读字宽数据。
  */
 import { buildKerning } from './kern';
-import { toSource, type InputSource, type RandomAccessSource } from './source';
+import { toSource, type InputSource, type RandomAccessSource } from '../io/source';
 
 export interface FontFace {
   families: string[];          // 所有语言的字体名（小写）

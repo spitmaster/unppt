@@ -1,9 +1,9 @@
 /**
  * 超链接。
  */
-import type { Rel } from './package';
+import type { Rel } from '../io/package';
 import { esc } from './svg';
-import { attr, type XEl } from './xml';
+import { attr, type XEl } from '../io/xml';
 
 /**
  * 超链接 -> 属性：站内跳转写 data-link（next/prev/first/last/slide:部件路径），外部网址写 data-href。
