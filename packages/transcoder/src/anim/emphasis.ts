@@ -5,7 +5,13 @@ import { attr, child, findAll, numAttr, path, type XEl } from '../io/xml';
 import { motionPoints } from './motion';
 import { easeAccel, filterTime, nonLinear, progressAt, timingOf, type Timing } from './timing-util';
 
-export interface AnimContext { width: number; height: number; colors: ColorContext }
+export interface AnimContext {
+  width: number;
+  height: number;
+  colors: ColorContext;
+  /** 动画声音、切换声音：关系编号 -> 媒体文件路径（调用方事先取好） */
+  sounds?: Map<string, string>;
+}
 
 /** 强调和路径动画结束后保持的状态 */
 export function finalState(cTn: XEl | undefined, ctx: AnimContext): AnimTarget | undefined {

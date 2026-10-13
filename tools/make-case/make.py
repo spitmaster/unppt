@@ -804,6 +804,43 @@ def transitions_more(app):
             s.SlideShowTransition.Duration = 1.0
     return p
 
+
+def _beep_wav(path, freq=880, secs=0.4):
+    """生成一段中性的提示音（正弦波），用作动画和切换的声音"""
+    import math
+    import struct
+    import wave
+    rate = 22050
+    with wave.open(str(path), "wb") as w:
+        w.setnchannels(1)
+        w.setsampwidth(2)
+        w.setframerate(rate)
+        n = int(rate * secs)
+        w.writeframes(b"".join(struct.pack("<h", int(12000 * math.sin(2 * math.pi * freq * i / rate) * min(1, (n - i) / 2000))) for i in range(n)))
+
+
+def anim_sound(app):
+    """动画和切换附带的声音：第 1 页形状淡入时播放提示音；第 2 页切换时播放提示音（循环到下一个声音）；
+    第 3 页切换时"停止前一声音" """
+    import tempfile
+    wav = Path(tempfile.gettempdir()) / "unppt-beep.wav"
+    _beep_wav(wav)
+    p = new_pres(app)
+    s = blank(p)
+    sh = s.Shapes.AddShape(1, 300, 180, 360, 180)
+    e = s.TimeLine.MainSequence.AddEffect(sh, 10, 0, 1)
+    e.EffectInformation.SoundEffect.ImportFromFile(str(wav))
+    s2 = blank(p)
+    s2.Shapes.AddShape(9, 380, 170, 200, 200)
+    s2.SlideShowTransition.EntryEffect = 3849
+    s2.SlideShowTransition.SoundEffect.ImportFromFile(str(wav))
+    s2.SlideShowTransition.LoopSoundUntilNext = -1
+    s3 = blank(p)
+    s3.Shapes.AddShape(5, 380, 170, 200, 200)
+    s3.SlideShowTransition.EntryEffect = 3849
+    s3.SlideShowTransition.SoundEffect.Type = 1  # ppSoundStopPrevious
+    return p
+
 def fills_patterns(app):
     """图案填充：多种预设图案、不同前景/背景色、不同位置（图案从幻灯片原点对齐），表格单元格的图案填充"""
     p = new_pres(app)
@@ -1383,7 +1420,7 @@ def table_vertical(app):
     return p
 
 
-CASES = [shapes_all, text_sizes, text_align, text_spacing, text_bullets, text_missing_font, shapes_basic, fills_lines, table_basic, group_rotate, anim_basic, anim_auto, charts_basic, pictures, smartart, text_effects, text_layout, table_merge, links, emf_images, anim_advanced, charts_labels, freeform_icons, media_audio, anim_trigger, wmf_images, anim_iterate, picture_transparent, charts_more, shape_effects, equations, anim_path, anim_emphasis, transitions, fills_patterns, text_decoration, anim_entrance, svg_images, charts_markers, hidden_slides, media_background, text_glow_reflection, text_tabs, text_picture_bullets, fills_texture, transition_morph, text_embedded_fonts, text_warp, anim_repeat, charts_sizes, slide_timings, lines_compound, table_diagonal, lines_gradient, fills_radial, fills_rect_gradient, shapes_3d, table_vertical, transitions_more]
+CASES = [shapes_all, text_sizes, text_align, text_spacing, text_bullets, text_missing_font, shapes_basic, fills_lines, table_basic, group_rotate, anim_basic, anim_auto, charts_basic, pictures, smartart, text_effects, text_layout, table_merge, links, emf_images, anim_advanced, charts_labels, freeform_icons, media_audio, anim_trigger, wmf_images, anim_iterate, picture_transparent, charts_more, shape_effects, equations, anim_path, anim_emphasis, transitions, fills_patterns, text_decoration, anim_entrance, svg_images, charts_markers, hidden_slides, media_background, text_glow_reflection, text_tabs, text_picture_bullets, fills_texture, transition_morph, text_embedded_fonts, text_warp, anim_repeat, charts_sizes, slide_timings, lines_compound, table_diagonal, lines_gradient, fills_radial, fills_rect_gradient, shapes_3d, table_vertical, transitions_more, anim_sound]
 
 
 def main():

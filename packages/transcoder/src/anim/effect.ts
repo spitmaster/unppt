@@ -2,6 +2,7 @@
 import type { AnimAction, AnimEffect } from '../../../format/src/index';
 import { attr, child, findAll, numAttr, type XEl } from '../io/xml';
 import { compileBehaviors } from './behaviors';
+import { effectSound } from './sound';
 import { emphasisDuration, finalState, type AnimContext } from './emphasis';
 import { delayOf } from './timing-util';
 
@@ -70,6 +71,7 @@ export function effectAction(eff: XEl, base: number, ctx: AnimContext): AnimActi
   // 往返、重复的行为实际时长比单段 dur 长
   if (dir === 'emph') dur = Math.max(dur, emphasisDuration(cTn));
   const iterate = iterateOf(cTn, dur);
+  const sound = effectSound(cTn, ctx.sounds);
   const variant = dir === 'emph' ? undefined : variantOf(id, effect, numAttr(cTn, 'presetSubtype'));
   // 重复：repeatCount 的单位是千分之一次，indefinite 是"直到下一次单击"
   const rc = attr(cTn, 'repeatCount');
@@ -85,6 +87,7 @@ export function effectAction(eff: XEl, base: number, ctx: AnimContext): AnimActi
     ...(autoRev ? { autoRev } : {}),
     // 进入、退出效果的具体行为（播放器按行为播放，更接近 PowerPoint）；出现（瞬间）不需要
     ...(dir !== 'emph' && effect !== 'appear' ? compileBehaviors(cTn) ?? {} : {}),
+    ...(sound ? { sound } : {}),
   };
 }
 

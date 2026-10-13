@@ -242,6 +242,9 @@ export class Player {
     if (animated) this.engine.play(data.auto);
     else this.engine.applyInstant(data.auto);
     for (let i = 0; i < this.stepIdx; i++) this.engine.applyInstant(data.steps[i]);
+    // 切换声音：翻页播放时才有（跳转、深链接不出声）
+    if (animated && data.transition?.stopSound) this.media.stopSound();
+    if (animated && data.transition?.sound) this.media.sound(data.transition.sound);
     if (old) {
       if (animated && data.transition && data.transition.type !== 'none') {
         const a = runTransition(old, el, data.transition);

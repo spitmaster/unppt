@@ -9,7 +9,7 @@
  * 纯函数：不读写磁盘、不联网。大文件请传 { size, read(offset, length) }，转码器只按需读取。
  */
 import { DECK_FORMAT, DECK_FORMAT_VERSION, UNPPT_VERSION, type DeckReport, type DeckSlide } from '../../format/src/index';
-import { compileAdvance, compileTiming, compileTransition } from './anim/anim';
+import { compileAdvance, compileTiming, compileTransition, soundRids } from './anim/anim';
 import { lazyEmbeddedFont } from './font/eot';
 import { FontLibrary, loadFontFile, type FontFace } from './font/font';
 import { subsetFont } from './font/subset';
@@ -137,13 +137,19 @@ export async function convert(input: InputSource, options: ConvertOptions): Prom
       options.onProgress?.(done, total);
       const uids = new Set<string>();
       for (const m of r.svg.matchAll(/data-uid="([^"]+)"/g)) uids.add(m[1]);
-      const anim = compileTiming(r.timing, uids, { width: pres.width, height: pres.height, colors: r.colors ?? { scheme: {}, map: {} } });
+      // 动画声音、切换声音写成媒体文件
+      const sounds = new Map<string, string>();
+      for (const rid of soundRids(r.timing, r.transition)) {
+        const href = await media.media(ref.part, rid);
+        if (href) sounds.set(rid, href);
+      }
+      const anim = compileTiming(r.timing, uids, { width: pres.width, height: pres.height, colors: r.colors ?? { scheme: {}, map: {} }, sounds });
       for (const w of anim.warnings) pres.warn(w);
       count++;
       slideParts.push(ref.part);
       const advance = compileAdvance(r.transition);
       yield {
-        svg: r.svg, steps: anim.steps, auto: anim.auto, hidden: anim.hidden, transition: compileTransition(r.transition),
+        svg: r.svg, steps: anim.steps, auto: anim.auto, hidden: anim.hidden, transition: compileTransition(r.transition, sounds),
         ...(anim.triggers.length ? { triggers: anim.triggers } : {}), ...(r.hidden ? { skip: true } : {}),
         ...(advance ? { advance } : {}),
       };
