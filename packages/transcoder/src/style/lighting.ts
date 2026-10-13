@@ -5,6 +5,7 @@
  */
 import { child, type XEl } from '../io/xml';
 import type { Rgba } from '../model/color';
+import type { SvgDoc } from '../common/svg';
 import { FACE_LIGHT, MATERIALS } from '../model/face-light-data';
 import type { Fill } from './fill';
 
@@ -18,14 +19,19 @@ export type LightFn = (c: Rgba) => Rgba;
 
 const cache = new Map<string, LightFn>();
 
-/** 某种灯光方案（a:lightRig 的 rig）、材质（a:sp3d 的 prstMaterial）下正面的颜色；不认识的按三点灯光、暖色哑光 */
+/** 实测表里的 6 个数：R、G、B 各自的系数和偏移；不认识的灯光、材质按三点灯光、暖色哑光 */
+function coeffs(rig: string | undefined, material: string | undefined): number[] {
+  const row = (FACE_LIGHT[rig ?? ''] ?? FACE_LIGHT.threePt).split('|');
+  const mi = MATERIALS.indexOf(material ?? '');
+  return row[mi >= 0 ? mi : MATERIALS.indexOf('warmMatte')].split(' ').map(Number);
+}
+
+/** 某种灯光方案（a:lightRig 的 rig）、材质（a:sp3d 的 prstMaterial）下正面的颜色 */
 export function faceLighting(rig: string | undefined, material: string | undefined): LightFn {
   const key = `${rig}/${material}`;
   let f = cache.get(key);
   if (!f) {
-    const row = (FACE_LIGHT[rig ?? ''] ?? FACE_LIGHT.threePt).split('|');
-    const mi = MATERIALS.indexOf(material ?? '');
-    const k = row[mi >= 0 ? mi : MATERIALS.indexOf('warmMatte')].split(' ').map(Number);
+    const k = coeffs(rig, material);
     const ch = (v: number, a: number, b: number) => Math.min(255, Math.max(0, Math.round(a * v + b)));
     f = (c) => ({ r: ch(c.r, k[0], k[1]), g: ch(c.g, k[2], k[3]), b: ch(c.b, k[4], k[5]), a: c.a });
     cache.set(key, f);
@@ -45,4 +51,13 @@ export function litFill(fill: Fill | undefined, light: LightFn = litColor): Fill
     case 'pattern': return { ...fill, fg: light(fill.fg), bg: light(fill.bg) };
     default: return fill;
   }
+}
+
+/** 同样的正面光照写成调色滤镜（图片用：图片的每个像素和填充色一样被提亮，实测），返回编号 */
+export function faceLightFilter(rig: string | undefined, material: string | undefined, doc: SvgDoc): string {
+  const k = coeffs(rig, material);
+  const id = doc.id('f');
+  const fn = ['R', 'G', 'B'].map((ch, i) => `<feFunc${ch} type="linear" slope="${k[2 * i]}" intercept="${+(k[2 * i + 1] / 255).toFixed(4)}"/>`).join('');
+  doc.addDef(`<filter id="${id}" color-interpolation-filters="sRGB"><feComponentTransfer>${fn}</feComponentTransfer></filter>`);
+  return id;
 }
