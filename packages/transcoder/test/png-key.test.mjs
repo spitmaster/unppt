@@ -77,13 +77,24 @@ test('带透明通道：五种行过滤都能还原，接近目标色的像素�
     }));
   }
   const out = chunks(await pngColorKey(png(w, h, 8, 6, Buffer.from(rows)), white));
+  // 输出每行可能用不同的过滤方式：按规范还原后再比
   const data = inflateSync(Buffer.concat(out.filter((c) => c.type === 'IDAT').map((c) => c.data)));
+  const dec = [];
   for (let y = 0; y < h; y++) {
-    assert.equal(data[y * (w * bpp + 1)], 0, '输出按无过滤编码');
+    const f = data[y * (w * bpp + 1)];
+    assert.ok(f <= 4, '过滤方式');
+    const up = y ? dec.slice((y - 1) * w * bpp, y * w * bpp) : new Array(w * bpp).fill(0);
+    for (let i = 0; i < w * bpp; i++) {
+      const a = i >= bpp ? dec[y * w * bpp + i - bpp] : 0, b = up[i], c = i >= bpp ? up[i - bpp] : 0;
+      const pred = [0, a, b, (a + b) >> 1, paeth(a, b, c)][f];
+      dec.push((data[y * (w * bpp + 1) + 1 + i] + pred) & 0xff);
+    }
+  }
+  for (let y = 0; y < h; y++) {
     for (let x = 0; x < w; x++) {
-      const i = y * (w * bpp + 1) + 1 + x * bpp, j = (y * w + x) * bpp;
-      assert.deepEqual([...data.subarray(i, i + 3)], px.slice(j, j + 3));
-      assert.equal(data[i + 3], (x + y) % 2 ? 0 : 255);
+      const j = (y * w + x) * bpp;
+      assert.deepEqual(dec.slice(j, j + 3), px.slice(j, j + 3));
+      assert.equal(dec[j + 3], (x + y) % 2 ? 0 : 255);
     }
   }
 });
