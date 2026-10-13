@@ -349,6 +349,26 @@ def smartart(app):
     return p
 
 
+def smartart_3d(app):
+    """SmartArt 的三维样式（快速样式库里后几个）：同一个基本流程图，分别套用不同的三维样式"""
+    p = new_pres(app, window=True)
+    layout = app.SmartArtLayouts(1)
+    styles = app.SmartArtQuickStyles
+    picks = [i for i in range(styles.Count - 5, styles.Count + 1)]
+    for k, idx in enumerate(picks):
+        if k % 2 == 0:
+            s = blank(p)
+        try:
+            sa = s.Shapes.AddSmartArt(layout, 30 + (k % 2) * 470, 60, 440, 380)
+            nodes = sa.SmartArt.AllNodes
+            for n in range(1, min(nodes.Count, 3) + 1):
+                nodes(n).TextFrame2.TextRange.Text = f"步骤 {n}"
+            sa.SmartArt.QuickStyle = styles(idx)
+        except Exception as ex:
+            print("SmartArt 样式", idx, "失败", ex)
+    return p
+
+
 def text_effects(app):
     """文字效果：艺术字、描边、阴影、渐变文字、加粗倾斜下划线"""
     p = new_pres(app)
@@ -1767,7 +1787,7 @@ def table_vertical(app):
     return p
 
 
-CASES = [shapes_all, text_sizes, text_align, text_spacing, text_bullets, text_missing_font, shapes_basic, fills_lines, table_basic, group_rotate, anim_basic, anim_auto, charts_basic, pictures, smartart, text_effects, text_layout, table_merge, links, emf_images, anim_advanced, charts_labels, freeform_icons, media_audio, anim_trigger, wmf_images, anim_iterate, picture_transparent, charts_more, shape_effects, equations, anim_path, anim_emphasis, transitions, fills_patterns, text_decoration, anim_entrance, svg_images, charts_markers, hidden_slides, media_background, text_glow_reflection, text_tabs, text_picture_bullets, fills_texture, transition_morph, text_embedded_fonts, text_warp, anim_repeat, charts_sizes, slide_timings, lines_compound, table_diagonal, lines_gradient, fills_radial, fills_rect_gradient, shapes_3d, table_vertical, transitions_more, anim_sound, anim_build, anim_after, anim_text_emphasis, charts_bubble, media_video, charts_options, charts_negative, shapes_bevel, charts_legend, shapes_3d_rotation]
+CASES = [shapes_all, text_sizes, text_align, text_spacing, text_bullets, text_missing_font, shapes_basic, fills_lines, table_basic, group_rotate, anim_basic, anim_auto, charts_basic, pictures, smartart, text_effects, text_layout, table_merge, links, emf_images, anim_advanced, charts_labels, freeform_icons, media_audio, anim_trigger, wmf_images, anim_iterate, picture_transparent, charts_more, shape_effects, equations, anim_path, anim_emphasis, transitions, fills_patterns, text_decoration, anim_entrance, svg_images, charts_markers, hidden_slides, media_background, text_glow_reflection, text_tabs, text_picture_bullets, fills_texture, transition_morph, text_embedded_fonts, text_warp, anim_repeat, charts_sizes, slide_timings, lines_compound, table_diagonal, lines_gradient, fills_radial, fills_rect_gradient, shapes_3d, table_vertical, transitions_more, anim_sound, anim_build, anim_after, anim_text_emphasis, charts_bubble, media_video, charts_options, charts_negative, shapes_bevel, charts_legend, shapes_3d_rotation, smartart_3d]
 
 
 def main():

@@ -230,6 +230,8 @@ export interface SlideContext {
   colors: ColorContext;
   /** 当前元素是不是幻灯片本身的（版式、母版上的元素不参与动画） */
   ownSlide: boolean;
+  /** 所在的三维场景（SmartArt 三维样式整张图共用的相机，w、h 是场景的大小）：拉伸的侧面按它的视角画 */
+  scene?: { scene3d: XEl; w: number; h: number };
 }
 
 export function colorContext(theme: Theme, clrMap: Record<string, string>): ColorContext {
