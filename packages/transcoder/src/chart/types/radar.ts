@@ -41,10 +41,9 @@ function renderRadar(p: Plot, A: AxisInfo, catStyle: TextStyle, catDeleted: bool
       const sin = Math.sin(a), cos = Math.cos(a);
       let [x, y] = at(i, 1);
       x += sin * gap; y -= cos * gap;
-      const anchor = sin > 0.1 ? 'start' : sin < -0.1 ? 'end' : 'middle';
-      if (cos > 0.1) y -= catStyle.size * 0.6;
-      else if (cos < -0.1) y += catStyle.size * 0.6;
-      out.push(label(c, x, y, catStyle, anchor));
+      // 标签框贴着径向方向往外放：框的中心再沿方向偏出半个框（横向按 sin、纵向按 cos）
+      const bw = tw(c, catStyle.size), bh = catStyle.size * 1.2;
+      out.push(label(c, x + sin * bw / 2, y - cos * bh / 2, catStyle, 'middle'));
     });
   }
   for (const s of p.series) {
