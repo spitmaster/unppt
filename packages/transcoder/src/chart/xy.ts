@@ -8,8 +8,10 @@ import { n2 } from '../common/svg';
 import { cpart, label } from './draw';
 import { errRanges, errSvg } from './error-bars';
 import { extraValues, trendlines } from './extras';
-import { PAD, RIGHT_LABEL_PAD, SIDE_LABEL_PAD, sideAnchor, sideGap, topForLabel, valBand, valCenter, type TextWidth } from './layout';
-import type { AxisInfo, AxisMaker, Plot, Rect, Series } from './model';
+import { PAD, RIGHT_LABEL_PAD, SIDE_LABEL_PAD, sideAnchor, sideGap, topForLabel, valBand, valCenter } from './layout';
+import { axesOf } from './axis';
+import { readAxisTitle, renderAxisTitles, reserveAxisTitles } from './axis-title';
+import type { AxisInfo, ChartContext, Plot, Rect, Series } from './model';
 
 export interface XYPoint { x: number; y: number; i: number }
 export interface XYFrame { left: number; top: number; right: number; bottom: number; pw: number; ph: number; X: AxisInfo; Y: AxisInfo }
@@ -23,9 +25,15 @@ export interface XYMarks {
   series(s: Series, pts: XYPoint[], f: XYFrame, out: string[]): void;
 }
 
-export function renderXY(p: Plot, valAxes: XEl[], makeAxis: AxisMaker, tw: TextWidth, w: number, area: Rect, marks: XYMarks): string {
+export function renderXY(p: Plot, ctx: ChartContext, area0: Rect, marks: XYMarks): string {
+  const { makeAxis, width: tw } = ctx, w = ctx.box.w;
+  const valAxes: XEl[] = axesOf(ctx.plotArea).valAxes;
   const xAx = valAxes.find((a) => { const pos = attr(child(a, 'c:axPos'), 'val'); return pos === 'b' || pos === 't'; }) ?? valAxes[0];
   const yAx = valAxes.find((a) => a !== xAx) ?? valAxes[1];
+  // 坐标轴标题：横轴的在下面、纵轴的在左边（见 axis-title.ts）
+  const title = (ax: XEl | undefined) => readAxisTitle(ax, ctx.colors, ctx.baseText, ctx.zh ?? true);
+  const titles = { left: title(yAx), bottom: title(xAx) };
+  const area = reserveAxisTitles(area0, titles);
   let range: Range = { x0: 0, x1: 0, y0: 0, y1: 0 };
   for (const s of p.series) {
     s.vals.forEach((v, i) => {
@@ -57,6 +65,7 @@ export function renderXY(p: Plot, valAxes: XEl[], makeAxis: AxisMaker, tw: TextW
   const f = layout(r0, { x: f0.pw, y: f0.ph });
   const { left, top, right, bottom, pw, ph, X, Y } = f;
   const out: string[] = [];
+  renderAxisTitles(titles, { left, top, right, bottom }, area0, out);
   Y.ticks.forEach((t, i) => {
     const y = bottom - Y.pos(t) * ph;
     if (Y.grid?.color) out.push(`<line x1="${n2(left)}" y1="${n2(y)}" x2="${n2(right)}" y2="${n2(y)}" stroke="${css(Y.grid.color)}" stroke-width="${n2(Y.grid.width)}"/>`);

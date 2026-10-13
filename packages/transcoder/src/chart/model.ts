@@ -163,6 +163,8 @@ export interface ChartContext {
   /** 三维图表的视图 */
   view3D?: View3D;
   defs?: SvgDefs;
+  /** 中文界面（坐标轴标题没写文字时显示"坐标轴标题"） */
+  zh?: boolean;
 }
 
 /** 页面里的 defs：唯一编号、加一条定义 */

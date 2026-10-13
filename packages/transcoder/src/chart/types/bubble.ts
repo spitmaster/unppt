@@ -8,7 +8,6 @@
 import { css, opacity, type Rgba } from '../../model/color';
 import { n2 } from '../../common/svg';
 import { cpart } from '../draw';
-import { axesOf } from '../axis';
 import { renderXY, type Range, type XYFrame } from '../xy';
 import type { ChartType } from '../chart-type';
 import type { Plot, SvgDefs } from '../model';
@@ -44,7 +43,7 @@ export const bubbleType: ChartType = {
   legendKey: (_p, s) => ({ color: s.fill, line: false, dot: true }),
   render(p, a, ctx) {
     const size = sizer(p);
-    return renderXY(p, axesOf(ctx.plotArea).valAxes, ctx.makeAxis, ctx.width, ctx.box.w, a, {
+    return renderXY(p, ctx, a, {
       extend(range): Range {
         // 数据跨度（不含 0）
         let dx0 = Infinity, dx1 = -Infinity, dy0 = Infinity, dy1 = -Infinity;
