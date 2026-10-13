@@ -137,6 +137,10 @@ export interface ChartContext {
   width: (s: string, size: number) => number;
   /** 整个图表区的大小 */
   box: { w: number; h: number };
+  /** 图例位置（t / b / l / r，没有图例时不写）、有没有标题、绘图区是不是手动布局：雷达图按 PowerPoint 的规则自己排 */
+  legendPos?: string;
+  hasTitle?: boolean;
+  manual?: boolean;
   defs?: SvgDefs;
 }
 

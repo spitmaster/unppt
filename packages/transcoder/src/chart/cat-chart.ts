@@ -9,7 +9,7 @@ import { attr, child, type XEl } from '../io/xml';
 import { axesOf, axId, axisCrosses, axisReversed, tickMark } from './axis';
 import type { CategoryFrame } from './chart-type';
 import { chartTypeOf } from './chart-types';
-import { label, textStyle } from './draw';
+import { hasCjk, label, textStyle } from './draw';
 import { catBand, catCenter, PAD, RIGHT_LABEL_PAD, SIDE_LABEL_PAD, sideAnchor, sideGap, topForLabel, unitBand, unitCenter, unitTop, valBand, valBandTop, emptySidePad, valCenter, type TextWidth } from './layout';
 import { axisLine, axisSides, catMapping, gridLine, outward, tickLblPos, tickMarks } from './sides';
 import type { AxisMaker, AxisOpts, Plot, Rect, TextStyle } from './model';
@@ -57,7 +57,7 @@ export function renderCategoryChart(plots: Plot[], plotArea: XEl | undefined, ar
   const secRange = rangeOf(plots.filter(onSecondary));
   const catDeleted = attr(child(catAx, 'c:delete'), 'val') === '1';
   // 底部分类标签带的高度、标签中心离轴的距离：带中文的标签和纯数字（日期等）不同（实测）
-  const cjk = cats.some((c) => /[\u2e80-\u9fff\uf900-\ufaff\uff00-\uffef]/.test(c));
+  const cjk = cats.some(hasCjk);
   const catH = (s: number) => (cjk ? catBand(s) : valBand(s));
   const catC = (s: number) => (cjk ? catCenter(s) : valCenter(s));
   const catLabels = !catDeleted && tickLblPos(catAx) !== 'none';

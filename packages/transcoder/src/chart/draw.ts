@@ -31,6 +31,9 @@ export function label(s: string, x: number, y: number, st: TextStyle, anchor: 's
   return `<text x="${n2(x)}" y="${n2(y)}" font-size="${n2(st.size)}" font-family="'${esc(st.font)}',sans-serif" fill="${css(st.color)}"${st.bold ? ' font-weight="bold"' : ''} text-anchor="${anchor}"${baseline === 'central' ? ' dominant-baseline="central"' : ''}>${esc(s)}</text>`;
 }
 
+/** 文字里有中日韩字符（这类标签占的高度比纯数字、字母的大，见 layout.ts） */
+export const hasCjk = (s: string) => /[\u2e80-\u9fff\uf900-\ufaff\uff00-\uffef]/.test(s);
+
 export function accentColor(i: number, colors: ColorContext): Rgba {
   return colorIn({ name: 'x', attrs: {}, text: '', children: [{ name: 'a:schemeClr', attrs: { val: ACCENTS[i % 6] }, children: [], text: '' }] }, colors)!;
 }

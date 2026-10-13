@@ -92,7 +92,11 @@ export function renderChart(space: XEl | undefined, w: number, h: number, env: C
 
   const makeAxis = axisMaker(colors, baseText, env.part, lang);
   if (type0.layout === 'standalone') {
-    const ctx: ChartContext = { colors, part: env.part, baseText, plotArea, makeAxis, width: tw, box: { w, h }, defs: env.defs };
+    const legendEl = child(chart, 'c:legend');
+    const ctx: ChartContext = {
+      colors, part: env.part, baseText, plotArea, makeAxis, width: tw, box: { w, h }, defs: env.defs,
+      legendPos: legendEl ? attr(child(legendEl, 'c:legendPos'), 'val') ?? 'r' : undefined, hasTitle: !!titleText, manual: !!(ml && numAttr(child(ml, 'c:w'), 'val') !== undefined),
+    };
     // 雷达、散点的网格和坐标轴在类型自己的输出里：整段当背景，数据部分嵌在里面（背景总是第一步显示，不影响逐个出现）
     out.push(type0.render!(plots[0], { left, top, right, bottom }, ctx));
     return groupBackground(out);
