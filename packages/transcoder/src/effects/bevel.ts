@@ -9,18 +9,15 @@ import { attr, child, numAttr, type XEl } from '../io/xml';
 import { n2 } from '../common/svg';
 import { EMU_PER_PX } from '../model/model';
 import type { FilterLayer } from './shape-effect';
+import { THREE_POINT } from '../model/light-rig';
 
-/** 拟合出的参数（宽、高都是 8 像素时） */
+/** 拟合出的参数（宽、高都是 8 像素时）；灯光本身在 model/light-rig.ts（三维旋转的正面明暗也用它） */
 const FIT = {
   /** 模糊半径 / 棱台宽度 */
   sigma: 0.6689,
   /** 斜面高度（surfaceScale）/ 棱台高度（像素） */
   height: 7.835 / 8,
-  ambient: 0.0971,
-  /** 漫射光：方位角、仰角（度）、强度 */
-  diffuse: [[260.33, 55.72, 0.4036], [109.24, 1.2, 0.2262]],
-  /** 镜面光：方位角、仰角、强度、指数 */
-  specular: [[246.72, 12.15, 0.4750, 19.99], [48.67, 1, 0.5543, 16.30]],
+  ...THREE_POINT,
 } as const;
 
 /** 反误差函数（近似，误差 < 2e-3，够做查表） */

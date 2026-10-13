@@ -39,8 +39,10 @@ export function withUid(uid: string | undefined, inner: string, el: XEl): string
   return `<g data-uid="${uid}"${name ? ` data-name="${esc(name)}"` : ''}>${inner}</g>`;
 }
 
-export function boxTransform(b: Box): string {
+/** cam：三维旋转投影（style/camera.ts），在平面内旋转之后、平移之前 */
+export function boxTransform(b: Box, cam?: string): string {
   let t = `translate(${n2(b.x)} ${n2(b.y)})`;
+  if (cam) t += ` ${cam}`;
   if (b.rot) t += ` rotate(${n2(b.rot)} ${n2(b.w / 2)} ${n2(b.h / 2)})`;
   return t;
 }

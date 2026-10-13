@@ -1727,6 +1727,30 @@ def shapes_bevel(app):
     return p
 
 
+def shapes_3d_rotation(app):
+    """三维旋转：12 种相机预设（等轴测、轴外等轴测、透视）作用在带图案的矩形上；第 2 页是图片"""
+    p = new_pres(app)
+    img = str((TESTCASES / "shapes-basic" / "slide-001.png").resolve())
+    presets = [20, 25, 26, 29, 31, 34, 48, 49, 51, 53, 57, 61]
+    for page in range(2):
+        s = blank(p)
+        for i, cam in enumerate(presets):
+            x, y = 40 + (i % 4) * 230, 30 + (i // 4) * 165
+            if page == 0:
+                sh = s.Shapes.AddShape(1, x, y, 170, 110)
+                sh.Fill.TwoColorGradient(1, 1)
+                sh.Fill.ForeColor.RGB = RGB(40, 90, 180)
+                sh.Fill.BackColor.RGB = RGB(250, 200, 60)
+                sh.Line.Weight = 3
+                sh.Line.ForeColor.RGB = RGB(200, 30, 30)
+                sh.TextFrame.TextRange.Text = "3D"
+                sh.TextFrame.TextRange.Font.Size = 28
+            else:
+                sh = s.Shapes.AddPicture(img, 0, -1, x, y, 170, 96)
+            sh.ThreeD.SetPresetCamera(cam)
+    return p
+
+
 def table_vertical(app):
     """表格单元格竖排文字：竖排（汉字正立）、向上旋转 90 度、向下旋转 90 度"""
     p = new_pres(app)
@@ -1743,7 +1767,7 @@ def table_vertical(app):
     return p
 
 
-CASES = [shapes_all, text_sizes, text_align, text_spacing, text_bullets, text_missing_font, shapes_basic, fills_lines, table_basic, group_rotate, anim_basic, anim_auto, charts_basic, pictures, smartart, text_effects, text_layout, table_merge, links, emf_images, anim_advanced, charts_labels, freeform_icons, media_audio, anim_trigger, wmf_images, anim_iterate, picture_transparent, charts_more, shape_effects, equations, anim_path, anim_emphasis, transitions, fills_patterns, text_decoration, anim_entrance, svg_images, charts_markers, hidden_slides, media_background, text_glow_reflection, text_tabs, text_picture_bullets, fills_texture, transition_morph, text_embedded_fonts, text_warp, anim_repeat, charts_sizes, slide_timings, lines_compound, table_diagonal, lines_gradient, fills_radial, fills_rect_gradient, shapes_3d, table_vertical, transitions_more, anim_sound, anim_build, anim_after, anim_text_emphasis, charts_bubble, media_video, charts_options, charts_negative, shapes_bevel, charts_legend]
+CASES = [shapes_all, text_sizes, text_align, text_spacing, text_bullets, text_missing_font, shapes_basic, fills_lines, table_basic, group_rotate, anim_basic, anim_auto, charts_basic, pictures, smartart, text_effects, text_layout, table_merge, links, emf_images, anim_advanced, charts_labels, freeform_icons, media_audio, anim_trigger, wmf_images, anim_iterate, picture_transparent, charts_more, shape_effects, equations, anim_path, anim_emphasis, transitions, fills_patterns, text_decoration, anim_entrance, svg_images, charts_markers, hidden_slides, media_background, text_glow_reflection, text_tabs, text_picture_bullets, fills_texture, transition_morph, text_embedded_fonts, text_warp, anim_repeat, charts_sizes, slide_timings, lines_compound, table_diagonal, lines_gradient, fills_radial, fills_rect_gradient, shapes_3d, table_vertical, transitions_more, anim_sound, anim_build, anim_after, anim_text_emphasis, charts_bubble, media_video, charts_options, charts_negative, shapes_bevel, charts_legend, shapes_3d_rotation]
 
 
 def main():
