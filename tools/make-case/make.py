@@ -1180,7 +1180,29 @@ def slide_timings(app):
     return p
 
 
-CASES = [shapes_all, text_sizes, text_align, text_spacing, text_bullets, text_missing_font, shapes_basic, fills_lines, table_basic, group_rotate, anim_basic, anim_auto, charts_basic, pictures, smartart, text_effects, text_layout, table_merge, links, emf_images, anim_advanced, charts_labels, freeform_icons, media_audio, anim_trigger, wmf_images, anim_iterate, picture_transparent, charts_more, shape_effects, equations, anim_path, anim_emphasis, transitions, fills_patterns, text_decoration, anim_entrance, svg_images, charts_markers, hidden_slides, media_background, text_glow_reflection, text_tabs, text_picture_bullets, fills_texture, transition_morph, text_embedded_fonts, text_warp, anim_repeat, charts_sizes, slide_timings]
+def lines_compound(app):
+    """复合线型：单线、双线、外细内粗、外粗内细、三线（粗细两种宽度），椭圆和直线上的双线"""
+    p = new_pres(app)
+    s = blank(p)
+    for row, weight in enumerate([12, 6]):
+        for i, st in enumerate([1, 2, 3, 4, 5]):
+            sh = s.Shapes.AddShape(1, 40 + i * 180, 40 + row * 190, 150, 150)
+            sh.Fill.ForeColor.RGB = RGB(220, 230, 242)
+            sh.Line.Weight = weight
+            sh.Line.ForeColor.RGB = RGB(31, 78, 121)
+            sh.Line.Style = st
+    e = s.Shapes.AddShape(9, 60, 420, 200, 100)
+    e.Fill.Visible = 0
+    e.Line.Weight = 9
+    e.Line.Style = 2
+    ln = s.Shapes.AddLine(320, 470, 900, 470)
+    ln.Line.Weight = 9
+    ln.Line.Style = 2
+    ln.Line.ForeColor.RGB = RGB(192, 0, 0)
+    return p
+
+
+CASES = [shapes_all, text_sizes, text_align, text_spacing, text_bullets, text_missing_font, shapes_basic, fills_lines, table_basic, group_rotate, anim_basic, anim_auto, charts_basic, pictures, smartart, text_effects, text_layout, table_merge, links, emf_images, anim_advanced, charts_labels, freeform_icons, media_audio, anim_trigger, wmf_images, anim_iterate, picture_transparent, charts_more, shape_effects, equations, anim_path, anim_emphasis, transitions, fills_patterns, text_decoration, anim_entrance, svg_images, charts_markers, hidden_slides, media_background, text_glow_reflection, text_tabs, text_picture_bullets, fills_texture, transition_morph, text_embedded_fonts, text_warp, anim_repeat, charts_sizes, slide_timings, lines_compound]
 
 
 def main():

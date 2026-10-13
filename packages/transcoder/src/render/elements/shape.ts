@@ -1,7 +1,7 @@
 /** 形状（p:sp、p:cxnSp）：几何、填充、线条、效果、映像、文字 */
 import type { SlideContext } from '../../model/model';
 import { bgStyle, fillAttrs, findFillEl, parseFill, styleRef, type Fill } from '../../style/fill';
-import { parseLine, strokeAttrs } from '../../style/line';
+import { compoundMask, parseLine, strokeAttrs } from '../../style/line';
 import { effectFilter } from '../../effects/effect-filter';
 import { reflection } from '../../effects/reflection';
 import { buildGeometry, parseGeomXml, presetGeometry } from '../../geometry/geometry';
@@ -66,7 +66,13 @@ export async function renderShape(r: RenderContext, el: XEl, ctx: SlideContext, 
     const fa = p.fill !== 'none' ? await fillAttrs(fill, r.doc, box.w, box.h, p.fill, r.images, box) : ' fill="none"';
     const sa = p.stroke ? strokeAttrs(line, r.doc, p.fill) : ' stroke="none"';
     if (fa === ' fill="none"' && sa === ' stroke="none"') continue;
-    geomParts.push(`<path d="${p.d}"${fa}${sa}${p.d.split('M').length > 2 ? ' fill-rule="evenodd"' : ''}/>`);
+    const evenodd = p.d.split('M').length > 2 ? ' fill-rule="evenodd"' : '';
+    // 复合线型（双线等）：描边单独画，用遮罩挖出线间空隙
+    const cm = p.stroke && line ? compoundMask(line, p.d, r.doc, box) : '';
+    if (cm) {
+      if (fa !== ' fill="none"') geomParts.push(`<path d="${p.d}"${fa} stroke="none"${evenodd}/>`);
+      geomParts.push(`<path d="${p.d}" fill="none"${sa}${cm}/>`);
+    } else geomParts.push(`<path d="${p.d}"${fa}${sa}${evenodd}/>`);
   }
   let geom = geomParts.join('');
   if (geom && (box.flipH || box.flipV)) geom = `<g${flipTransform(box)}>${geom}</g>`;
