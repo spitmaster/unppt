@@ -1,11 +1,12 @@
 /**
  * 三维柱形图、三维条形图（c:bar3DChart，直角坐标轴的斜投影）：背景墙和侧墙（地板）上的网格线、立方体的柱子。
- * PowerPoint 实测（charts-3d 导出图，rotX 15°、rotY 20°、深度 100%、间隙深度 150%）：
- *   - 正面不缩短，深度方向在屏幕上是 (sin rotY, −sin rotX) × 深度；柱子深度 = 柱宽 × 深度%，
- *     墙的深度 = 柱子深度 × (1 + 间隙深度% / 2)，柱子贴着正面；
- *   - 数值轴不加 5% 余量；背景墙右上角比平面布局的绘图区往里 (0.28·dx, 0.42·|dy|)，正面底边比平面布局高 0.77·|dy|，
- *     正面左边右移 0.53·dx；
- *   - 左侧（柱形图的数值、条形图的分类）标签再往左让出 0.53·dx、往下 0.3·|dy|，下方标签往下 0.4·|dy|；
+ * PowerPoint 实测（charts-3d 的簇状柱形、堆积柱形、簇状条形三张导出图，rotX 15°、rotY 20°；从柱子三个面的颜色反推几何）：
+ *   - 正面不缩短，深度方向在屏幕上是 (sin rotY, −sin rotX) × 深度；柱子深度 = 0.97 × 柱宽 × 深度%（柱宽按最终的正面算），
+ *     墙的深度 = 柱子深度 × (1 + 间隙深度% / 2)，柱子贴着正面；数值轴不加 5% 余量；
+ *   - 在平面布局的绘图区里：背景墙上沿 = 上边 + 6、背景墙右边 = 右边 − 4.1，正面左边 = 左边 + 3.1 + 0.39·dx，
+ *     正面底边 = 下边 − 3.6 − 0.54·|dy|（深度和正面宽高互相依赖，联立解出）；三张图的正面位置、宽高误差都在 1 像素以内；
+ *   - 坐标轴标签都在正面往观众方向移 0.46 个墙深：下方标签左移 0.46·dx、下移 0.46·|dy|，左侧标签下移 0.46·|dy|
+ *     （左侧标签的横向位置和平面布局一样）；
  *   - 立方体和网格线的画法见 box3d.ts。
  * 条形图按同样的系数横过来画（分类在左、数值在下，网格线是地板上的斜线 + 背景墙上的竖线）。
  * 系列沿深度排的柱形图见 cat3d-depth.ts；其它三维图（折线、面积、透视投影）还按平面画。
@@ -19,6 +20,9 @@ import { catBand, catCenter, PAD, RIGHT_LABEL_PAD, SIDE_LABEL_PAD, sideAnchor, s
 import type { AxisMaker, Plot, Rect, TextStyle, View3D } from './model';
 
 export interface Cat3DEnv { colors: ColorContext; part: string; baseText: TextStyle; makeAxis: AxisMaker; tw: TextWidth; w: number; view: View3D }
+
+/** 实测常数（像素）：柱子深度系数、背景墙上沿和右边的内缩、正面左边和底边的偏移、标签往观众方向移的墙深比例 */
+const BAR_DEPTH = 0.97, TOP_GAP = 6, RIGHT_GAP = 4.1, LEFT_A = 3.1, LEFT_B = 0.39, BOTTOM_A = 3.6, BOTTOM_B = 0.54, LABEL_Z = 0.46;
 
 /** 能按三维柱形 / 条形图画的：只有一个 bar3DChart、簇状或堆积、直角坐标轴 */
 export const isColumn3D = (plots: Plot[], view?: View3D) =>
@@ -62,20 +66,22 @@ export function renderColumn3D(p: Plot, valAx: XEl | undefined, catAx: XEl | und
   };
   const first = place();
   const { A, left, top, right, bottom } = place(hz ? first.right - first.left : first.bottom - first.top);
-  // 深度：柱子粗细由分类方向的长度和间隙宽度决定
-  const thick0 = ((hz ? bottom - top : right - left) / nCat) / (slots + p.gapWidth / 100);
+  // 深度和分类方向的长度成正比：墙深 = 每个分类宽 × perBand
   const rx = Math.sin((view.rotY * Math.PI) / 180), ry = Math.sin((view.rotX * Math.PI) / 180);
-  const barDepth = thick0 * view.depthPercent / 100;
-  const wallDepth = barDepth * (1 + p.gapDepth / 200);
+  const perBand = ((1 + p.gapDepth / 200) * BAR_DEPTH * (view.depthPercent / 100)) / (slots + p.gapWidth / 100);
+  // 分类方向的长度 L 和墙深联立：柱形图 W·(1 + 1.39·dx/W) = 可用宽，条形图 H·(1 + 1.54·|dy|/H) = 可用高
+  const catLen = hz
+    ? (bottom - top - TOP_GAP - BOTTOM_A) / (1 + (1 + BOTTOM_B) * ry * perBand / nCat)
+    : (right - left - RIGHT_GAP - LEFT_A) / (1 + (1 + LEFT_B) * rx * perBand / nCat);
+  const wallDepth = Math.max(0, catLen / nCat * perBand);
   const dx = wallDepth * rx, dy = -wallDepth * ry;
-  const bdx = barDepth * rx, bdy = -barDepth * ry;
-  // 正面：背景墙右上角往里收一点、正面左下角往里（实测）
-  const backRight = right - 0.28 * dx, backTop = top + 0.42 * -dy;
-  const fl = left + 0.53 * dx, fb = bottom - 0.77 * -dy;
-  const fr = backRight - dx, ft = backTop - dy;
+  const fl = left + LEFT_A + LEFT_B * dx, fb = bottom - BOTTOM_A - BOTTOM_B * -dy;
+  const fr = right - RIGHT_GAP - dx, ft = top + TOP_GAP - dy;
   const fw = Math.max(1, fr - fl), fh = Math.max(1, fb - ft);
   const band = (hz ? fh : fw) / nCat;
   const thick = band / (slots + p.gapWidth / 100);
+  const barDepth = thick * BAR_DEPTH * view.depthPercent / 100;
+  const bdx = barDepth * rx, bdy = -barDepth * ry;
   // 数值 -> 正面上的坐标（柱形图是 y，条形图是 x）
   const vp = (v: number) => (hz ? fl + A.pos(v) * fw : fb - A.pos(v) * fh);
   const g = A.grid;
@@ -83,12 +89,13 @@ export function renderColumn3D(p: Plot, valAx: XEl | undefined, catAx: XEl | und
     const d = wallGridPath(A.ticks.map(vp), hz, fl, fr, ft, fb, dx, dy);
     out.push(`<path d="${d}" fill="none" stroke="${css(g.color)}" stroke-width="${n2(g.width)}"/>`);
   }
-  const leftLabel = (t: string, y: number, st: TextStyle) => label(t, fl - 0.53 * dx - sideAnchor(st.size), y + 0.3 * -dy, st, 'end');
+  const lx = LABEL_Z * dx, ly = LABEL_Z * -dy;
+  const leftLabel = (t: string, y: number, st: TextStyle) => label(t, left - sideAnchor(st.size), y + ly, st, 'end');
   if (!A.deleted) {
-    A.ticks.forEach((t, i) => out.push(hz ? label(A.labels[i], vp(t), fb + valCenter(A.style.size) + 0.4 * -dy, A.style) : leftLabel(A.labels[i], vp(t), A.style)));
+    A.ticks.forEach((t, i) => out.push(hz ? label(A.labels[i], vp(t) - lx, fb + valCenter(A.style.size) + ly, A.style) : leftLabel(A.labels[i], vp(t), A.style)));
   }
   if (!catDeleted) {
-    cats.forEach((c, i) => out.push(hz ? leftLabel(c, fb - (i + 0.5) * band, catStyle) : label(c, fl + (i + 0.5) * band, fb + catCenter(catStyle.size) + 0.4 * -dy, catStyle)));
+    cats.forEach((c, i) => out.push(hz ? leftLabel(c, fb - (i + 0.5) * band, catStyle) : label(c, fl + (i + 0.5) * band - lx, fb + catCenter(catStyle.size) + ly, catStyle)));
   }
   // 柱子
   const base = new Array(nCat).fill(0), neg = new Array(nCat).fill(0);
