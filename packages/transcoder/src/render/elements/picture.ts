@@ -7,8 +7,9 @@ import { reflection } from '../../effects/reflection';
 import { buildGeometry, parseGeomXml, presetGeometry } from '../../geometry/geometry';
 import { esc, n2 } from '../../common/svg';
 import { attr, child, children, numAttr, path, type XEl } from '../../io/xml';
-import { boxTransform, flipTransform, nvProps, pc, readXfrm, withUid } from '../box';
+import { flipTransform, nvProps, pc, placeBox, readXfrm, withUid } from '../box';
 import { cameraLightFilter, cameraTransform } from '../../style/camera';
+import { baseProjection } from '../projection';
 import type { RenderContext } from '../context';
 
 export async function renderPicture(r: RenderContext, el: XEl, ctx: SlideContext): Promise<string> {
@@ -106,5 +107,7 @@ export async function renderPicture(r: RenderContext, el: XEl, ctx: SlideContext
   const scene3d = child(spPr, 'a:scene3d') ?? child(effRef.el, 'a:scene3d');
   const cam = cameraTransform(scene3d, box.w, box.h, r.env.pres.width);
   const light = cameraLightFilter(scene3d, r.doc);
-  return withUid(uid, `<g${clickable} transform="${boxTransform(box, cam)}">${light ? `<g filter="url(#${light})">${inner}</g>` : inner}</g>`, el);
+  // 透视（自己的相机，或者所在 SmartArt 场景的）：按网格三角形画
+  const proj = baseProjection(box, scene3d, ctx.scene, r.env.pres.width)?.base;
+  return withUid(uid, placeBox(box, light ? `<g filter="url(#${light})">${inner}</g>` : inner, r.doc, cam, proj, clickable), el);
 }

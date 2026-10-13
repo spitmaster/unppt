@@ -3,7 +3,7 @@ import type { SlideContext } from '../../model/model';
 import { bgStyle, fillAttrs, findFillEl, parseFill, styleRef, type Fill } from '../../style/fill';
 import { compoundMask, parseLine, strokeAttrs } from '../../style/line';
 import { has3d, litFill } from '../../style/lighting';
-import { cameraLightFilter, cameraTransform, extrusionOffset, extrusionSides } from '../../style/camera';
+import { cameraLightFilter, cameraTransform, extrusionOffset, extrusionScreenOffset, extrusionSides } from '../../style/camera';
 import { EMU_PER_PX } from '../../model/model';
 import { bevelLayer } from '../../effects/bevel';
 import { effectFilter } from '../../effects/effect-filter';
@@ -12,8 +12,9 @@ import { buildGeometry, parseGeomXml, presetGeometry } from '../../geometry/geom
 import { colorIn } from '../../model/color';
 import { renderText, type TextEnv } from '../../text/text';
 import { attr, child, children, numAttr, path, type XEl } from '../../io/xml';
-import { boxTransform, flipTransform, nvProps, pc, readXfrm, withUid } from '../box';
+import { flipTransform, nvProps, pc, placeBox, readXfrm, withUid } from '../box';
 import type { RenderContext } from '../context';
+import { projectedBounds, projectedPath, shapeProjection } from '../projection';
 
 export async function renderShape(r: RenderContext, el: XEl, ctx: SlideContext, groupFill?: Fill): Promise<string> {
   const { layoutPh, masterPh, ph } = r.inherited(el, ctx);
@@ -65,16 +66,24 @@ export async function renderShape(r: RenderContext, el: XEl, ctx: SlideContext, 
   for (const g of children(child(prst ?? cust, 'a:avLst'), 'a:gd')) av.set(attr(g, 'name') ?? '', attr(g, 'fmla') ?? '');
   const geo = buildGeometry(def, box.w, box.h, av);
   const paths = geo.paths;
+  // 三维旋转（形状自己的、版式的或者主题效果样式里的 a:scene3d）；透视相机（自己的或 SmartArt 场景的）下轮廓逐点投影
+  const scene3d = child(spPr, 'a:scene3d') ?? child(lSpPr, 'a:scene3d') ?? child(mSpPr, 'a:scene3d') ?? child(effStyle, 'a:scene3d');
+  const sp = shapeProjection(box, scene3d, ctx.scene, r.env.pres.width);
+  const projected = sp ? buildGeometry(def, box.w, box.h, av, sp.map).paths : undefined;
   // 效果：形状自己写的 > 版式 > 主题样式（effectRef）
   const effRef = styleRef(child(style, 'a:effectRef'), ctx.theme.effectStyles, colors);
   const effect = child(spPr, 'a:effectLst') ?? child(lSpPr, 'a:effectLst') ?? child(effRef.el, 'a:effectLst');
-  const filter = effectFilter(effect, effect === child(effRef.el, 'a:effectLst') ? effRef.ctx : colors, r.doc, box.w, box.h, undefined, [has3d(sp3d) ? bevelLayer(sp3d) : undefined]);
-  for (const p of paths) {
+  const filter = effectFilter(effect, effect === child(effRef.el, 'a:effectLst') ? effRef.ctx : colors, r.doc, box.w, box.h, undefined, [has3d(sp3d) ? bevelLayer(sp3d) : undefined], sp && projectedBounds(sp.map, box.w, box.h));
+  for (const [i, p] of paths.entries()) {
     if (!p.d) continue;
     const fa = p.fill !== 'none' ? await fillAttrs(fill, r.doc, box.w, box.h, p.fill, r.images, box) : ' fill="none"';
     const sa = p.stroke ? strokeAttrs(line, r.doc, p.fill, box) : ' stroke="none"';
     if (fa === ' fill="none"' && sa === ' stroke="none"') continue;
     const evenodd = p.d.split('M').length > 2 ? ' fill-rule="evenodd"' : '';
+    if (sp && projected) {
+      geomParts.push(projectedPath(projected[i].d, box, fa, sa, evenodd, sp.fillAffine, r.doc));
+      continue;
+    }
     // 复合线型（双线等）：描边单独画，用遮罩挖出线间空隙
     const cm = p.stroke && line ? compoundMask(line, p.d, r.doc, box) : '';
     if (cm) {
@@ -83,7 +92,7 @@ export async function renderShape(r: RenderContext, el: XEl, ctx: SlideContext, 
     } else geomParts.push(`<path d="${p.d}"${fa}${sa}${evenodd}/>`);
   }
   let geom = geomParts.join('');
-  if (geom && (box.flipH || box.flipV)) geom = `<g${flipTransform(box)}>${geom}</g>`;
+  if (geom && !sp && (box.flipH || box.flipV)) geom = `<g${flipTransform(box)}>${geom}</g>`;
   const plainGeom = geom;
   if (geom && filter) geom = `<g filter="url(#${filter})">${geom}</g>`;
 
@@ -106,18 +115,22 @@ export async function renderShape(r: RenderContext, el: XEl, ctx: SlideContext, 
     textBox, textEnv,
   );
   if (!geom && !text) return '';
-  const refl = reflection(child(effect, 'a:reflection'), box.h, r.doc, `${geom}${text}`);
-  // 三维旋转（形状自己的、版式的或者主题效果样式里的 a:scene3d）
-  const scene3d = child(spPr, 'a:scene3d') ?? child(lSpPr, 'a:scene3d') ?? child(mSpPr, 'a:scene3d') ?? child(effStyle, 'a:scene3d');
   const cam = cameraTransform(scene3d, box.w, box.h, r.env.pres.width);
   const light = cameraLightFilter(scene3d, r.doc);
-  // 拉伸的侧面：按形状自己转动的视角，或者所在 SmartArt 场景的视角
+  const lit = (s: string) => (light && s ? `<g filter="url(#${light})">${s}</g>` : s);
   const depth = (numAttr(sp3d, 'extrusionH') ?? 0) / EMU_PER_PX;
+  if (sp) {
+    // 透视：几何已经投影到框里；拉伸侧面沿屏幕上的背面方向叠，文字用仿射近似（段落动画编号不会被复制）
+    const off = depth > 0 && plainGeom ? extrusionScreenOffset(sp.camera, depth) : undefined;
+    const sides = off ? extrusionSides(plainGeom, off, r.doc) : '';
+    const textPart = text ? `<g transform="${sp.textAffine}">${text}</g>` : '';
+    return withUid(uid, placeBox({ ...box, rot: 0 }, lit(`${sides}${geom}${textPart}`), r.doc), el);
+  }
+  const refl = reflection(child(effect, 'a:reflection'), box.h, r.doc, `${geom}${text}`);
+  // 拉伸的侧面：按形状自己转动的视角，或者所在 SmartArt 场景的视角
   const ext = depth > 0 && plainGeom
     ? (cam ? extrusionOffset(scene3d, depth, box.w, box.h, r.env.pres.width) : ctx.scene && extrusionOffset(ctx.scene.scene3d, depth, ctx.scene.w, ctx.scene.h, r.env.pres.width))
     : undefined;
   const sides = ext ? extrusionSides(plainGeom, ext, r.doc) : '';
-  const face = `${sides}${refl}${geom}${text}`;
-  const body = light ? `<g filter="url(#${light})">${face}</g>` : face;
-  return withUid(uid, `<g transform="${boxTransform(box, cam)}">${body}</g>`, el);
+  return withUid(uid, placeBox(box, lit(`${sides}${refl}${geom}${text}`), r.doc, cam), el);
 }

@@ -8,12 +8,13 @@ import { SHAPE_EFFECTS } from './effects';
 import type { FilterLayer, ShapeEffect } from './shape-effect';
 
 /**
- * w/h 是形状尺寸（像素），用来确定滤镜区域；extra 是不在 effectLst 里的层（三维棱台），排在最后。
- * 返回 filter id，没有效果时返回 undefined
+ * w/h 是形状尺寸（像素），用来确定滤镜区域；extra 是不在 effectLst 里的层（三维棱台），排在最后；
+ * at 是形状实际占的范围（透视投影后的外框）不在 (0, 0, w, h) 时给出。返回 filter id，没有效果时返回 undefined
  */
 export function effectFilter(
   effectLst: XEl | undefined, colors: ColorContext, doc: SvgDoc, w: number, h: number,
   effects: readonly ShapeEffect[] = SHAPE_EFFECTS, extra: readonly (FilterLayer | undefined)[] = [],
+  at?: { x: number; y: number; w: number; h: number },
 ): string | undefined {
   const parts: string[] = [];
   const under: string[] = [];
@@ -37,6 +38,7 @@ export function effectFilter(
   const id = doc.id('f');
   // 滤镜区域用形状自己的坐标：按效果伸出的距离再加上线宽的余量（细长形状、线条按百分比算会被裁掉）
   const m = pad + 20;
-  doc.addDef(`<filter id="${id}" filterUnits="userSpaceOnUse" x="${n2(-m)}" y="${n2(-m)}" width="${n2(w + 2 * m)}" height="${n2(h + 2 * m)}">${parts.join('')}<feMerge>${merge}</feMerge></filter>`);
+  const r = at ?? { x: 0, y: 0, w, h };
+  doc.addDef(`<filter id="${id}" filterUnits="userSpaceOnUse" x="${n2(r.x - m)}" y="${n2(r.y - m)}" width="${n2(r.w + 2 * m)}" height="${n2(r.h + 2 * m)}">${parts.join('')}<feMerge>${merge}</feMerge></filter>`);
   return id;
 }
