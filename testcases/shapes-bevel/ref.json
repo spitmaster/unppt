@@ -1,0 +1,292 @@
+{
+ "version": 7,
+ "slideWidthPt": 960.0,
+ "slideHeightPt": 540.0,
+ "imageWidth": 1280,
+ "imageHeight": 720,
+ "slides": [
+  {
+   "index": 0,
+   "hidden": false,
+   "shapes": [
+    {
+     "id": 2,
+     "name": "Rectangle 1",
+     "type": 1,
+     "x": 40.0,
+     "y": 30.0,
+     "w": 180.0,
+     "h": 105.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1
+    },
+    {
+     "id": 3,
+     "name": "Oval 2",
+     "type": 1,
+     "x": 270.0,
+     "y": 30.0,
+     "w": 180.0,
+     "h": 105.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 9
+    },
+    {
+     "id": 4,
+     "name": "Rounded Rectangle 3",
+     "type": 1,
+     "x": 500.0,
+     "y": 30.0,
+     "w": 180.0,
+     "h": 105.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 5
+    },
+    {
+     "id": 5,
+     "name": "5-Point Star 4",
+     "type": 1,
+     "x": 730.0,
+     "y": 30.0,
+     "w": 180.0,
+     "h": 105.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 92
+    },
+    {
+     "id": 6,
+     "name": "Rectangle 5",
+     "type": 1,
+     "x": 40.0,
+     "y": 155.0,
+     "w": 180.0,
+     "h": 105.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1
+    },
+    {
+     "id": 7,
+     "name": "Oval 6",
+     "type": 1,
+     "x": 270.0,
+     "y": 155.0,
+     "w": 180.0,
+     "h": 105.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 9
+    },
+    {
+     "id": 8,
+     "name": "Rounded Rectangle 7",
+     "type": 1,
+     "x": 500.0,
+     "y": 155.0,
+     "w": 180.0,
+     "h": 105.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 5
+    },
+    {
+     "id": 9,
+     "name": "5-Point Star 8",
+     "type": 1,
+     "x": 730.0,
+     "y": 155.0,
+     "w": 180.0,
+     "h": 105.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 92
+    },
+    {
+     "id": 10,
+     "name": "Rectangle 9",
+     "type": 1,
+     "x": 40.0,
+     "y": 280.0,
+     "w": 180.0,
+     "h": 105.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1
+    },
+    {
+     "id": 11,
+     "name": "Oval 10",
+     "type": 1,
+     "x": 270.0,
+     "y": 280.0,
+     "w": 180.0,
+     "h": 105.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 9
+    },
+    {
+     "id": 12,
+     "name": "Rounded Rectangle 11",
+     "type": 1,
+     "x": 500.0,
+     "y": 280.0,
+     "w": 180.0,
+     "h": 105.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 5
+    },
+    {
+     "id": 13,
+     "name": "5-Point Star 12",
+     "type": 1,
+     "x": 730.0,
+     "y": 280.0,
+     "w": 180.0,
+     "h": 105.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 92
+    },
+    {
+     "id": 14,
+     "name": "Rectangle 13",
+     "type": 1,
+     "x": 40.0,
+     "y": 405.0,
+     "w": 180.0,
+     "h": 105.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1
+    },
+    {
+     "id": 15,
+     "name": "Oval 14",
+     "type": 1,
+     "x": 270.0,
+     "y": 405.0,
+     "w": 180.0,
+     "h": 105.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 9
+    },
+    {
+     "id": 16,
+     "name": "Rounded Rectangle 15",
+     "type": 1,
+     "x": 500.0,
+     "y": 405.0,
+     "w": 180.0,
+     "h": 105.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 5
+    },
+    {
+     "id": 17,
+     "name": "5-Point Star 16",
+     "type": 1,
+     "x": 730.0,
+     "y": 405.0,
+     "w": 180.0,
+     "h": 105.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 92
+    }
+   ],
+   "effects": [],
+   "triggerHidden": [],
+   "steps": 0
+  },
+  {
+   "index": 1,
+   "hidden": false,
+   "shapes": [
+    {
+     "id": 2,
+     "name": "Rectangle 1",
+     "type": 1,
+     "x": 40.0,
+     "y": 60.0,
+     "w": 240.0,
+     "h": 180.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1
+    },
+    {
+     "id": 3,
+     "name": "Rectangle 2",
+     "type": 1,
+     "x": 340.0,
+     "y": 60.0,
+     "w": 240.0,
+     "h": 180.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1
+    },
+    {
+     "id": 4,
+     "name": "Rectangle 3",
+     "type": 1,
+     "x": 640.0,
+     "y": 60.0,
+     "w": 240.0,
+     "h": 180.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1
+    },
+    {
+     "id": 5,
+     "name": "Rectangle 4",
+     "type": 1,
+     "x": 40.0,
+     "y": 300.0,
+     "w": 240.0,
+     "h": 180.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1
+    },
+    {
+     "id": 6,
+     "name": "Rectangle 5",
+     "type": 1,
+     "x": 340.0,
+     "y": 300.0,
+     "w": 240.0,
+     "h": 180.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1
+    },
+    {
+     "id": 7,
+     "name": "Rectangle 6",
+     "type": 1,
+     "x": 640.0,
+     "y": 300.0,
+     "w": 240.0,
+     "h": 180.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1
+    }
+   ],
+   "effects": [],
+   "triggerHidden": [],
+   "steps": 0
+  }
+ ],
+ "ok": true
+}
