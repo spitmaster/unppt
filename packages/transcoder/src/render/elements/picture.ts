@@ -8,6 +8,7 @@ import { buildGeometry, parseGeomXml, presetGeometry } from '../../geometry/geom
 import { esc, n2 } from '../../common/svg';
 import { attr, child, children, numAttr, path, type XEl } from '../../io/xml';
 import { flipTransform, nvProps, pc, placeBox, readXfrm, withUid } from '../box';
+import { snapBox } from '../pixel-snap';
 import { cameraLightFilter, cameraTransform, hasCamera } from '../../style/camera';
 import { faceLightFilter, has3d } from '../../style/lighting';
 import { baseProjection } from '../projection';
@@ -17,8 +18,14 @@ export async function renderPicture(r: RenderContext, el: XEl, ctx: SlideContext
   const { layoutPh, masterPh, ph } = r.inherited(el, ctx);
   if (ph && !ctx.ownSlide) return '';
   const spPr = pc(el, 'spPr');
-  const box = readXfrm(child(spPr, 'a:xfrm')) ?? readXfrm(child(pc(layoutPh, 'spPr'), 'a:xfrm')) ?? readXfrm(child(pc(masterPh, 'spPr'), 'a:xfrm'));
-  if (!box) return '';
+  const raw = readXfrm(child(spPr, 'a:xfrm')) ?? readXfrm(child(pc(layoutPh, 'spPr'), 'a:xfrm')) ?? readXfrm(child(pc(masterPh, 'spPr'), 'a:xfrm'));
+  if (!raw) return '';
+  const style = pc(el, 'style');
+  const effRef = styleRef(child(style, 'a:effectRef'), ctx.theme.effectStyles, ctx.colors);
+  const scene3d = child(spPr, 'a:scene3d') ?? child(effRef.el, 'a:scene3d');
+  // 平面的图片：外框四边对齐整像素（pixel-snap.ts；边框画在图片外侧，整像素宽的边框也正好是实线）
+  const sb = hasCamera(scene3d) || ctx.scene ? undefined : snapBox(raw, ctx.toSlide, 0);
+  const box = sb ? { ...raw, x: raw.x + sb.dx, y: raw.y + sb.dy, w: sb.w, h: sb.h } : raw;
   const uid = r.uidOf(el, ctx);
   const blipFill = pc(el, 'blipFill');
   const fill = parseFill(blipFill ? { ...blipFill, name: 'a:blipFill' } : undefined, ctx.colors, ctx.part);
@@ -81,7 +88,6 @@ export async function renderPicture(r: RenderContext, el: XEl, ctx: SlideContext
       mediaLink = true;
     }
   }
-  const style = pc(el, 'style');
   const lnStyle = styleRef(child(style, 'a:lnRef'), ctx.theme.lineStyles, ctx.colors);
   const line = parseLine([lnStyle.el, child(spPr, 'a:ln')], [lnStyle.ctx, ctx.colors], ctx.part);
   if (line) {
@@ -94,7 +100,6 @@ export async function renderPicture(r: RenderContext, el: XEl, ctx: SlideContext
   let visual = parts.join('');
   if (visual && (box.flipH || box.flipV)) visual = `<g${flipTransform(box)}>${visual}</g>`;
   // 效果（图片样式常见：映像、柔化边缘、阴影、发光）：图片自己写的 > 主题样式
-  const effRef = styleRef(child(style, 'a:effectRef'), ctx.theme.effectStyles, ctx.colors);
   const effect = child(spPr, 'a:effectLst') ?? child(effRef.el, 'a:effectLst');
   const refl = visual ? reflection(child(effect, 'a:reflection'), box.h, r.doc, visual) : '';
   const filter = visual ? effectFilter(effect, effect === child(spPr, 'a:effectLst') ? ctx.colors : effRef.ctx, r.doc, box.w, box.h) : undefined;
@@ -105,7 +110,6 @@ export async function renderPicture(r: RenderContext, el: XEl, ctx: SlideContext
   // 媒体：点击切换播放（形状本身没有写点击动作时也加上）
   const clickable = mediaLink && !child(nvProps(el), 'a:hlinkClick') ? ' data-link="media" style="cursor:pointer"' : '';
   // 三维旋转（图片样式常见的"透视""旋转"）
-  const scene3d = child(spPr, 'a:scene3d') ?? child(effRef.el, 'a:scene3d');
   const cam = cameraTransform(scene3d, box.w, box.h, r.env.pres.width);
   const light = cameraLightFilter(scene3d, r.doc);
   // 开了三维（相机或棱台）的图片和形状一样，正面按灯光提亮（实测：透视正面下灰 128 -> 139）

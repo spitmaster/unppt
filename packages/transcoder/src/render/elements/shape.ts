@@ -5,6 +5,7 @@ import { compoundMask, parseLine, strokeAttrs } from '../../style/line';
 import { faceLighting, has3d, litFill } from '../../style/lighting';
 import { cameraLightFilter, cameraTransform, extrusionOffset, extrusionScreenOffset, extrusionSides, hasCamera } from '../../style/camera';
 import { EMU_PER_PX } from '../../model/model';
+import { n2 } from '../../common/svg';
 import { bevelLayer } from '../../effects/bevel';
 import { effectFilter } from '../../effects/effect-filter';
 import { reflection } from '../../effects/reflection';
@@ -15,6 +16,7 @@ import { attr, child, children, numAttr, path, type XEl } from '../../io/xml';
 import { flipTransform, nvProps, pc, placeBox, readXfrm, withUid } from '../box';
 import type { RenderContext } from '../context';
 import { projectedBounds, projectedPath, shapeProjection } from '../projection';
+import { snapBox } from '../pixel-snap';
 
 export async function renderShape(r: RenderContext, el: XEl, ctx: SlideContext, groupFill?: Fill): Promise<string> {
   const { layoutPh, masterPh, ph } = r.inherited(el, ctx);
@@ -67,19 +69,22 @@ export async function renderShape(r: RenderContext, el: XEl, ctx: SlideContext, 
   }
   const av = new Map<string, string>();
   for (const g of children(child(prst ?? cust, 'a:avLst'), 'a:gd')) av.set(attr(g, 'name') ?? '', attr(g, 'fmla') ?? '');
-  const geo = buildGeometry(def, box.w, box.h, av);
-  const paths = geo.paths;
   // 透视相机（自己的或 SmartArt 场景的）下轮廓逐点投影
   const sp = shapeProjection(box, scene3d, ctx.scene, r.env.pres.width);
+  // 平面的形状：几何画在对齐整像素的外框里（pixel-snap.ts），文字仍按原来的框
+  const snap = sp || hasCamera(scene3d) || ctx.scene ? undefined : snapBox(box, ctx.toSlide, line?.width ?? 0);
+  const gb = snap ? { ...box, x: box.x + snap.dx, y: box.y + snap.dy, w: snap.w, h: snap.h } : box;
+  const geo = buildGeometry(def, gb.w, gb.h, av);
+  const paths = geo.paths;
   const projected = sp ? buildGeometry(def, box.w, box.h, av, sp.map).paths : undefined;
   // 效果：形状自己写的 > 版式 > 主题样式（effectRef）
   const effRef = styleRef(child(style, 'a:effectRef'), ctx.theme.effectStyles, colors);
   const effect = child(spPr, 'a:effectLst') ?? child(lSpPr, 'a:effectLst') ?? child(effRef.el, 'a:effectLst');
-  const filter = effectFilter(effect, effect === child(effRef.el, 'a:effectLst') ? effRef.ctx : colors, r.doc, box.w, box.h, undefined, [has3d(sp3d) ? bevelLayer(sp3d) : undefined], sp && projectedBounds(sp.map, box.w, box.h));
+  const filter = effectFilter(effect, effect === child(effRef.el, 'a:effectLst') ? effRef.ctx : colors, r.doc, gb.w, gb.h, undefined, [has3d(sp3d) ? bevelLayer(sp3d) : undefined], sp && projectedBounds(sp.map, box.w, box.h));
   for (const [i, p] of paths.entries()) {
     if (!p.d) continue;
-    const fa = p.fill !== 'none' ? await fillAttrs(fill, r.doc, box.w, box.h, p.fill, r.images, box) : ' fill="none"';
-    const sa = p.stroke ? strokeAttrs(line, r.doc, p.fill, box) : ' stroke="none"';
+    const fa = p.fill !== 'none' ? await fillAttrs(fill, r.doc, gb.w, gb.h, p.fill, r.images, gb) : ' fill="none"';
+    const sa = p.stroke ? strokeAttrs(line, r.doc, p.fill, gb) : ' stroke="none"';
     if (fa === ' fill="none"' && sa === ' stroke="none"') continue;
     const evenodd = p.d.split('M').length > 2 ? ' fill-rule="evenodd"' : '';
     if (sp && projected) {
@@ -87,14 +92,14 @@ export async function renderShape(r: RenderContext, el: XEl, ctx: SlideContext, 
       continue;
     }
     // 复合线型（双线等）：描边单独画，用遮罩挖出线间空隙
-    const cm = p.stroke && line ? compoundMask(line, p.d, r.doc, box) : '';
+    const cm = p.stroke && line ? compoundMask(line, p.d, r.doc, gb) : '';
     if (cm) {
       if (fa !== ' fill="none"') geomParts.push(`<path d="${p.d}"${fa} stroke="none"${evenodd}/>`);
       geomParts.push(`<path d="${p.d}" fill="none"${sa}${cm}/>`);
     } else geomParts.push(`<path d="${p.d}"${fa}${sa}${evenodd}/>`);
   }
   let geom = geomParts.join('');
-  if (geom && !sp && (box.flipH || box.flipV)) geom = `<g${flipTransform(box)}>${geom}</g>`;
+  if (geom && !sp && (box.flipH || box.flipV)) geom = `<g${flipTransform(gb)}>${geom}</g>`;
   const plainGeom = geom;
   if (geom && filter) geom = `<g filter="url(#${filter})">${geom}</g>`;
 
@@ -110,7 +115,7 @@ export async function renderShape(r: RenderContext, el: XEl, ctx: SlideContext, 
   };
   // SmartArt 的文字框有单独的位置（dsp:txXfrm）
   const txXfrm = readXfrm(pc(el, 'txXfrm'));
-  const textBox = txXfrm ? { x: txXfrm.x - box.x, y: txXfrm.y - box.y, w: txXfrm.w, h: txXfrm.h } : geo.text;
+  const textBox = txXfrm ? { x: txXfrm.x - box.x, y: txXfrm.y - box.y, w: txXfrm.w, h: txXfrm.h } : snap ? buildGeometry(def, box.w, box.h, av).text : geo.text;
   const text = await renderText(
     txBody, r.textChain(ctx, ph, layoutPh, masterPh),
     [path(masterPh, 'p:txBody', 'a:bodyPr'), path(layoutPh, 'p:txBody', 'a:bodyPr')],
@@ -134,5 +139,6 @@ export async function renderShape(r: RenderContext, el: XEl, ctx: SlideContext, 
     ? (cam ? extrusionOffset(scene3d, depth, box.w, box.h, r.env.pres.width) : ctx.scene && extrusionOffset(ctx.scene.scene3d, depth, ctx.scene.w, ctx.scene.h, r.env.pres.width))
     : undefined;
   const sides = ext ? extrusionSides(plainGeom, ext, r.doc) : '';
-  return withUid(uid, placeBox(box, lit(`${sides}${refl}${geom}${text}`), r.doc, cam), el);
+  const shifted = snap && geom && (snap.dx || snap.dy) ? `<g transform="translate(${n2(snap.dx)} ${n2(snap.dy)})">${geom}</g>` : geom;
+  return withUid(uid, placeBox(box, lit(`${sides}${refl}${shifted}${text}`), r.doc, cam), el);
 }
