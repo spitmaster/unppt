@@ -28,6 +28,12 @@ export interface CategoryFrame {
   nCat: number;
   /** 条形图（分类轴在左边） */
   horizontal: boolean;
+  /** 分类方向上离第一个分类起点 d 像素处的坐标（柱形图是 x，条形图是 y；分类轴逆序时从另一头算） */
+  catPx(d: number): number;
+  /** 分类方向上从 d 开始、长 len 的一段：返回 [较小一端的坐标, 长度] */
+  catSpan(d: number, len: number): [number, number];
+  /** 数值位置（0~1，AxisInfo.pos 的结果）在数值方向上的坐标（柱形图是 y，条形图是 x） */
+  valPx(f: number): number;
 }
 
 export interface ChartType {
