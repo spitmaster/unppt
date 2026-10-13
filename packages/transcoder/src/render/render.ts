@@ -2,7 +2,7 @@
  * 把一页幻灯片渲染成 SVG。
  * 顺序：背景 -> 母版元素 -> 版式元素 -> 幻灯片元素。占位符的属性沿 幻灯片 -> 版式 -> 母版 继承。
  */
-import { colorContext, matchPlaceholder, phInfo, EMU_PER_PX, type Layout, type Master, type Presentation, type SlideContext, type SlideRef } from '../model/model';
+import { colorContext, matchPlaceholder, phInfo, type Layout, type Master, type SlideContext, type SlideRef } from '../model/model';
 import { bgStyle, fillAttrs, findFillEl, parseFill, styleRef, type Fill, type ImageResolver } from '../style/fill';
 import { blipFilter } from '../style/blip';
 import { parseLine, strokeAttrs } from '../style/line';
@@ -10,22 +10,16 @@ import { effectFilter } from '../effects/effect-filter';
 import { reflection } from '../effects/reflection';
 import { buildGeometry, parseGeomXml, presetGeometry } from '../geometry/geometry';
 import { colorIn } from '../model/color';
-import type { FontLibrary } from '../font/font';
-import type { MediaStore } from '../media/media';
 import { linkAttr } from '../common/links';
 import { esc, n2, SvgDoc } from '../common/svg';
-import { renderText, type FontEmbedder, type StyleChain, type TextEnv } from '../text/text';
-import { attr, boolAttr, child, children, expandAlternate, numAttr, path, type XEl } from '../io/xml';
-import { renderTable } from './table';
-import { renderChart } from '../chart/chart';
+import { renderText, type StyleChain, type TextEnv } from '../text/text';
+import { attr, child, children, expandAlternate, numAttr, path, type XEl } from '../io/xml';
+import { boxTransform, flipTransform, nvProps, pc, px, readXfrm, withUid } from './box';
+import type { RenderEnv } from './env';
+import type { FrameRenderer } from './frames/frame-handler';
+import { FRAME_HANDLERS } from './frames/frames';
 
-export interface RenderEnv {
-  pres: Presentation;
-  fonts: FontLibrary;
-  missingFonts: Set<string>;
-  media: MediaStore;
-  embed?: FontEmbedder;
-}
+export type { RenderEnv };
 
 export interface RenderedSlide {
   svg: string;
@@ -35,49 +29,7 @@ export interface RenderedSlide {
   hidden: boolean;
 }
 
-interface Box { x: number; y: number; w: number; h: number; rot: number; flipH: boolean; flipV: boolean; }
-
-const px = (emu: number | undefined) => (emu ?? 0) / EMU_PER_PX;
-
-/** 兼容 p: 和 dsp:（SmartArt 绘图）两种前缀的子元素查找 */
-function pc(el: XEl | undefined, local: string): XEl | undefined {
-  return child(el, `p:${local}`) ?? child(el, `dsp:${local}`);
-}
-
-function readXfrm(xfrm: XEl | undefined): Box | undefined {
-  if (!xfrm) return undefined;
-  const off = child(xfrm, 'a:off');
-  const ext = child(xfrm, 'a:ext');
-  if (!off && !ext) return undefined;
-  return {
-    x: px(numAttr(off, 'x')), y: px(numAttr(off, 'y')), w: px(numAttr(ext, 'cx')), h: px(numAttr(ext, 'cy')),
-    rot: (numAttr(xfrm, 'rot') ?? 0) / 60000,
-    flipH: boolAttr(xfrm, 'flipH') ?? false, flipV: boolAttr(xfrm, 'flipV') ?? false,
-  };
-}
-
-function nvProps(el: XEl): XEl | undefined {
-  const nv = el.children.find((c) => c.name.endsWith(':nvSpPr') || c.name.endsWith(':nvPicPr') || c.name.endsWith(':nvGrpSpPr') || c.name.endsWith(':nvCxnSpPr') || c.name.endsWith(':nvGraphicFramePr'));
-  return nv?.children.find((c) => c.name.endsWith(':cNvPr'));
-}
-
-/** 动画目标外包一层不带 transform 的 g，播放器用 CSS 动画时不会覆盖元素自己的位置变换 */
-function withUid(uid: string | undefined, inner: string): string {
-  return uid ? `<g data-uid="${uid}">${inner}</g>` : inner;
-}
-
-function boxTransform(b: Box): string {
-  let t = `translate(${n2(b.x)} ${n2(b.y)})`;
-  if (b.rot) t += ` rotate(${n2(b.rot)} ${n2(b.w / 2)} ${n2(b.h / 2)})`;
-  return t;
-}
-
-function flipTransform(b: Box): string {
-  if (!b.flipH && !b.flipV) return '';
-  return ` transform="translate(${b.flipH ? n2(b.w) : 0} ${b.flipV ? n2(b.h) : 0}) scale(${b.flipH ? -1 : 1} ${b.flipV ? -1 : 1})"`;
-}
-
-class SlideRenderer {
+class SlideRenderer implements FrameRenderer {
   doc: SvgDoc;
   images: ImageResolver;
 
@@ -343,59 +295,14 @@ class SlideRenderer {
     const gd = path(el, 'a:graphic', 'a:graphicData');
     const uri = attr(gd, 'uri') ?? '';
     const uid = this.uidOf(el, ctx);
-    const wrap = (inner: string) => inner ? withUid(uid, `<g transform="${boxTransform(box)}">${inner}</g>`) : "";
-    if (uri.endsWith('/table')) {
-      const tbl = child(gd, 'a:tbl');
-      return wrap(await renderTable(tbl, box.w, box.h, this, ctx));
-    }
-    if (uri.endsWith('/diagram')) {
-      return wrap(await this.diagram(gd, ctx));
-    }
-    if (uri.endsWith('/chart')) {
-      const rid = attr(child(gd, 'c:chart'), 'r:id');
-      const rel = rid ? await this.env.pres.pkg.rel(ctx.part, rid) : undefined;
-      const xml = rel ? await this.env.pres.pkg.xml(rel.target, false) : undefined;
-      if (!xml) { this.env.pres.warn('图表数据缺失'); return ''; }
-      return wrap(renderChart(xml, box.w, box.h, { colors: ctx.colors, theme: ctx.theme, part: rel!.target, warn: (m) => this.env.pres.warn(m) }));
-    }
-    if (uri.endsWith('/ole')) {
-      const ole = expandAlternate(gd?.children ?? []).find((c) => c.name === 'p:oleObj');
-      const pic = child(ole, 'p:pic');
-      if (pic) {
-        // OLE 的预览图：位置用外框
-        const clone: XEl = { ...pic, children: pic.children.map((c) => c.name === 'p:spPr' ? { ...c, children: [{ name: 'a:xfrm', attrs: {}, text: '', children: [{ name: 'a:off', attrs: { x: String(box.x * EMU_PER_PX), y: String(box.y * EMU_PER_PX) }, children: [], text: '' }, { name: 'a:ext', attrs: { cx: String(box.w * EMU_PER_PX), cy: String(box.h * EMU_PER_PX) }, children: [], text: '' }] }, ...c.children.filter((x) => x.name !== 'a:xfrm')] } : c) };
-        return this.picture(clone, ctx);
-      }
-      this.env.pres.warn('嵌入对象（OLE）暂未支持');
+    const handler = FRAME_HANDLERS.find((f) => uri.endsWith(f.uri));
+    if (!handler || !gd) {
+      this.env.pres.warn(`未支持的图形：${uri.slice(uri.lastIndexOf('/') + 1)}`);
       return '';
     }
-    this.env.pres.warn(`未支持的图形：${uri.slice(uri.lastIndexOf('/') + 1)}`);
-    return '';
-  }
-
-  async diagram(gd: XEl | undefined, ctx: SlideContext): Promise<string> {
-    const relIds = child(gd, 'dgm:relIds');
-    const dm = attr(relIds, 'r:dm');
-    if (!dm) return '';
-    const pkg = this.env.pres.pkg;
-    const dataRel = await pkg.rel(ctx.part, dm);
-    if (!dataRel) return '';
-    const data = await pkg.xml(dataRel.target, false);
-    let drawingPart: string | undefined;
-    const ext = (data?.children ?? []).find((c) => c.name === 'dgm:extLst');
-    for (const e of ext?.children ?? []) {
-      const dme = e.children.find((c) => c.name === 'dsp:dataModelExt');
-      const rid = attr(dme, 'relId');
-      if (rid) drawingPart = (await pkg.rel(ctx.part, rid))?.target;
-    }
-    if (!drawingPart) {
-      this.env.pres.warn('SmartArt 缺少绘图缓存');
-      return '';
-    }
-    const drawing = await pkg.xml(drawingPart, false);
-    const tree = child(drawing, 'dsp:spTree');
-    const sub: SlideContext = { ...ctx, part: drawingPart, ownSlide: false };
-    return this.shapes(children(tree).filter((c) => !c.name.endsWith('nvGrpSpPr') && !c.name.endsWith('grpSpPr')), sub);
+    const out = await handler.render(gd, box, this, ctx);
+    if (out.positioned) return out.svg;
+    return out.svg ? withUid(uid, `<g transform="${boxTransform(box)}">${out.svg}</g>`) : '';
   }
 
   async background(ctxs: { xml: XEl; ctx: SlideContext }[], w: number, h: number): Promise<string> {
