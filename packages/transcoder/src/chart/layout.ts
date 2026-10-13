@@ -8,6 +8,8 @@ export type TextWidth = (s: string, size: number) => number;
 
 /** 图表区四周留白 */
 export const PAD = 11 * 96 / 72;
+/** 底部没有图例时下边的留白（约 6 磅） */
+export const BOTTOM_PAD = 8;
 /** 左右两侧有坐标轴标签时，图表边到标签的距离（不随字号变） */
 export const SIDE_LABEL_PAD = 8.6;
 /** 竖着排的标签（数值轴在左、条形图分类轴）：留给标签右端到绘图区的间隙 */
@@ -33,6 +35,12 @@ export const legendKeyGap = (s: number) => 0.3 * s;
 export const legendItemGap = (s: number) => 0.68 * s;
 /** 图例里有线条项（折线、趋势线）时所有图例键统一的宽度（实测 12 磅，3 个图表；项间隔不变） */
 export const legendLineKey = (s: number) => 1.75 * s;
+/** 竖排图例（左、右）：每行的高度（COM 读 3 种字号：1.03 × 字号 + 6 磅）、图例和绘图区之间的距离（导出图实测，像素） */
+export const legendRow = (s: number) => 1.03 * s + 8;
+/** 上方图例：中心离图表上边的距离、图例连同下方留白占的高度（像素） */
+export const legendTopCenter = (s: number) => 12 + 0.515 * s;
+export const legendTopBand = (s: number) => 16 + 1.03 * s;
+export const legendPlotGap = 21;
 
 /**
  * 雷达图（PowerPoint 实测，COM 读 96 组"尺寸 × 字号 × 分类数 × 标签"的绘图区）：外接圆直径

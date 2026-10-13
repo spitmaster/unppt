@@ -3,7 +3,7 @@ import type { ColorContext, Rgba } from '../model/color';
 import { attr, child, type XEl } from '../io/xml';
 import { chartTypeOf } from './chart-types';
 import { accentColor, label, legendKey, textStyle } from './draw';
-import { legendBand, legendCenter, legendItemGap, legendKeyGap, legendLineKey, legendSquare, type TextWidth } from './layout';
+import { legendBand, legendCenter, legendItemGap, legendKeyGap, legendLineKey, legendPlotGap, legendRow, legendSquare, legendTopBand, legendTopCenter, PAD, type TextWidth } from './layout';
 import type { Plot, Rect, Series, TextStyle } from './model';
 import { dashAttr } from './trendline';
 
@@ -44,7 +44,6 @@ export function renderLegend(legend: XEl | undefined, plots: Plot[], area: Rect,
   const legendText = textStyle(child(legend, 'c:txPr'), colors, baseText);
   const entries = entriesOf(plots, colors);
   const ks = legendText.size * 0.6;
-  const itemW = entries.map((e) => (e.line ? ks * 3 : ks) + 4 + tw(e.name, legendText.size) + 10);
   if (legendPos === 'b' || legendPos === 't') {
     // 实测（9~28 磅）：色块、间隔都随字号变化
     const sz = legendText.size;
@@ -55,26 +54,33 @@ export function renderLegend(legend: XEl | undefined, plots: Plot[], area: Rect,
     const parts = entries.map((e) => keyW(e) + legendKeyGap(sz) + tw(e.name, sz));
     const total = parts.reduce((a, b) => a + b, 0) + gap * Math.max(0, entries.length - 1);
     let x = (w - total) / 2;
-    const y = legendPos === 'b' ? bottom - legendCenter(sz) : top + sz * 0.6;
+    // 上方图例：中心在 9 磅 + 0.515 倍字号处，下沿（12 磅 + 1.03 倍字号）再往下 11 磅才是绘图区（COM 读 3 种字号，导出图核对）
+    const y = legendPos === 'b' ? bottom - legendCenter(sz) : top - PAD + legendTopCenter(sz);
     entries.forEach((e, i) => {
       out.push(anyLine ? legendKey(e, x, y, legendSquare(sz), keyW(e)) : legendKey(e, x, y, e.line ? ks : legendSquare(sz)));
       out.push(label(e.name, x + keyW(e) + legendKeyGap(sz), y, legendText, 'start'));
       x += parts[i] + gap;
     });
     if (legendPos === 'b') bottom -= legendBand(legendText.size);
-    else top += legendText.size * 1.2 + 8;
+    else top += legendTopBand(sz);
   } else {
-    const lw = Math.max(...itemW);
-    const lh = entries.length * legendText.size * 1.4;
+    // 竖排图例（左、右）：键和间隔和横排一样（有线条项时所有键等宽），每行 legendRow；整体在上下范围里居中，
+    // 右侧图例的文字右端对齐图表留白线（左侧的键左端对齐），离绘图区 legendPlotGap（实测）
+    const sz = legendText.size;
+    const anyLine = entries.some((e) => e.line);
+    const keyW = anyLine ? legendLineKey(sz) : legendSquare(sz);
+    const lw = keyW + legendKeyGap(sz) + Math.max(0, ...entries.map((e) => tw(e.name, sz)));
+    const row = legendRow(sz);
     const x = legendPos === 'l' ? left : right - lw;
-    let y = (top + bottom) / 2 - lh / 2 + legendText.size * 0.7;
+    let y = (top + bottom) / 2 - (entries.length * row) / 2 + row / 2;
     for (const e of entries) {
-      out.push(legendKey(e, x, y, ks));
-      out.push(label(e.name, x + (e.line ? ks * 3 : ks) + 4, y, legendText, 'start'));
-      y += legendText.size * 1.4;
+      out.push(anyLine ? legendKey(e, x, y, legendSquare(sz), keyW) : legendKey(e, x, y, legendSquare(sz)));
+      out.push(label(e.name, x + keyW + legendKeyGap(sz), y, legendText, 'start'));
+      y += row;
     }
-    if (legendPos === 'l') left += lw + 8;
-    else right -= lw + 8;
+    // 左侧图例和数值标签之间是图表留白（PAD）；右侧图例和绘图区之间 legendPlotGap
+    if (legendPos === 'l') left += lw + PAD;
+    else right -= lw + legendPlotGap;
   }
   return { left, top, right, bottom };
 }

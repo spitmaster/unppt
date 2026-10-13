@@ -13,8 +13,9 @@ function renderPie(p: Plot, x: number, y: number, w: number, h: number, colors: 
   const total = vals.reduce((a, b) => a + b, 0);
   if (!total) return '';
   const cx = x + w / 2, cy = y + h / 2;
-  // 实测：没有数据标签时饼图直径约为绘图区较短边的 96.5%；有标签时 PowerPoint 会缩小到约 84% 给标签留空间
-  const r = Math.min(w, h) / 2 * (s.labels ? 0.84 : 0.965);
+  // 实测：没有数据标签时饼图直径约为绘图区高度的 96.5%，宽度不够时等于绘图区宽度（图例在右侧时）；
+  // 有标签时 PowerPoint 会缩小到较短边的约 84% 给标签留空间
+  const r = (s.labels ? Math.min(w, h) * 0.84 : Math.min(w, h * 0.965)) / 2;
   const ri = p.kind === 'doughnut' ? r * p.holeSize / 100 : 0;
   let ang = (p.firstSliceAng - 90) * Math.PI / 180;
   const out: string[] = [];
