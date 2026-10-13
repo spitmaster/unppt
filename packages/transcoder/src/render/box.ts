@@ -2,6 +2,8 @@
 import { esc, n2 } from '../common/svg';
 import { attr, boolAttr, child, numAttr, type XEl } from '../io/xml';
 import { EMU_PER_PX } from '../model/model';
+import type { SvgDoc } from '../common/svg';
+import { perspectiveMesh } from '../style/perspective';
 
 export interface Box { x: number; y: number; w: number; h: number; rot: number; flipH: boolean; flipV: boolean; }
 
@@ -45,6 +47,18 @@ export function boxTransform(b: Box, cam?: string): string {
   if (cam) t += ` ${cam}`;
   if (b.rot) t += ` rotate(${n2(b.rot)} ${n2(b.w / 2)} ${n2(b.h / 2)})`;
   return t;
+}
+
+/**
+ * 放到位置框里：有透视投影（proj）时 body 先在框里转好、再按网格三角形透视（style/perspective.ts），
+ * 否则一个变换（cam 是正交投影或透视的仿射近似）。overlay（形状上的文字）总是用 cam 的仿射近似，画在上面——
+ * 文字里有段落动画编号，不能复制多份。attrs 加在最外层的 g 上
+ */
+export function placeBox(b: Box, body: string, doc: SvgDoc, cam?: string, proj?: (x: number, y: number) => [number, number], attrs = '', overlay = ''): string {
+  if (!proj) return `<g${attrs} transform="${boxTransform(b, cam)}">${body}${overlay}</g>`;
+  const rotated = b.rot ? `<g transform="rotate(${n2(b.rot)} ${n2(b.w / 2)} ${n2(b.h / 2)})">${body}</g>` : body;
+  const over = overlay ? `<g transform="${boxTransform({ ...b, x: 0, y: 0 }, cam)}">${overlay}</g>` : '';
+  return `<g${attrs} transform="translate(${n2(b.x)} ${n2(b.y)})">${perspectiveMesh(rotated, proj, b.w, b.h, doc)}${over}</g>`;
 }
 
 export function flipTransform(b: Box): string {

@@ -178,14 +178,55 @@ class SvgPathSink implements PathSink {
   close() { this.out.push('Z'); }
 }
 
+/** 平面上的点映射（透视投影等）：直线段的端点、曲线的控制点映射过去；圆弧先拆成三次贝塞尔，曲线拆细后再映射 */
+export type PointMap = (x: number, y: number) => [number, number];
+
+/** 输出映射后的 SVG path 数据（只用 M、L、C、Z） */
+class MappedPathSink implements PathSink {
+  readonly out: string[] = [];
+  private x = 0;
+  private y = 0;
+  constructor(private map: PointMap) {}
+  private pt(x: number, y: number) { const [a, b] = this.map(x, y); return `${fmt(a)} ${fmt(b)}`; }
+  move(x: number, y: number) { this.out.push(`M${this.pt(x, y)}`); this.x = x; this.y = y; }
+  line(x: number, y: number) { this.out.push(`L${this.pt(x, y)}`); this.x = x; this.y = y; }
+  cubic(x1: number, y1: number, x2: number, y2: number, x: number, y: number) {
+    // 拆成 4 段再映射控制点（透视下曲线的误差随段长平方减小）
+    const p0 = [this.x, this.y], p1 = [x1, y1], p2 = [x2, y2], p3 = [x, y];
+    const at = (t: number) => { const u = 1 - t; return [0, 1].map((k) => u * u * u * p0[k] + 3 * u * u * t * p1[k] + 3 * u * t * t * p2[k] + t * t * t * p3[k]); };
+    const d = (t: number) => { const u = 1 - t; return [0, 1].map((k) => 3 * u * u * (p1[k] - p0[k]) + 6 * u * t * (p2[k] - p1[k]) + 3 * t * t * (p3[k] - p2[k])); };
+    const n = 4;
+    for (let i = 0; i < n; i++) {
+      const ta = i / n, tb = (i + 1) / n, a = at(ta), b = at(tb), da = d(ta), db = d(tb), s = (tb - ta) / 3;
+      this.out.push(`C${this.pt(a[0] + da[0] * s, a[1] + da[1] * s)} ${this.pt(b[0] - db[0] * s, b[1] - db[1] * s)} ${this.pt(b[0], b[1])}`);
+    }
+    this.x = x; this.y = y;
+  }
+  quad(x1: number, y1: number, x: number, y: number) {
+    this.cubic(this.x + (2 / 3) * (x1 - this.x), this.y + (2 / 3) * (y1 - this.y), x + (2 / 3) * (x1 - x), y + (2 / 3) * (y1 - y), x, y);
+  }
+  arc(ox: number, oy: number, wR: number, hR: number, t1: number, dt: number) {
+    // 每段不超过 45° 的三次贝塞尔近似椭圆弧
+    const n = Math.max(1, Math.ceil(Math.abs(dt) / (Math.PI / 4)));
+    const h = dt / n, k = (4 / 3) * Math.tan(h / 4);
+    for (let i = 0; i < n; i++) {
+      const a = t1 + h * i, b = a + h;
+      const ax = ox + wR * Math.cos(a), ay = oy + hR * Math.sin(a), bx = ox + wR * Math.cos(b), by = oy + hR * Math.sin(b);
+      this.out.push(`C${this.pt(ax - k * wR * Math.sin(a), ay + k * hR * Math.cos(a))} ${this.pt(bx + k * wR * Math.sin(b), by - k * hR * Math.cos(b))} ${this.pt(bx, by)}`);
+      this.x = bx; this.y = by;
+    }
+  }
+  close() { this.out.push('Z'); }
+}
+
 /**
  * 计算几何，返回 SVG path 列表（坐标单位与传入的 w、h 相同，原点在形状左上角）。
- * overrides 是形状自己 a:avLst 里覆盖的调整值。
+ * overrides 是形状自己 a:avLst 里覆盖的调整值；map 给了时每个点再映射一次（三维旋转的透视投影）。
  */
-export function buildGeometry(def: GeomDef, w: number, h: number, overrides: Map<string, string> = new Map()): Geometry {
+export function buildGeometry(def: GeomDef, w: number, h: number, overrides: Map<string, string> = new Map(), map?: PointMap): Geometry {
   const v = variables(def, w, h, overrides);
   const paths = def.paths.map((p) => {
-    const sink = new SvgPathSink();
+    const sink = map ? new MappedPathSink(map) : new SvgPathSink();
     walkPath(p, w, h, v, sink);
     return { d: sink.out.join(''), fill: p.fill, stroke: p.stroke };
   });

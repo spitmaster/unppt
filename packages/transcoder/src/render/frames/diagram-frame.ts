@@ -7,7 +7,7 @@ import { attr, child, children } from '../../io/xml';
 import { dgmUid } from '../../common/uid';
 import type { SlideContext } from '../../model/model';
 import type { FrameHandler } from './frame-handler';
-import { cameraLightFilter, cameraTransform } from '../../style/camera';
+import { cameraLightFilter, cameraTransform, perspectiveProjector } from '../../style/camera';
 
 export const diagramFrame: FrameHandler = {
   uri: '/diagram',
@@ -40,9 +40,11 @@ export const diagramFrame: FrameHandler = {
     const kids = children(tree).filter((c) => !c.name.endsWith('nvGrpSpPr') && !c.name.endsWith('grpSpPr'));
     const cam = cameraTransform(scene3d, box.w, box.h, r.env.pres.width);
     const light = cameraLightFilter(scene3d, r.doc);
+    // 透视的场景：每个形状自己按场景相机投影（render/projection.ts），这里不再整体变换
+    const persp = !!perspectiveProjector(scene3d, box.w, box.h, r.env.pres.width);
     const scene = (svg: string) => {
       const lit = light ? `<g filter="url(#${light})">${svg}</g>` : svg;
-      return cam ? `<g transform="${cam}">${lit}</g>` : lit;
+      return cam && !persp ? `<g transform="${cam}">${lit}</g>` : lit;
     };
     if (!uid) return { svg: scene(await r.shapes(kids, sub)) };
     const parts: string[] = [];

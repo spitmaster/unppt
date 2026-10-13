@@ -4,7 +4,8 @@
  *     XML 写了 a:rot 时 lon = −RotationX、lat = RotationY、rev = −RotationZ（1/60000 度）；
  *   - 先绕竖轴、再绕横轴、最后在平面内转（12 种预设的导出图轮廓交并比 0.93，剩下的是边框和文字）；
  *   - 透视的投影中心是形状中心，相机距离 = 幻灯片宽度的一半 / tan(视角/2)（三种大小的形状实测）。
- * SVG 只有仿射变换：正交投影是精确的，透视取四个角和中心的最小二乘仿射近似。
+ * SVG 只有仿射变换：正交投影是精确的；透视按网格切成三角形分别仿射（见 perspective.ts），
+ * 只要一个矩阵的地方（拉伸方向等）取四个角的最小二乘仿射近似。
  * 转动后正面的明暗按三点灯光（model/light-rig.ts 的 faceLight）。斜投影（oblique、legacy）预设暂按正视图。
  */
 import { attr, child, numAttr, type XEl } from '../io/xml';
@@ -105,6 +106,24 @@ function fitAffine(scene3d: XEl | undefined, w: number, h: number, slideW: numbe
 }
 
 /**
+ * 透视投影：w×h 的形状里一点（局部坐标，原点在左上角）投影后的位置（同一坐标系，投影中心是形状中心，含相机缩放）。
+ * 正交预设、没有转动时返回 undefined（用 cameraTransform 的仿射就是精确的）
+ */
+export function perspectiveProjector(scene3d: XEl | undefined, w: number, h: number, slideW: number): ((x: number, y: number) => [number, number]) | undefined {
+  const c = cameraOf(scene3d);
+  if (!c || !c.persp) return undefined;
+  const M = rotationOf(c);
+  const d = slideW / 2 / Math.tan((c.fov * Math.PI) / 360);
+  const z = (numAttr(child(scene3d, 'a:camera'), 'zoom') ?? 100000) / 100000;
+  return (x, y) => {
+    const u = x - w / 2, v = y - h / 2;
+    const Z = M[2][0] * u + M[2][1] * v;
+    const f = (d / Math.max(d * 0.05, d - Z)) * z;
+    return [w / 2 + (M[0][0] * u + M[0][1] * v) * f, h / 2 + (M[1][0] * u + M[1][1] * v) * f];
+  };
+}
+
+/**
  * w×h 的形状（局部坐标，原点在左上角）转动、投影后的仿射矩阵，写成 SVG 的 matrix(a b c d e f)，
  * 投影中心是形状中心；没有三维旋转时返回 undefined
  */
@@ -131,6 +150,16 @@ export function extrusionOffset(scene3d: XEl | undefined, depth: number, w: numb
   const [a, b, cc, d] = m, det = a * d - b * cc;
   if (Math.abs(det) < 1e-6 || Math.hypot(vx, vy) < 0.5) return undefined;
   return [(d * vx - cc * vy) / det, (-b * vx + a * vy) / det];
+}
+
+/** 拉伸：深度 depth 像素的背面在投影后相对正面的偏移（透视取中心处的值）；没有转动或偏移太小时返回 undefined */
+export function extrusionScreenOffset(scene3d: XEl | undefined, depth: number): [number, number] | undefined {
+  const c = cameraOf(scene3d);
+  if (!c || depth <= 0) return undefined;
+  const M = rotationOf(c);
+  const z = (numAttr(child(scene3d, 'a:camera'), 'zoom') ?? 100000) / 100000;
+  const v: [number, number] = [-M[0][2] * depth * z, -M[1][2] * depth * z];
+  return Math.hypot(v[0], v[1]) < 0.5 ? undefined : v;
 }
 
 /** 拉伸的侧面：沿背面方向叠多层变暗的形状几何（近似实心的侧面），画在正面下面 */
