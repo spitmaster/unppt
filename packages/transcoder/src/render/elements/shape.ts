@@ -3,6 +3,7 @@ import type { SlideContext } from '../../model/model';
 import { bgStyle, fillAttrs, findFillEl, parseFill, styleRef, type Fill } from '../../style/fill';
 import { compoundMask, parseLine, strokeAttrs } from '../../style/line';
 import { has3d, litFill } from '../../style/lighting';
+import { bevelLayer } from '../../effects/bevel';
 import { effectFilter } from '../../effects/effect-filter';
 import { reflection } from '../../effects/reflection';
 import { buildGeometry, parseGeomXml, presetGeometry } from '../../geometry/geometry';
@@ -65,7 +66,7 @@ export async function renderShape(r: RenderContext, el: XEl, ctx: SlideContext, 
   // 效果：形状自己写的 > 版式 > 主题样式（effectRef）
   const effRef = styleRef(child(style, 'a:effectRef'), ctx.theme.effectStyles, colors);
   const effect = child(spPr, 'a:effectLst') ?? child(lSpPr, 'a:effectLst') ?? child(effRef.el, 'a:effectLst');
-  const filter = effectFilter(effect, effect === child(effRef.el, 'a:effectLst') ? effRef.ctx : colors, r.doc, box.w, box.h);
+  const filter = effectFilter(effect, effect === child(effRef.el, 'a:effectLst') ? effRef.ctx : colors, r.doc, box.w, box.h, undefined, [has3d(sp3d) ? bevelLayer(sp3d) : undefined]);
   for (const p of paths) {
     if (!p.d) continue;
     const fa = p.fill !== 'none' ? await fillAttrs(fill, r.doc, box.w, box.h, p.fill, r.images, box) : ' fill="none"';

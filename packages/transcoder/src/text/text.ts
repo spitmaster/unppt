@@ -37,7 +37,7 @@ export async function renderText(
 
   const b = readBody(bodyPrs, child(txBody, 'a:bodyPr'));
   // 文字的三维效果（棱台等）：颜色按三维光照提亮
-  if (has3d(b.sp3d)) env = { ...env, lit3d: true };
+  if (has3d(b.sp3d)) env = { ...env, lit3d: true, sp3d: b.sp3d };
   const { lIns, rIns, wrap, vert, fontScale, lnReduce, vertical, numCol, spcCol } = b;
 
   const outer = vertical ? { x: 0, y: 0, w: box.h, h: box.w } : { x: 0, y: 0, w: box.w, h: box.h };

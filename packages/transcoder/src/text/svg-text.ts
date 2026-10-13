@@ -4,6 +4,7 @@ import { esc, n2 } from '../common/svg';
 import { effectFilter } from '../effects/effect-filter';
 import { gradientStops } from '../style/gradient-stops';
 import { litColor } from '../style/lighting';
+import { bevelLayer } from '../effects/bevel';
 import { TEXT_EFFECTS } from '../effects/effects';
 import type { SvgDoc } from '../common/svg';
 
@@ -52,19 +53,20 @@ export function textGradient(grad: XEl, env: TextEnv): string {
 }
 
 /**
- * 文字效果（阴影、发光、内阴影）：和形状效果用同一套滤镜（ShapeEffect），滤镜区域取文本框；
+ * 文字效果（阴影、发光、内阴影、三维棱台）：和形状效果用同一套滤镜（ShapeEffect），滤镜区域取文本框；
  * 同一页里同样的效果只生成一个。返回滤镜编号，没有效果时返回空串。映像由 emit.ts 按行处理。
  */
 export function textFilter(s: RunStyle, env: TextEnv): string {
   const doc = env.doc;
-  if (!doc || !s.effects) return '';
+  const bevel = bevelLayer(env.sp3d);
+  if (!doc || (!s.effects && !bevel)) return '';
   const gb = env.gradBox ?? { w: 1, h: 1 };
-  const key = `${JSON.stringify(s.effects)}|${n2(gb.w)}|${n2(gb.h)}`;
+  const key = `${JSON.stringify(s.effects)}|${bevel?.primitives ?? ''}|${n2(gb.w)}|${n2(gb.h)}`;
   let byDoc = textFilters.get(doc);
   if (!byDoc) { byDoc = new Map(); textFilters.set(doc, byDoc); }
   let fid = byDoc.get(key);
   if (fid === undefined) {
-    fid = effectFilter(s.effects, env.colors, doc, gb.w, gb.h, TEXT_EFFECTS) ?? '';
+    fid = effectFilter(s.effects, env.colors, doc, gb.w, gb.h, TEXT_EFFECTS, [bevel]) ?? '';
     byDoc.set(key, fid);
   }
   return fid;
