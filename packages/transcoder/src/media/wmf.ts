@@ -2,6 +2,7 @@
  * WMF（Windows 图元文件，比 EMF 更老的 16 位格式）-> SVG。零依赖，按 [MS-WMF] 规范解析常用记录。
  * 注意：WMF 记录的参数多数是"倒序"存放的（例如矩形是 下、右、上、左）。
  */
+import { svgImage, type ImageDecoder } from './image-decoder';
 
 interface Pen { color: string; width: number; none: boolean }
 interface Brush { color: string; none: boolean }
@@ -53,6 +54,9 @@ function dibToBmp(dib: Uint8Array): string | undefined {
 }
 
 /** 解析失败（文件损坏、被截断）时返回 undefined，不抛异常 */
+/** 注册给 MediaStore 的解码器：WMF -> SVG */
+export const wmfDecoder: ImageDecoder = { exts: ['wmf'], decode: (bytes) => svgImage(wmfToSvg(bytes)) };
+
 export function wmfToSvg(bytes: Uint8Array): string | undefined {
   try {
     return wmfToSvgUnsafe(bytes);

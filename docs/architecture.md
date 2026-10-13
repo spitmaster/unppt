@@ -81,7 +81,7 @@ flowchart TB
 | `text.ts`（约 690 行） | 字体替代、测量、断行、SVG 输出混在一起 | 单一职责 |
 | `render.ts` | 表格 / 图表 / SmartArt / OLE 分派写死；和 `table.ts` 循环依赖 | 开闭、依赖倒置 |
 | `fill.ts` | 填充、线条、图片调整、形状效果混在一起 | 单一职责 |
-| `media.ts` | 图片格式写死 `if (ext === 'emf' / 'wmf')` | 开闭 |
+| ~~`media.ts`~~ | ~~图片格式写死~~ → 已改为 `ImageDecoder` 注册表 | 开闭 |
 
 ## 3. 目标结构（重构进行中）
 
@@ -101,7 +101,7 @@ flowchart TB
 
 | 扩展点 | 接口 | 怎么加一个新的 |
 |---|---|---|
-| 图片格式 | `ImageDecoder` | 待实现 |
+| 图片格式 | `ImageDecoder`（`media/image-decoder.ts`） | 新建 `media/xxx.ts` 导出一个 `ImageDecoder`，在 `media/decoders.ts` 加一行。例：`emf.ts`、`wmf.ts` |
 | 形状效果 | `ShapeEffect` | 待实现 |
 | graphicFrame 内容 | `FrameHandler` | 待实现 |
 | 图表类型 | `ChartType` | 待实现 |

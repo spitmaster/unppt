@@ -2,6 +2,7 @@
  * EMF（增强型图元文件）-> SVG。零依赖，按 [MS-EMF] 规范解析常用的 GDI 记录。
  * Office 生成的"双格式"EMF 里同时有 EMF+ 记录（在 GDI 注释里）和 GDI 记录，这里只画 GDI 部分。
  */
+import { svgImage, type ImageDecoder } from './image-decoder';
 
 interface Pen { color: string; width: number; none: boolean; cap: string; join: string; dash?: string }
 interface Brush { color: string; none: boolean }
@@ -56,6 +57,9 @@ function dibToBmp(d: DataView, offBmi: number, cbBmi: number, offBits: number, c
 }
 
 /** 解析失败（文件损坏、被截断）时返回 undefined，不抛异常 */
+/** 注册给 MediaStore 的解码器：EMF -> SVG */
+export const emfDecoder: ImageDecoder = { exts: ['emf'], decode: (bytes) => svgImage(emfToSvg(bytes)) };
+
 export function emfToSvg(bytes: Uint8Array): string | undefined {
   try {
     return emfToSvgUnsafe(bytes);
