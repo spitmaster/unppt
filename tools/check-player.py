@@ -498,6 +498,31 @@ def main():
         check(f21 == [True, 0, 0] and s21 == 0 and p21 is True and g21 == 0,
               f"全屏播放：盖满整页并播放 {f21}、不翻页 {s21}、点它暂停 {p21}、翻页后去掉 {g21}")
 
+        # ---------------- 22. 放映习惯：B 黑屏、任意键回来（不翻页）、W 白屏、点击回来、输入页码回车跳页
+        page22 = b.new_page(viewport={"width": 960, "height": 540})
+        page22.goto(f"{player_url}/trans.html?timings=0")
+        page22.wait_for_function("window.unppt !== undefined")
+        page22.mouse.click(480, 270)
+        page22.wait_for_timeout(1500)
+        s0 = page22.evaluate("window.unppt.getState()")["slide"]
+        blank = "(() => { const b = document.querySelector('.unppt-blank'); return b && getComputedStyle(b).display !== 'none' ? getComputedStyle(b).backgroundColor : null; })()"
+        page22.keyboard.press("b")
+        k1 = page22.evaluate(blank)
+        page22.keyboard.press("ArrowRight")
+        page22.wait_for_timeout(200)
+        k2 = [page22.evaluate(blank), page22.evaluate("window.unppt.getState()")["slide"]]
+        page22.keyboard.press("w")
+        k3 = page22.evaluate(blank)
+        page22.mouse.click(480, 270)
+        page22.wait_for_timeout(200)
+        k4 = [page22.evaluate(blank), page22.evaluate("window.unppt.getState()")["slide"]]
+        page22.keyboard.press("5")
+        page22.keyboard.press("Enter")
+        page22.wait_for_timeout(300)
+        k5 = page22.evaluate("window.unppt.getState()")["slide"]
+        check(k1 == "rgb(0, 0, 0)" and k2 == [None, s0] and k3 == "rgb(255, 255, 255)" and k4 == [None, s0] and k5 == 4,
+              f"黑屏 {k1}、按键回来不翻页 {k2}、白屏 {k3}、点击回来不翻页 {k4}、输入 5 回车跳到第 {k5 + 1} 页")
+
         # ---------------- 移动端视口
         mobile = {"is_mobile": True} if BROWSER != "firefox" else {}
         page3 = b.new_page(viewport={"width": 390, "height": 844}, has_touch=True, **mobile)
