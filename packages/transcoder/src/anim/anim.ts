@@ -35,7 +35,8 @@ export function compileTiming(timing: XEl | undefined, existing: Set<string>, ct
         const a = effectAction(eff, base, ctx);
         if (!a) continue;
         if (!existing.has(a.uid)) {
-          // 段落动画的目标如果不存在（比如段落是空的），退回到整个形状
+          // 段落动画的目标如果不存在（比如段落是空的），退回到整个形状；SmartArt 里找不到的形状（比如背景）不做
+          if (/d[0-9a-f]{32}$/.test(a.uid)) continue;
           const shapeUid = a.uid.replace(/p\d+$/, '');
           if (existing.has(shapeUid)) a.uid = shapeUid;
           else continue;

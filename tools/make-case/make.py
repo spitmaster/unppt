@@ -841,6 +841,63 @@ def anim_sound(app):
     s3.SlideShowTransition.SoundEffect.Type = 1  # ppSoundStopPrevious
     return p
 
+
+def anim_build(app):
+    """SmartArt 逐个淡入（COM 做不出来，保存后补时间线，见 _patch_smartart_one_by_one）"""
+    p = new_pres(app, window=True)
+    s = blank(p)
+    sa = s.Shapes.AddSmartArt(app.SmartArtLayouts(1), 60, 40, 840, 460)
+    nodes = sa.SmartArt.AllNodes
+    for k in range(1, min(nodes.Count, 5) + 1):
+        nodes(k).TextFrame2.TextRange.Text = f"项目 {k}"
+    return p
+
+
+def _patch_smartart_one_by_one(path):
+    """第 1 页的 SmartArt 逐个淡入：目标是绘图里每个形状的 modelId（PowerPoint 放映实测认这个）"""
+    import re
+    import zipfile
+    tmp = path.with_suffix(".tmp")
+    with zipfile.ZipFile(path) as zin:
+        drawing = [n for n in zin.namelist() if n.startswith("ppt/diagrams/drawing")][0]
+        ids = re.findall(r'<dsp:sp modelId="([^"]+)"', zin.read(drawing).decode())
+        slide = zin.read("ppt/slides/slide1.xml").decode()
+        spid = re.search(r'<p:graphicFrame>.*?<p:cNvPr id="(\d+)"', slide, re.S).group(1)
+        n = [3]
+
+        def tn():
+            n[0] += 1
+            return n[0]
+        pars = []
+        for g in ids:
+            tgt = f'<p:tgtEl><p:spTgt spid="{spid}"><p:graphicEl><a:dgm id="{g}"/></p:graphicEl></p:spTgt></p:tgtEl>'
+            pars.append(
+                f'<p:par><p:cTn id="{tn()}" fill="hold"><p:stCondLst><p:cond delay="indefinite"/></p:stCondLst><p:childTnLst>'
+                f'<p:par><p:cTn id="{tn()}" fill="hold"><p:stCondLst><p:cond delay="0"/></p:stCondLst><p:childTnLst>'
+                f'<p:par><p:cTn id="{tn()}" presetID="10" presetClass="entr" presetSubtype="0" fill="hold" grpId="0" nodeType="clickEffect">'
+                f'<p:stCondLst><p:cond delay="0"/></p:stCondLst><p:childTnLst>'
+                f'<p:set><p:cBhvr><p:cTn id="{tn()}" dur="1" fill="hold"><p:stCondLst><p:cond delay="0"/></p:stCondLst></p:cTn>{tgt}'
+                f'<p:attrNameLst><p:attrName>style.visibility</p:attrName></p:attrNameLst></p:cBhvr><p:to><p:strVal val="visible"/></p:to></p:set>'
+                f'<p:animEffect transition="in" filter="fade"><p:cBhvr><p:cTn id="{tn()}" dur="500"/>{tgt}</p:cBhvr></p:animEffect>'
+                f'</p:childTnLst></p:cTn></p:par></p:childTnLst></p:cTn></p:par></p:childTnLst></p:cTn></p:par>')
+        timing = ('<p:timing><p:tnLst><p:par><p:cTn id="1" dur="indefinite" restart="never" nodeType="tmRoot"><p:childTnLst>'
+                  '<p:seq concurrent="1" nextAc="seek"><p:cTn id="2" dur="indefinite" nodeType="mainSeq"><p:childTnLst>' + "".join(pars) +
+                  '</p:childTnLst></p:cTn><p:prevCondLst><p:cond evt="onPrev" delay="0"><p:tgtEl><p:sldTgt/></p:tgtEl></p:cond></p:prevCondLst>'
+                  '<p:nextCondLst><p:cond evt="onNext" delay="0"><p:tgtEl><p:sldTgt/></p:tgtEl></p:cond></p:nextCondLst></p:seq></p:childTnLst></p:cTn></p:par></p:tnLst>'
+                  f'<p:bldLst><p:bldGraphic spid="{spid}" grpId="0"><p:bldSub><a:bldDgm bld="one"/></p:bldSub></p:bldGraphic></p:bldLst></p:timing>')
+        slide = re.sub(r"<p:timing>.*?</p:timing>", "", slide, flags=re.S)
+        slide = slide.replace("</p:clrMapOvr>", "</p:clrMapOvr>" + timing) if "</p:clrMapOvr>" in slide else slide.replace("</p:sld>", timing + "</p:sld>")
+        with zipfile.ZipFile(tmp, "w", zipfile.ZIP_DEFLATED) as zout:
+            for item in zin.infolist():
+                data = zin.read(item.filename)
+                if item.filename == "ppt/slides/slide1.xml":
+                    data = slide.encode()
+                zout.writestr(item, data)
+    tmp.replace(path)
+
+
+anim_build.patch = _patch_smartart_one_by_one
+
 def fills_patterns(app):
     """图案填充：多种预设图案、不同前景/背景色、不同位置（图案从幻灯片原点对齐），表格单元格的图案填充"""
     p = new_pres(app)
@@ -1420,7 +1477,7 @@ def table_vertical(app):
     return p
 
 
-CASES = [shapes_all, text_sizes, text_align, text_spacing, text_bullets, text_missing_font, shapes_basic, fills_lines, table_basic, group_rotate, anim_basic, anim_auto, charts_basic, pictures, smartart, text_effects, text_layout, table_merge, links, emf_images, anim_advanced, charts_labels, freeform_icons, media_audio, anim_trigger, wmf_images, anim_iterate, picture_transparent, charts_more, shape_effects, equations, anim_path, anim_emphasis, transitions, fills_patterns, text_decoration, anim_entrance, svg_images, charts_markers, hidden_slides, media_background, text_glow_reflection, text_tabs, text_picture_bullets, fills_texture, transition_morph, text_embedded_fonts, text_warp, anim_repeat, charts_sizes, slide_timings, lines_compound, table_diagonal, lines_gradient, fills_radial, fills_rect_gradient, shapes_3d, table_vertical, transitions_more, anim_sound]
+CASES = [shapes_all, text_sizes, text_align, text_spacing, text_bullets, text_missing_font, shapes_basic, fills_lines, table_basic, group_rotate, anim_basic, anim_auto, charts_basic, pictures, smartart, text_effects, text_layout, table_merge, links, emf_images, anim_advanced, charts_labels, freeform_icons, media_audio, anim_trigger, wmf_images, anim_iterate, picture_transparent, charts_more, shape_effects, equations, anim_path, anim_emphasis, transitions, fills_patterns, text_decoration, anim_entrance, svg_images, charts_markers, hidden_slides, media_background, text_glow_reflection, text_tabs, text_picture_bullets, fills_texture, transition_morph, text_embedded_fonts, text_warp, anim_repeat, charts_sizes, slide_timings, lines_compound, table_diagonal, lines_gradient, fills_radial, fills_rect_gradient, shapes_3d, table_vertical, transitions_more, anim_sound, anim_build]
 
 
 def main():

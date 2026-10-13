@@ -30,6 +30,9 @@ export interface FrameOutput {
 export interface FrameHandler {
   /** a:graphicData 的 uri 结尾，例如 /table */
   readonly uri: string;
-  /** 返回以框左上角为原点的 SVG */
-  render(gd: XEl, box: Box, r: FrameRenderer, ctx: SlideContext): Promise<FrameOutput>;
+  /**
+   * 返回以框左上角为原点的 SVG。uid 是这个框的动画目标编号（只有幻灯片自己的元素才有）：
+   * 内部还能单独做动画的部分（SmartArt 里的形状）按它拼出子编号
+   */
+  render(gd: XEl, box: Box, r: FrameRenderer, ctx: SlideContext, uid?: string): Promise<FrameOutput>;
 }
