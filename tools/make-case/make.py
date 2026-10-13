@@ -978,6 +978,21 @@ def _patch_after(path):
 anim_after.patch = _patch_after
 
 
+def anim_text_emphasis(app):
+    """文字强调：更改字体颜色、更改字形（加粗，一直保留）、加粗闪烁、样式强调（临时）、画笔下划线、更改字号（放大 1.5 倍）"""
+    p = new_pres(app)
+    s = blank(p)
+    effects = [56, 58, 63, 79, 67, 57]
+    for k, eid in enumerate(effects):
+        t = s.Shapes.AddTextbox(1, 60 + (k % 2) * 460, 40 + (k // 2) * 160, 420, 80)
+        t.TextFrame.TextRange.Text = f"关键词 Keyword {k + 1}"
+        t.TextFrame.TextRange.Font.Size = 28
+        t.TextFrame.TextRange.Font.Color.RGB = RGB(0, 0, 0)
+        e = s.TimeLine.MainSequence.AddEffect(t, eid, 0, 1)
+        e.Timing.Duration = 1.0
+    return p
+
+
 def fills_patterns(app):
     """图案填充：多种预设图案、不同前景/背景色、不同位置（图案从幻灯片原点对齐），表格单元格的图案填充"""
     p = new_pres(app)
@@ -1557,7 +1572,7 @@ def table_vertical(app):
     return p
 
 
-CASES = [shapes_all, text_sizes, text_align, text_spacing, text_bullets, text_missing_font, shapes_basic, fills_lines, table_basic, group_rotate, anim_basic, anim_auto, charts_basic, pictures, smartart, text_effects, text_layout, table_merge, links, emf_images, anim_advanced, charts_labels, freeform_icons, media_audio, anim_trigger, wmf_images, anim_iterate, picture_transparent, charts_more, shape_effects, equations, anim_path, anim_emphasis, transitions, fills_patterns, text_decoration, anim_entrance, svg_images, charts_markers, hidden_slides, media_background, text_glow_reflection, text_tabs, text_picture_bullets, fills_texture, transition_morph, text_embedded_fonts, text_warp, anim_repeat, charts_sizes, slide_timings, lines_compound, table_diagonal, lines_gradient, fills_radial, fills_rect_gradient, shapes_3d, table_vertical, transitions_more, anim_sound, anim_build, anim_after]
+CASES = [shapes_all, text_sizes, text_align, text_spacing, text_bullets, text_missing_font, shapes_basic, fills_lines, table_basic, group_rotate, anim_basic, anim_auto, charts_basic, pictures, smartart, text_effects, text_layout, table_merge, links, emf_images, anim_advanced, charts_labels, freeform_icons, media_audio, anim_trigger, wmf_images, anim_iterate, picture_transparent, charts_more, shape_effects, equations, anim_path, anim_emphasis, transitions, fills_patterns, text_decoration, anim_entrance, svg_images, charts_markers, hidden_slides, media_background, text_glow_reflection, text_tabs, text_picture_bullets, fills_texture, transition_morph, text_embedded_fonts, text_warp, anim_repeat, charts_sizes, slide_timings, lines_compound, table_diagonal, lines_gradient, fills_radial, fills_rect_gradient, shapes_3d, table_vertical, transitions_more, anim_sound, anim_build, anim_after, anim_text_emphasis]
 
 
 def main():

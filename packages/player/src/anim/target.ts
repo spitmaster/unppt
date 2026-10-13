@@ -31,6 +31,7 @@ export function applyTarget(
   const opts = (easing?: string): KeyframeAnimationOptions => ({ duration: dur, delay, fill: 'backwards', ...(easing ? { easing } : {}), ...rep });
   const keyOpacity = !!to.keys?.some((k) => k.a !== undefined);
   const baseOpacity = Number(h.style.opacity || '1');
+  if (to.origin) h.style.transformOrigin = `${to.origin[0] * 100}% ${to.origin[1] * 100}%`;
   if (to.move || to.scale || to.rotate || to.keys) {
     const from = transformOf(cur), end = transformOf(next);
     h.style.transform = back ? from : end;
@@ -97,7 +98,57 @@ export function applyTarget(
     }
   };
   if (to.fill) recolor('path,rect,ellipse,circle,polygon', to.fill);
-  if (to.color) recolor('text', to.color);
+  if (to.color) recolor('text,tspan', to.color);
   // 播放后变暗：有文字时改文字颜色，没有文字时改形状的填充
-  if (to.dim) recolor(el.querySelector('text') ? 'text' : 'path,rect,ellipse,circle,polygon', to.dim);
+  if (to.dim) recolor(el.querySelector('text') ? 'text,tspan' : 'path,rect,ellipse,circle,polygon', to.dim);
+  if (to.font || to.flash) applyTextStyle(el, to, canAnimate, dur, delay, back, track);
 }
+
+const STYLE: Record<'bold' | 'italic' | 'underline', [keyof CSSStyleDeclaration & string, string, string]> = {
+  bold: ['fontWeight', 'bold', 'normal'],
+  italic: ['fontStyle', 'italic', 'normal'],
+  underline: ['textDecoration', 'underline', 'none'],
+};
+
+/** 文字样式：font 一直保留（有延迟时延迟期间保持原样）；flash 只在效果的某一段出现，之后恢复 */
+function applyTextStyle(
+  el: Element, to: AnimTarget, animate: boolean, dur: number, delay: number, back: boolean, track: (a: Animation) => void,
+) {
+  const texts = Array.from(el.querySelectorAll('text')) as unknown as HTMLElement[];
+  for (const t of texts) {
+    if (to.font && !back) {
+      for (const k of ['bold', 'italic', 'underline'] as const) {
+        const v = to.font[k];
+        if (v === undefined) continue;
+        const [prop, on, off] = STYLE[k];
+        const before = t.style.getPropertyValue(cssName(prop)) || (prop === 'fontWeight' ? t.getAttribute('font-weight') : prop === 'fontStyle' ? t.getAttribute('font-style') : '') || off;
+        t.style.setProperty(cssName(prop), v ? on : off);
+        if (animate && delay > 0 && typeof t.animate === 'function') track(t.animate([{ [prop]: before }, { [prop]: before }], { duration: 1, delay, fill: 'backwards' }));
+      }
+    }
+    if (to.flash && animate && typeof t.animate === 'function') {
+      for (const f of to.flash) {
+        const frames: Keyframe[] = [];
+        const add = (props: Record<string, string>, offset: number) => frames.push({ ...props, offset });
+        const on: Record<string, string> = {}, off: Record<string, string> = {};
+        for (const k of ['bold', 'italic', 'underline'] as const) {
+          if (f[k] === undefined) continue;
+          const [prop, a, b] = STYLE[k];
+          on[prop] = f[k] ? a : b;
+          off[prop] = getComputedStyle(t)[prop as 'fontWeight'] as string;
+        }
+        if (f.color) { on.fill = f.color; off.fill = getComputedStyle(t).fill; }
+        const from = Math.max(0, Math.min(1, f.from)), end = Math.max(from, Math.min(1, f.to));
+        add(off, 0);
+        if (from > 0) add(off, from);
+        add(on, from);
+        add(on, end);
+        if (end < 1) add(off, end);
+        add(off, 1);
+        track(t.animate(frames, { duration: Math.max(1, dur), delay }));
+      }
+    }
+  }
+}
+
+const cssName = (prop: string) => prop.replace(/[A-Z]/g, (c) => `-${c.toLowerCase()}`);
