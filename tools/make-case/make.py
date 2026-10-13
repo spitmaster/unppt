@@ -889,7 +889,24 @@ def charts_markers(app):
     return p
 
 
-CASES = [shapes_all, text_sizes, text_align, text_spacing, text_bullets, text_missing_font, shapes_basic, fills_lines, table_basic, group_rotate, anim_basic, anim_auto, charts_basic, pictures, smartart, text_effects, text_layout, table_merge, links, emf_images, anim_advanced, charts_labels, freeform_icons, media_audio, anim_trigger, wmf_images, anim_iterate, picture_transparent, charts_more, shape_effects, equations, anim_path, anim_emphasis, transitions, fills_patterns, text_decoration, anim_entrance, svg_images, charts_markers]
+def hidden_slides(app):
+    """隐藏的幻灯片：顺序放映时跳过；第 1 页的按钮通过超链接跳到隐藏的第 2 页（课件里的"查看答案"）"""
+    p = new_pres(app)
+    for i in range(4):
+        s = blank(p)
+        t = s.Shapes.AddTextbox(1, 100, 100, 760, 100)
+        t.TextFrame.TextRange.Text = f"第 {i + 1} 页" + ("（隐藏）" if i == 1 else "")
+        t.TextFrame.TextRange.Font.Size = 54
+    p.Slides(2).SlideShowTransition.Hidden = -1
+    btn = p.Slides(1).Shapes.AddShape(1, 100, 300, 240, 80)
+    btn.TextFrame.TextRange.Text = "查看答案"
+    act = btn.ActionSettings(1)
+    act.Action = 7                  # ppActionHyperlink
+    act.Hyperlink.SubAddress = f"{p.Slides(2).SlideID},{p.Slides(2).SlideIndex},"
+    return p
+
+
+CASES = [shapes_all, text_sizes, text_align, text_spacing, text_bullets, text_missing_font, shapes_basic, fills_lines, table_basic, group_rotate, anim_basic, anim_auto, charts_basic, pictures, smartart, text_effects, text_layout, table_merge, links, emf_images, anim_advanced, charts_labels, freeform_icons, media_audio, anim_trigger, wmf_images, anim_iterate, picture_transparent, charts_more, shape_effects, equations, anim_path, anim_emphasis, transitions, fills_patterns, text_decoration, anim_entrance, svg_images, charts_markers, hidden_slides]
 
 
 def main():

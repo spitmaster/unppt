@@ -179,19 +179,16 @@ def convert(src: Path, out: Path) -> dict:
 
 
 def targets(ref: dict) -> list[tuple[int, int, str]]:
-    """要比对的 (我们的页号, 步骤, 参考图文件名)。隐藏页跳过。"""
+    """要比对的 (我们的页号, 步骤, 参考图文件名)。隐藏页也输出（放映时跳过），页号和原文件一致。"""
     out = []
-    ours = 0
     for s in ref["slides"]:
-        if s.get("hidden"):
-            continue
+        ours = s["index"]
         n = s["index"] + 1
         if s.get("effects"):
             for k in range(s["steps"] + 1):
                 out.append((ours, k, f"slide-{n:03d}-step-{k:02d}.png"))
         else:
             out.append((ours, 0, f"slide-{n:03d}.png"))
-        ours += 1
     return out
 
 

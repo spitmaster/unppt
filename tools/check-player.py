@@ -60,6 +60,7 @@ def main():
     subprocess.run(["node", "packages/transcoder/dist/cli.js", "convert", "testcases/anim-emphasis.pptx", "-o", str(player_dir / "emph.html"), "-q"], cwd=ROOT, check=True)
     subprocess.run(["node", "packages/transcoder/dist/cli.js", "convert", "testcases/transitions.pptx", "-o", str(player_dir / "trans.html"), "-q"], cwd=ROOT, check=True)
     subprocess.run(["node", "packages/transcoder/dist/cli.js", "convert", "testcases/anim-entrance.pptx", "-o", str(player_dir / "entr.html"), "-q"], cwd=ROOT, check=True)
+    subprocess.run(["node", "packages/transcoder/dist/cli.js", "convert", "testcases/hidden-slides.pptx", "-o", str(player_dir / "hidden.html"), "-q"], cwd=ROOT, check=True)
     s1, player_url = serve(player_dir)
     s2, host_url = serve(host_dir)
 
@@ -198,6 +199,20 @@ def main():
             if mid in ("none", "") or end not in ("none", ""):
                 bad8.append((k, mid[:30], end[:30]))
         check(not bad8 and not errors8, f"进入效果播放中途有裁剪、播完完整显示：{bad8} {errors8[:1]}")
+
+        # ---------------- 9. 隐藏的幻灯片：顺序翻页跳过，超链接可以跳过去，从隐藏页继续往后
+        page9 = b.new_page()
+        page9.goto(f"{player_url}/hidden.html")
+        page9.wait_for_function("window.unppt !== undefined && !!document.querySelector('div.unppt-slide')")
+        seq = [page9.evaluate("window.unppt.getState()")["slide"]]
+        seq.append(page9.evaluate("window.unppt.next()")["slide"])
+        page9.evaluate("window.unppt.goto(0, 0)")
+        page9.wait_for_timeout(100)
+        page9.click("div.unppt-slide [data-link]")
+        page9.wait_for_timeout(200)
+        seq.append(page9.evaluate("window.unppt.getState()")["slide"])
+        seq.append(page9.evaluate("window.unppt.next()")["slide"])
+        check(seq == [0, 2, 1, 2], f"隐藏页：顺序翻页跳过、链接能跳过去、之后继续往后：{seq}")
 
         # ---------------- 移动端视口
         mobile = {"is_mobile": True} if BROWSER != "firefox" else {}

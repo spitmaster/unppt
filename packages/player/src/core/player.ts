@@ -51,8 +51,8 @@ export class Player {
       click: (t) => this.click(t),
       next: () => this.next(),
       prev: () => this.prev(),
-      first: () => this.goto(0, 0),
-      last: () => this.goto(this.deck.slideCount - 1, 0),
+      first: () => this.goto(this.visibleFrom(0, 1) ?? 0, 0),
+      last: () => this.goto(this.visibleFrom(this.deck.slideCount - 1, -1) ?? this.deck.slideCount - 1, 0),
     }));
     this.fit();
     const win = host.ownerDocument.defaultView;
@@ -66,7 +66,8 @@ export class Player {
       win.addEventListener('resize', onResize);
       this.cleanup.push(() => win.removeEventListener('resize', onResize));
     }
-    this.show(this.clampSlide(opts.slide ?? 0), opts.step ?? 0, false);
+    // 没指定起始页时从第一张不隐藏的页开始
+    this.show(opts.slide === undefined ? this.visibleFrom(0, 1) ?? 0 : this.clampSlide(opts.slide), opts.step ?? 0, false);
   }
 
   // ---------------- 公开接口
@@ -90,10 +91,11 @@ export class Player {
       this.engine.play(steps[this.stepIdx]);
       this.stepIdx++;
       this.emit('change');
-    } else if (this.slideIdx < this.deck.slideCount - 1) {
-      this.show(this.slideIdx + 1, 0, true);
     } else {
-      this.emit('end');
+      // 顺序放映跳过隐藏的页（从隐藏页继续往后也一样）
+      const next = this.visibleFrom(this.slideIdx + 1, 1);
+      if (next !== undefined) this.show(next, 0, true);
+      else this.emit('end');
     }
     return this.getState();
   }
@@ -101,9 +103,9 @@ export class Player {
   prev(): PlayerState {
     this.engine.finishRunning();
     if (this.stepIdx > 0) this.show(this.slideIdx, this.stepIdx - 1, false);
-    else if (this.slideIdx > 0) {
-      const target = this.slideIdx - 1;
-      this.show(target, this.deck.slide(target).steps.length, false);
+    else {
+      const target = this.visibleFrom(this.slideIdx - 1, -1);
+      if (target !== undefined) this.show(target, this.deck.slide(target).steps.length, false);
     }
     return this.getState();
   }
@@ -141,10 +143,10 @@ export class Player {
     }
     const link = el.getAttribute('data-link') ?? '';
     if (link === 'media') { mediaCommand(el, 'toggle'); return; }
-    if (link === 'next') this.goto(Math.min(this.slideIdx + 1, this.deck.slideCount - 1), 0);
-    else if (link === 'prev') this.goto(Math.max(this.slideIdx - 1, 0), 0);
-    else if (link === 'first') this.goto(0, 0);
-    else if (link === 'last') this.goto(this.deck.slideCount - 1, 0);
+    if (link === 'next') this.goto(this.visibleFrom(this.slideIdx + 1, 1) ?? this.slideIdx, 0);
+    else if (link === 'prev') this.goto(this.visibleFrom(this.slideIdx - 1, -1) ?? this.slideIdx, 0);
+    else if (link === 'first') this.goto(this.visibleFrom(0, 1) ?? 0, 0);
+    else if (link === 'last') this.goto(this.visibleFrom(this.deck.slideCount - 1, -1) ?? this.deck.slideCount - 1, 0);
     else if (link.startsWith('slide:')) {
       const i = (this.deck.slideParts ?? []).indexOf(link.slice(6));
       if (i >= 0) this.goto(i, 0);
@@ -167,6 +169,12 @@ export class Player {
       return true;
     }
     return false;
+  }
+
+  /** 从 i 开始按 dir 方向找第一张不隐藏的页 */
+  private visibleFrom(i: number, dir: 1 | -1): number | undefined {
+    for (let k = i; k >= 0 && k < this.deck.slideCount; k += dir) if (!this.deck.slide(k).skip) return k;
+    return undefined;
   }
 
   private steps(): AnimAction[][] {

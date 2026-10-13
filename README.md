@@ -80,6 +80,8 @@ iframe.contentWindow.postMessage({ unppt: 1, id: 1, cmd: 'goto', args: { slide: 
 // link：点击了课件里的外部网址，data.url 是网址（播放器默认也会在新窗口打开）
 ```
 
+页码和原文件一致，`slideCount` 包括隐藏的幻灯片：和 PowerPoint 放映一样，`next` / `prev` 顺序翻页时跳过隐藏页，`goto` 和课件里的超链接、动作按钮可以跳到隐藏页。
+
 ### 同页 JS
 
 ```js
