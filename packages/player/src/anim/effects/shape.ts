@@ -3,15 +3,16 @@
  * 向内需要"外框减去形状"的镂空，用 clip-path: path(evenodd, ...)，坐标取元素外框的像素尺寸。
  */
 import { reversible, type AnimEffect } from './anim-effect';
-import { sample } from './clip';
+import { sample } from '../../clip';
 
-type Outline = (cx: number, cy: number, w: number, h: number, s: number) => string;
+export type Outline = (cx: number, cy: number, w: number, h: number, s: number) => string;
 
-/** 形状轮廓：s 是放大倍数，1 时刚好盖住整个外框 */
-const OUTLINES: Record<string, Outline> = {
+/** 形状轮廓：s 是进度（0~1），1 时刚好盖住整个外框 */
+export const OUTLINES: Record<string, Outline> = {
+  // 圆形其实是和外框同比例的椭圆，s = 1 时是外接椭圆（实测）
   circle(cx, cy, w, h, s) {
-    const r = (Math.hypot(w, h) / 2) * s;
-    return `M${cx - r} ${cy}A${r} ${r} 0 1 0 ${cx + r} ${cy}A${r} ${r} 0 1 0 ${cx - r} ${cy}Z`;
+    const rx = (w / 2) * Math.SQRT2 * s, ry = (h / 2) * Math.SQRT2 * s;
+    return `M${cx - rx} ${cy}A${rx} ${ry} 0 1 0 ${cx + rx} ${cy}A${rx} ${ry} 0 1 0 ${cx - rx} ${cy}Z`;
   },
   box(cx, cy, w, h, s) {
     const x = (w / 2) * s, y = (h / 2) * s;
@@ -21,10 +22,10 @@ const OUTLINES: Record<string, Outline> = {
     const x = w * s, y = h * s;
     return `M${cx} ${cy - y}L${cx + x} ${cy}L${cx} ${cy + y}L${cx - x} ${cy}Z`;
   },
+  // 加号：横竖两条贯穿整个外框的带，宽度随 s 从 0 长到满（实测）
   plus(cx, cy, w, h, s) {
-    // 加号的臂宽是外框的一半，臂长随 s 伸出
-    const ax = (w / 2) * s * 1.5, ay = (h / 2) * s * 1.5, tx = (w / 4) * s * 1.5, ty = (h / 4) * s * 1.5;
-    return `M${cx - tx} ${cy - ay}H${cx + tx}V${cy - ty}H${cx + ax}V${cy + ty}H${cx + tx}V${cy + ay}H${cx - tx}V${cy + ty}H${cx - ax}V${cy - ty}H${cx - tx}Z`;
+    const tx = (w * s) / 2, ty = (h * s) / 2, x0 = cx - w / 2, y0 = cy - h / 2, x1 = cx + w / 2, y1 = cy + h / 2;
+    return `M${cx - tx} ${y0}H${cx + tx}V${cy - ty}H${x1}V${cy + ty}H${cx + tx}V${y1}H${cx - tx}V${cy + ty}H${x0}V${cy - ty}H${cx - tx}Z`;
   },
 };
 

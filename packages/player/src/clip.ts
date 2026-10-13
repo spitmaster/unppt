@@ -1,5 +1,5 @@
 /**
- * 用 clip-path 做"逐渐露出"类效果的公共工具。
+ * 用 clip-path 做"逐渐露出"类效果的公共工具（动画效果、显现滤镜、页面切换共用）。
  * polygon() 用百分比（相对元素外框），关键帧之间点数不变才能平滑插值。
  */
 
@@ -43,4 +43,19 @@ export function wedges(n: number, p: number): string {
 /** 关键帧序列：f(进度) 在 0~1 之间取 steps+1 个点 */
 export function sample(steps: number, f: (p: number) => Keyframe): Keyframe[] {
   return Array.from({ length: steps + 1 }, (_, i) => ({ ...f(i / steps), offset: i / steps }));
+}
+
+/** [左, 上, 右, 下]，单位 % */
+export type Rect = [number, number, number, number];
+
+/**
+ * 一组矩形拼成一个多边形：矩形之间用来回走两遍的零宽连线串起来（面积为零，不影响填充）。
+ * 矩形个数固定时，不同进度的结果点数相同，可以插值
+ */
+export function rectsPolygon(rects: Rect[]): string {
+  if (!rects.length) return 'polygon(0 0,0 0,0 0)';
+  const pts: [number, number][] = [];
+  for (const [x0, y0, x1, y1] of rects) pts.push([x0, y0], [x1, y0], [x1, y1], [x0, y1], [x0, y0]);
+  for (let i = rects.length - 2; i >= 0; i--) pts.push([rects[i][0], rects[i][1]]);
+  return polygon(pts);
 }

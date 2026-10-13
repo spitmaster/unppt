@@ -136,7 +136,7 @@ def main():
         page4.evaluate("window.unppt.goto(0, 2)")
         page4.evaluate("window.unppt.next()")
         page4.wait_for_timeout(250)
-        js4 = """(() => { const us = Array.from(document.querySelectorAll('div.unppt-slide .unppt-unit'));
+        js4 = r"""(() => { const us = Array.from(document.querySelectorAll('div.unppt-slide .unppt-unit'));
           return [us.length, us.filter(u => getComputedStyle(u).transform !== 'none' && !/^matrix\(1, 0, 0, 1, 0, 0\)$/.test(getComputedStyle(u).transform)).length]; })()"""
         mid4 = page4.evaluate(js4)
         page4.wait_for_timeout(2500)

@@ -4,7 +4,7 @@
  */
 import type { AnimAction } from '../../../format/src/index';
 import { mediaCommand, type MediaHost } from '../media';
-import { animEffect } from './effects/effects';
+import { effectKeyframes } from './effects/effects';
 import { repeatOptions } from './repeat';
 import { applyTarget, type TransformState } from './target';
 import { TextUnits, type AnimHost } from './text-units';
@@ -82,7 +82,7 @@ export class AnimationEngine implements AnimHost {
         if (a.dir === 'out') el.classList.add('unppt-hide');
         continue;
       }
-      const { frames, easing } = animEffect(a.effect).keyframes(a, el, this.scene.width, this.scene.height);
+      const { frames, easing } = effectKeyframes(a, el, this.scene.width, this.scene.height);
       if (a.dir === 'in' && a.delay) {
         // 延迟期间保持隐藏
         el.classList.add('unppt-hide');

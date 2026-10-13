@@ -40,7 +40,7 @@ flowchart LR
 ```mermaid
 flowchart TB
   entry["入口 index.ts / cli.ts<br/>convert：逐页、流式输出 HTML 或数据"]
-  anim["anim/<br/>时间线编排 anim.ts、单个效果 effect.ts<br/>强调终态 emphasis.ts、运动路径 motion.ts、切换 transition.ts"]
+  anim["anim/<br/>时间线编排 anim.ts、单个效果 effect.ts<br/>进入/退出的行为 behaviors.ts（关键帧、公式、时间变换原样带给播放器）<br/>强调终态 emphasis.ts、运动路径 motion.ts、切换 transition.ts"]
   render["render/<br/>render.ts 分派、继承；context.ts 渲染能力接口<br/>elements/ 形状、图片、组合；table.ts 表格；box.ts 位置框<br/>frames/ ← FrameHandler 扩展点"]
   chart["chart/<br/>图表：chart.ts 公共布局、layout.ts 实测间距规律<br/>types/ ← ChartType 扩展点"]
   media["media/<br/>图片、音视频、共享资源<br/>decoders ← ImageDecoder 扩展点"]
@@ -75,7 +75,8 @@ flowchart TB
   bridge["bridge.ts<br/>window.unppt、postMessage、原生 WebView"]
   core["core/player.ts<br/>翻页状态、显示页面、事件、超链接、触发器<br/>autoplay.ts 按计时自动放映"]
   engine["anim/engine.ts<br/>播放 / 瞬时应用 / 结束正在播的动画"]
-  effects["anim/effects/<br/>← AnimEffect 扩展点"]
+  effects["anim/effects/<br/>← AnimEffect 扩展点（没有行为数据时按效果名）"]
+  behav["anim/behaviors.ts 按 PowerPoint 行为采样关键帧<br/>formula.ts 公式求值、reveal.ts ← 显现滤镜扩展点"]
   target["anim/target.ts<br/>强调、路径（沿路径、往返关键帧）<br/>repeat.ts 重复、自动翻转"]
   units["anim/text-units.ts<br/>逐字 / 逐词：淡入拆 tspan，<br/>飞入等带位移的拆成单独摆放的 text"]
   trans["transitions/<br/>← TransitionEffect 扩展点（22 种）<br/>位移类用关键帧；软边类 soft-edge.ts 逐帧遮罩渐变；<br/>图块类 tiles.ts 逐帧裁剪；drive.ts 逐帧驱动"]
@@ -85,7 +86,7 @@ flowchart TB
   boot --> core & bridge & deck
   bridge --> core
   core --> engine & trans & ui & deck
-  engine --> effects & target & units & deck
+  engine --> effects & behav & target & units & deck
 ```
 
 ### 重构前的问题和进度（2026-10-13 评估）
@@ -124,6 +125,7 @@ flowchart TB
 | 图表类型 | `ChartType`（`chart/chart-type.ts`） | 新建 `chart/types/xxx.ts` 导出一个 `ChartType`：声明对应的 XML 元素名、读系列的规则、图例样式；占满绘图区的图实现 `render`，画在共享分类轴上（可组合）的图实现 `renderOnAxes`。在 `chart/chart-types.ts` 加一行。例：`bar.ts`、`line-area.ts`、`pie.ts`、`scatter.ts`、`radar.ts` |
 | 页面切换（播放器） | `TransitionEffect`（`player/src/transitions/transition.ts`） | 新建 `transitions/xxx.ts` 导出一个 `TransitionEffect`，在 `transitions/transitions.ts` 加一行；没注册的按淡入。三种画法：位移/透明度用关键帧（`push.ts`、`cover.ts`、`fade.ts`）；软边扫过用 `soft-edge.ts` 的 `maskTransition` 逐帧设遮罩渐变（`wipe.ts`、`circle.ts`、`wheel.ts`）；图块用 `tiles.ts` 的 `tileTransition` 逐帧设裁剪多边形（`dissolve.ts`、`checker.ts`）；`morph.ts`（平滑切换，按 `data-name` 配对前后两页的对象）。转码器里 PowerPoint 的切换名到这些类型的对应在 `anim/transition.ts` 的表里，3D 切换的近似也在那里选。用 `tools/powerpoint/transitions.py` 和 PowerPoint 放映逐帧对照 |
 | 进入/退出动画效果（播放器） | `AnimEffect`（`player/src/anim/effects/anim-effect.ts`） | 新建 `anim/effects/xxx.ts` 导出一个 `AnimEffect`（给出关键帧，退出自动倒放），在 `anim/effects/effects.ts` 加一行；没注册的按淡入淡出。例：`fly.ts`、`shape.ts`（形状向内/向外）、`wheel.ts`、`blinds.ts`；裁剪类效果的公共工具在 `clip.ts` |
+| 显现滤镜（播放器） | `anim/reveal.ts` 的 `FILTERS` | PowerPoint 动画行为里的 `p:animEffect` 滤镜（`wipe(down)`、`circle(in)`、`wheel(4)`……）。加一种：在 `FILTERS` 里加一项 `名字(进度, 参数, 元素) => clip-path`，不同进度的结果结构要相同（才能插值）；退出时播放器自动取"外框减去它"。转码器把整个效果的行为原样带过来（`transcoder/src/anim/behaviors.ts`），播放器在 `anim/behaviors.ts` 里按元素真实位置代公式、按时间变换采样 |
 
 重构的安全网：`node scripts/golden.mjs save` 记录全部测试用例的输出，重构后 `node scripts/golden.mjs check` 必须**逐字节一致**；行为改动（修 bug、加功能）不走这条路，走比对和逐页回归。
 
