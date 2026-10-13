@@ -614,7 +614,26 @@ def picture_transparent(app):
     return p
 
 
-CASES = [shapes_all, text_sizes, text_align, text_spacing, text_bullets, text_missing_font, shapes_basic, fills_lines, table_basic, group_rotate, anim_basic, anim_auto, charts_basic, pictures, smartart, text_effects, text_layout, table_merge, links, emf_images, anim_advanced, charts_labels, freeform_icons, media_audio, anim_trigger, wmf_images, anim_iterate, picture_transparent]
+def charts_more(app):
+    """更多图表：散点图、带直线散点图、雷达图、带标记雷达图、填充雷达图、柱形+折线次坐标轴组合图（默认示例数据）"""
+    p = new_pres(app, window=True)
+    kinds = [-4169, 74, -4151, 81, 82, "combo"]  # 散点、带直线和标记散点、雷达、带标记雷达、填充雷达、组合
+    for i, kind in enumerate(kinds):
+        if i % 2 == 0:
+            s = blank(p)
+        ch = s.Shapes.AddChart2(-1, 51 if kind == "combo" else kind, 20 + (i % 2) * 470, 40, 450, 440)
+        if kind == "combo":
+            ser = ch.Chart.SeriesCollection(2)
+            ser.ChartType = 65
+            ser.AxisGroup = 2
+        try:
+            ch.Chart.ChartData.Workbook.Close()
+        except Exception:
+            pass
+    return p
+
+
+CASES = [shapes_all, text_sizes, text_align, text_spacing, text_bullets, text_missing_font, shapes_basic, fills_lines, table_basic, group_rotate, anim_basic, anim_auto, charts_basic, pictures, smartart, text_effects, text_layout, table_merge, links, emf_images, anim_advanced, charts_labels, freeform_icons, media_audio, anim_trigger, wmf_images, anim_iterate, picture_transparent, charts_more]
 
 
 def main():
