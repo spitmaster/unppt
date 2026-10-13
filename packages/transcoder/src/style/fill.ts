@@ -5,15 +5,18 @@ import { colorIn, css, type ColorContext, type Rgba } from '../model/color';
 import type { SvgDoc } from '../common/svg';
 import { esc, n2 } from '../common/svg';
 import { attr, child, children, findAll, numAttr, type XEl } from '../io/xml';
-import type { Theme } from '../model/model';
+import { EMU_PER_PX, type Theme } from '../model/model';
 import { blipFilter, parseBlipEffects, type BlipEffects } from './blip';
 import { patternFill } from './pattern';
+
+/** 平铺（a:tile）：缩放比例、偏移（像素）、对齐方式、翻转 */
+export interface Tile { sx: number; sy: number; tx: number; ty: number; algn: string; flip: string }
 
 export type Fill =
   | { kind: 'none' }
   | { kind: 'solid'; color: Rgba }
   | { kind: 'grad'; stops: { pos: number; color: Rgba }[]; angle: number; path?: string; rect?: { l: number; t: number; r: number; b: number } }
-  | { kind: 'image'; rid: string; part: string; alpha: number; tile: boolean; srcRect?: { l: number; t: number; r: number; b: number }; effects?: BlipEffects }
+  | { kind: 'image'; rid: string; part: string; alpha: number; tile?: Tile; srcRect?: { l: number; t: number; r: number; b: number }; effects?: BlipEffects }
   | { kind: 'pattern'; prst: string; fg: Rgba; bg: Rgba };
 
 const FILL_NAMES = new Set(['a:noFill', 'a:solidFill', 'a:gradFill', 'a:blipFill', 'a:pattFill', 'a:grpFill']);
@@ -56,7 +59,7 @@ export function parseFill(f: XEl | undefined, ctx: ColorContext, part: string, g
       const amf = child(blip, 'a:alphaModFix');
       const sr = child(f, 'a:srcRect');
       return {
-        kind: 'image', rid, part, alpha: (numAttr(amf, 'amt') ?? 100000) / 100000, tile: !!child(f, 'a:tile'),
+        kind: 'image', rid, part, alpha: (numAttr(amf, 'amt') ?? 100000) / 100000, tile: parseTile(child(f, 'a:tile')),
         effects: parseBlipEffects(blip, ctx),
         srcRect: sr ? {
           l: (numAttr(sr, 'l') ?? 0) / 100000, t: (numAttr(sr, 't') ?? 0) / 100000,
@@ -107,6 +110,41 @@ export function adjustForPathMode(c: Rgba, mode: string): Rgba {
 export interface ImageResolver {
   /** 返回图片的 href（data URI 或相对路径）；不支持的格式返回 undefined */
   image(part: string, rid: string): Promise<string | undefined>;
+  /** 图片的像素尺寸和分辨率（平铺用）；读不到时返回 undefined */
+  info?(part: string, rid: string): Promise<{ width: number; height: number; dpiX?: number; dpiY?: number } | undefined>;
+}
+
+function parseTile(t: XEl | undefined): Tile | undefined {
+  if (!t) return undefined;
+  return {
+    sx: (numAttr(t, 'sx') ?? 100000) / 100000, sy: (numAttr(t, 'sy') ?? 100000) / 100000,
+    tx: (numAttr(t, 'tx') ?? 0) / EMU_PER_PX, ty: (numAttr(t, 'ty') ?? 0) / EMU_PER_PX,
+    algn: attr(t, 'algn') ?? 'tl', flip: attr(t, 'flip') ?? 'none',
+  };
+}
+
+/**
+ * 平铺的图片填充。实测：平铺单元 = 图片像素 × 96 / DPI（没写 DPI 按 96）× 缩放比例，
+ * 按对齐方式定位后再加偏移；翻转时用两倍大的单元拼出镜像。
+ */
+async function tileFill(fill: Extract<Fill, { kind: 'image' }>, tile: Tile, href: string, doc: SvgDoc, w: number, h: number, images: ImageResolver): Promise<string | undefined> {
+  const info = await images.info?.(fill.part, fill.rid);
+  if (!info || !info.width || !info.height) return undefined;
+  const tw = info.width * 96 / (info.dpiX || 96) * tile.sx, th = info.height * 96 / (info.dpiY || 96) * tile.sy;
+  if (!(tw > 0.5 && th > 0.5)) return undefined;
+  const fx = /r$/.test(tile.algn) ? 1 : /^(t|b|ctr)$/.test(tile.algn) ? 0.5 : 0;
+  const fy = /^b/.test(tile.algn) ? 1 : /^(l|r|ctr)$/.test(tile.algn) ? 0.5 : 0;
+  const mx = tile.flip === 'x' || tile.flip === 'xy', my = tile.flip === 'y' || tile.flip === 'xy';
+  const pw = tw * (mx ? 2 : 1), ph = th * (my ? 2 : 1);
+  const fid = blipFilter(fill.effects, doc);
+  const img = (tr: string) => `<image href="${esc(href)}" width="${n2(tw)}" height="${n2(th)}" preserveAspectRatio="none"${tr}${fill.alpha < 1 ? ` opacity="${n2(fill.alpha)}"` : ''}${fid ? ` filter="url(#${fid})"` : ''}/>`;
+  let tiles = img('');
+  if (mx) tiles += img(` transform="translate(${n2(2 * tw)} 0) scale(-1 1)"`);
+  if (my) tiles += img(` transform="translate(0 ${n2(2 * th)}) scale(1 -1)"`);
+  if (mx && my) tiles += img(` transform="translate(${n2(2 * tw)} ${n2(2 * th)}) scale(-1 -1)"`);
+  const id = doc.id('p');
+  doc.addDef(`<pattern id="${id}" patternUnits="userSpaceOnUse" x="${n2((w - tw) * fx + tile.tx)}" y="${n2((h - th) * fy + tile.ty)}" width="${n2(pw)}" height="${n2(ph)}">${tiles}</pattern>`);
+  return ` fill="url(#${id})"`;
 }
 
 /**
@@ -154,6 +192,10 @@ export async function fillAttrs(
   // 图片填充：用 pattern 把图片拉伸到形状框
   const href = await images.image(fill.part, fill.rid);
   if (!href) return ' fill="#d9d9d9"';
+  if (fill.tile) {
+    const tiled = await tileFill(fill, fill.tile, href, doc, w, h, images);
+    if (tiled) return tiled;
+  }
   const id = doc.id('p');
   const sr = fill.srcRect ?? { l: 0, t: 0, r: 0, b: 0 };
   const iw = w / Math.max(0.0001, 1 - sr.l - sr.r);
