@@ -72,7 +72,7 @@ flowchart TB
 |---|---|---|
 | `player.ts`（约 800 行） | 一个类包了翻页、动画引擎、切换、界面、键盘触屏、bridge、自动启动 | 单一职责 |
 | `player.ts` 切换、`anim` 效果 | `switch` 分支，加一种效果要改核心代码 | 开闭 |
-| `chart.ts`（约 740 行） | 一个巨型函数，图表类型靠 if/else | 单一职责、开闭 |
+| ~~`chart.ts`（约 740 行）~~ | ~~巨型函数、if/else~~ → 已拆成读取 / 格式 / 坐标轴 / 绘制工具 / 编排，每种图表一个文件 | 单一职责、开闭 |
 | `text.ts`（约 690 行） | 字体替代、测量、断行、SVG 输出混在一起 | 单一职责 |
 | ~~`render.ts`~~ | ~~分派写死、和 `table.ts` 循环依赖~~ → 已改为 `FrameHandler` 注册表，表格只依赖 `FrameRenderer` 接口 | 开闭、依赖倒置 |
 | ~~`fill.ts`~~ | ~~填充、线条、图片调整、形状效果混在一起~~ → 已拆成 `style/fill.ts`、`style/line.ts`、`style/blip.ts` 和 `effects/` | 单一职责 |
@@ -99,7 +99,7 @@ flowchart TB
 | 图片格式 | `ImageDecoder`（`media/image-decoder.ts`） | 新建 `media/xxx.ts` 导出一个 `ImageDecoder`，在 `media/decoders.ts` 加一行。例：`emf.ts`、`wmf.ts` |
 | 形状效果 | `ShapeEffect`（`effects/shape-effect.ts`） | 新建 `effects/xxx.ts` 导出一个 `ShapeEffect`（返回一层滤镜：画在形状下面 / 替换形状 / 盖在上面），在 `effects/effects.ts` 按叠放顺序加一行。例：`glow.ts`、`soft-edge.ts`、`outer-shadow.ts`、`inner-shadow.ts` |
 | graphicFrame 内容 | `FrameHandler`（`render/frames/frame-handler.ts`） | 新建 `render/frames/xxx-frame.ts` 导出一个 `FrameHandler`（按 `a:graphicData` 的 uri 结尾匹配），在 `render/frames/frames.ts` 加一行。handler 只依赖窄接口 `FrameRenderer`。例：表格、图表、SmartArt、OLE |
-| 图表类型 | `ChartType` | 待实现 |
+| 图表类型 | `ChartType`（`chart/chart-type.ts`） | 新建 `chart/types/xxx.ts` 导出一个 `ChartType`：声明对应的 XML 元素名、读系列的规则、图例样式；占满绘图区的图实现 `render`，画在共享分类轴上（可组合）的图实现 `renderOnAxes`。在 `chart/chart-types.ts` 加一行。例：`bar.ts`、`line-area.ts`、`pie.ts`、`scatter.ts`、`radar.ts` |
 | 页面切换 | `Transition` | 待实现 |
 | 进入/退出动画效果 | `AnimEffect` | 待实现 |
 
