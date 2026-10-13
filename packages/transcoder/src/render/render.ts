@@ -11,6 +11,7 @@ import { attr, child, children, expandAlternate, findAll, numAttr, path, type XE
 import { boxTransform, nvProps, pc, readXfrm, withUid } from './box';
 import type { RenderEnv } from './env';
 import type { RenderContext } from './context';
+import { controlPictures } from './controls';
 import { renderGroup } from './elements/group';
 import { renderPicture } from './elements/picture';
 import { renderShape } from './elements/shape';
@@ -176,6 +177,7 @@ export async function renderSlide(ref: SlideRef, env: RenderEnv): Promise<Render
   }
   const tree = path(xml, 'p:cSld', 'p:spTree');
   parts.push(await r.shapes(children(tree), mk(ref.part, true)));
+  parts.push(await r.shapes(controlPictures(path(xml, 'p:cSld', 'p:controls')), mk(ref.part, true)));
   const groups = new Set(findAll(tree, 'p:grpSp').map((g) => r.uidOf(g, mk(ref.part, true))).filter((u): u is string => !!u));
 
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}">${r.doc.defsXml()}${parts.join('')}</svg>`;

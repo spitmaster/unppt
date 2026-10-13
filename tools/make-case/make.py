@@ -805,6 +805,56 @@ def anim_group_emphasis(app):
     return p
 
 
+def activex_controls(app):
+    """ActiveX 控件（老课件里嵌 Flash 常用）：放映时显示控件保存的预览图，盖在其它形状上面。
+    COM 建不了 ActiveX 控件（信任中心限制），先放两张图片，保存后改 XML 包成 PowerPoint 2010+ 的控件写法"""
+    p = new_pres(app)
+    s = blank(p)
+    img = str((TESTCASES / "shapes-basic" / "slide-001.png").resolve())
+    r = s.Shapes.AddShape(1, 300, 140, 360, 260)
+    r.Fill.ForeColor.RGB = RGB(70, 120, 200)
+    a = s.Shapes.AddPicture(img, 0, -1, 40, 60, 400, 225)
+    a.Name = "ACTIVEX1"
+    b = s.Shapes.AddPicture(img, 0, -1, 520, 260, 400, 225)
+    b.Name = "ACTIVEX2"
+    # 普通形状放在最上面：控件仍然盖在它上面
+    r.ZOrder(0)
+    return p
+
+
+def _patch_activex(path):
+    """名字是 ACTIVEX 开头的图片移到 p:controls 里，变成带预览图的控件（PowerPoint 2010+ 写在 Fallback 里的那种）；
+    每个控件一个最简的 Forms.Label 控件部件"""
+    import re
+    import zipfile
+    tmp = path.with_suffix(".tmp")
+    with zipfile.ZipFile(path) as zin, zipfile.ZipFile(tmp, "w", zipfile.ZIP_DEFLATED) as zout:
+        names = zin.namelist()
+        for item in zin.infolist():
+            data = zin.read(item.filename)
+            if item.filename == "ppt/slides/slide1.xml":
+                s = data.decode("utf-8")
+                pics = re.findall(r'<p:pic>(?:(?!</p:pic>).)*?name="ACTIVEX\d"(?:(?!</p:pic>).)*</p:pic>', s, re.S)
+                controls = []
+                for k, pic in enumerate(pics, 1):
+                    s = s.replace(pic, "")
+                    ext = re.search(r'<a:ext cx="(\d+)" cy="(\d+)"/>', pic)
+                    controls.append(f'<p:control name="ACTIVEX{k}" r:id="rIdAx{k}" imgW="{ext.group(1)}" imgH="{ext.group(2)}">{pic}</p:control>')
+                s = s.replace("</p:spTree>", "</p:spTree><p:controls>" + "".join(controls) + "</p:controls>", 1)
+                data = s.encode("utf-8")
+            elif item.filename == "ppt/slides/_rels/slide1.xml.rels":
+                rel = "".join(f'<Relationship Id="rIdAx{k}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/control" Target="../activeX/activeX{k}.xml"/>' for k in (1, 2))
+                data = data.replace(b"</Relationships>", rel.encode() + b"</Relationships>")
+            elif item.filename == "[Content_Types].xml":
+                data = data.replace(b"</Types>", b'<Override PartName="/ppt/activeX/activeX1.xml" ContentType="application/vnd.ms-office.activeX+xml"/><Override PartName="/ppt/activeX/activeX2.xml" ContentType="application/vnd.ms-office.activeX+xml"/></Types>')
+            zout.writestr(item, data)
+        for k in (1, 2):
+            zout.writestr(f"ppt/activeX/activeX{k}.xml", '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><ax:ocx ax:classid="{978C9E23-D4B0-11CE-BF2D-00AA003F40D0}" ax:persistence="persistPropertyBag" xmlns:ax="http://schemas.microsoft.com/office/2006/activeX" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><ax:ocxPr ax:name="Caption" ax:value="Label"/></ax:ocx>')
+    tmp.replace(path)
+
+
+activex_controls.patch = _patch_activex
+
 def transitions(app):
     """页面切换：无、淡入、推入（左/上/右）、擦除（左/上）、分割（横向向内/纵向向外）、覆盖、揭开、随机线条、圆形"""
     p = new_pres(app)
@@ -1840,7 +1890,7 @@ def table_vertical(app):
     return p
 
 
-CASES = [shapes_all, text_sizes, text_align, text_spacing, text_bullets, text_missing_font, shapes_basic, fills_lines, table_basic, group_rotate, anim_basic, anim_auto, charts_basic, pictures, smartart, text_effects, text_layout, table_merge, links, emf_images, anim_advanced, charts_labels, freeform_icons, media_audio, anim_trigger, wmf_images, anim_iterate, picture_transparent, charts_more, shape_effects, equations, anim_path, anim_emphasis, transitions, fills_patterns, text_decoration, anim_entrance, svg_images, charts_markers, hidden_slides, media_background, text_glow_reflection, text_tabs, text_picture_bullets, fills_texture, transition_morph, text_embedded_fonts, text_warp, anim_repeat, charts_sizes, slide_timings, lines_compound, table_diagonal, lines_gradient, fills_radial, fills_rect_gradient, shapes_3d, table_vertical, transitions_more, anim_sound, anim_build, anim_after, anim_text_emphasis, charts_bubble, media_video, charts_options, charts_negative, shapes_bevel, charts_legend, shapes_3d_rotation, smartart_3d, charts_ofpie, charts_3d, anim_group_emphasis]
+CASES = [shapes_all, text_sizes, text_align, text_spacing, text_bullets, text_missing_font, shapes_basic, fills_lines, table_basic, group_rotate, anim_basic, anim_auto, charts_basic, pictures, smartart, text_effects, text_layout, table_merge, links, emf_images, anim_advanced, charts_labels, freeform_icons, media_audio, anim_trigger, wmf_images, anim_iterate, picture_transparent, charts_more, shape_effects, equations, anim_path, anim_emphasis, transitions, fills_patterns, text_decoration, anim_entrance, svg_images, charts_markers, hidden_slides, media_background, text_glow_reflection, text_tabs, text_picture_bullets, fills_texture, transition_morph, text_embedded_fonts, text_warp, anim_repeat, charts_sizes, slide_timings, lines_compound, table_diagonal, lines_gradient, fills_radial, fills_rect_gradient, shapes_3d, table_vertical, transitions_more, anim_sound, anim_build, anim_after, anim_text_emphasis, charts_bubble, media_video, charts_options, charts_negative, shapes_bevel, charts_legend, shapes_3d_rotation, smartart_3d, charts_ofpie, charts_3d, anim_group_emphasis, activex_controls]
 
 
 def main():

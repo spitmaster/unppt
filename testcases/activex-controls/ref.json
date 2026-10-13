@@ -1,0 +1,55 @@
+{
+ "version": 7,
+ "slideWidthPt": 960.0,
+ "slideHeightPt": 540.0,
+ "imageWidth": 1280,
+ "imageHeight": 720,
+ "slides": [
+  {
+   "index": 0,
+   "hidden": false,
+   "shapes": [
+    {
+     "id": 2,
+     "name": "Rectangle 1",
+     "type": 1,
+     "x": 300.0,
+     "y": 140.0,
+     "w": 360.0,
+     "h": 260.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1
+    },
+    {
+     "id": 4,
+     "name": "ACTIVEX1",
+     "type": 12,
+     "x": 40.0,
+     "y": 60.0,
+     "w": 400.0,
+     "h": 225.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": -2
+    },
+    {
+     "id": 6,
+     "name": "ACTIVEX2",
+     "type": 12,
+     "x": 520.0,
+     "y": 260.0,
+     "w": 400.0,
+     "h": 225.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": -2
+    }
+   ],
+   "effects": [],
+   "triggerHidden": [],
+   "steps": 0
+  }
+ ],
+ "ok": true
+}
