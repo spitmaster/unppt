@@ -38,6 +38,7 @@ export interface DeckSlide {
 
 export type AnimEffect =
   | 'appear' | 'fade' | 'fly' | 'wipe' | 'zoom' | 'split' | 'float' | 'wheel' | 'random'
+  | 'shape' | 'blinds' | 'growTurn' | 'swivel' | 'bounce'
   | 'emphasis' | 'path' | 'media';
 
 export interface AnimAction {
@@ -50,6 +51,12 @@ export interface AnimAction {
   delay: number;
   /** 飞入等效果的方向：l/r/t/b */
   from?: 'l' | 'r' | 't' | 'b';
+  /**
+   * 效果的变体（播放器不认识时按默认画法）：
+   * shape：circle|box|diamond|plus 加 -in|-out；split：vert-in|vert-out|horz-in|horz-out；
+   * wheel：轮辐数；blinds：horz|vert，可加 -条数
+   */
+  variant?: string;
   /** 强调、路径动画结束后保持的状态（累加到元素当前状态上） */
   to?: AnimTarget;
   /** 媒体命令：播放（从 start 秒开始）、暂停、停止 */

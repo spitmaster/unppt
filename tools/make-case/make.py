@@ -837,7 +837,26 @@ def text_decoration(app):
     return p
 
 
-CASES = [shapes_all, text_sizes, text_align, text_spacing, text_bullets, text_missing_font, shapes_basic, fills_lines, table_basic, group_rotate, anim_basic, anim_auto, charts_basic, pictures, smartart, text_effects, text_layout, table_merge, links, emf_images, anim_advanced, charts_labels, freeform_icons, media_audio, anim_trigger, wmf_images, anim_iterate, picture_transparent, charts_more, shape_effects, equations, anim_path, anim_emphasis, transitions, fills_patterns, text_decoration]
+def anim_entrance(app):
+    """常用进入效果：形状（方框向内、圆形向外、菱形、加号）、劈裂四个方向、轮子、百叶窗、随机线条、展开旋转、翻转、弹跳"""
+    from win32com.client import gencache
+    C = gencache.EnsureModule('{91493440-5A91-11CF-8700-00AA0060263B}', 0, 2, 12).constants
+    p = new_pres(app)
+    s = blank(p)
+    seq = s.TimeLine.MainSequence
+    items = [(4, 'msoAnimDirectionIn'), (6, 'msoAnimDirectionOut'), (8, 'msoAnimDirectionOut'), (13, 'msoAnimDirectionIn'),
+             (16, 'msoAnimDirectionVerticalIn'), (16, 'msoAnimDirectionHorizontalOut'), (21, None), (3, None),
+             (14, None), (31, None), (19, None), (26, None)]
+    for k, (eid, d) in enumerate(items):
+        sh = s.Shapes.AddShape(1, 40 + (k % 6) * 150, 120 + (k // 6) * 200, 120, 120)
+        sh.TextFrame.TextRange.Text = str(k + 1)
+        e = seq.AddEffect(sh, eid, 0, 1)
+        if d:
+            e.EffectParameters.Direction = getattr(C, d)
+    return p
+
+
+CASES = [shapes_all, text_sizes, text_align, text_spacing, text_bullets, text_missing_font, shapes_basic, fills_lines, table_basic, group_rotate, anim_basic, anim_auto, charts_basic, pictures, smartart, text_effects, text_layout, table_merge, links, emf_images, anim_advanced, charts_labels, freeform_icons, media_audio, anim_trigger, wmf_images, anim_iterate, picture_transparent, charts_more, shape_effects, equations, anim_path, anim_emphasis, transitions, fills_patterns, text_decoration, anim_entrance]
 
 
 def main():
