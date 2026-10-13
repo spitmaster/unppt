@@ -2,7 +2,7 @@
 import type { SlideContext } from '../../model/model';
 import { bgStyle, fillAttrs, findFillEl, parseFill, styleRef, type Fill } from '../../style/fill';
 import { compoundMask, parseLine, strokeAttrs } from '../../style/line';
-import { has3d, litFill } from '../../style/lighting';
+import { faceLighting, has3d, litFill } from '../../style/lighting';
 import { cameraLightFilter, cameraTransform, extrusionOffset, extrusionScreenOffset, extrusionSides } from '../../style/camera';
 import { EMU_PER_PX } from '../../model/model';
 import { bevelLayer } from '../../effects/bevel';
@@ -44,7 +44,10 @@ export async function renderShape(r: RenderContext, el: XEl, ctx: SlideContext, 
   // 三维形状（自己设的，或者主题效果样式里带的）：正面按灯光提亮
   const effStyle = styleRef(child(style, 'a:effectRef'), ctx.theme.effectStyles, colors).el;
   const sp3d = child(spPr, 'a:sp3d') ?? child(lSpPr, 'a:sp3d') ?? child(mSpPr, 'a:sp3d') ?? child(effStyle, 'a:sp3d');
-  if (has3d(sp3d)) fill = litFill(fill);
+  // 三维旋转、灯光（形状自己的、版式的或者主题效果样式里的 a:scene3d；SmartArt 里没写时用场景的灯光）
+  const scene3d = child(spPr, 'a:scene3d') ?? child(lSpPr, 'a:scene3d') ?? child(mSpPr, 'a:scene3d') ?? child(effStyle, 'a:scene3d');
+  const rig = attr(child(scene3d ?? ctx.scene?.scene3d, 'a:lightRig'), 'rig');
+  if (has3d(sp3d)) fill = litFill(fill, faceLighting(rig, attr(sp3d, 'prstMaterial')));
   // 线条：主题样式 -> 母版 -> 版式 -> 形状
   const lnRef = child(style, 'a:lnRef');
   const lnStyle = styleRef(lnRef, ctx.theme.lineStyles, colors);
@@ -66,8 +69,7 @@ export async function renderShape(r: RenderContext, el: XEl, ctx: SlideContext, 
   for (const g of children(child(prst ?? cust, 'a:avLst'), 'a:gd')) av.set(attr(g, 'name') ?? '', attr(g, 'fmla') ?? '');
   const geo = buildGeometry(def, box.w, box.h, av);
   const paths = geo.paths;
-  // 三维旋转（形状自己的、版式的或者主题效果样式里的 a:scene3d）；透视相机（自己的或 SmartArt 场景的）下轮廓逐点投影
-  const scene3d = child(spPr, 'a:scene3d') ?? child(lSpPr, 'a:scene3d') ?? child(mSpPr, 'a:scene3d') ?? child(effStyle, 'a:scene3d');
+  // 透视相机（自己的或 SmartArt 场景的）下轮廓逐点投影
   const sp = shapeProjection(box, scene3d, ctx.scene, r.env.pres.width);
   const projected = sp ? buildGeometry(def, box.w, box.h, av, sp.map).paths : undefined;
   // 效果：形状自己写的 > 版式 > 主题样式（effectRef）
