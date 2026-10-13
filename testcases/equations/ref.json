@@ -1,0 +1,88 @@
+{
+ "version": 7,
+ "slideWidthPt": 960.0,
+ "slideHeightPt": 540.0,
+ "imageWidth": 1280,
+ "imageHeight": 720,
+ "slides": [
+  {
+   "index": 0,
+   "hidden": false,
+   "shapes": [
+    {
+     "id": 2,
+     "name": "TextBox 1",
+     "type": 17,
+     "x": 80.0,
+     "y": 60.0,
+     "w": 800.0,
+     "h": 50.892,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 20,
+       "text": " 𝑎 2 + 𝑏 2 = 𝑐 2 ",
+       "x": 87.2,
+       "y": 63.6,
+       "w": 100.005,
+       "h": 21.6
+      }
+     ]
+    },
+    {
+     "id": 3,
+     "name": "TextBox 2",
+     "type": 17,
+     "x": 80.0,
+     "y": 210.0,
+     "w": 800.0,
+     "h": 50.892,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 28,
+       "text": "𝑥= −𝑏±   𝑏 2 −4𝑎𝑐  2𝑎 ",
+       "x": 87.2,
+       "y": 213.6,
+       "w": 165.07,
+       "h": 47.39
+      }
+     ]
+    },
+    {
+     "id": 4,
+     "name": "TextBox 3",
+     "type": 17,
+     "x": 80.0,
+     "y": 360.0,
+     "w": 800.0,
+     "h": 50.892,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 25,
+       "text": " 𝑖=1 𝑛 𝑖 = 𝑛(𝑛+1) 2 ",
+       "x": 87.2,
+       "y": 363.6,
+       "w": 124.555,
+       "h": 58.97
+      }
+     ]
+    }
+   ],
+   "effects": [],
+   "triggerHidden": [],
+   "steps": 0
+  }
+ ],
+ "ok": true
+}

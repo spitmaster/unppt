@@ -210,7 +210,8 @@ export function expandAlternate(list: XEl[]): XEl[] {
     const choice = c.children.find((x) => x.name === 'mc:Choice'
       && (x.attrs.Requires ?? '').split(/\s+/).every((r) => SUPPORTED_REQUIRES.has(r)));
     const fallback = child(c, 'mc:Fallback');
-    const picked = choice ?? fallback;
+    // 公式（a14:m）我们不排版，用 Fallback 里 PowerPoint 存好的公式图片
+    const picked = choice && fallback && findAll(choice, 'a14:m').length ? fallback : choice ?? fallback;
     if (picked) out.push(...expandAlternate(picked.children));
   }
   return out;

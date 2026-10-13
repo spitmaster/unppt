@@ -693,7 +693,51 @@ def shape_effects(app):
     return p
 
 
-CASES = [shapes_all, text_sizes, text_align, text_spacing, text_bullets, text_missing_font, shapes_basic, fills_lines, table_basic, group_rotate, anim_basic, anim_auto, charts_basic, pictures, smartart, text_effects, text_layout, table_merge, links, emf_images, anim_advanced, charts_labels, freeform_icons, media_audio, anim_trigger, wmf_images, anim_iterate, picture_transparent, charts_more, shape_effects]
+def equations(app):
+    """公式（Office 数学公式 a14:m）：先生成普通文本框，再把段落换成公式 XML，交给 PowerPoint 打开另存，
+    由它写出 mc:Choice（公式）和 mc:Fallback（公式图片）"""
+    import re
+    import zipfile
+    tmp = (CACHE / "make-case" / "eq-src.pptx").resolve()
+    tmp.parent.mkdir(parents=True, exist_ok=True)
+    p = new_pres(app)
+    s = blank(p)
+    for i in range(3):
+        tb = s.Shapes.AddTextbox(1, 80, 60 + i * 150, 800, 100)
+        tb.TextFrame.TextRange.Text = f"EQ{i}"
+        tb.TextFrame.TextRange.Font.Size = 36
+    if tmp.exists():
+        tmp.unlink()
+    p.SaveAs(str(tmp))
+    p.Close()
+    M = 'xmlns:m="http://schemas.openxmlformats.org/officeDocument/2006/math"'
+    def r(t, italic=True):
+        return f'<m:r><a:rPr lang="en-US" altLang="zh-CN" i="{1 if italic else 0}"><a:latin typeface="Cambria Math" panose="02040503050406030204" pitchFamily="18" charset="0"/></a:rPr><m:t>{t}</m:t></m:r>'
+    eqs = [
+        # a² + b² = c²
+        f'<m:sSup><m:e>{r("a")}</m:e><m:sup>{r("2", False)}</m:sup></m:sSup>{r("+", False)}<m:sSup><m:e>{r("b")}</m:e><m:sup>{r("2", False)}</m:sup></m:sSup>{r("=", False)}<m:sSup><m:e>{r("c")}</m:e><m:sup>{r("2", False)}</m:sup></m:sSup>',
+        # x = (-b ± √(b²-4ac)) / 2a
+        f'{r("x")}{r("=", False)}<m:f><m:num>{r("−", False)}{r("b")}{r("±", False)}<m:rad><m:radPr><m:degHide m:val="1"/></m:radPr><m:deg/><m:e><m:sSup><m:e>{r("b")}</m:e><m:sup>{r("2", False)}</m:sup></m:sSup>{r("−4", False)}{r("ac")}</m:e></m:rad></m:num><m:den>{r("2", False)}{r("a")}</m:den></m:f>',
+        # ∑ i = n(n+1)/2
+        f'<m:nary><m:naryPr><m:chr m:val="∑"/></m:naryPr><m:sub>{r("i")}{r("=1", False)}</m:sub><m:sup>{r("n")}</m:sup><m:e>{r("i")}</m:e></m:nary>{r("=", False)}<m:f><m:num>{r("n")}{r("(", False)}{r("n")}{r("+1)", False)}</m:num><m:den>{r("2", False)}</m:den></m:f>',
+    ]
+    src = zipfile.ZipFile(tmp)
+    out = tmp.with_name("eq-mid.pptx")
+    with zipfile.ZipFile(out, "w", zipfile.ZIP_DEFLATED) as z:
+        for item in src.infolist():
+            data = src.read(item.filename)
+            if item.filename == "ppt/slides/slide1.xml":
+                x = data.decode("utf-8")
+                for i, eq in enumerate(eqs):
+                    para = f'<a:p><a14:m xmlns:a14="http://schemas.microsoft.com/office/drawing/2010/main"><m:oMathPara {M}><m:oMathParaPr><m:jc m:val="left"/></m:oMathParaPr><m:oMath>{eq}</m:oMath></m:oMathPara></a14:m><a:endParaRPr lang="en-US" sz="3600"/></a:p>'
+                    x = re.sub(r'<a:p>(?:(?!</a:p>).)*EQ%d(?:(?!</a:p>).)*</a:p>' % i, lambda _m: para, x, count=1)
+                data = x.encode("utf-8")
+            z.writestr(item, data)
+    src.close()
+    return app.Presentations.Open(str(out), WithWindow=0)
+
+
+CASES = [shapes_all, text_sizes, text_align, text_spacing, text_bullets, text_missing_font, shapes_basic, fills_lines, table_basic, group_rotate, anim_basic, anim_auto, charts_basic, pictures, smartart, text_effects, text_layout, table_merge, links, emf_images, anim_advanced, charts_labels, freeform_icons, media_audio, anim_trigger, wmf_images, anim_iterate, picture_transparent, charts_more, shape_effects, equations]
 
 
 def main():
