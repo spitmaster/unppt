@@ -18,12 +18,16 @@ function fontList(primary: string, alias?: string): string {
   return `${alias ? `'${alias}',` : ''}'${primary.replace(/'/g, '')}',sans-serif`;
 }
 
-export function textEl(txt: string, x: number, y: number, s: RunStyle, family: string, bullet = false, alias?: string, env?: TextEnv, anchor?: string): string {
-  let a = `${bullet ? 'data-bu="1" ' : ''}x="${n2(x)}" y="${n2(y)}" font-family="${esc(fontList(family, alias))}" font-size="${n2(s.size)}" fill="${css(s.color)}"`;
+/**
+ * x 是起点，或者每个字的位置（逐字定位：字按排版时算的位置落下，不用浏览器自己的字宽，字距、字间距都已经算在位置里）
+ */
+export function textEl(txt: string, x: number | number[], y: number, s: RunStyle, family: string, bullet = false, alias?: string, env?: TextEnv, anchor?: string): string {
+  const xa = typeof x === 'number' ? n2(x) : x.map(n2).join(' ');
+  let a = `${bullet ? 'data-bu="1" ' : ''}x="${xa}" y="${n2(y)}" font-family="${esc(fontList(family, alias))}" font-size="${n2(s.size)}" fill="${css(s.color)}"`;
   if (s.color.a < 0.999) a += ` fill-opacity="${n2(s.color.a)}"`;
   if (s.bold) a += ' font-weight="bold"';
   if (s.italic) a += ' font-style="italic"';
-  if (s.spc) a += ` letter-spacing="${n2(s.spc)}"`;
+  if (s.spc && typeof x === 'number') a += ` letter-spacing="${n2(s.spc)}"`;
   if (anchor) a += ` text-anchor="${anchor}"`;
   const css2: string[] = [];
   if (s.link) { a += s.link; css2.push('cursor:pointer'); }

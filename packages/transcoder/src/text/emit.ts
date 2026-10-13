@@ -132,7 +132,7 @@ export function emitParagraphs(
           const cx = xs[s0] + seg[0].width / 2;
           const cy = baseline - st.size * 0.38;
           pParts.push(`<g transform="rotate(-90 ${n2(cx)} ${n2(cy)})">${textEl(txt, cx, baseline + shift, st, seg[0].family, false, alias, env, 'middle')}</g>`);
-        } else if (txt.trim().length || s.underline || s.strike) pParts.push(textEl(txt, xs[s0], baseline + shift, st, seg[0].family, false, alias, env));
+        } else if (txt.trim().length || s.underline || s.strike) pParts.push(textEl(txt, perChar(seg) ? xs.slice(s0, k) : xs[s0], baseline + shift, st, seg[0].family, false, alias, env));
         decorate(seg, s, xs[s0], xs[k - 1] + seg[seg.length - 1].width - xs[s0], baseline + shift, st.size, under, over);
         s0 = k;
       }
@@ -150,4 +150,19 @@ export function emitParagraphs(
   }
   env.lineBox = undefined;
   return parts;
+}
+
+/**
+ * 能不能逐字定位（每个字给一个 x）：一个字一个位置只对不需要字形组合的文字成立——基本平面里、
+ * 没有组合符号，也不是阿拉伯、希伯来、印度、东南亚等要连写或重排的文字；多于一个字才有意义
+ */
+function perChar(seg: Atom[]): boolean {
+  if (seg.length < 2) return false;
+  return seg.every((a) => {
+    if (a.text.length !== 1) return false;
+    const c = a.cp;
+    return !((c >= 0x0300 && c <= 0x036f) || (c >= 0x0590 && c <= 0x08ff) || (c >= 0x0900 && c <= 0x0dff) || (c >= 0x0e00 && c <= 0x0eff)
+      || (c >= 0x1000 && c <= 0x109f) || (c >= 0x1780 && c <= 0x17ff) || (c >= 0x1ab0 && c <= 0x1aff) || (c >= 0x1dc0 && c <= 0x1dff)
+      || (c >= 0x200c && c <= 0x200f) || (c >= 0x20d0 && c <= 0x20ff) || (c >= 0xfb1d && c <= 0xfdff) || (c >= 0xfe20 && c <= 0xfe2f) || (c >= 0xfe70 && c <= 0xfeff));
+  });
 }
