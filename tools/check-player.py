@@ -59,6 +59,7 @@ def main():
     subprocess.run(["node", "packages/transcoder/dist/cli.js", "convert", "testcases/anim-path.pptx", "-o", str(player_dir / "path.html"), "-q"], cwd=ROOT, check=True)
     subprocess.run(["node", "packages/transcoder/dist/cli.js", "convert", "testcases/anim-emphasis.pptx", "-o", str(player_dir / "emph.html"), "-q"], cwd=ROOT, check=True)
     subprocess.run(["node", "packages/transcoder/dist/cli.js", "convert", "testcases/transitions.pptx", "-o", str(player_dir / "trans.html"), "-q"], cwd=ROOT, check=True)
+    subprocess.run(["node", "packages/transcoder/dist/cli.js", "convert", "testcases/anim-entrance.pptx", "-o", str(player_dir / "entr.html"), "-q"], cwd=ROOT, check=True)
     s1, player_url = serve(player_dir)
     s2, host_url = serve(host_dir)
 
@@ -177,6 +178,26 @@ def main():
             if st != k or left != 1:
                 bad.append((k, st, left))
         check(n > 10 and not bad and not errors, f"{n - 1} 种切换都正常结束：{bad} {errors[:2]}")
+
+        # ---------------- 8. 进入效果（形状、轮子、百叶窗……）：播放中途有裁剪，播完完整显示
+        page8 = b.new_page()
+        errors8 = []
+        page8.on("pageerror", lambda e: errors8.append(str(e)))
+        page8.goto(f"{player_url}/entr.html")
+        page8.wait_for_function("window.unppt !== undefined && !!document.querySelector('div.unppt-slide')")
+        js8 = """(k) => { const el = Array.from(document.querySelectorAll('div.unppt-slide [data-uid]')).filter(e => /^s[0-9]+$/.test(e.getAttribute('data-uid')))[k];
+          return getComputedStyle(el).clipPath; }"""
+        bad8 = []
+        for k in (0, 6, 7):   # 方框向内、轮子、百叶窗
+            page8.evaluate(f"window.unppt.goto(0, {k})")
+            page8.evaluate("window.unppt.next()")
+            page8.wait_for_timeout(200)
+            mid = page8.evaluate(js8, k)
+            page8.wait_for_timeout(2200)
+            end = page8.evaluate(js8, k)
+            if mid in ("none", "") or end not in ("none", ""):
+                bad8.append((k, mid[:30], end[:30]))
+        check(not bad8 and not errors8, f"进入效果播放中途有裁剪、播完完整显示：{bad8} {errors8[:1]}")
 
         # ---------------- 移动端视口
         mobile = {"is_mobile": True} if BROWSER != "firefox" else {}
