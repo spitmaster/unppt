@@ -26,3 +26,8 @@ export const legendCenter = (s: number) => 0.41 * s;
 export const topForLabel = (s: number) => 0.6 * s + 3.5;
 /** 横向数值轴最右边的标签以网格线为中心，右边留出半个标签再加一点 */
 export const RIGHT_LABEL_PAD = 15.5;
+
+/** 横排图例（上、下）：色块边长、色块到文字、项与项之间的间隔；整体按"第一个色块到最后一项文字"居中 */
+export const legendSquare = (s: number) => 0.48 * s;
+export const legendKeyGap = (s: number) => 0.3 * s;
+export const legendItemGap = (s: number) => 0.68 * s;

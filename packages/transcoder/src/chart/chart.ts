@@ -14,7 +14,7 @@ import { axesOf, axId, axisMaker } from './axis';
 import type { CategoryFrame } from './chart-type';
 import { chartTypeOf } from './chart-types';
 import { accentColor, label, legendKey, textStyle, textWidth } from './draw';
-import { catBand, catCenter, legendBand, legendCenter, PAD, RIGHT_LABEL_PAD, SIDE_LABEL_PAD, sideAnchor, sideGap, topForLabel, valBand, valCenter, type TextWidth } from './layout';
+import { catBand, catCenter, legendBand, legendCenter, legendItemGap, legendKeyGap, legendSquare, PAD, RIGHT_LABEL_PAD, SIDE_LABEL_PAD, sideAnchor, sideGap, topForLabel, valBand, valCenter, type TextWidth } from './layout';
 import type { ChartContext, Plot, Series, TextStyle } from './model';
 import { readPlots } from './read';
 import { lineType } from './types/line-area';
@@ -97,13 +97,17 @@ export function renderChart(space: XEl | undefined, w: number, h: number, env: C
     const ks = legendText.size * 0.6;
     const itemW = entries.map((e) => (e.line ? ks * 3 : ks) + 4 + tw(e.name, legendText.size) + 10);
     if (legendPos === 'b' || legendPos === 't') {
-      const total = itemW.reduce((a, b) => a + b, 0);
+      // 实测（9~28 磅）：色块、间隔都随字号变化
+      const sz = legendText.size;
+      const keyW = (e: (typeof entries)[number]) => (e.line ? ks * 3 : legendSquare(sz));
+      const parts = entries.map((e) => keyW(e) + legendKeyGap(sz) + tw(e.name, sz));
+      const total = parts.reduce((a, b) => a + b, 0) + legendItemGap(sz) * Math.max(0, entries.length - 1);
       let x = (w - total) / 2;
-      const y = legendPos === 'b' ? bottom - legendCenter(legendText.size) : top + legendText.size * 0.6;
+      const y = legendPos === 'b' ? bottom - legendCenter(sz) : top + sz * 0.6;
       entries.forEach((e, i) => {
-        out.push(legendKey(e, x, y, ks));
-        out.push(label(e.name, x + (e.line ? ks * 3 : ks) + 4, y, legendText, 'start'));
-        x += itemW[i];
+        out.push(legendKey(e, x, y, e.line ? ks : legendSquare(sz)));
+        out.push(label(e.name, x + keyW(e) + legendKeyGap(sz), y, legendText, 'start'));
+        x += parts[i] + legendItemGap(sz);
       });
       if (legendPos === 'b') bottom -= legendBand(legendText.size);
       else top += legendText.size * 1.2 + 8;
