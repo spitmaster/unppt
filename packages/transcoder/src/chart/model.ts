@@ -85,6 +85,8 @@ export interface Plot {
   is3D: boolean;
   grouping: string;
   gapWidth: number;
+  /** 三维图表：系列之间的间隙深度（%） */
+  gapDepth: number;
   overlap: number;
   holeSize: number;
   firstSliceAng: number;

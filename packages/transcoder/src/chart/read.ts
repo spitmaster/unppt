@@ -122,6 +122,7 @@ export function readPlots(plotArea: XEl | undefined, colors: ColorContext, part:
       horizontal: attr(child(p, 'c:barDir'), 'val') === 'bar',
       grouping: attr(child(p, 'c:grouping'), 'val') ?? type.defaultGrouping ?? 'standard',
       gapWidth: numAttr(child(p, 'c:gapWidth'), 'val') ?? 150,
+      gapDepth: numAttr(child(p, 'c:gapDepth'), 'val') ?? 150,
       overlap: numAttr(child(p, 'c:overlap'), 'val') ?? 0,
       holeSize: numAttr(child(p, 'c:holeSize'), 'val') ?? 50,
       firstSliceAng: numAttr(child(p, 'c:firstSliceAng'), 'val') ?? 0,
