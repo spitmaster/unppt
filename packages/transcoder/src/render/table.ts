@@ -55,7 +55,8 @@ function mergeStyle(into: CellStyle, s: CellStyle) {
   if (s.color) into.color = s.color;
 }
 
-export async function renderTable(tbl: XEl | undefined, _w: number, _h: number, r: FrameRenderer, ctx: SlideContext): Promise<string> {
+/** origin 是表格在幻灯片上的位置（图案填充从幻灯片原点对齐） */
+export async function renderTable(tbl: XEl | undefined, origin: { x: number; y: number }, r: FrameRenderer, ctx: SlideContext): Promise<string> {
   if (!tbl) return '';
   const colors = ctx.colors;
   const tblPr = child(tbl, 'a:tblPr');
@@ -148,7 +149,12 @@ export async function renderTable(tbl: XEl | undefined, _w: number, _h: number, 
     const tcPr = child(c.tc, 'a:tcPr');
     const own = parseFill(findFillEl(tcPr), colors, ctx.part);
     const fill = own ?? c.style.fill;
-    if (fill && fill.kind !== 'none') fills.push(`<rect x="${n2(x)}" y="${n2(y)}" width="${n2(w)}" height="${n2(h)}"${await fillAttrs(fill, r.doc, w, h, 'norm', r.images)}/>`);
+    if (fill && fill.kind === 'solid') fills.push(`<rect x="${n2(x)}" y="${n2(y)}" width="${n2(w)}" height="${n2(h)}"${await fillAttrs(fill, r.doc, w, h, 'norm', r.images)}/>`);
+    else if (fill && fill.kind !== 'none') {
+      // 渐变、图片、图案的坐标以单元格左上角为原点
+      const fa = await fillAttrs(fill, r.doc, w, h, 'norm', r.images, { x: origin.x + x, y: origin.y + y });
+      fills.push(`<g transform="translate(${n2(x)} ${n2(y)})"><rect width="${n2(w)}" height="${n2(h)}"${fa}/></g>`);
+    }
     // 文字：行高可能被撑高了，按最终高度重排（垂直对齐需要）
     if (c.text) texts.push(await cellText(c, { x, y, w, h }));
     // 边框：单元格自己的 lnL/lnR/lnT/lnB 优先，否则用表格样式

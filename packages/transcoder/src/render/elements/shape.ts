@@ -63,7 +63,7 @@ export async function renderShape(r: RenderContext, el: XEl, ctx: SlideContext, 
   const filter = effectFilter(effect, effect === child(effRef.el, 'a:effectLst') ? effRef.ctx : colors, r.doc, box.w, box.h);
   for (const p of paths) {
     if (!p.d) continue;
-    const fa = p.fill !== 'none' ? await fillAttrs(fill, r.doc, box.w, box.h, p.fill, r.images) : ' fill="none"';
+    const fa = p.fill !== 'none' ? await fillAttrs(fill, r.doc, box.w, box.h, p.fill, r.images, box) : ' fill="none"';
     const sa = p.stroke ? strokeAttrs(line, r.doc, p.fill) : ' stroke="none"';
     if (fa === ' fill="none"' && sa === ' stroke="none"') continue;
     geomParts.push(`<path d="${p.d}"${fa}${sa}${p.d.split('M').length > 2 ? ' fill-rule="evenodd"' : ''}/>`);
