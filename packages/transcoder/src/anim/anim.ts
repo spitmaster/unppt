@@ -5,6 +5,7 @@
 import type { AnimAction } from '../../../format/src/index';
 import { attr, child, children, findAll, numAttr, type XEl } from '../io/xml';
 import type { AnimContext } from './emphasis';
+import { afterEffects } from './after';
 import { chartTarget, effectAction } from './effect';
 import { chartStepMatcher } from '../common/uid';
 import { delayOf, isClick } from './timing-util';
@@ -27,8 +28,15 @@ export function compileTiming(timing: XEl | undefined, existing: Set<string>, ct
   const seqs = findAll(timing, 'p:seq');
   const main = seqs.find((s) => attr(child(s, 'p:cTn'), 'nodeType') === 'mainSeq');
   const firstSeen = new Map<string, AnimAction>();
+  // "下次单击后"执行的播放后动作（变暗、隐藏），等下一个单击步骤开始时一起执行
+  let pendingNext: AnimAction[] = [];
   const groupActions = (gTn: XEl | undefined): AnimAction[] => {
     const actions: AnimAction[] = [];
+    const after = (eff: XEl, a: AnimAction) => {
+      const r = afterEffects(eff, a, ctx);
+      actions.push(...r.same);
+      pendingNext.push(...r.next);
+    };
     for (const sub of children(child(gTn, 'p:childTnLst'), 'p:par')) {
       const sTn = child(sub, 'p:cTn');
       const base = delayOf(sTn);
@@ -43,6 +51,7 @@ export function compileTiming(timing: XEl | undefined, existing: Set<string>, ct
             const b = { ...a, uid: u };
             if (!firstSeen.has(u)) firstSeen.set(u, b);
             actions.push(b);
+            after(eff, b);
           }
           continue;
         }
@@ -55,9 +64,16 @@ export function compileTiming(timing: XEl | undefined, existing: Set<string>, ct
         }
         if (!firstSeen.has(a.uid)) firstSeen.set(a.uid, a);
         actions.push(a);
+        after(eff, a);
       }
     }
     return actions;
+  };
+  /** 单击步骤：先执行上一步留下的"下次单击后"动作 */
+  const clickStep = (gTn: XEl | undefined): AnimAction[] => {
+    const carry = pendingNext;
+    pendingNext = [];
+    return [...carry, ...groupActions(gTn)];
   };
   // 触发器序列：点击某个形状时依次播放
   for (const seq of seqs) {
@@ -66,7 +82,8 @@ export function compileTiming(timing: XEl | undefined, existing: Set<string>, ct
     const cond = children(child(sTn, 'p:stCondLst'), 'p:cond').find((c) => attr(c, 'evt') === 'onClick');
     const spid = attr(findAll(cond, 'p:spTgt')[0], 'spid');
     if (!spid || !/^\d{1,10}$/.test(spid)) continue;
-    const steps = children(child(sTn, 'p:childTnLst'), 'p:par').map((g) => groupActions(child(g, 'p:cTn'))).filter((x) => x.length);
+    pendingNext = [];
+    const steps = children(child(sTn, 'p:childTnLst'), 'p:par').map((g) => clickStep(child(g, 'p:cTn'))).filter((x) => x.length);
     if (steps.length) result.triggers.push({ uid: `s${spid}`, steps });
   }
   if (!main) {
@@ -74,9 +91,10 @@ export function compileTiming(timing: XEl | undefined, existing: Set<string>, ct
     return result;
   }
   const groups = children(child(child(main, 'p:cTn'), 'p:childTnLst'), 'p:par');
+  pendingNext = [];
   for (const g of groups) {
     const gTn = child(g, 'p:cTn');
-    const actions = groupActions(gTn);
+    const actions = isClick(gTn) ? clickStep(gTn) : groupActions(gTn);
     if (isClick(gTn) || result.steps.length > 0) {
       if (isClick(gTn)) result.steps.push(actions);
       else result.steps[result.steps.length - 1].push(...actions.map((a) => ({ ...a, delay: a.delay + 1 })));
