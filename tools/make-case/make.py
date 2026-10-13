@@ -763,7 +763,7 @@ def anim_emphasis(app):
 def transitions(app):
     """页面切换：无、淡入、推入（左/上/右）、擦除（左/上）、分割（横向向内/纵向向外）、覆盖、揭开、随机线条、圆形"""
     p = new_pres(app)
-    effects = [257, 3849, 3853, 3854, 3855, 2817, 2818, 3586, 3589, 1281, 2049, 2305, 3845]
+    effects = [257, 3849, 3853, 3854, 3855, 2817, 2818, 3586, 3587, 1281, 2049, 2305, 3845]
     for i, eff in enumerate(effects):
         s = blank(p)
         s.FollowMasterBackground = 0
@@ -778,6 +778,31 @@ def transitions(app):
             print("切换", eff, "失败", ex)
     return p
 
+
+
+def transitions_more(app):
+    """更多页面切换：穿过黑色、闪光、条纹、形状（菱形/加号/盒状）、轮子、扇形、新闻快报、百叶窗、棋盘、梳理、
+    随机线条、溶解、斜向覆盖/揭开，以及浏览器里按近似画的 3D 切换（显示、平移、立方体、门、幕布、涡流）"""
+    from win32com.client import gencache
+    C = gencache.EnsureModule('{91493440-5A91-11CF-8700-00AA0060263B}', 0, 2, 12).constants
+    names = ["Cut", "CutThroughBlack", "Fade", "Flashbulb", "StripsDownRight", "StripsUpLeft", "DiamondOut", "PlusOut",
+             "BoxOut", "BoxIn", "Wheel1Spoke", "Wheel4Spokes", "WheelReverse1Spoke", "Wedge", "Newsflash",
+             "BlindsHorizontal", "BlindsVertical", "CheckerboardAcross", "CheckerboardDown", "CombHorizontal", "CombVertical",
+             "RandomBarsVertical", "Dissolve", "SplitVerticalIn", "CoverLeftUp", "UncoverRightDown",
+             "RevealSmoothLeft", "PanLeft", "CubeLeft", "DoorsVertical", "Curtains", "VortexLeft"]
+    p = new_pres(app)
+    for i, name in enumerate(names):
+        s = blank(p)
+        s.FollowMasterBackground = 0
+        s.Background.Fill.ForeColor.RGB = RGB(40 + (i * 53) % 200, 120 - (i * 17) % 80, 200 - (i * 29) % 150)
+        t = s.Shapes.AddTextbox(1, 100, 220, 760, 100)
+        t.TextFrame.TextRange.Text = f"第 {i + 1} 页"
+        t.TextFrame.TextRange.Font.Size = 54
+        t.TextFrame.TextRange.Font.Color.RGB = RGB(255, 255, 255)
+        if i:
+            s.SlideShowTransition.EntryEffect = getattr(C, "ppEffect" + name)
+            s.SlideShowTransition.Duration = 1.0
+    return p
 
 def fills_patterns(app):
     """图案填充：多种预设图案、不同前景/背景色、不同位置（图案从幻灯片原点对齐），表格单元格的图案填充"""
@@ -1358,7 +1383,7 @@ def table_vertical(app):
     return p
 
 
-CASES = [shapes_all, text_sizes, text_align, text_spacing, text_bullets, text_missing_font, shapes_basic, fills_lines, table_basic, group_rotate, anim_basic, anim_auto, charts_basic, pictures, smartart, text_effects, text_layout, table_merge, links, emf_images, anim_advanced, charts_labels, freeform_icons, media_audio, anim_trigger, wmf_images, anim_iterate, picture_transparent, charts_more, shape_effects, equations, anim_path, anim_emphasis, transitions, fills_patterns, text_decoration, anim_entrance, svg_images, charts_markers, hidden_slides, media_background, text_glow_reflection, text_tabs, text_picture_bullets, fills_texture, transition_morph, text_embedded_fonts, text_warp, anim_repeat, charts_sizes, slide_timings, lines_compound, table_diagonal, lines_gradient, fills_radial, fills_rect_gradient, shapes_3d, table_vertical]
+CASES = [shapes_all, text_sizes, text_align, text_spacing, text_bullets, text_missing_font, shapes_basic, fills_lines, table_basic, group_rotate, anim_basic, anim_auto, charts_basic, pictures, smartart, text_effects, text_layout, table_merge, links, emf_images, anim_advanced, charts_labels, freeform_icons, media_audio, anim_trigger, wmf_images, anim_iterate, picture_transparent, charts_more, shape_effects, equations, anim_path, anim_emphasis, transitions, fills_patterns, text_decoration, anim_entrance, svg_images, charts_markers, hidden_slides, media_background, text_glow_reflection, text_tabs, text_picture_bullets, fills_texture, transition_morph, text_embedded_fonts, text_warp, anim_repeat, charts_sizes, slide_timings, lines_compound, table_diagonal, lines_gradient, fills_radial, fills_rect_gradient, shapes_3d, table_vertical, transitions_more]
 
 
 def main():
