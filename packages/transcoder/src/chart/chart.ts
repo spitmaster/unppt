@@ -52,6 +52,8 @@ export function renderChart(space: XEl | undefined, w: number, h: number, env: C
   // 趋势线、显示单位等默认名称跟随图表的界面语言（c:lang）
   const lang = attr(child(space, 'c:lang'), 'val') ?? 'zh-CN';
   const plots: Plot[] = readPlots(plotArea, colors, env.part, baseText, env.warn, lang.startsWith('zh'));
+  const blanks = attr(child(chart, 'c:dispBlanksAs'), 'val');
+  for (const p of plots) p.blanks = blanks === 'zero' || blanks === 'span' ? blanks : 'gap';
   if (!plots.length) return out.join('');
   const type0 = chartTypeOf(plots[0].kind)!;
 

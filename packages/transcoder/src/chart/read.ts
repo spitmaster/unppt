@@ -129,9 +129,11 @@ export function readPlots(plotArea: XEl | undefined, colors: ColorContext, part:
       varyColors: attr(child(p, 'c:varyColors'), 'val') === '1',
       bubbleScale: numAttr(child(p, 'c:bubbleScale'), 'val') ?? 100,
       sizeRepresents: attr(child(p, 'c:sizeRepresents'), 'val') ?? 'area',
-      ...(local === 'stockChart' ? {
+      // 高低点连线、涨跌柱（股价图，折线图也可以开）和垂直线（折线图）
+      ...((local === 'stockChart' || local === 'lineChart') && (child(p, 'c:hiLowLines') || child(p, 'c:upDownBars') || child(p, 'c:dropLines')) ? {
         stock: {
           hiLow: child(p, 'c:hiLowLines') ? parseLine([child(child(child(p, 'c:hiLowLines'), 'c:spPr'), 'a:ln')], [colors], part) ?? { color: { r: 64, g: 64, b: 64, a: 1 }, width: 1, cap: 'butt', join: 'round' } : undefined,
+          drop: child(p, 'c:dropLines') ? parseLine([child(child(child(p, 'c:dropLines'), 'c:spPr'), 'a:ln')], [colors], part) ?? { color: { r: 166, g: 166, b: 166, a: 1 }, width: 1, cap: 'butt', join: 'round' } : undefined,
           ...(child(p, 'c:upDownBars') ? {
             upDown: {
               gap: numAttr(child(child(p, 'c:upDownBars'), 'c:gapWidth'), 'val') ?? 150,

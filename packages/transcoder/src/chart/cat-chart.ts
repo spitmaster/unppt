@@ -17,6 +17,7 @@ import { isColumn3D, renderColumn3D } from './cat3d';
 import { isColumnDepth3D, renderColumnDepth3D } from './cat3d-depth';
 import { lineType } from './types/line-area';
 import { extraValues, trendlines } from './extras';
+import { dataTableSize, readDataTable, renderDataTable } from './data-table';
 
 export interface CatEnv { colors: ColorContext; part: string; baseText: TextStyle; makeAxis: AxisMaker; tw: TextWidth; w: number; view?: View3D }
 
@@ -72,7 +73,10 @@ export function renderCategoryChart(plots: Plot[], plotArea: XEl | undefined, ar
   const cjk = cats.some(hasCjk);
   const catH = (s: number) => (cjk ? catBand(s) : valBand(s));
   const catC = (s: number) => (cjk ? catCenter(s) : valCenter(s));
-  const catLabels = !catDeleted && tickLblPos(catAx) !== 'none';
+  // 数据表（柱形、折线、面积图）：表头代替分类标签，表格占绘图区下方和左边一列
+  const dt = horizontal ? undefined : readDataTable(plotArea, colors, baseText, env.part);
+  const dtSize = dt ? dataTableSize(dt, plots, colors, tw) : undefined;
+  const catLabels = !catDeleted && tickLblPos(catAx) !== 'none' && !dt;
   // 按数值轴的长度 len 算刻度并排出绘图区（len 不给时用默认刻度）
   const place = (len?: number) => {
     const prim = makeAxis(primaryAx, primRange[0], primRange[1], { ...primRange[2], length: len, horizontal });
@@ -100,6 +104,10 @@ export function renderCategoryChart(plots: Plot[], plotArea: XEl | undefined, ar
         top = Math.max(top, topForLabel(valStyle.size));
       }
       if (sec && !sec.deleted) right = fromRight() - maxW(sec.labels, sec.style.size) - sideGap(sec.style.size);
+      if (dtSize) {
+        bottom -= dtSize.height;
+        left = Math.max(left, dtSize.colRight);
+      }
       if (catLabels) {
         if (sides.catMid) bottom -= emptySidePad(catStyle.size);
         else if (sides.cat === 'b') bottom -= catH(catStyle.size);
@@ -201,5 +209,7 @@ export function renderCategoryChart(plots: Plot[], plotArea: XEl | undefined, ar
     out.push(tickMarks(prim.ticks.map((t) => frame.valPx(prim.pos(t))), at, dir, outward(sides.val), prim.majorMark, prim.axisLine));
     out.push(tickMarks(prim.minor.map((t) => frame.valPx(prim.pos(t))), at, dir, outward(sides.val), prim.minorMark, prim.axisLine));
   }
-  out.push(...axisText, ...labelsOut);
+  out.push(...axisText);
+  if (dt) renderDataTable(dt, plots, cats, colors, tw, bottom, left, right, band, out);
+  out.push(...labelsOut);
 }
