@@ -427,6 +427,12 @@ export function renderChart(space: XEl | undefined, w: number, h: number, env: C
     if (!catDeleted) left += Math.max(...cats.map((c) => textWidth(c, catStyle.size))) + 8;
     if (!valDeleted) bottom -= valStyle.size * 1.2 + 4;
   }
+  // 分类标签落在坐标轴两端（面积图等 midCat）时，给首尾标签各留半个标签宽度
+  const between = attr(child(primaryAx, 'c:crossBetween'), 'val') !== 'midCat';
+  if (!between && !horizontal && !catDeleted && cats.length) {
+    left = Math.max(left, PAD + textWidth(cats[0], catStyle.size) / 2 - 4);
+    right = Math.min(right, w - PAD - textWidth(cats[cats.length - 1], catStyle.size) / 2 + 4);
+  }
   const pw = Math.max(1, right - left), ph = Math.max(1, bottom - top);
 
   const vpos = prim.pos;
@@ -449,7 +455,6 @@ export function renderChart(space: XEl | undefined, w: number, h: number, env: C
   }
 
   // 分类轴
-  const between = attr(child(primaryAx, 'c:crossBetween'), 'val') !== 'midCat';
   const catLine = parseLine([child(child(catAx, 'c:spPr'), 'a:ln')], [colors], env.part);
   const band = (horizontal ? ph : pw) / (between ? nCat : Math.max(1, nCat - 1));
   const catCenter = (i: number) => (between ? (i + 0.5) * band : i * band);
