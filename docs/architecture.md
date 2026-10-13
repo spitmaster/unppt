@@ -47,7 +47,7 @@ flowchart TB
   text["text/<br/>文本框属性 → 逐段排版（测量、断行、项目符号）→ 定位输出"]
   effects["effects/<br/>← ShapeEffect 扩展点（形状、文字共用）、映像"]
   style["style/<br/>fill 填充、pattern 图案（实测点阵）<br/>line 线条、blip 图片调整"]
-  font["font/<br/>TrueType 解析、字距、子集化"]
+  font["font/<br/>TrueType 解析、字距、子集化 subset.ts<br/>嵌入字体还原 eot.ts → lzcomp.ts → ctf.ts，sfnt.ts 读写公共部分"]
   geometry["geometry/<br/>公式引擎、187 种预设形状"]
   model["model/<br/>演示文稿 / 主题 / 母版 / 版式、颜色"]
   common["common/<br/>SVG 输出工具、超链接"]

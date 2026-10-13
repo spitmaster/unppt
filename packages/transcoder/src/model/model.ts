@@ -121,10 +121,14 @@ export function matchPlaceholder(list: Placeholder[], ph: { type: string; idx?: 
   return undefined;
 }
 
+/** 演示文稿里嵌入的一个字体文件（p:embeddedFontLst） */
+export interface EmbeddedFontRef { typeface: string; part: string; bold: boolean; italic: boolean; }
+
 export class Presentation {
   width = 0;
   height = 0;
   slides: SlideRef[] = [];
+  embeddedFonts: EmbeddedFontRef[] = [];
   defaultTextStyle?: XEl;
   presPart = '';
   private masters = new Map<string, Master>();
@@ -155,6 +159,15 @@ export class Presentation {
       const rel = rels.find((r) => r.id === attr(s, 'r:id'));
       if (!rel) continue;
       this.slides.push({ part: rel.target, index: i++, hidden: false });
+    }
+    const slots: [string, boolean, boolean][] = [['p:regular', false, false], ['p:bold', true, false], ['p:italic', false, true], ['p:boldItalic', true, true]];
+    for (const ef of children(child(pres, 'p:embeddedFontLst'), 'p:embeddedFont')) {
+      const typeface = attr(child(ef, 'p:font'), 'typeface');
+      if (!typeface) continue;
+      for (const [tag, bold, italic] of slots) {
+        const rel = rels.find((r) => r.id === attr(child(ef, tag), 'r:id'));
+        if (rel && !rel.external) this.embeddedFonts.push({ typeface, part: rel.target, bold, italic });
+      }
     }
   }
 

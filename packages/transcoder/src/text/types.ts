@@ -29,9 +29,10 @@ export interface TextEnv {
   part?: string;
 }
 
+/** 字体嵌入：记录每个字体用到的字；嵌入产物的字体返回它在产物里的别名，不嵌入的返回 undefined */
 export interface FontEmbedder {
   use(face: FontFace, cp: number): void;
-  alias(face: FontFace): string;
+  alias(face: FontFace): string | undefined;
 }
 
 /** 从一般到具体排列的列表样式（每个都可能含 a:lvl1pPr … a:lvl9pPr） */

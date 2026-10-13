@@ -3,39 +3,7 @@
  * 只支持 glyf 轮廓的字体（.ttf / .ttc 里的 TrueType）；CFF 轮廓（多数 .otf）返回 undefined。
  */
 import type { RandomAccessSource } from '../io/source';
-
-const be16 = (b: Uint8Array, o: number) => (b[o] << 8) | b[o + 1];
-const bes16 = (b: Uint8Array, o: number) => { const v = be16(b, o); return v & 0x8000 ? v - 0x10000 : v; };
-const be32 = (b: Uint8Array, o: number) => (b[o] * 0x1000000) + ((b[o + 1] << 16) | (b[o + 2] << 8) | b[o + 3]);
-const tagOf = (b: Uint8Array, o: number) => String.fromCharCode(b[o], b[o + 1], b[o + 2], b[o + 3]);
-
-class Writer {
-  private buf = new Uint8Array(1024);
-  len = 0;
-  private ensure(n: number) {
-    if (this.len + n <= this.buf.length) return;
-    let size = this.buf.length * 2;
-    while (size < this.len + n) size *= 2;
-    const nb = new Uint8Array(size);
-    nb.set(this.buf.subarray(0, this.len));
-    this.buf = nb;
-  }
-  u8(v: number) { this.ensure(1); this.buf[this.len++] = v & 255; }
-  u16(v: number) { this.ensure(2); this.buf[this.len++] = (v >> 8) & 255; this.buf[this.len++] = v & 255; }
-  u32(v: number) { this.ensure(4); this.u16(Math.floor(v / 0x10000) & 0xffff); this.u16(v & 0xffff); }
-  bytes(b: Uint8Array) { this.ensure(b.length); this.buf.set(b, this.len); this.len += b.length; }
-  pad4() { while (this.len % 4) this.u8(0); }
-  done() { return this.buf.slice(0, this.len); }
-}
-
-function checksum(b: Uint8Array): number {
-  let sum = 0;
-  const n = Math.ceil(b.length / 4) * 4;
-  for (let i = 0; i < n; i += 4) {
-    sum = (sum + ((b[i] ?? 0) * 0x1000000 + ((b[i + 1] ?? 0) << 16) + ((b[i + 2] ?? 0) << 8) + (b[i + 3] ?? 0))) % 0x100000000;
-  }
-  return sum;
-}
+import { be16, be32, bes16, checksum, finishTables, tagOf, Writer, type SfntTables } from './sfnt';
 
 interface Tables { [tag: string]: { offset: number; length: number } }
 
@@ -203,7 +171,6 @@ export async function subsetFont(src: RandomAccessSource, faceOffset: number, co
   }
 
   head[50] = 0; head[51] = 1;                     // indexToLocFormat = 1（长偏移）
-  head[8] = head[9] = head[10] = head[11] = 0;    // checkSumAdjustment 先清零
   hhea[34] = order.length >> 8; hhea[35] = order.length & 255;
   maxp[4] = order.length >> 8; maxp[5] = order.length & 255;
   const post = new Writer();
@@ -211,7 +178,7 @@ export async function subsetFont(src: RandomAccessSource, faceOffset: number, co
   post.u32(0x00030000);
   if (oldPost && oldPost.length >= 32) post.bytes(oldPost.subarray(4, 32)); else for (let i = 0; i < 28; i++) post.u8(0);
 
-  const tables: [string, Uint8Array][] = [
+  const tables: SfntTables = [
     ['OS/2', t['OS/2'] ? await get('OS/2') : new Uint8Array(0)],
     ['cmap', cmapTable(cps.filter((cp) => cpMap.has(cp)).map((cp) => [cp, newId.get(cpMap.get(cp)!)!]))],
     ['glyf', glyf.done()],
@@ -222,26 +189,8 @@ export async function subsetFont(src: RandomAccessSource, faceOffset: number, co
     ['maxp', maxp],
     ['name', nameTable(family)],
     ['post', post.done()],
-  ].filter(([, d]) => (d as Uint8Array).length > 0) as [string, Uint8Array][];
-  tables.sort((a, b) => (a[0] < b[0] ? -1 : 1));
-
-  // 先算出 TTF 的整体校验，写进 head.checkSumAdjustment
-  let ttfSum = 0;
-  const dirW = new Writer();
-  let es = 0; while ((1 << (es + 1)) <= tables.length) es++;
-  dirW.u32(0x00010000); dirW.u16(tables.length); dirW.u16(16 << es); dirW.u16(es); dirW.u16(tables.length * 16 - (16 << es));
-  let off = 12 + tables.length * 16;
-  for (const [tg, d] of tables) {
-    for (let i = 0; i < 4; i++) dirW.u8(tg.charCodeAt(i));
-    dirW.u32(checksum(d)); dirW.u32(off); dirW.u32(d.length);
-    off += Math.ceil(d.length / 4) * 4;
-    ttfSum = (ttfSum + checksum(d)) % 0x100000000;
-  }
-  ttfSum = (ttfSum + checksum(dirW.done())) % 0x100000000;
-  const adj = (0xb1b0afba - ttfSum + 0x100000000) % 0x100000000;
-  head[8] = (adj >>> 24) & 255; head[9] = (adj >>> 16) & 255; head[10] = (adj >>> 8) & 255; head[11] = adj & 255;
-
-  return woff(tables);
+  ];
+  return woff(finishTables(tables));
 }
 
 async function deflate(data: Uint8Array): Promise<Uint8Array> {
@@ -258,7 +207,7 @@ async function deflate(data: Uint8Array): Promise<Uint8Array> {
 }
 
 /** 打包成 WOFF 1.0（每个表单独 zlib 压缩） */
-async function woff(tables: [string, Uint8Array][]): Promise<Uint8Array> {
+async function woff(tables: SfntTables): Promise<Uint8Array> {
   const comp = await Promise.all(tables.map(async ([, d]) => { const c = await deflate(d); return c.length < d.length ? c : d; }));
   let total = 44 + tables.length * 20;
   for (const c of comp) total += Math.ceil(c.length / 4) * 4;

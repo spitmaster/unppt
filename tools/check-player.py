@@ -63,6 +63,7 @@ def main():
     subprocess.run(["node", "packages/transcoder/dist/cli.js", "convert", "testcases/hidden-slides.pptx", "-o", str(player_dir / "hidden.html"), "-q"], cwd=ROOT, check=True)
     subprocess.run(["node", "packages/transcoder/dist/cli.js", "convert", "testcases/media-background.pptx", "-o", str(player_dir / "bgm.html"), "-q"], cwd=ROOT, check=True)
     subprocess.run(["node", "packages/transcoder/dist/cli.js", "convert", "testcases/transition-morph.pptx", "-o", str(player_dir / "morph.html"), "-q"], cwd=ROOT, check=True)
+    subprocess.run(["node", "packages/transcoder/dist/cli.js", "convert", "testcases/text-embedded-fonts.pptx", "-o", str(player_dir / "embfont.html"), "-q"], cwd=ROOT, check=True)
     s1, player_url = serve(player_dir)
     s2, host_url = serve(host_dir)
 
@@ -247,6 +248,14 @@ def main():
         page11.wait_for_timeout(1500)
         end11 = page11.evaluate(js11)
         check(mid11 == [2, 2, True] and end11 == [1, 1, False] and not errors11, f"平滑切换中途变形、播完复原：{mid11} -> {end11} {errors11[:1]}")
+
+        # ---------------- 12. 演示文稿里嵌入的字体（MicroType Express 解压后再子集化）：浏览器能正常加载
+        page12 = b.new_page()
+        page12.goto(f"{player_url}/embfont.html")
+        page12.wait_for_function("window.unppt !== undefined && !!document.querySelector('div.unppt-slide')")
+        st12 = page12.evaluate("""(async () => { await document.fonts.ready; const fs = Array.from(document.fonts).filter(f => f.family.includes('unppt-f'));
+          await Promise.all(fs.map(f => f.load().catch(() => null))); return fs.map(f => f.status); })()""")
+        check(len(st12) == 2 and all(s == "loaded" for s in st12), f"嵌入字体加载成功：{st12}")
 
         # ---------------- 移动端视口
         mobile = {"is_mobile": True} if BROWSER != "firefox" else {}
