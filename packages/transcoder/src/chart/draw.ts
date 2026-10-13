@@ -70,3 +70,9 @@ export function markerSvg(s: Series, x: number, y: number, maxSize = Infinity): 
     default: return `<circle cx="${n2(x)}" cy="${n2(y)}" r="${n2(r)}"${f}${st}/>`;
   }
 }
+
+/**
+ * 数据部分（"按系列""按类别"动画的目标）：key 是"系列序号x分类序号"（柱、扇区、标记），
+ * "系列序号s"（整条折线、面积），数据标签再加 l。图表框把它换成动画编号（拼法见 common/uid.ts）
+ */
+export const cpart = (key: string, svg: string) => (svg ? `<g data-cpart="${key}">${svg}</g>` : '');

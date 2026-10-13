@@ -137,8 +137,9 @@ export function renderChart(space: XEl | undefined, w: number, h: number, env: C
   const makeAxis = axisMaker(colors, baseText, env.part);
   if (type0.layout === 'standalone') {
     const ctx: ChartContext = { colors, part: env.part, baseText, plotArea, makeAxis, width: tw, box: { w, h } };
+    // 雷达、散点的网格和坐标轴在类型自己的输出里：整段当背景，数据部分嵌在里面（背景总是第一步显示，不影响逐个出现）
     out.push(type0.render!(plots[0], { left, top, right, bottom }, ctx));
-    return out.join('');
+    return groupBackground(out);
   }
 
   // ---------------- 坐标轴（分类轴图）
@@ -248,5 +249,24 @@ export function renderChart(space: XEl | undefined, w: number, h: number, env: C
     else out.push(`<line x1="${n2(left + zeroF * pw)}" y1="${n2(top)}" x2="${n2(left + zeroF * pw)}" y2="${n2(bottom)}" stroke="${css(catLine.color)}" stroke-width="${n2(catLine.width)}"/>`);
   }
   out.push(...labelsOut);
-  return out.join('');
+  return groupBackground(out);
+}
+
+/**
+ * 背景（标题、图例、坐标轴、网格……）按连续的段包起来，标成 g0、g1……：
+ * "按系列""按类别"动画的第一步（gridLegend）显示它们，数据部分各自有标记（见 draw.ts 的 cpart）
+ */
+function groupBackground(out: string[]): string {
+  const res: string[] = [];
+  let run: string[] = [];
+  let k = 0;
+  const flush = () => {
+    if (run.length) res.push(`<g data-cpart="g${k++}">${run.join('')}</g>`);
+    run = [];
+  };
+  for (const o of out) {
+    if (o.startsWith('<g data-cpart=')) { flush(); res.push(o); } else run.push(o);
+  }
+  flush();
+  return res.join('');
 }

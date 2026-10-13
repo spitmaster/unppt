@@ -37,7 +37,7 @@ export function readPlots(plotArea: XEl | undefined, colors: ColorContext, part:
     const plotLabels = readLabels(child(p, 'c:dLbls'), undefined, colors, baseText);
     const series: Series[] = children(p, 'c:ser').map((s) => {
       const idx = numAttr(child(s, 'c:idx'), 'val') ?? serialIdx;
-      serialIdx++;
+      const index = serialIdx++;
       const spPr = child(s, 'c:spPr');
       const fill = parseFill(findFillEl(spPr), colors, part);
       const accent = colorIn({ name: 'x', attrs: {}, text: '', children: [{ name: 'a:schemeClr', attrs: { val: ACCENTS[idx % 6] }, children: [], text: '' }] }, colors)!;
@@ -65,6 +65,7 @@ export function readPlots(plotArea: XEl | undefined, colors: ColorContext, part:
       const mkLine = parseLine([child(child(mk, 'c:spPr'), 'a:ln')], [colors], part);
       const marker = rules.marker(symbol);
       return {
+        index,
         labels: readLabels(child(s, 'c:dLbls'), plotLabels, colors, baseText),
         name: findAll(child(s, 'c:tx'), 'c:v')[0]?.text ?? child(child(s, 'c:tx'), 'c:v')?.text ?? `系列 ${idx + 1}`,
         cats, vals,

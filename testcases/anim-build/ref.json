@@ -77,6 +77,142 @@
    "triggerHidden": [],
    "steps": 5,
    "approxSteps": false
+  },
+  {
+   "index": 1,
+   "hidden": false,
+   "shapes": [
+    {
+     "id": 2,
+     "name": "Chart 1",
+     "type": 3,
+     "x": 80.0,
+     "y": 40.0,
+     "w": 800.0,
+     "h": 460.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": -2
+    }
+   ],
+   "effects": [
+    {
+     "index": 1,
+     "type": 22,
+     "exit": false,
+     "trigger": 1,
+     "dur": 0.5,
+     "delay": 0.0,
+     "shapeId": 2,
+     "paragraph": 0
+    },
+    {
+     "index": 2,
+     "type": 22,
+     "exit": false,
+     "trigger": 1,
+     "dur": 0.5,
+     "delay": 0.0,
+     "shapeId": 2,
+     "paragraph": 0
+    },
+    {
+     "index": 3,
+     "type": 22,
+     "exit": false,
+     "trigger": 1,
+     "dur": 0.5,
+     "delay": 0.0,
+     "shapeId": 2,
+     "paragraph": 0
+    },
+    {
+     "index": 4,
+     "type": 22,
+     "exit": false,
+     "trigger": 1,
+     "dur": 0.5,
+     "delay": 0.0,
+     "shapeId": 2,
+     "paragraph": 0
+    }
+   ],
+   "triggerHidden": [],
+   "steps": 4,
+   "approxSteps": false
+  },
+  {
+   "index": 2,
+   "hidden": false,
+   "shapes": [
+    {
+     "id": 2,
+     "name": "Chart 1",
+     "type": 3,
+     "x": 80.0,
+     "y": 40.0,
+     "w": 800.0,
+     "h": 460.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": -2
+    }
+   ],
+   "effects": [
+    {
+     "index": 1,
+     "type": 22,
+     "exit": false,
+     "trigger": 1,
+     "dur": 0.5,
+     "delay": 0.0,
+     "shapeId": 2,
+     "paragraph": 0
+    },
+    {
+     "index": 2,
+     "type": 22,
+     "exit": false,
+     "trigger": 1,
+     "dur": 0.5,
+     "delay": 0.0,
+     "shapeId": 2,
+     "paragraph": 0
+    },
+    {
+     "index": 3,
+     "type": 22,
+     "exit": false,
+     "trigger": 1,
+     "dur": 0.5,
+     "delay": 0.0,
+     "shapeId": 2,
+     "paragraph": 0
+    },
+    {
+     "index": 4,
+     "type": 22,
+     "exit": false,
+     "trigger": 1,
+     "dur": 0.5,
+     "delay": 0.0,
+     "shapeId": 2,
+     "paragraph": 0
+    },
+    {
+     "index": 5,
+     "type": 22,
+     "exit": false,
+     "trigger": 1,
+     "dur": 0.5,
+     "delay": 0.0,
+     "shapeId": 2,
+     "paragraph": 0
+    }
+   ],
+   "triggerHidden": [],
+   "steps": 5,
+   "approxSteps": false
   }
  ],
  "ok": true

@@ -2,7 +2,7 @@
 import { css } from '../../model/color';
 import { n2 } from '../../common/svg';
 import { attr, child } from '../../io/xml';
-import { label, markerSvg } from '../draw';
+import { cpart, label, markerSvg } from '../draw';
 import { labelText } from '../format';
 import type { ChartType, CategoryFrame } from '../chart-type';
 import type { AxisInfo, Plot } from '../model';
@@ -17,6 +17,7 @@ function renderLineArea(p: Plot, f: CategoryFrame, A: AxisInfo, out: string[], l
   series.forEach((s) => {
     const pts: [number, number][] = [];
     const base: [number, number][] = [];
+    const ptCat: number[] = [];
     for (let i = 0; i < nCat; i++) {
       const v = s.vals[i];
       if (v === null || v === undefined) continue;
@@ -27,15 +28,16 @@ function renderLineArea(p: Plot, f: CategoryFrame, A: AxisInfo, out: string[], l
       const x = left + catCenter(i);
       pts.push([x, bottom - vpos(v1) * ph]);
       base.push([x, bottom - vpos(b0) * ph]);
+      ptCat.push(i);
     }
     if (!pts.length) return;
     if (p.kind === 'area') {
       const d = `M${pts.map((q) => `${n2(q[0])} ${n2(q[1])}`).join('L')}L${base.reverse().map((q) => `${n2(q[0])} ${n2(q[1])}`).join('L')}Z`;
-      if (s.fill) drawn.push(`<path d="${d}" fill="${css(s.fill)}"/>`);
+      if (s.fill) drawn.push(cpart(`${s.index}s`, `<path d="${d}" fill="${css(s.fill)}"/>`));
     } else {
       const lc = s.line?.color ?? s.fill;
-      if (lc) drawn.push(`<path d="M${pts.map((q) => `${n2(q[0])} ${n2(q[1])}`).join('L')}" fill="none" stroke="${css(lc)}" stroke-width="${n2(s.line?.width ?? 3)}" stroke-linejoin="round" stroke-linecap="round"/>`);
-      if (s.marker && lc) for (const q of pts) drawn.push(markerSvg(s, q[0], q[1]));
+      if (lc) drawn.push(cpart(`${s.index}s`, `<path d="M${pts.map((q) => `${n2(q[0])} ${n2(q[1])}`).join('L')}" fill="none" stroke="${css(lc)}" stroke-width="${n2(s.line?.width ?? 3)}" stroke-linejoin="round" stroke-linecap="round"/>`));
+      if (s.marker && lc) pts.forEach((q, k) => drawn.push(cpart(`${s.index}x${ptCat[k]}`, markerSvg(s, q[0], q[1]))));
       const lb = s.labels;
       if (lb) {
         let k = 0;
@@ -45,11 +47,12 @@ function renderLineArea(p: Plot, f: CategoryFrame, A: AxisInfo, out: string[], l
           const q = pts[k++];
           const text = labelText(lb, v, 0, s.cats[i] ?? '', s.name, valFmt);
           const pos = lb.pos ?? 'r';
-          if (pos === 't') labelsOut.push(label(text, q[0], q[1] - 6 - lb.style.size * 0.5, lb.style));
-          else if (pos === 'b') labelsOut.push(label(text, q[0], q[1] + 6 + lb.style.size * 0.5, lb.style));
-          else if (pos === 'l') labelsOut.push(label(text, q[0] - 6, q[1], lb.style, 'end'));
-          else if (pos === 'ctr') labelsOut.push(label(text, q[0], q[1], lb.style));
-          else labelsOut.push(label(text, q[0] + 6, q[1], lb.style, 'start'));
+          const key = `${s.index}x${i}l`;
+          if (pos === 't') labelsOut.push(cpart(key, label(text, q[0], q[1] - 6 - lb.style.size * 0.5, lb.style)));
+          else if (pos === 'b') labelsOut.push(cpart(key, label(text, q[0], q[1] + 6 + lb.style.size * 0.5, lb.style)));
+          else if (pos === 'l') labelsOut.push(cpart(key, label(text, q[0] - 6, q[1], lb.style, 'end')));
+          else if (pos === 'ctr') labelsOut.push(cpart(key, label(text, q[0], q[1], lb.style)));
+          else labelsOut.push(cpart(key, label(text, q[0] + 6, q[1], lb.style, 'start')));
         }
       }
     }

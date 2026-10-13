@@ -2,7 +2,7 @@
 import { attr, child } from '../../io/xml';
 import { css } from '../../model/color';
 import { n2 } from '../../common/svg';
-import { label, markerSvg, textStyle } from '../draw';
+import { cpart, label, markerSvg, textStyle } from '../draw';
 import { sideGap, type TextWidth } from '../layout';
 import { axesOf } from '../axis';
 import type { AxisInfo, Plot, TextStyle } from '../model';
@@ -50,11 +50,11 @@ function renderRadar(p: Plot, A: AxisInfo, catStyle: TextStyle, catDeleted: bool
     const pts = s.vals.map((v, i) => at(i, A.pos(Math.max(A.lo, Math.min(A.hi, v ?? A.lo)))));
     if (!pts.length) continue;
     if (p.radarStyle === 'filled') {
-      if (s.fill) out.push(`<polygon points="${poly(pts)}" fill="${css(s.fill)}"/>`);
+      if (s.fill) out.push(cpart(`${s.index}s`, `<polygon points="${poly(pts)}" fill="${css(s.fill)}"/>`));
       continue;
     }
-    if (s.line?.color) out.push(`<polygon points="${poly(pts)}" fill="none" stroke="${css(s.line.color)}" stroke-width="${n2(s.line.width)}" stroke-linejoin="round"/>`);
-    if (s.marker) for (const q of pts) out.push(markerSvg(s, q[0], q[1]));
+    if (s.line?.color) out.push(cpart(`${s.index}s`, `<polygon points="${poly(pts)}" fill="none" stroke="${css(s.line.color)}" stroke-width="${n2(s.line.width)}" stroke-linejoin="round"/>`));
+    if (s.marker) pts.forEach((q, i) => out.push(cpart(`${s.index}x${i}`, markerSvg(s, q[0], q[1]))));
   }
   // 数值刻度标签盖在系列上面
   if (!A.deleted) A.ticks.forEach((t, i) => out.push(label(A.labels[i], cx - 4, cy - r * A.pos(t), A.style, 'end')));

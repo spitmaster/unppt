@@ -348,6 +348,19 @@ def main():
             page16.wait_for_timeout(700)
             seen16.append(page16.evaluate(js16))
         check(seen16 == [0, 1, 2, 3, 4, 5], f"SmartArt 逐个出现：{seen16}")
+        # 图表按系列、按类别：先出现背景（坐标轴、网格、图例，两段），再逐个系列（每个 4 根柱）或逐个分类（每个 3 根柱）
+        jsc = "Array.from(document.querySelectorAll('div.unppt-slide [data-uid*=\"c\"]')).filter((e) => !e.closest('.unppt-hide')).length"
+        charts16 = []
+        for slide, clicks in ((1, 4), (2, 5)):
+            page16.evaluate(f"window.unppt.goto({slide}, 0)")
+            page16.wait_for_timeout(200)
+            seq = [page16.evaluate(jsc)]
+            for _ in range(clicks):
+                page16.evaluate("window.unppt.next()")
+                page16.wait_for_timeout(700)
+                seq.append(page16.evaluate(jsc))
+            charts16.append(seq)
+        check(charts16 == [[0, 2, 6, 10, 14], [0, 2, 5, 8, 11, 14]], f"图表按系列 {charts16[0]}、按类别 {charts16[1]} 逐个出现")
 
         # ---------------- 移动端视口
         mobile = {"is_mobile": True} if BROWSER != "firefox" else {}

@@ -1,7 +1,7 @@
 /** 柱形图、条形图（簇状、堆积、百分比堆积）：画在共享的分类轴上 */
 import { css } from '../../model/color';
 import { n2 } from '../../common/svg';
-import { label } from '../draw';
+import { cpart, label } from '../draw';
 import { labelText } from '../format';
 import type { ChartType } from '../chart-type';
 
@@ -49,12 +49,12 @@ export const barType: ChartType = {
         const inside = stacked || lb?.pos === 'ctr' || lb?.pos === 'inEnd' || lb?.pos === 'inBase';
         if (!horizontal) {
           const y1 = bottom - Math.max(fa, fb) * ph, y2 = bottom - Math.min(fa, fb) * ph;
-          out.push(`<rect x="${n2(left + offset)}" y="${n2(y1)}" width="${n2(barW)}" height="${n2(y2 - y1)}" fill="${css(color)}"/>`);
-          if (text) labelsOut.push(label(text, left + offset + barW / 2, inside ? (y1 + y2) / 2 : y1 - 4 - lb!.style.size * 0.55, lb!.style));
+          out.push(cpart(`${s.index}x${i}`, `<rect x="${n2(left + offset)}" y="${n2(y1)}" width="${n2(barW)}" height="${n2(y2 - y1)}" fill="${css(color)}"/>`));
+          if (text) labelsOut.push(cpart(`${s.index}x${i}l`, label(text, left + offset + barW / 2, inside ? (y1 + y2) / 2 : y1 - 4 - lb!.style.size * 0.55, lb!.style)));
         } else {
           const x1 = left + Math.min(fa, fb) * pw, x2 = left + Math.max(fa, fb) * pw;
-          out.push(`<rect x="${n2(x1)}" y="${n2(bottom - offset - barW)}" width="${n2(x2 - x1)}" height="${n2(barW)}" fill="${css(color)}"/>`);
-          if (text) labelsOut.push(label(text, inside ? (x1 + x2) / 2 : x2 + 4, bottom - offset - barW / 2, lb!.style, inside ? 'middle' : 'start'));
+          out.push(cpart(`${s.index}x${i}`, `<rect x="${n2(x1)}" y="${n2(bottom - offset - barW)}" width="${n2(x2 - x1)}" height="${n2(barW)}" fill="${css(color)}"/>`));
+          if (text) labelsOut.push(cpart(`${s.index}x${i}l`, label(text, inside ? (x1 + x2) / 2 : x2 + 4, bottom - offset - barW / 2, lb!.style, inside ? 'middle' : 'start')));
         }
       }
     });
