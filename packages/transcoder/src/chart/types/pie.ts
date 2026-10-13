@@ -3,7 +3,8 @@ import { css, type ColorContext } from '../../model/color';
 import { n2 } from '../../common/svg';
 import { accentColor, cpart, label } from '../draw';
 import { labelText } from '../format';
-import type { Plot } from '../model';
+import type { ChartContext, Plot, Rect } from '../model';
+import { renderPie3D } from './pie3d';
 import type { ChartType } from '../chart-type';
 
 /** 扇区（圆环时带内圆）的路径：从角 a1 顺时针到 a2（弧度，0 在右边）；full 是整圆 */
@@ -62,7 +63,7 @@ const pieBase = {
   legendByCategory: true,
   seriesRules: () => ({ xy: false, defaultLine: false, marker: () => false }),
   legendKey: (_p: Plot, s: Plot['series'][number]) => ({ color: s.fill, line: false }),
-  render: (p: Plot, a: { left: number; top: number; right: number; bottom: number }, ctx: { colors: ColorContext }) => renderPie(p, a.left, a.top, a.right - a.left, a.bottom - a.top, ctx.colors),
+  render: (p: Plot, a: Rect, ctx: ChartContext) => (p.is3D && p.kind === 'pie' && ctx.view3D ? renderPie3D(p, a, ctx.view3D, ctx.colors) : renderPie(p, a.left, a.top, a.right - a.left, a.bottom - a.top, ctx.colors)),
 };
 
 export const pieType: ChartType = { ...pieBase, kind: 'pie', tags: ['pieChart', 'pie3DChart'] };

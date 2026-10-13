@@ -16,7 +16,7 @@ import { chartTypeOf } from './chart-types';
 import { label, textStyle, textWidth } from './draw';
 import { BOTTOM_PAD, PAD, type TextWidth } from './layout';
 import { renderLegend } from './legend';
-import type { ChartContext, Plot, SvgDefs, TextStyle } from './model';
+import type { ChartContext, Plot, SvgDefs, TextStyle, View3D } from './model';
 import { readPlots } from './read';
 
 export interface ChartEnv {
@@ -98,6 +98,7 @@ export function renderChart(space: XEl | undefined, w: number, h: number, env: C
     const ctx: ChartContext = {
       colors, part: env.part, baseText, plotArea, makeAxis, width: tw, box: { w, h }, defs: env.defs,
       legendPos: legendEl ? attr(child(legendEl, 'c:legendPos'), 'val') ?? 'r' : undefined, hasTitle: !!titleText, manual: !!(ml && numAttr(child(ml, 'c:w'), 'val') !== undefined),
+      view3D: readView3D(child(chart, 'c:view3D'), type0.kind === 'pie'),
     };
     // 雷达、散点的网格和坐标轴在类型自己的输出里：整段当背景，数据部分嵌在里面（背景总是第一步显示，不影响逐个出现）
     out.push(type0.render!(plots[0], { left, top, right, bottom }, ctx));
@@ -106,6 +107,15 @@ export function renderChart(space: XEl | undefined, w: number, h: number, env: C
 
   renderCategoryChart(plots, plotArea, { left, top, right, bottom }, { colors, part: env.part, baseText, makeAxis, tw, w }, out);
   return groupBackground(out);
+}
+
+/** 三维视图；饼图默认俯角 30°、不转，其它默认俯角 15°、转 20° */
+function readView3D(v: XEl | undefined, pie: boolean): View3D {
+  const num = (n: string, d: number) => numAttr(child(v, `c:${n}`), 'val') ?? d;
+  return {
+    rotX: num('rotX', pie ? 30 : 15), rotY: num('rotY', pie ? 0 : 20), perspective: num('perspective', 30),
+    rAngAx: attr(child(v, 'c:rAngAx'), 'val') === '1', depthPercent: num('depthPercent', 100), hPercent: num('hPercent', 100),
+  };
 }
 
 /**

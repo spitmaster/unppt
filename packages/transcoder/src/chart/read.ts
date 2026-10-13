@@ -117,6 +117,7 @@ export function readPlots(plotArea: XEl | undefined, colors: ColorContext, part:
       kind,
       axIds,
       catReversed: axisReversed(axesOf(plotArea).catAxes.find((a) => axIds.includes(axId(a)))),
+      is3D: local.includes('3D'),
       radarStyle: attr(child(p, 'c:radarStyle'), 'val') ?? 'marker',
       horizontal: attr(child(p, 'c:barDir'), 'val') === 'bar',
       grouping: attr(child(p, 'c:grouping'), 'val') ?? type.defaultGrouping ?? 'standard',

@@ -69,6 +69,9 @@ export interface ErrBars {
   minus: (number | null)[];
 }
 
+/** 三维图表的视图（c:view3D）：俯角、转角、透视（0~240）、直角坐标轴（没有透视）、深度和高度（基底的百分比） */
+export interface View3D { rotX: number; rotY: number; perspective: number; rAngAx: boolean; depthPercent: number; hPercent: number }
+
 export interface Plot {
   /** 图表类型（ChartType.kind） */
   kind: string;
@@ -78,6 +81,8 @@ export interface Plot {
   horizontal: boolean;
   /** 分类轴逆序（"逆序类别"） */
   catReversed: boolean;
+  /** 三维图表（pie3DChart、bar3DChart……） */
+  is3D: boolean;
   grouping: string;
   gapWidth: number;
   overlap: number;
@@ -147,6 +152,8 @@ export interface ChartContext {
   legendPos?: string;
   hasTitle?: boolean;
   manual?: boolean;
+  /** 三维图表的视图 */
+  view3D?: View3D;
   defs?: SvgDefs;
 }
 
