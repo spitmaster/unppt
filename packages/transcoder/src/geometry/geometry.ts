@@ -4,10 +4,10 @@
  */
 import { attr, child, children, type XEl } from '../io/xml';
 import { PRESETS } from './presets';
+import type { GeomCmd, GeomDef, GeomPath } from './types';
 
-export interface GeomCmd { op: 'M' | 'L' | 'A' | 'C' | 'Q' | 'Z'; args: string[]; }
-export interface GeomPath { w?: number; h?: number; fill: 'norm' | 'none' | 'lighten' | 'darken' | 'lightenLess' | 'darkenLess'; stroke: boolean; cmds: GeomCmd[]; }
-export interface GeomDef { av: [string, string][]; gd: [string, string][]; paths: GeomPath[]; rect?: [string, string, string, string]; }
+export type { GeomCmd, GeomDef, GeomPath } from './types';
+
 
 export interface Geometry { paths: SvgPath[]; text: { x: number; y: number; w: number; h: number }; }
 

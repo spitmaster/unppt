@@ -9,7 +9,7 @@
  *   path [w=数字] [h=数字] [fill=none] [stroke=0]
  *   M x y | L x y | A wR hR 起始角 扫过角 | C x1 y1 x2 y2 x y | Q x1 y1 x y | Z
  */
-import type { GeomDef, GeomPath } from './geometry';
+import type { GeomDef, GeomPath } from './types';
 import { PRESET_SRC } from './presets-data';
 
 
