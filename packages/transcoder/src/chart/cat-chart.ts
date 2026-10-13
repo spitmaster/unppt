@@ -14,6 +14,7 @@ import { catBand, catCenter, PAD, RIGHT_LABEL_PAD, SIDE_LABEL_PAD, sideAnchor, s
 import { axisLine, axisSides, catMapping, gridLine, outward, tickLblPos, tickMarks } from './sides';
 import type { AxisMaker, AxisOpts, Plot, Rect, TextStyle, View3D } from './model';
 import { isColumn3D, renderColumn3D } from './cat3d';
+import { isColumnDepth3D, renderColumnDepth3D } from './cat3d-depth';
 import { lineType } from './types/line-area';
 import { extraValues, trendlines } from './extras';
 
@@ -25,6 +26,11 @@ export function renderCategoryChart(plots: Plot[], plotArea: XEl | undefined, ar
   const axisOf = (p: Plot) => valAxes.find((a) => p.axIds.includes(axId(a))) ?? valAxes[0];
   const catAx = catAxes.find((a) => plots[0].axIds.includes(axId(a))) ?? catAxes[0];
   // 三维柱形图（直角坐标轴）：墙、斜网格线、立方体，单独画
+  if (isColumnDepth3D(plots, env.view)) {
+    const serAx = plotArea?.children.find((c) => c.name === 'c:serAx');
+    renderColumnDepth3D(plots[0], axisOf(plots[0]), catAx, serAx, area, { ...env, view: env.view! }, out);
+    return;
+  }
   if (isColumn3D(plots, env.view)) {
     renderColumn3D(plots[0], axisOf(plots[0]), catAx, area, { ...env, view: env.view! }, out);
     return;

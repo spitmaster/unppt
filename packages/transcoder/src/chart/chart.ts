@@ -116,6 +116,7 @@ function readView3D(v: XEl | undefined, pie: boolean): View3D {
   return {
     rotX: num('rotX', pie ? 30 : 15), rotY: num('rotY', pie ? 0 : 20), perspective: num('perspective', 30),
     rAngAx: attr(child(v, 'c:rAngAx'), 'val') === '1', depthPercent: num('depthPercent', 100), hPercent: num('hPercent', 100),
+    autoScale: !child(v, 'c:hPercent'),
   };
 }
 

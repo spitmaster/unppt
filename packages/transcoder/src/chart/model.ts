@@ -69,8 +69,11 @@ export interface ErrBars {
   minus: (number | null)[];
 }
 
-/** 三维图表的视图（c:view3D）：俯角、转角、透视（0~240）、直角坐标轴（没有透视）、深度和高度（基底的百分比） */
-export interface View3D { rotX: number; rotY: number; perspective: number; rAngAx: boolean; depthPercent: number; hPercent: number }
+/**
+ * 三维图表的视图（c:view3D）：俯角、转角、透视（0~240）、直角坐标轴（没有透视）、深度和高度（基底的百分比）；
+ * autoScale：没写 hPercent（PowerPoint 只在关闭"自动缩放"时写高度百分比）
+ */
+export interface View3D { rotX: number; rotY: number; perspective: number; rAngAx: boolean; depthPercent: number; hPercent: number; autoScale: boolean }
 
 export interface Plot {
   /** 图表类型（ChartType.kind） */
