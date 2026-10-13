@@ -20,8 +20,10 @@ export interface TextEnv {
   embed?: FontEmbedder;
   /** 渐变文字、文字阴影需要往 SVG 里加 defs */
   doc?: SvgDoc;
-  /** 渐变文字铺满的范围（文本框，内部坐标） */
+  /** 文本框的范围（内部坐标）：文字效果滤镜的区域；艺术字变形时渐变铺满它 */
   gradBox?: { w: number; h: number };
+  /** 正在输出的这一行的外框（横向是文字宽度，竖向是行高）：渐变文字按行铺（见 svg-text.ts 的 textGradient） */
+  lineBox?: { x: number; y: number; w: number; h: number };
   /** 文字开了三维效果（文本框属性里的 a:sp3d）：颜色按三维光照提亮；sp3d 用来画棱台边缘 */
   lit3d?: boolean;
   sp3d?: XEl;

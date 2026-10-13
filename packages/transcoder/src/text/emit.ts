@@ -16,6 +16,9 @@ export interface PlacedLine {
   li: number;
   line: Line;
   baseline: number;
+  /** 行框的上边和高度（行距在内） */
+  top: number;
+  lh: number;
   x: number;
   /** 每个字的起点（两端对齐时已经加上间隙） */
   xs: number[];
@@ -72,7 +75,7 @@ export function placeLines(layouts: ParagraphLayout[], b: BodyProps, outer: { w:
         xs.push(cx);
         cx += a.width + (extra && (a.space || a.wide) ? extra : 0);
       }
-      placed.push({ pi, li, line, baseline, x, xs, extra, colX });
+      placed.push({ pi, li, line, baseline, top: linesLeftToRight ? outer.h - y - lh : y, lh, x, xs, extra, colX });
       y += lh;
     });
     if (pi < layouts.length - 1) y += pl.spcAft;
@@ -95,8 +98,11 @@ export function emitParagraphs(
     const under: string[] = [];
     const over: string[] = [];
     for (; k0 < placed.length && placed[k0].pi === i; k0++) {
-      const { line, li, baseline, x, xs, extra, colX } = placed[k0];
+      const { line, li, baseline, top, lh, x, xs, extra, colX } = placed[k0];
       const lineStart = pParts.length;
+      // 渐变文字按行铺：行的外框（横向从行首到最后一个非空白字的右边）
+      const last = line.atoms.reduce((k, a, j) => (a.space || a.tab ? k : j), -1);
+      env.lineBox = { x, y: top, w: last >= 0 ? xs[last] + line.atoms[last].width - x : 0, h: lh };
       if (li === 0 && pl.bullet) {
         const b = pl.bullet;
         const bx = pl.algn === 'l' || pl.algn === 'just' ? lIns + colX + b.x : x - b.width;
@@ -142,5 +148,6 @@ export function emitParagraphs(
     const all = [...under, ...pParts, ...over];
     if (all.length) parts.push(pl.uid ? `<g data-uid="${pl.uid}">${all.join('')}</g>` : all.join(''));
   }
+  env.lineBox = undefined;
   return parts;
 }

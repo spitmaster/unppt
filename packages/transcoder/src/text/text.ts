@@ -42,7 +42,7 @@ export async function renderText(
 
   const outer = vertical ? { x: 0, y: 0, w: box.h, h: box.w } : { x: 0, y: 0, w: box.w, h: box.h };
   const contentW = Math.max(1, (outer.w - lIns - rIns - (numCol - 1) * spcCol) / numCol);
-  // 实测：渐变文字的渐变铺满整个文本框，而不是文字本身的范围
+  // 文本框的范围：文字效果滤镜的区域（渐变文字按行铺，见 svg-text.ts）
   env.gradBox = { w: outer.w, h: outer.h };
   const measurer = makeMeasurer(env);
   const lstStyle = child(txBody, 'a:lstStyle');
