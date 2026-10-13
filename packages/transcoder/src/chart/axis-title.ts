@@ -1,7 +1,7 @@
 /**
  * 坐标轴标题（c:valAx / c:catAx 里的 c:title）。PowerPoint 实测（COM 读 9~20 磅柱形、条形、散点图的标题框和绘图区）：
  *   - 标题字号没写时是图表文字的 1330/1197 倍（12 磅的图表是 13.3 磅）；标题框的厚度 = 1.3545 × 字号 + 3 磅；
- *   - 左侧的标题转 90°（竖排、从下往上读），从图表边 7 磅处开始；数值（或分类）标签从标题右边再隔 6 磅排起；
+ *   - 左侧的标题转 90°（竖排、从下往上读），从图表边 7 磅处开始；数值（或分类）标签从标题右边再隔 6 磅排起（COM 读 13.3 磅标题时少 0.73 像素）；
  *   - 下方的标题紧贴在标签带下面，底边离可用区域底边 6 磅；绘图区在这两个方向各让出"厚度 + 6 磅"；
  *   - 标题在绘图区的中线上居中；字形在标题框里偏下（转过来的偏右）：横排 0.11 × 字号，竖排 0.2 × 字号（导出图量字的墨迹）。
  * 文字没写时显示"坐标轴标题"（英文界面 Axis Title）。
@@ -17,7 +17,7 @@ export interface AxisTitle { text: string; style: TextStyle }
 export interface AxisTitles { left?: AxisTitle; bottom?: AxisTitle }
 
 const PT = 4 / 3;
-const EDGE = 7 * PT, GAP = 6 * PT;
+const EDGE = 7 * PT, GAP = 6 * PT, LEFT_GAP = GAP - 0.73;
 /** 标题框的厚度（像素；s 是字号，像素） */
 const thickness = (s: number) => 1.3545 * s + 3 * PT;
 
@@ -38,7 +38,7 @@ const titleLeft = (area: Rect) => (area.left === PAD ? EDGE : area.left);
 /** 先让出标题的位置：左边从标题右边隔 6 磅开始（标签从这里排），下边减去"厚度 + 6 磅" */
 export function reserveAxisTitles(area: Rect, t: AxisTitles): Rect {
   let { left, bottom } = area;
-  if (t.left) left = titleLeft(area) + thickness(t.left.style.size) + GAP;
+  if (t.left) left = titleLeft(area) + thickness(t.left.style.size) + LEFT_GAP;
   if (t.bottom) bottom -= thickness(t.bottom.style.size) + GAP;
   return { ...area, left, bottom };
 }

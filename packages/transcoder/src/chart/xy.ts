@@ -3,15 +3,15 @@
  * 画网格和轴线，再把每个数据点换成像素位置交给具体类型画。
  */
 import { attr, child, type XEl } from '../io/xml';
-import { css } from '../model/color';
-import { n2 } from '../common/svg';
 import { cpart, label } from './draw';
 import { errRanges, errSvg } from './error-bars';
 import { extraValues, trendlines } from './extras';
-import { PAD, RIGHT_LABEL_PAD, SIDE_LABEL_PAD, sideAnchor, sideGap, topForLabel, valBand, valCenter } from './layout';
+import { PAD, SIDE_LABEL_PAD, sideAnchor, sideGap, topForLabel, valBand, valCenter } from './layout';
 import { axesOf } from './axis';
 import { readAxisTitle, renderAxisTitles, reserveAxisTitles } from './axis-title';
 import type { AxisInfo, ChartContext, Plot, Rect, Series } from './model';
+import { axisLine } from './sides';
+import { NO_GRID } from './pixel-grid';
 
 export interface XYPoint { x: number; y: number; i: number }
 export interface XYFrame { left: number; top: number; right: number; bottom: number; pw: number; ph: number; X: AxisInfo; Y: AxisInfo }
@@ -26,7 +26,7 @@ export interface XYMarks {
 }
 
 export function renderXY(p: Plot, ctx: ChartContext, area0: Rect, marks: XYMarks): string {
-  const { makeAxis, width: tw } = ctx, w = ctx.box.w;
+  const { makeAxis, width: tw } = ctx;
   const valAxes: XEl[] = axesOf(ctx.plotArea).valAxes;
   const xAx = valAxes.find((a) => { const pos = attr(child(a, 'c:axPos'), 'val'); return pos === 'b' || pos === 't'; }) ?? valAxes[0];
   const yAx = valAxes.find((a) => a !== xAx) ?? valAxes[1];
@@ -55,32 +55,35 @@ export function renderXY(p: Plot, ctx: ChartContext, area0: Rect, marks: XYMarks
     }
     if (!X.deleted) {
       bottom -= valBand(X.style.size);
-      right = Math.min(right, w - RIGHT_LABEL_PAD - tw(X.labels[X.labels.length - 1] ?? '', X.style.size) / 2);
+      right = Math.min(right, area.right - tw(X.labels[X.labels.length - 1] ?? '', X.style.size) / 2);
     }
     return { left, top, right, bottom, pw: Math.max(1, right - left), ph: Math.max(1, bottom - top), X, Y };
   };
   // 自动刻度的疏密取决于轴长（axis.ts）：先按默认刻度排一遍得到轴长，再按轴长选刻度重排
   const r0 = marks.extend ? marks.extend(range) : range;
   const f0 = layout(r0);
+  // 网格线和坐标轴线按像素中心的规则对齐整像素（pixel-grid.ts）
+  const g = ctx.snap ?? NO_GRID;
   const f = layout(r0, { x: f0.pw, y: f0.ph });
   const { left, top, right, bottom, pw, ph, X, Y } = f;
+  const box: Rect = { left, top, right, bottom };
   const out: string[] = [];
-  if (ctx.plotBg) out.push(ctx.plotBg({ left, top, right, bottom }));
-  renderAxisTitles(titles, { left, top, right, bottom }, area0, out);
+  if (ctx.plotBg) out.push(ctx.plotBg(box));
+  renderAxisTitles(titles, box, area0, out);
   Y.ticks.forEach((t, i) => {
     const y = bottom - Y.pos(t) * ph;
-    if (Y.grid?.color) out.push(`<line x1="${n2(left)}" y1="${n2(y)}" x2="${n2(right)}" y2="${n2(y)}" stroke="${css(Y.grid.color)}" stroke-width="${n2(Y.grid.width)}"/>`);
+    if (Y.grid?.color) out.push(axisLine('h', y, box, Y.grid, g));
     if (!Y.deleted) out.push(label(Y.labels[i], left - sideAnchor(Y.style.size), y, Y.style, 'end'));
   });
   X.ticks.forEach((t, i) => {
     const x = left + X.pos(t) * pw;
-    if (X.grid?.color) out.push(`<line x1="${n2(x)}" y1="${n2(top)}" x2="${n2(x)}" y2="${n2(bottom)}" stroke="${css(X.grid.color)}" stroke-width="${n2(X.grid.width)}"/>`);
+    if (X.grid?.color) out.push(axisLine('v', x, box, X.grid, g));
     if (!X.deleted) out.push(label(X.labels[i], x, bottom + valCenter(X.style.size), X.style));
   });
   // 坐标轴线：横轴画在纵轴 0 的位置，纵轴画在横轴 0 的位置
   const x0f = X.pos(Math.max(X.lo, Math.min(X.hi, 0))), y0f = Y.pos(Math.max(Y.lo, Math.min(Y.hi, 0)));
-  if (X.axisLine?.color && !X.deleted) out.push(`<line x1="${n2(left)}" y1="${n2(bottom - y0f * ph)}" x2="${n2(right)}" y2="${n2(bottom - y0f * ph)}" stroke="${css(X.axisLine.color)}" stroke-width="${n2(X.axisLine.width)}"/>`);
-  if (Y.axisLine?.color && !Y.deleted) out.push(`<line x1="${n2(left + x0f * pw)}" y1="${n2(top)}" x2="${n2(left + x0f * pw)}" y2="${n2(bottom)}" stroke="${css(Y.axisLine.color)}" stroke-width="${n2(Y.axisLine.width)}"/>`);
+  if (X.axisLine?.color && !X.deleted) out.push(axisLine('h', bottom - y0f * ph, box, X.axisLine, g));
+  if (Y.axisLine?.color && !Y.deleted) out.push(axisLine('v', left + x0f * pw, box, Y.axisLine, g));
   for (const s of p.series) {
     const pts: XYPoint[] = [];
     s.vals.forEach((v, i) => {

@@ -10,7 +10,7 @@ import { axesOf, axId, axisCrosses, axisReversed, tickMark } from './axis';
 import type { CategoryFrame } from './chart-type';
 import { chartTypeOf } from './chart-types';
 import { hasCjk, label, textStyle } from './draw';
-import { catBand, catCenter, PAD, RIGHT_LABEL_PAD, SIDE_LABEL_PAD, sideAnchor, sideGap, topForLabel, unitBand, unitCenter, unitTop, valBand, valBandTop, emptySidePad, valCenter, type TextWidth } from './layout';
+import { catBand, catCenter, PAD, SIDE_LABEL_PAD, sideAnchor, sideGap, topForLabel, unitBand, unitCenter, unitTop, valBand, valBandTop, emptyBottomPad, emptyLeftPad, valCenter, type TextWidth } from './layout';
 import { axisLine, axisSides, catMapping, gridLine, outward, tickLblPos, tickMarks } from './sides';
 import type { AxisMaker, AxisOpts, Plot, Rect, TextStyle, View3D } from './model';
 import { isColumn3D, renderColumn3D } from './cat3d';
@@ -19,8 +19,9 @@ import { lineType } from './types/line-area';
 import { extraValues, trendlines } from './extras';
 import { dataTableSize, readDataTable, renderDataTable } from './data-table';
 import { readAxisTitle, renderAxisTitles, reserveAxisTitles, type AxisTitles } from './axis-title';
+import { NO_GRID, type PixelGrid } from './pixel-grid';
 
-export interface CatEnv { colors: ColorContext; part: string; baseText: TextStyle; makeAxis: AxisMaker; tw: TextWidth; w: number; view?: View3D; zh?: boolean; plotBg?: (r: Rect) => string }
+export interface CatEnv { colors: ColorContext; part: string; baseText: TextStyle; makeAxis: AxisMaker; tw: TextWidth; w: number; view?: View3D; zh?: boolean; plotBg?: (r: Rect) => string; snap?: PixelGrid }
 
 export function renderCategoryChart(plots: Plot[], plotArea: XEl | undefined, area0: Rect, env: CatEnv, out: string[]): void {
   const { colors, baseText, makeAxis, tw, w } = env;
@@ -112,24 +113,25 @@ export function renderCategoryChart(plots: Plot[], plotArea: XEl | undefined, ar
       }
       if (sec && !sec.deleted) right = fromRight() - maxW(sec.labels, sec.style.size) - sideGap(sec.style.size);
       if (dtSize) {
-        bottom -= dtSize.height;
+        bottom -= dtSize.reserve;
         left = Math.max(left, dtSize.colRight);
       }
       if (catLabels) {
-        if (sides.catMid) bottom -= emptySidePad(catStyle.size);
+        if (sides.catMid) bottom -= emptyBottomPad(catStyle.size);
         else if (sides.cat === 'b') bottom -= catH(catStyle.size);
         else top += catH(catStyle.size);
       }
     } else {
       if (catLabels) {
-        if (sides.catMid) left += emptySidePad(catStyle.size);
+        if (sides.catMid) left += emptyLeftPad(catStyle.size);
         else if (sides.cat === 'l') left = edgeLeft + maxW(cats, catStyle.size) + sideGap(catStyle.size);
         else right = edgeRight - maxW(cats, catStyle.size) - sideGap(catStyle.size);
       }
       if (valLabels) {
         if (sides.val === 'b') bottom -= valBand(valStyle.size);
-        else { top += valBandTop(valStyle.size); bottom -= emptySidePad(valStyle.size); }
-        right = Math.min(right, w - RIGHT_LABEL_PAD - tw(tickLabels[tickLabels.length - 1] ?? '', valStyle.size) / 2);
+        else { top += valBandTop(valStyle.size); bottom -= emptyBottomPad(valStyle.size); }
+        // 最右边的标签以网格线为中心：在可用区域（图表边 11 磅，或者右侧图例让出之后）里再让出半个标签（COM 读绘图区右沿）
+        right = Math.min(right, area.right - tw(tickLabels[tickLabels.length - 1] ?? '', valStyle.size) / 2);
       }
     }
     // 分类标签落在坐标轴两端（面积图等 midCat）时，给首尾标签各留半个标签宽度
@@ -142,8 +144,11 @@ export function renderCategoryChart(plots: Plot[], plotArea: XEl | undefined, ar
   };
   // 自动刻度的疏密取决于轴长（axis.ts）：先按默认刻度排一遍得到轴长，再按轴长选刻度重排
   const first = place();
-  const { prim, sec, left, top, right, bottom, sides, unit, edgeLeft, edgeRight, valLabels, valStyle, tickLabels, between } =
-    place(horizontal ? first.right - first.left : first.bottom - first.top);
+  const placed = place(horizontal ? first.right - first.left : first.bottom - first.top);
+  const { prim, sec, sides, unit, edgeLeft, edgeRight, valLabels, valStyle, tickLabels, between } = placed;
+  const { left, top, right, bottom } = placed;
+  // 网格线、坐标轴线、柱子按像素中心的规则对齐整像素（pixel-grid.ts）
+  const g = env.snap ?? NO_GRID;
   const pw = Math.max(1, right - left), ph = Math.max(1, bottom - top);
   const band = (horizontal ? ph : pw) / (between ? nCat : Math.max(1, nCat - 1));
   const bandCenter = (i: number) => (between ? (i + 0.5) * band : i * band);
@@ -152,6 +157,7 @@ export function renderCategoryChart(plots: Plot[], plotArea: XEl | undefined, ar
     left, top, right, bottom, pw, ph, band, catCenter: bandCenter, nCat, horizontal,
     ...catMapping(box, horizontal, sides.catRev),
     valPx: horizontal ? (f) => left + f * pw : (f) => bottom - f * ph,
+    snap: g,
   };
 
   // 坐标轴标签画在系列和轴线上面（实测：分类轴在中间时标签盖在柱子上）
@@ -159,10 +165,10 @@ export function renderCategoryChart(plots: Plot[], plotArea: XEl | undefined, ar
   // 绘图区的背景和边框在最下面
   if (env.plotBg) out.push(env.plotBg(box));
   // 网格线（次要的在下面）和数值标签
-  for (const t of prim.minor) out.push(gridLine(frame.valPx(prim.pos(t)), prim.minorGrid, horizontal, box));
+  for (const t of prim.minor) out.push(gridLine(frame.valPx(prim.pos(t)), prim.minorGrid, horizontal, box, g));
   prim.ticks.forEach((t, i) => {
     const v = frame.valPx(prim.pos(t));
-    out.push(gridLine(v, prim.grid, horizontal, box));
+    out.push(gridLine(v, prim.grid, horizontal, box, g));
     if (!valLabels) return;
     if (!horizontal) axisText.push(sides.val === 'l' ? label(tickLabels[i], left - sideAnchor(valStyle.size), v, valStyle, 'end') : label(tickLabels[i], right + sideAnchor(valStyle.size), v, valStyle, 'start'));
     else axisText.push(label(tickLabels[i], v, sides.val === 'b' ? bottom + valCenter(valStyle.size) : top - valCenter(valStyle.size), valStyle));
@@ -208,18 +214,18 @@ export function renderCategoryChart(plots: Plot[], plotArea: XEl | undefined, ar
     const at = frame.valPx(prim.pos(sides.catCross));
     // 刻度在分类之间（midCat 时在每个分类上）
     const marks = Array.from({ length: between ? nCat + 1 : nCat }, (_, i) => frame.catPx(i * band));
-    out.push(axisLine(horizontal ? 'v' : 'h', at, box, catLine));
-    out.push(tickMarks(marks, at, horizontal ? 'v' : 'h', outward(sides.cat), tickMark(catAx, 'c:majorTickMark'), catLine));
+    out.push(axisLine(horizontal ? 'v' : 'h', at, box, catLine, g));
+    out.push(tickMarks(marks, at, horizontal ? 'v' : 'h', outward(sides.cat), tickMark(catAx, 'c:majorTickMark'), catLine, g));
   }
   if (prim.axisLine?.color && !prim.deleted) {
     const at = sides.val === 'l' ? left : sides.val === 'r' ? right : sides.val === 'b' ? bottom : top;
     const dir = horizontal ? 'h' : 'v';
-    out.push(axisLine(dir, at, box, prim.axisLine));
-    out.push(tickMarks(prim.ticks.map((t) => frame.valPx(prim.pos(t))), at, dir, outward(sides.val), prim.majorMark, prim.axisLine));
-    out.push(tickMarks(prim.minor.map((t) => frame.valPx(prim.pos(t))), at, dir, outward(sides.val), prim.minorMark, prim.axisLine));
+    out.push(axisLine(dir, at, box, prim.axisLine, g));
+    out.push(tickMarks(prim.ticks.map((t) => frame.valPx(prim.pos(t))), at, dir, outward(sides.val), prim.majorMark, prim.axisLine, g));
+    out.push(tickMarks(prim.minor.map((t) => frame.valPx(prim.pos(t))), at, dir, outward(sides.val), prim.minorMark, prim.axisLine, g));
   }
   out.push(...axisText);
   renderAxisTitles(titles, box, area0, out);
-  if (dt) renderDataTable(dt, plots, cats, colors, tw, bottom, left, right, band, out);
+  if (dt) renderDataTable(dt, plots, cats, colors, tw, bottom, left, right, band, g, out);
   out.push(...labelsOut);
 }

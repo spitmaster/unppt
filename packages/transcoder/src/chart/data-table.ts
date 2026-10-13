@@ -1,7 +1,7 @@
 /**
  * 图表的数据表（c:dTable，柱形、折线、面积图的绘图区下方）。PowerPoint 实测（COM 生成 9~20 磅、有无图例、柱形和折线的数据表，量导出图上的表格线）：
  *   - 表头一行（分类名，代替分类轴标签）贴着绘图区底边，只占绘图区那几列；下面每个系列一行；
- *     行高 = 1.36 × 字号 + 4.4；表格底边就是图例上方（没有图例时是底部留白处）；
+ *     行高 = 1.36 × 字号 + 4.3；表格底边比图例上方（没有图例时是底部留白处）低约 1 像素（COM 读 12 磅的绘图区下沿校准）；
  *   - 左边一列放图例键和系列名：从图表边 22.3 像素处开始，宽 = 键宽 + 系列名宽 + 0.5 × 字号 + 4
  *     （键：色块 0.48 × 字号，线条约 26 像素）；绘图区左边至少让到这一列右边；
  *   - 表格线：外框、横线、竖线可以分别关掉（showOutline / showHorzBorder / showVertBorder），颜色取 c:spPr 的线条；
@@ -16,6 +16,7 @@ import { formatNumber } from './format';
 import { legendSquare, PAD, type TextWidth } from './layout';
 import { seriesEntries } from './legend';
 import type { Plot, TextStyle } from './model';
+import type { PixelGrid } from './pixel-grid';
 
 export interface DataTable {
   horz: boolean; vert: boolean; outline: boolean; keys: boolean;
@@ -26,7 +27,9 @@ export interface DataTable {
 /** 实测常数（像素） */
 const TABLE_LEFT = PAD + 7.66;
 const LINE_KEY = 26;
-export const rowHeight = (s: number) => 1.36 * s + 4.4;
+export const rowHeight = (s: number) => 1.36 * s + 4.3;
+/** 表格底边比留给它的位置低出的距离 */
+const TABLE_DROP = 1.04;
 
 export function readDataTable(plotArea: XEl | undefined, colors: ColorContext, baseText: TextStyle, part: string): DataTable | undefined {
   const dt = child(plotArea, 'c:dTable');
@@ -39,21 +42,22 @@ export function readDataTable(plotArea: XEl | undefined, colors: ColorContext, b
   };
 }
 
-/** 表格占的尺寸：行高、左列右边（图表坐标）、总高度 */
-export function dataTableSize(dt: DataTable, plots: Plot[], colors: ColorContext, tw: TextWidth): { rowH: number; colRight: number; height: number } {
+/** 表格占的尺寸：行高、左列右边（图表坐标）、总高度、绘图区下边要让出的高度 */
+export function dataTableSize(dt: DataTable, plots: Plot[], colors: ColorContext, tw: TextWidth): { rowH: number; colRight: number; height: number; reserve: number } {
   const s = dt.style.size;
   const entries = seriesEntries(plots, colors);
   const anyLine = entries.some((e) => e.line);
   const keyW = dt.keys ? (anyLine ? LINE_KEY : legendSquare(s)) : 0;
   const nameW = Math.max(0, ...entries.map((e) => tw(e.name, s)));
   const rowH = rowHeight(s);
-  return { rowH, colRight: TABLE_LEFT + keyW + nameW + 0.5 * s + 4, height: rowH * (entries.length + 1) };
+  const height = rowH * (entries.length + 1);
+  return { rowH, colRight: TABLE_LEFT + keyW + nameW + 0.5 * s + 4, height, reserve: height - TABLE_DROP };
 }
 
 /** 画数据表：top 是绘图区底边（表头上沿），left/right 是绘图区左右，band 是每个分类的宽度 */
 export function renderDataTable(
   dt: DataTable, plots: Plot[], cats: string[], colors: ColorContext, tw: TextWidth,
-  top: number, left: number, right: number, band: number, out: string[],
+  top: number, left: number, right: number, band: number, g: PixelGrid, out: string[],
 ): void {
   const s = dt.style.size;
   const entries = seriesEntries(plots, colors);
@@ -81,8 +85,9 @@ export function renderDataTable(
   const ln = dt.line;
   if (!ln?.color) return;
   const d: string[] = [];
-  const h = (y: number, x0: number, x1: number) => d.push(`M${n2(x0)} ${n2(y)}H${n2(x1)}`);
-  const v = (x: number, y0: number, y1: number) => d.push(`M${n2(x)} ${n2(y0)}V${n2(y1)}`);
+  // 表格线对齐整像素（pixel-grid.ts）
+  const h = (y: number, x0: number, x1: number) => d.push(`M${n2(x0)} ${n2(g.line('y', y, ln.width))}H${n2(x1)}`);
+  const v = (x: number, y0: number, y1: number) => d.push(`M${n2(g.line('x', x, ln.width))} ${n2(y0)}V${n2(y1)}`);
   if (dt.horz) {
     h(rowsTop, TABLE_LEFT, right);
     for (let k = 1; k < entries.length; k++) h(rowsTop + k * rowH, TABLE_LEFT, right);
