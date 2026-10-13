@@ -16,7 +16,7 @@ export interface Tile { sx: number; sy: number; tx: number; ty: number; algn: st
 export type Fill =
   | { kind: 'none' }
   | { kind: 'solid'; color: Rgba }
-  | { kind: 'grad'; stops: { pos: number; color: Rgba }[]; angle: number; path?: string; rect?: { l: number; t: number; r: number; b: number } }
+  | { kind: 'grad'; stops: { pos: number; color: Rgba }[]; angle: number; scaled?: boolean; path?: string; rect?: { l: number; t: number; r: number; b: number } }
   | { kind: 'image'; rid: string; part: string; alpha: number; tile?: Tile; srcRect?: { l: number; t: number; r: number; b: number }; effects?: BlipEffects }
   | { kind: 'pattern'; prst: string; fg: Rgba; bg: Rgba };
 
@@ -46,6 +46,7 @@ export function parseFill(f: XEl | undefined, ctx: ColorContext, part: string, g
       return {
         kind: 'grad', stops,
         angle: (numAttr(lin, 'ang') ?? 0) / 60000,
+        ...(attr(lin, 'scaled') === '1' || attr(lin, 'scaled') === 'true' ? { scaled: true } : {}),
         path: p ? (attr(p, 'path') ?? 'circle') : undefined,
         rect: ftr ? {
           l: (numAttr(ftr, 'l') ?? 0) / 100000, t: (numAttr(ftr, 't') ?? 0) / 100000,
@@ -161,7 +162,12 @@ export function gradientPaint(fill: Extract<Fill, { kind: 'grad' }>, doc: SvgDoc
     doc.addDef(`<radialGradient id="${id}" gradientUnits="userSpaceOnUse" cx="${n2(cx)}" cy="${n2(cy)}" r="${n2(rad)}">${stops}</radialGradient>`);
   } else {
     const a = fill.angle * Math.PI / 180;
-    const dx = Math.cos(a), dy = Math.sin(a);
+    let dx = Math.cos(a), dy = Math.sin(a);
+    // scaled：角度在单位正方形里定义，随形状长宽比拉伸
+    if (fill.scaled && w > 0 && h > 0) {
+      const sx = dx / w, sy = dy / h, len = Math.hypot(sx, sy) || 1;
+      dx = sx / len; dy = sy / len;
+    }
     const cx = w / 2, cy = h / 2;
     // 让四个角在渐变方向上的投影刚好落在 0..1
     const proj = [[0, 0], [w, 0], [0, h], [w, h]].map(([x, y]) => (x - cx) * dx + (y - cy) * dy);
