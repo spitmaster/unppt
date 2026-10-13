@@ -73,6 +73,7 @@ export function readPlots(plotArea: XEl | undefined, colors: ColorContext, part:
         // 线条写了"无线条"（散点图只画点）时不画线
         line: child(child(spPr, 'a:ln'), 'a:noFill') ? undefined : line ?? (hasLine ? { color: accent, width: 2.25 * 96 / 72, cap: 'round', join: 'round' } : undefined),
         marker,
+        markerSymbol: symbol && symbol !== 'none' && symbol !== 'auto' ? symbol : 'circle',
         markerSize: (numAttr(child(mk, 'c:size'), 'val') ?? 5) * 96 / 72,
         markerFill: mkFill?.kind === 'solid' ? mkFill.color : mkFill?.kind === 'none' ? undefined : accent,
         markerLine: mkLine ? mkLine.color : accent,

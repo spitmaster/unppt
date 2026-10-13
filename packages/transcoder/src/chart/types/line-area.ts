@@ -2,7 +2,7 @@
 import { css } from '../../model/color';
 import { n2 } from '../../common/svg';
 import { attr, child } from '../../io/xml';
-import { label } from '../draw';
+import { label, markerSvg } from '../draw';
 import { labelText } from '../format';
 import type { ChartType, CategoryFrame } from '../chart-type';
 import type { AxisInfo, Plot } from '../model';
@@ -35,7 +35,7 @@ function renderLineArea(p: Plot, f: CategoryFrame, A: AxisInfo, out: string[], l
     } else {
       const lc = s.line?.color ?? s.fill;
       if (lc) drawn.push(`<path d="M${pts.map((q) => `${n2(q[0])} ${n2(q[1])}`).join('L')}" fill="none" stroke="${css(lc)}" stroke-width="${n2(s.line?.width ?? 3)}" stroke-linejoin="round" stroke-linecap="round"/>`);
-      if (s.marker && lc) for (const q of pts) drawn.push(`<circle cx="${n2(q[0])}" cy="${n2(q[1])}" r="3" fill="${css(lc)}"/>`);
+      if (s.marker && lc) for (const q of pts) drawn.push(markerSvg(s, q[0], q[1]));
       const lb = s.labels;
       if (lb) {
         let k = 0;
