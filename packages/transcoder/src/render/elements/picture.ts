@@ -9,6 +9,7 @@ import { buildGeometry, parseGeomXml, presetGeometry } from '../../geometry/geom
 import { esc, n2 } from '../../common/svg';
 import { attr, child, children, numAttr, path, type XEl } from '../../io/xml';
 import { boxTransform, flipTransform, nvProps, pc, readXfrm, withUid } from '../box';
+import { cameraLightFilter, cameraTransform } from '../../style/camera';
 import type { RenderContext } from '../context';
 
 export async function renderPicture(r: RenderContext, el: XEl, ctx: SlideContext): Promise<string> {
@@ -103,5 +104,9 @@ export async function renderPicture(r: RenderContext, el: XEl, ctx: SlideContext
   const inner = refl + visual + media;
   // 媒体：点击切换播放（形状本身没有写点击动作时也加上）
   const clickable = mediaLink && !child(nvProps(el), 'a:hlinkClick') ? ' data-link="media" style="cursor:pointer"' : '';
-  return withUid(uid, `<g${clickable} transform="${boxTransform(box)}">${inner}</g>`, el);
+  // 三维旋转（图片样式常见的"透视""旋转"）
+  const scene3d = child(spPr, 'a:scene3d') ?? child(effRef.el, 'a:scene3d');
+  const cam = cameraTransform(scene3d, box.w, box.h, r.env.pres.width);
+  const light = cameraLightFilter(scene3d, r.doc);
+  return withUid(uid, `<g${clickable} transform="${boxTransform(box, cam)}">${light ? `<g filter="url(#${light})">${inner}</g>` : inner}</g>`, el);
 }

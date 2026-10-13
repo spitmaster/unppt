@@ -3,6 +3,7 @@ import type { SlideContext } from '../../model/model';
 import { bgStyle, fillAttrs, findFillEl, parseFill, styleRef, type Fill } from '../../style/fill';
 import { compoundMask, parseLine, strokeAttrs } from '../../style/line';
 import { has3d, litFill } from '../../style/lighting';
+import { cameraLightFilter, cameraTransform } from '../../style/camera';
 import { bevelLayer } from '../../effects/bevel';
 import { effectFilter } from '../../effects/effect-filter';
 import { reflection } from '../../effects/reflection';
@@ -104,5 +105,10 @@ export async function renderShape(r: RenderContext, el: XEl, ctx: SlideContext, 
   );
   if (!geom && !text) return '';
   const refl = reflection(child(effect, 'a:reflection'), box.h, r.doc, `${geom}${text}`);
-  return withUid(uid, `<g transform="${boxTransform(box)}">${refl}${geom}${text}</g>`, el);
+  // 三维旋转（形状自己的、版式的或者主题效果样式里的 a:scene3d）
+  const scene3d = child(spPr, 'a:scene3d') ?? child(lSpPr, 'a:scene3d') ?? child(mSpPr, 'a:scene3d') ?? child(effStyle, 'a:scene3d');
+  const cam = cameraTransform(scene3d, box.w, box.h, r.env.pres.width);
+  const light = cameraLightFilter(scene3d, r.doc);
+  const body = light ? `<g filter="url(#${light})">${refl}${geom}${text}</g>` : `${refl}${geom}${text}`;
+  return withUid(uid, `<g transform="${boxTransform(box, cam)}">${body}</g>`, el);
 }
