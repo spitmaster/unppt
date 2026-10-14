@@ -32,6 +32,10 @@ export interface TextEnv {
   /** 图片项目符号要用：图片解析和当前部件 */
   images?: ImageResolver;
   part?: string;
+  /** 文字所在形状的外框上边在幻灯片上的位置（像素；形状没转动、没缩放时才给）：20 磅以下的行基线对齐整像素（text.ts） */
+  pixelTop?: number;
+  /** renderText 按 pixelTop 算好的基线对齐函数（文字框内的坐标） */
+  snapY?: (y: number) => number;
 }
 
 /** 字体嵌入：记录每个字体用到的字；嵌入产物的字体返回它在产物里的别名，不嵌入的返回 undefined */

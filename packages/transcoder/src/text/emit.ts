@@ -7,8 +7,11 @@ import { decorate } from './decorations';
 import { textEl } from './svg-text';
 import type { Atom, Line, ParagraphLayout, TextEnv } from './types';
 
-/** 行距多出的高度放在文字上方的比例（用 PowerPoint 实测校准） */
-const EXTRA_ABOVE = 2 / 3;
+/** 基线对齐整像素的最大字号（像素，20 磅） */
+const SNAP_MAX_SIZE = 20 * 96 / 72 + 0.01;
+
+/** 行高大于单倍行框（多倍、固定行距）时，基线离行框上沿的距离占行高的比例（实测，和字体无关） */
+const TALL_BASELINE = 0.75;
 
 /** 排好位置的一行：第 pi 段第 li 行，基线、行首横坐标、每个字的横坐标 */
 export interface PlacedLine {
@@ -28,7 +31,9 @@ export interface PlacedLine {
 }
 
 /** 行高、垂直对齐、分栏、基线、水平对齐（含两端对齐）：算出每一行、每个字的位置 */
-export function placeLines(layouts: ParagraphLayout[], b: BodyProps, outer: { w: number; h: number }, contentW: number, out?: { height: number }): PlacedLine[] {
+export function placeLines(
+  layouts: ParagraphLayout[], b: BodyProps, outer: { w: number; h: number }, contentW: number, out?: { height: number }, snapY?: (y: number) => number,
+): PlacedLine[] {
   const { tIns, bIns, lIns, numCol, spcCol, anchor, wrap, linesLeftToRight } = b;
   // 计算总高度
   const lineHeight = (l: Line, s: ParagraphLayout['lineSpc']) =>
@@ -51,15 +56,16 @@ export function placeLines(layouts: ParagraphLayout[], b: BodyProps, outer: { w:
       // 分栏：这一栏放不下就换到下一栏顶部
       if (numCol > 1 && col < numCol - 1 && y + lh > tIns + availH + 0.5 && y > tIns) { col++; y = tIns; }
       const colX = col * (contentW + spcCol);
-      // 行距大于单倍时，多出的空间加在行的上方
-      // PowerPoint 单倍行高 = 1.2 × 字号；基线按字体的上下伸比例放在这 1.2 倍的行框里。
-      // 多倍/固定行距多出（或少掉）的高度，实测约 2/3 在文字上方、1/3 在下方。
+      // PowerPoint 单倍行高 = 1.2 × 字号，基线按字体的上下伸比例放在这 1.2 倍的行框里；
+      // 行高更大（多倍、固定行距）时基线在行框上沿下方 0.75 × 行高，和字体无关；行高更小时减少的高度全部从文字上方扣
+      // （PowerPoint 生成 5 种字体 × 0.9~2.5 倍行距的探针，逐像素读基线，误差 ≤ 0.1 像素）
       const box = line.size * 1.2;
       const natural = line.ascent + line.descent || 1;
-      // 行距小于单倍时，减少的高度全部从文字上方扣（实测更接近）
-      let baseline = y + (lh - box) * (lh < box ? 1 : EXTRA_ABOVE) + box * (line.ascent / natural);
+      let baseline = lh > box + 0.01 ? y + TALL_BASELINE * lh : y + (lh - box) + box * (line.ascent / natural);
       // 列从左往右排的竖排：把行的位置翻过来（行内基线位置不变）
       if (linesLeftToRight) baseline = outer.h - y - lh + (baseline - y);
+      // 横排文字的基线对齐整像素（TextEnv.pixelTop）：只对 20 磅以下的行（更大的字 PowerPoint 纵向按 1/4 像素抗锯齿，实测）
+      else if (snapY && line.size <= SNAP_MAX_SIZE) baseline = snapY(baseline);
       let x = lIns + colX + line.x0;
       const free = line.avail - line.width;
       if (pl.algn === 'ctr') x += free / 2;
@@ -88,7 +94,7 @@ export function emitParagraphs(
   layouts: ParagraphLayout[], b: BodyProps, outer: { w: number; h: number }, contentW: number, env: TextEnv, out?: { height: number },
 ): string[] {
   const { lIns, uprightAll, uprightWide } = b;
-  const placed = placeLines(layouts, b, outer, contentW, out);
+  const placed = placeLines(layouts, b, outer, contentW, out, env.snapY);
   const parts: string[] = [];
   let k0 = 0;
   for (let i = 0; i < layouts.length; i++) {
