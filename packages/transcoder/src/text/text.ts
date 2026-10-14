@@ -62,7 +62,10 @@ export async function renderText(
     if (warped?.length) return `<g transform="translate(${n2(box.x)} ${n2(box.y)})">${warped.join('')}</g>`;
   }
 
-  const parts = emitParagraphs(layouts, b, outer, contentW, env, out);
+  // 横排文字的基线对齐整像素（实测）：文字原点取整到 floor(y + 0.331)，每行基线相对外框四舍五入（先加 0.2，抵消浏览器和 PowerPoint 字形落点的差别）
+  const top = env.pixelTop;
+  const snapY = top !== undefined && !vertical ? (v: number) => Math.floor(top + 0.331) - top + Math.round(box.y + v + 0.2) - box.y : undefined;
+  const parts = emitParagraphs(layouts, b, outer, contentW, { ...env, snapY }, out);
   if (!parts.length) return '';
 
   let transform = `translate(${n2(box.x)} ${n2(box.y)})`;
