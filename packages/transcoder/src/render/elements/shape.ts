@@ -113,16 +113,18 @@ export async function renderShape(r: RenderContext, el: XEl, ctx: SlideContext, 
     rels: await r.env.pres.pkg.rels(ctx.part),
     images: r.images, part: ctx.part,
     // 外框对齐了整像素（没转动）、所在坐标系没缩放时，文字基线也对齐整像素
-    pixelTop: snap && (ctx.toSlide === undefined || ctx.toSlide?.sy === 1) ? (ctx.toSlide?.y ?? 0) + box.y : undefined,
+    pixelTop: snap && !box.flipV && (ctx.toSlide === undefined || ctx.toSlide?.sy === 1) ? (ctx.toSlide?.y ?? 0) + box.y : undefined,
   };
   // SmartArt 的文字框有单独的位置（dsp:txXfrm）
   const txXfrm = readXfrm(pc(el, 'txXfrm'));
   const textBox = txXfrm ? { x: txXfrm.x - box.x, y: txXfrm.y - box.y, w: txXfrm.w, h: txXfrm.h } : snap ? buildGeometry(def, box.w, box.h, av).text : geo.text;
-  const text = await renderText(
+  const laid = await renderText(
     txBody, r.textChain(ctx, ph, layoutPh, masterPh),
     [path(masterPh, 'p:txBody', 'a:bodyPr'), path(layoutPh, 'p:txBody', 'a:bodyPr')],
     textBox, textEnv,
   );
+  // 垂直翻转（包括同时水平翻转）的形状，文字绕形状中心转 180°；水平翻转时文字不变（实测）
+  const text = laid && box.flipV ? `<g transform="rotate(180 ${n2(box.w / 2)} ${n2(box.h / 2)})">${laid}</g>` : laid;
   if (!geom && !text) return '';
   const cam = cameraTransform(scene3d, box.w, box.h, r.env.pres.width);
   const light = cameraLightFilter(scene3d, r.doc);

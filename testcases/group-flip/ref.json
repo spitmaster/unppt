@@ -1,0 +1,359 @@
+{
+ "version": 7,
+ "slideWidthPt": 960.0,
+ "slideHeightPt": 540.0,
+ "imageWidth": 1280,
+ "imageHeight": 720,
+ "slides": [
+  {
+   "index": 0,
+   "hidden": false,
+   "shapes": [
+    {
+     "id": 8,
+     "name": "Group 7",
+     "type": 6,
+     "x": 20.0,
+     "y": 30.0,
+     "w": 200.0,
+     "h": 120.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": -2,
+     "children": [
+      {
+       "id": 2,
+       "name": "Rectangle 1",
+       "type": 1,
+       "x": 20.0,
+       "y": 30.0,
+       "w": 120.0,
+       "h": 70.0,
+       "rot": 0.0,
+       "visible": true,
+       "autoShapeType": 1,
+       "lines": [
+        {
+         "start": 0,
+         "len": 8,
+         "text": "左上文字 ABC",
+         "x": 27.2,
+         "y": 33.6,
+         "w": 88.13,
+         "h": 16.8
+        }
+       ]
+      },
+      {
+       "id": 3,
+       "name": "Isosceles Triangle 2",
+       "type": 1,
+       "x": 150.0,
+       "y": 30.0,
+       "w": 70.0,
+       "h": 50.0,
+       "rot": 0.0,
+       "visible": true,
+       "autoShapeType": 7
+      },
+      {
+       "id": 4,
+       "name": "Can 3",
+       "type": 1,
+       "x": 150.0,
+       "y": 90.0,
+       "w": 70.0,
+       "h": 40.0,
+       "rot": 30.0,
+       "visible": true,
+       "autoShapeType": 13
+      },
+      {
+       "id": 5,
+       "name": "Oval 4",
+       "type": 1,
+       "x": 30.0,
+       "y": 110.0,
+       "w": 40.0,
+       "h": 40.0,
+       "rot": 0.0,
+       "visible": true,
+       "autoShapeType": 9
+      },
+      {
+       "id": 6,
+       "name": "Rectangle 5",
+       "type": 1,
+       "x": 80.0,
+       "y": 120.0,
+       "w": 50.0,
+       "h": 25.0,
+       "rot": 0.0,
+       "visible": true,
+       "autoShapeType": 1
+      }
+     ]
+    },
+    {
+     "id": 15,
+     "name": "Group 14",
+     "type": 6,
+     "x": 255.0,
+     "y": 30.0,
+     "w": 200.0,
+     "h": 120.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": -2,
+     "children": [
+      {
+       "id": 9,
+       "name": "Rectangle 8",
+       "type": 1,
+       "x": 335.0,
+       "y": 30.0,
+       "w": 120.0,
+       "h": 70.0,
+       "rot": 0.0,
+       "visible": true,
+       "autoShapeType": 1,
+       "lines": [
+        {
+         "start": 0,
+         "len": 8,
+         "text": "左上文字 ABC",
+         "x": 342.2,
+         "y": 33.6,
+         "w": 88.13,
+         "h": 16.8
+        }
+       ]
+      },
+      {
+       "id": 10,
+       "name": "Isosceles Triangle 9",
+       "type": 1,
+       "x": 255.0,
+       "y": 30.0,
+       "w": 70.0,
+       "h": 50.0,
+       "rot": 0.0,
+       "visible": true,
+       "autoShapeType": 7
+      },
+      {
+       "id": 11,
+       "name": "Can 10",
+       "type": 1,
+       "x": 255.0,
+       "y": 90.0,
+       "w": 70.0,
+       "h": 40.0,
+       "rot": 330.0,
+       "visible": true,
+       "autoShapeType": 13
+      },
+      {
+       "id": 12,
+       "name": "Oval 11",
+       "type": 1,
+       "x": 405.0,
+       "y": 110.0,
+       "w": 40.0,
+       "h": 40.0,
+       "rot": 0.0,
+       "visible": true,
+       "autoShapeType": 9
+      },
+      {
+       "id": 13,
+       "name": "Rectangle 12",
+       "type": 1,
+       "x": 345.0,
+       "y": 120.0,
+       "w": 50.0,
+       "h": 25.0,
+       "rot": 0.0,
+       "visible": true,
+       "autoShapeType": 1
+      }
+     ]
+    },
+    {
+     "id": 22,
+     "name": "Group 21",
+     "type": 6,
+     "x": 490.0,
+     "y": 30.0,
+     "w": 200.0,
+     "h": 120.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": -2,
+     "children": [
+      {
+       "id": 16,
+       "name": "Rectangle 15",
+       "type": 1,
+       "x": 490.0,
+       "y": 80.0,
+       "w": 120.0,
+       "h": 70.0,
+       "rot": 0.0,
+       "visible": true,
+       "autoShapeType": 1,
+       "lines": [
+        {
+         "start": 0,
+         "len": 8,
+         "text": "左上文字 ABC",
+         "x": 514.67,
+         "y": 129.6,
+         "w": 88.13,
+         "h": 16.8
+        }
+       ]
+      },
+      {
+       "id": 17,
+       "name": "Isosceles Triangle 16",
+       "type": 1,
+       "x": 620.0,
+       "y": 100.0,
+       "w": 70.0,
+       "h": 50.0,
+       "rot": 0.0,
+       "visible": true,
+       "autoShapeType": 7
+      },
+      {
+       "id": 18,
+       "name": "Can 17",
+       "type": 1,
+       "x": 620.0,
+       "y": 50.0,
+       "w": 70.0,
+       "h": 40.0,
+       "rot": 330.0,
+       "visible": true,
+       "autoShapeType": 13
+      },
+      {
+       "id": 19,
+       "name": "Oval 18",
+       "type": 1,
+       "x": 500.0,
+       "y": 30.0,
+       "w": 40.0,
+       "h": 40.0,
+       "rot": 0.0,
+       "visible": true,
+       "autoShapeType": 9
+      },
+      {
+       "id": 20,
+       "name": "Rectangle 19",
+       "type": 1,
+       "x": 550.0,
+       "y": 35.0,
+       "w": 50.0,
+       "h": 25.0,
+       "rot": 0.0,
+       "visible": true,
+       "autoShapeType": 1
+      }
+     ]
+    },
+    {
+     "id": 29,
+     "name": "Group 28",
+     "type": 6,
+     "x": 725.0,
+     "y": 30.0,
+     "w": 200.0,
+     "h": 120.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": -2,
+     "children": [
+      {
+       "id": 23,
+       "name": "Rectangle 22",
+       "type": 1,
+       "x": 805.0,
+       "y": 80.0,
+       "w": 120.0,
+       "h": 70.0,
+       "rot": 0.0,
+       "visible": true,
+       "autoShapeType": 1,
+       "lines": [
+        {
+         "start": 0,
+         "len": 8,
+         "text": "左上文字 ABC",
+         "x": 829.67,
+         "y": 129.6,
+         "w": 88.13,
+         "h": 16.8
+        }
+       ]
+      },
+      {
+       "id": 24,
+       "name": "Isosceles Triangle 23",
+       "type": 1,
+       "x": 725.0,
+       "y": 100.0,
+       "w": 70.0,
+       "h": 50.0,
+       "rot": 0.0,
+       "visible": true,
+       "autoShapeType": 7
+      },
+      {
+       "id": 25,
+       "name": "Can 24",
+       "type": 1,
+       "x": 725.0,
+       "y": 50.0,
+       "w": 70.0,
+       "h": 40.0,
+       "rot": 30.0,
+       "visible": true,
+       "autoShapeType": 13
+      },
+      {
+       "id": 26,
+       "name": "Oval 25",
+       "type": 1,
+       "x": 875.0,
+       "y": 30.0,
+       "w": 40.0,
+       "h": 40.0,
+       "rot": 0.0,
+       "visible": true,
+       "autoShapeType": 9
+      },
+      {
+       "id": 27,
+       "name": "Rectangle 26",
+       "type": 1,
+       "x": 815.0,
+       "y": 35.0,
+       "w": 50.0,
+       "h": 25.0,
+       "rot": 0.0,
+       "visible": true,
+       "autoShapeType": 1
+      }
+     ]
+    }
+   ],
+   "effects": [],
+   "triggerHidden": [],
+   "steps": 0
+  }
+ ],
+ "ok": true
+}
