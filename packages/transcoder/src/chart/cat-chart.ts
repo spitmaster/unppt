@@ -21,6 +21,7 @@ import { extraValues, trendlines } from './extras';
 import { dataTableSize, readDataTable, renderDataTable } from './data-table';
 import { readAxisTitle, renderAxisTitles, reserveAxisTitles, type AxisTitles } from './axis-title';
 import { NO_GRID, type PixelGrid } from './pixel-grid';
+import { catFitBand, categoryLabel, fitCategoryLabels, ROT_MIDCAT_RIGHT, rotFirstCenter, type CatFit } from './cat-labels';
 
 export interface CatEnv { colors: ColorContext; part: string; baseText: TextStyle; makeAxis: AxisMaker; tw: TextWidth; w: number; view?: View3D; zh?: boolean; plotBg?: (r: Rect) => string; snap?: PixelGrid }
 
@@ -126,8 +127,7 @@ export function renderCategoryChart(plots: Plot[], plotArea: XEl | undefined, ar
       }
       if (catLabels) {
         if (sides.catMid) bottom -= emptyBottomPad(catStyle.size);
-        else if (sides.cat === 'b') bottom -= catH(catStyle.size);
-        else top += catH(catStyle.size);
+        else if (sides.cat !== 'b') top += catH(catStyle.size);
       }
     } else {
       if (catLabels) {
@@ -144,16 +144,30 @@ export function renderCategoryChart(plots: Plot[], plotArea: XEl | undefined, ar
     }
     // 分类标签落在坐标轴两端（面积图等 midCat）时，给首尾标签各留半个标签宽度
     const between = attr(child(primaryAx, 'c:crossBetween'), 'val') !== 'midCat';
+    const [left0, right0] = [left, right];
     if (!between && !horizontal && catLabels && cats.length) {
       left = Math.max(left, PAD + tw(cats[0], catStyle.size) / 2);
       right = Math.min(right, w - PAD - tw(cats[cats.length - 1], catStyle.size) / 2);
     }
-    return { prim, sec, left, top, right, bottom, sides, unit, edgeLeft, edgeRight, valLabels, valStyle, tickLabels, between };
+    // 底部分类标签：放不下时折行或整体转斜（cat-labels.ts），转斜时左边让出第一个标签
+    let catFit: CatFit = { kind: 'line' };
+    if (!horizontal && catLabels && !sides.catMid && sides.cat === 'b') {
+      const bands = between ? nCat : Math.max(1, nCat - 1);
+      catFit = fitCategoryLabels(cats, (right - left) / bands, catStyle.size, tw);
+      if (catFit.kind === 'rot' && cats.length) {
+        // 斜标签不往右伸，不用给首尾留半个宽度；分类在端点上时右边仍留约 1.05 × 字号（面积图一个样例）
+        [left, right] = [left0, between ? right0 : Math.min(right0, area.right - ROT_MIDCAT_RIGHT * catStyle.size)];
+        const f = between ? 0.5 / bands : 0;
+        left = Math.max(left, (rotFirstCenter(cats[0], catStyle.size, tw) - f * right) / (1 - f));
+      }
+      bottom -= catFitBand(catFit, catH(catStyle.size), cats, catStyle.size, tw);
+    }
+    return { prim, sec, left, top, right, bottom, sides, unit, edgeLeft, edgeRight, valLabels, valStyle, tickLabels, between, catFit };
   };
   // 自动刻度的疏密取决于轴长（axis.ts）：先按默认刻度排一遍得到轴长，再按轴长选刻度重排
   const first = place();
   const placed = place(horizontal ? first.right - first.left : first.bottom - first.top);
-  const { prim, sec, sides, unit, edgeLeft, edgeRight, valLabels, valStyle, tickLabels, between } = placed;
+  const { prim, sec, sides, unit, edgeLeft, edgeRight, valLabels, valStyle, tickLabels, between, catFit } = placed;
   const { left, top, right, bottom } = placed;
   // 网格线、坐标轴线、柱子按像素中心的规则对齐整像素（pixel-grid.ts）
   const g = env.snap ?? NO_GRID;
@@ -195,7 +209,10 @@ export function renderCategoryChart(plots: Plot[], plotArea: XEl | undefined, ar
     const edge = sides.catMid ? frame.valPx(prim.pos(sides.catCross)) : sides.cat === 'b' ? bottom : sides.cat === 't' ? top : sides.cat === 'l' ? left : right;
     cats.forEach((c, i) => {
       const at = frame.catPx(bandCenter(i));
-      if (!horizontal) axisText.push(label(c, at, sides.cat === 'b' ? edge + catC(catStyle.size) : edge - catC(catStyle.size), catStyle));
+      if (!horizontal) {
+        axisText.push(sides.cat === 'b' && !sides.catMid ? categoryLabel(catFit, i, c, at, edge, edge + catC(catStyle.size), catStyle)
+          : label(c, at, sides.cat === 'b' ? edge + catC(catStyle.size) : edge - catC(catStyle.size), catStyle));
+      }
       else axisText.push(sides.cat === 'l' ? label(c, edge - sideAnchor(catStyle.size), at, catStyle, 'end') : label(c, edge + sideAnchor(catStyle.size), at, catStyle, 'start'));
     });
   }

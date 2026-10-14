@@ -2150,7 +2150,29 @@ def charts_legend_pos(app):
     return p
 
 
-CASES = [shapes_all, text_sizes, text_align, text_spacing, text_bullets, text_missing_font, shapes_basic, fills_lines, table_basic, group_rotate, anim_basic, anim_auto, charts_basic, pictures, smartart, text_effects, text_layout, table_merge, links, emf_images, anim_advanced, charts_labels, freeform_icons, media_audio, anim_trigger, wmf_images, anim_iterate, picture_transparent, charts_more, shape_effects, equations, anim_path, anim_emphasis, transitions, fills_patterns, text_decoration, anim_entrance, svg_images, charts_markers, hidden_slides, media_background, text_glow_reflection, text_tabs, text_picture_bullets, fills_texture, transition_morph, text_embedded_fonts, text_warp, anim_repeat, charts_sizes, slide_timings, lines_compound, table_diagonal, lines_gradient, fills_radial, fills_rect_gradient, shapes_3d, table_vertical, transitions_more, anim_sound, anim_build, anim_after, anim_text_emphasis, charts_bubble, media_video, charts_options, charts_negative, shapes_bevel, charts_legend, shapes_3d_rotation, smartart_3d, charts_ofpie, charts_3d, anim_group_emphasis, activex_controls, charts_extras, charts_axis_titles, charts_fills, charts_outlines, charts_labels_more, group_scale, group_flip, charts_3d_line, charts_legend_pos]
+def charts_crowded_labels(app):
+    """分类标签放不下：中文转 −45°（柱形、折线、面积图、16 磅），英文按空格折行，刚好放得下的保持横排"""
+    p = new_pres(app, window=True)
+    cn = ['第一类别', '第二类别', '第三类别', '第四类别', '第五类别', '第六类别', '第七类别', '第八类别', '第九类别', '第十类别']
+    qs = ['2019年第一季度', '2019年第二季度', '2019年第三季度', '2019年第四季度', '2020年第一季度', '2020年第二季度',
+          '2020年第三季度', '2020年第四季度', '2021年第一季度', '2021年第二季度', '2021年第三季度', '2021年第四季度']
+    en = ['Alpha one', 'Beta two', 'Gamma three', 'Delta four', 'Epsilon five', 'Zeta six']
+    def rows(cats, k=1):
+        head = [''] + [f'系列 {j + 1}' for j in range(k)]
+        return [head] + [[c] + [3 + (i + j) % 3 for j in range(k)] for i, c in enumerate(cats)]
+    specs = [(51, rows(cn)), (51, rows(en)), (4, rows(qs)), (51, rows(cn[:8])), (51, rows(cn), 16), (76, rows(cn))]
+    for k, spec in enumerate(specs):
+        if k % 2 == 0:
+            s = blank(p)
+        ch = s.Shapes.AddChart2(-1, spec[0], 20 + (k % 2) * 470, 40, 450, 440)
+        _chart_values(ch, spec[1])
+        _close_data(ch)
+        if len(spec) > 2:
+            ch.Chart.ChartArea.Format.TextFrame2.TextRange.Font.Size = spec[2]
+    return p
+
+
+CASES = [shapes_all, text_sizes, text_align, text_spacing, text_bullets, text_missing_font, shapes_basic, fills_lines, table_basic, group_rotate, anim_basic, anim_auto, charts_basic, pictures, smartart, text_effects, text_layout, table_merge, links, emf_images, anim_advanced, charts_labels, freeform_icons, media_audio, anim_trigger, wmf_images, anim_iterate, picture_transparent, charts_more, shape_effects, equations, anim_path, anim_emphasis, transitions, fills_patterns, text_decoration, anim_entrance, svg_images, charts_markers, hidden_slides, media_background, text_glow_reflection, text_tabs, text_picture_bullets, fills_texture, transition_morph, text_embedded_fonts, text_warp, anim_repeat, charts_sizes, slide_timings, lines_compound, table_diagonal, lines_gradient, fills_radial, fills_rect_gradient, shapes_3d, table_vertical, transitions_more, anim_sound, anim_build, anim_after, anim_text_emphasis, charts_bubble, media_video, charts_options, charts_negative, shapes_bevel, charts_legend, shapes_3d_rotation, smartart_3d, charts_ofpie, charts_3d, anim_group_emphasis, activex_controls, charts_extras, charts_axis_titles, charts_fills, charts_outlines, charts_labels_more, group_scale, group_flip, charts_3d_line, charts_legend_pos, charts_crowded_labels]
 
 
 def main():
