@@ -57,8 +57,9 @@ export function renderLegend(legend: XEl | undefined, plots: Plot[], area: Rect,
     // 有线条项时所有图例键一样宽（方块变成扁条、标记居中，实测）
     const anyLine = entries.some((e) => e.line);
     const keyW = (e: LegendEntry) => (anyLine ? LEGEND_LINE_KEY : e.line ? ks * 3 : legendSquare(sz));
-    const kGap = legendKeyGap(sz, anyLine), gap = legendItemGap(sz, anyLine), lead = legendLead(sz, anyLine);
+    const kGap = legendKeyGap(sz, anyLine), lead = legendLead(sz, anyLine);
     const parts = entries.map((e) => keyW(e) + kGap + tw(e.name, sz));
+    const gap = legendItemGap(sz, anyLine, parts.reduce((a, b) => a + b, 0) / Math.max(1, parts.length));
     const total = lead + parts.reduce((a, b) => a + b, 0) + gap * Math.max(0, entries.length - 1);
     let x = (w - total) / 2 + lead;
     // 上方图例：中心在 9 磅 + 0.515 倍字号处，下沿（12 磅 + 1.03 倍字号）再往下 11 磅才是绘图区（COM 读 3 种字号，导出图核对）
