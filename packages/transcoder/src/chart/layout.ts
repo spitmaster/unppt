@@ -21,9 +21,9 @@ export const catBand = (s: number) => 1.75 * s + 3;
 export const catCenter = (s: number) => 1.21 * s;
 export const valBand = (s: number) => 1.4375 * s + 3;
 export const valCenter = (s: number) => 1.02 * s;
-/** 底部图例：占的高度、中心到底部留白线的距离（高度按 COM 读 9~28 磅的绘图区下沿校准到 0.05 像素） */
+/** 底部图例：占的高度、中心到底部留白线的距离（高度按 COM 读 9~28 磅的绘图区下沿校准到 0.05 像素；中心按 9、12、20、28 磅导出图的文字行拟合，12、20 磅逐行吻合，9、28 磅差 1 像素） */
 export const legendBand = (s: number) => 1.1763 * s + 6.984;
-export const legendCenter = (s: number) => 0.41 * s;
+export const legendCenter = (s: number) => 0.558 * s - 3.36;
 /** 竖轴最上面的标签以网格线为中心，上边至少要留出半个标签（COM 读 9~20 磅的绘图区上沿：图表区 4 磅 + 0.521 × 字号 + 1 磅） */
 export const topForLabel = (s: number) => 0.521 * s + 6.66;
 /** 横向数值轴最右边的标签以网格线为中心，右边留出半个标签再加 11 磅（COM 读 9~28 磅的绘图区右沿） */
@@ -31,13 +31,14 @@ export const RIGHT_LABEL_PAD = PAD;
 
 /**
  * 图例键：色块边长 0.48 × 字号；键到文字的空隙（线条键约 1 像素，色块 0.2 × 字号，横排竖排一样）。
- * 横排图例（上、下）：项与项之间的间隔（色块 0.82 × 字号，线条 7.8 + 0.436 × 字号），
+ * 横排图例（上、下）：项与项之间的间隔（色块：0.29 × 字号 + 0.15 × 平均每项宽（键 + 空隙 + 文字），同一个图例里各项间隔相同——
+ * COM 生成 6 组不同长度中英文名称的图例量出来，误差 ≤ 1 像素；"系列 N"时约 0.82 × 字号；线条 7.8 + 0.436 × 字号），
  * 第一个键左边留空（色块 0.24 × 字号，线条 3.2 像素）后整体居中。
  * COM 生成 9~28 磅的折线、柱形图图例，导出图上键的位置实测（每项间距、起点误差 ≤ 1 像素）
  */
 export const legendSquare = (s: number) => 0.48 * s;
 export const legendKeyGap = (s: number, line: boolean) => (line ? 1 : 0.2 * s);
-export const legendItemGap = (s: number, line: boolean) => (line ? 7.8 + 0.436 * s : 0.82 * s);
+export const legendItemGap = (s: number, line: boolean, avgItem: number) => (line ? 7.8 + 0.436 * s : 0.29 * s + 0.15 * avgItem);
 export const legendLead = (s: number, line: boolean) => (line ? 3.2 : 0.24 * s);
 /** 图例里有线条项（折线、趋势线）时所有图例键统一的宽度：固定 21 磅，不随字号变（COM 生成 9~20 磅的横排、竖排图例，导出图实测） */
 export const LEGEND_LINE_KEY = 28;
