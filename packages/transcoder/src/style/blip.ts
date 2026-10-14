@@ -1,14 +1,15 @@
 /**
- * 图片调整（a:blip 里的双色调、灰度、亮度对比度、设置透明色）-> SVG filter。
+ * 图片调整（a:blip 里的双色调、灰度、黑白、亮度对比度、设置透明色）-> SVG filter。
  */
 import { colorIn, parseColorEl, type ColorContext, type Rgba } from '../model/color';
 import type { SvgDoc } from '../common/svg';
 import { child, numAttr, type XEl } from '../io/xml';
 
-/** 图片调整：双色调、灰度、亮度对比度、某种颜色变透明 */
+/** 图片调整：双色调、灰度、黑白、亮度对比度、某种颜色变透明 */
 export interface BlipEffects {
   duotone?: [Rgba, Rgba];
   grayscale?: boolean;
+  biLevel?: number;    // 黑白的阈值 0..1
   bright?: number;     // -1..1
   contrast?: number;   // -1..1
   clrChange?: Rgba;    // 变透明的颜色
@@ -23,6 +24,8 @@ export function parseBlipEffects(blip: XEl | undefined, ctx: ColorContext): Blip
     if (cs.length >= 2) e.duotone = [cs[0], cs[1]];
   }
   if (child(blip, 'a:grayscl')) e.grayscale = true;
+  const bi = child(blip, 'a:biLevel');
+  if (bi) e.biLevel = (numAttr(bi, 'thresh') ?? 50000) / 100000;
   const lum = child(blip, 'a:lum');
   if (lum) {
     e.bright = (numAttr(lum, 'bright') ?? 0) / 100000;
@@ -57,16 +60,25 @@ export function blipFilter(e: BlipEffects | undefined, doc: SvgDoc): string | un
     parts.push(`<feColorMatrix in="d" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 ${CLR_CHANGE_GAIN} ${CLR_CHANGE_GAIN} ${CLR_CHANGE_GAIN} 0 0" result="m"/>`);
     parts.push('<feComposite in="SourceGraphic" in2="m" operator="in"/>');
   }
-  if (e.grayscale || e.duotone) {
+  if (e.grayscale || e.duotone || e.biLevel !== undefined) {
     parts.push('<feColorMatrix type="matrix" values="0.2126 0.7152 0.0722 0 0 0.2126 0.7152 0.0722 0 0 0.2126 0.7152 0.0722 0 0 0 0 0 1 0"/>');
+  }
+  if (e.biLevel !== undefined) {
+    // 黑白：亮度（Rec.709 权重，0~255）≥ 256 × 阈值的变白，其余变黑（灰阶条、两种彩色渐变条实测，转折点误差 0）
+    const t = 256 * e.biLevel;
+    const table = Array.from({ length: 256 }, (_, i) => (i >= t ? 1 : 0)).join(' ');
+    parts.push(`<feComponentTransfer><feFuncR type="discrete" tableValues="${table}"/><feFuncG type="discrete" tableValues="${table}"/><feFuncB type="discrete" tableValues="${table}"/></feComponentTransfer>`);
   }
   if (e.duotone) {
     const [a, b] = e.duotone;
     parts.push(`<feComponentTransfer><feFuncR type="table" tableValues="${f01(a.r)} ${f01(b.r)}"/><feFuncG type="table" tableValues="${f01(a.g)} ${f01(b.g)}"/><feFuncB type="table" tableValues="${f01(a.b)} ${f01(b.b)}"/></feComponentTransfer>`);
   }
   if (e.bright || e.contrast) {
-    const k = 1 + (e.contrast ?? 0);
-    const off = (e.bright ?? 0) + (1 - k) / 2;
+    // PowerPoint 实测（灰阶条 × 12 组亮度、对比度）：对比度 c > 0 时斜率 1 / (1 − c)，c < 0 时 1 + c，绕 128 转；
+    // 亮度 b 一半加在对比度之前、一半加在之后：v' = k(v − 128) + 128 + 255·b·(1 + k)/2
+    const c = e.contrast ?? 0, b = e.bright ?? 0;
+    const k = c > 0 ? 1 / Math.max(1e-3, 1 - c) : 1 + c;
+    const off = (128 / 255) * (1 - k) + (b * (1 + k)) / 2;
     parts.push(`<feComponentTransfer><feFuncR type="linear" slope="${k}" intercept="${off}"/><feFuncG type="linear" slope="${k}" intercept="${off}"/><feFuncB type="linear" slope="${k}" intercept="${off}"/></feComponentTransfer>`);
   }
   if (!parts.length) return undefined;
