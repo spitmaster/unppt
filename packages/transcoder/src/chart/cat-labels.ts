@@ -78,3 +78,34 @@ export function categoryLabel(fit: CatFit, i: number, text: string, x: number, a
   if (fit.kind === 'wrap') return fit.lines[i].map((t, k) => label(t, x, centerY + k * WRAP_LINE * s, st)).join('');
   return label(text, x, centerY, st);
 }
+
+/**
+ * 左右两侧的分类标签（条形图）：每个标签最宽 (图表宽 − 2 × 留白) / 2，超过就折行——中文在任意字之间、
+ * 西文在空格处；多行时各行居中、行距 1.378 × 字号，整块右端（左侧标签）对齐原来的位置（PowerPoint 实测：
+ * 300、450 磅宽的条形图，中文、英文长名称，折行位置和行距与导出图一致）
+ */
+const SIDE_MAX = 0.5, SIDE_LINE = 1.378;
+
+export const sideLabelMax = (chartW: number, pad: number) => SIDE_MAX * (chartW - 2 * pad);
+
+export function wrapSideLabel(t: string, maxW: number, s: number, tw: TextWidth): string[] {
+  if (tw(t, s) <= maxW) return [t];
+  // 记号：西文按词（连同后面的空格），中日韩字符一个字一个
+  const tokens = t.match(/[⺀-鿿豈-﫿＀-￯]|[^\s⺀-鿿豈-﫿＀-￯]+\s*|\s+/g) ?? [t];
+  const lines: string[] = [];
+  let cur = '';
+  for (const tok of tokens) {
+    if (cur && tw((cur + tok).trimEnd(), s) > maxW) { lines.push(cur.trimEnd()); cur = tok.trimStart(); }
+    else cur += tok;
+  }
+  if (cur.trim()) lines.push(cur.trimEnd());
+  return lines;
+}
+
+/** 画一侧的分类标签：x 是标签右端（anchor = end）或左端（start）的对齐点 */
+export function sideLabel(lines: string[], x: number, y: number, st: TextStyle, anchor: 'start' | 'end', tw: TextWidth): string {
+  if (lines.length === 1) return label(lines[0], x, y, st, anchor);
+  const w = Math.max(...lines.map((l) => tw(l, st.size)));
+  const cx = anchor === 'end' ? x - w / 2 : x + w / 2;
+  return lines.map((l, k) => label(l, cx, y + (k - (lines.length - 1) / 2) * SIDE_LINE * st.size, st)).join('');
+}

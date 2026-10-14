@@ -21,7 +21,7 @@ import { extraValues, trendlines } from './extras';
 import { dataTableSize, readDataTable, renderDataTable } from './data-table';
 import { readAxisTitle, renderAxisTitles, reserveAxisTitles, type AxisTitles } from './axis-title';
 import { NO_GRID, type PixelGrid } from './pixel-grid';
-import { catFitBand, categoryLabel, fitCategoryLabels, ROT_MIDCAT_RIGHT, rotFirstCenter, type CatFit } from './cat-labels';
+import { catFitBand, categoryLabel, fitCategoryLabels, ROT_MIDCAT_RIGHT, rotFirstCenter, sideLabel, sideLabelMax, wrapSideLabel, type CatFit } from './cat-labels';
 
 export interface CatEnv { colors: ColorContext; part: string; baseText: TextStyle; makeAxis: AxisMaker; tw: TextWidth; w: number; view?: View3D; zh?: boolean; plotBg?: (r: Rect) => string; snap?: PixelGrid }
 
@@ -96,6 +96,8 @@ export function renderCategoryChart(plots: Plot[], plotArea: XEl | undefined, ar
   const catLabels = !catDeleted && tickLblPos(catAx) !== 'none' && !dt;
   // 分类标签、刻度线的间隔（"标签间隔""刻度线间隔"，没写时标签间隔按能不能放下自动定，见 cat-labels.ts）
   const lblSkip = Math.max(1, numAttr(child(catAx, 'c:tickLblSkip'), 'val') ?? 1), markSkip = Math.max(1, numAttr(child(catAx, 'c:tickMarkSkip'), 'val') ?? 1);
+  // 左右两侧的分类标签（条形图）太长时折行（cat-labels.ts）
+  const sideLines = cats.map((c) => wrapSideLabel(c, sideLabelMax(w, PAD), catStyle.size, tw));
   // 按数值轴的长度 len 算刻度并排出绘图区（len 不给时用默认刻度）
   const place = (len?: number) => {
     const prim = makeAxis(primaryAx, primRange[0], primRange[1], { ...primRange[2], length: len, horizontal });
@@ -134,8 +136,8 @@ export function renderCategoryChart(plots: Plot[], plotArea: XEl | undefined, ar
     } else {
       if (catLabels) {
         if (sides.catMid) left += emptyLeftPad(catStyle.size);
-        else if (sides.cat === 'l') left = edgeLeft + maxW(cats, catStyle.size) + sideGap(catStyle.size);
-        else right = edgeRight - maxW(cats, catStyle.size) - sideGap(catStyle.size);
+        else if (sides.cat === 'l') left = edgeLeft + maxW(sideLines.flat(), catStyle.size) + sideGap(catStyle.size);
+        else right = edgeRight - maxW(sideLines.flat(), catStyle.size) - sideGap(catStyle.size);
       }
       if (valLabels) {
         if (sides.val === 'b') bottom -= valBand(valStyle.size);
@@ -216,7 +218,7 @@ export function renderCategoryChart(plots: Plot[], plotArea: XEl | undefined, ar
         axisText.push(sides.cat === 'b' && !sides.catMid ? categoryLabel(catFit, i, c, at, edge, edge + catC(catStyle.size), catStyle)
           : label(c, at, sides.cat === 'b' ? edge + catC(catStyle.size) : edge - catC(catStyle.size), catStyle));
       }
-      else axisText.push(sides.cat === 'l' ? label(c, edge - sideAnchor(catStyle.size), at, catStyle, 'end') : label(c, edge + sideAnchor(catStyle.size), at, catStyle, 'start'));
+      else axisText.push(sides.cat === 'l' ? sideLabel(sideLines[i], edge - sideAnchor(catStyle.size), at, catStyle, 'end', tw) : sideLabel(sideLines[i], edge + sideAnchor(catStyle.size), at, catStyle, 'start', tw));
     });
   }
 
