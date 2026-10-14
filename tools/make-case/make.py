@@ -2128,7 +2128,29 @@ def charts_3d_line(app):
     return p
 
 
-CASES = [shapes_all, text_sizes, text_align, text_spacing, text_bullets, text_missing_font, shapes_basic, fills_lines, table_basic, group_rotate, anim_basic, anim_auto, charts_basic, pictures, smartart, text_effects, text_layout, table_merge, links, emf_images, anim_advanced, charts_labels, freeform_icons, media_audio, anim_trigger, wmf_images, anim_iterate, picture_transparent, charts_more, shape_effects, equations, anim_path, anim_emphasis, transitions, fills_patterns, text_decoration, anim_entrance, svg_images, charts_markers, hidden_slides, media_background, text_glow_reflection, text_tabs, text_picture_bullets, fills_texture, transition_morph, text_embedded_fonts, text_warp, anim_repeat, charts_sizes, slide_timings, lines_compound, table_diagonal, lines_gradient, fills_radial, fills_rect_gradient, shapes_3d, table_vertical, transitions_more, anim_sound, anim_build, anim_after, anim_text_emphasis, charts_bubble, media_video, charts_options, charts_negative, shapes_bevel, charts_legend, shapes_3d_rotation, smartart_3d, charts_ofpie, charts_3d, anim_group_emphasis, activex_controls, charts_extras, charts_axis_titles, charts_fills, charts_outlines, charts_labels_more, group_scale, group_flip, charts_3d_line]
+def charts_legend_pos(app):
+    """图例的位置和间隔：有标题的饼图图例在右、左、上（饼和图例的上沿规则不同），柱形图图例在右；
+    长短不一的中文、英文名称的横排图例（项间隔随平均项宽变化）"""
+    p = new_pres(app, window=True)
+    specs = [(5, 'r', None), (5, 'l', None), (5, 't', None), (51, 'r', None),
+             (51, 'b', [['', '甲乙丙丁戊己庚辛', '甲', '甲乙'], ['类别 1', 4.3, 2.4, 2], ['类别 2', 2.5, 4.4, 2], ['类别 3', 3.5, 1.8, 3]]),
+             (51, 't', [['', 'Alpha', 'Be', 'Gamma Delta'], ['类别 1', 4.3, 2.4, 2], ['类别 2', 2.5, 4.4, 2], ['类别 3', 3.5, 1.8, 3]])]
+    pos = {'r': -4152, 'l': -4131, 't': -4160, 'b': -4107}
+    for k, (kind, where, rows) in enumerate(specs):
+        if k % 2 == 0:
+            s = blank(p)
+        ch = s.Shapes.AddChart2(-1, kind, 20 + (k % 2) * 470, 40, 450, 440)
+        if rows:
+            _chart_values(ch, rows)
+        _close_data(ch)
+        c = ch.Chart
+        c.HasTitle = True
+        c.HasLegend = True
+        c.Legend.Position = pos[where]
+    return p
+
+
+CASES = [shapes_all, text_sizes, text_align, text_spacing, text_bullets, text_missing_font, shapes_basic, fills_lines, table_basic, group_rotate, anim_basic, anim_auto, charts_basic, pictures, smartart, text_effects, text_layout, table_merge, links, emf_images, anim_advanced, charts_labels, freeform_icons, media_audio, anim_trigger, wmf_images, anim_iterate, picture_transparent, charts_more, shape_effects, equations, anim_path, anim_emphasis, transitions, fills_patterns, text_decoration, anim_entrance, svg_images, charts_markers, hidden_slides, media_background, text_glow_reflection, text_tabs, text_picture_bullets, fills_texture, transition_morph, text_embedded_fonts, text_warp, anim_repeat, charts_sizes, slide_timings, lines_compound, table_diagonal, lines_gradient, fills_radial, fills_rect_gradient, shapes_3d, table_vertical, transitions_more, anim_sound, anim_build, anim_after, anim_text_emphasis, charts_bubble, media_video, charts_options, charts_negative, shapes_bevel, charts_legend, shapes_3d_rotation, smartart_3d, charts_ofpie, charts_3d, anim_group_emphasis, activex_controls, charts_extras, charts_axis_titles, charts_fills, charts_outlines, charts_labels_more, group_scale, group_flip, charts_3d_line, charts_legend_pos]
 
 
 def main():
