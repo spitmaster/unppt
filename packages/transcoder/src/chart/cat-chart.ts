@@ -10,7 +10,7 @@ import { axesOf, axId, axisCrosses, axisReversed, tickMark } from './axis';
 import type { CategoryFrame } from './chart-type';
 import { chartTypeOf } from './chart-types';
 import { hasCjk, label, textStyle } from './draw';
-import { catBand, catCenter, PAD, SIDE_LABEL_PAD, sideAnchor, sideGap, topForLabel, unitBand, unitCenter, unitTop, valBand, valBandTop, emptyBottomPad, emptyLeftPad, valCenter, type TextWidth } from './layout';
+import { catBand, catCenter, PAD, SIDE_LABEL_PAD, sideAnchor, sideGap, valAnchor, topForLabel, unitBand, unitCenter, unitTop, valBand, valBandTop, emptyBottomPad, emptyLeftPad, valCenter, type TextWidth } from './layout';
 import { axisLine, axisSides, catMapping, gridLine, outward, tickLblPos, tickMarks } from './sides';
 import type { AxisMaker, AxisOpts, Plot, Rect, TextStyle, View3D } from './model';
 import { isColumn3D, renderColumn3D } from './cat3d';
@@ -207,7 +207,7 @@ export function renderCategoryChart(plots: Plot[], plotArea: XEl | undefined, ar
     const v = frame.valPx(prim.pos(t));
     out.push(gridLine(v, prim.grid, horizontal, box, g));
     if (!valLabels) return;
-    if (!horizontal) axisText.push(sides.val === 'l' ? label(tickLabels[i], left - sideAnchor(valStyle.size), v, valStyle, 'end') : label(tickLabels[i], right + sideAnchor(valStyle.size), v, valStyle, 'start'));
+    if (!horizontal) axisText.push(sides.val === 'l' ? label(tickLabels[i], left - valAnchor(valStyle.size), v, valStyle, 'end') : label(tickLabels[i], right + sideAnchor(valStyle.size), v, valStyle, 'start'));
     else axisText.push(label(tickLabels[i], v, sides.val === 'b' ? bottom + valCenter(valStyle.size) : top - valCenter(valStyle.size), valStyle));
   });
   // 显示单位（例如"千"）
