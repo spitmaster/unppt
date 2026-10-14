@@ -20,6 +20,8 @@ const CSS = `
 .unppt-ui button{border:0;border-radius:4px;background:rgba(0,0,0,.55);color:#fff;width:34px;height:30px;font-size:16px;cursor:pointer}
 .unppt-ui span{background:rgba(0,0,0,.55);color:#fff;border-radius:4px;padding:8px 10px}
 .unppt-error{color:#fff;font:15px system-ui,sans-serif;padding:24px}
+.unppt-stage>.unppt-error{position:absolute;left:0;top:0;color:#c00;z-index:8}
+.unppt-root.unppt-loading::after{content:'加载中…';position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);color:#fff;background:rgba(0,0,0,.55);padding:8px 14px;border-radius:4px;font:14px system-ui,sans-serif;z-index:7}
 `;
 
 export function injectCss(doc: Document) {

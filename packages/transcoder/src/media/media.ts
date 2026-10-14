@@ -1,5 +1,6 @@
 /**
  * 媒体（图片、视频、音频）：小文件内联成 data URI，大文件以数据流方式写到 media/ 目录。
+ * 单独的文件名带内容校验码（ZIP 里记录的 CRC32）：重新发布后浏览器、CDN 的旧缓存不会串版本。
  */
 import type { OpcPackage } from '../io/package';
 import type { Presentation } from '../model/model';
@@ -35,6 +36,12 @@ export function base64(bytes: Uint8Array): string {
     s += String.fromCharCode.apply(null, bytes.subarray(i, i + CH) as unknown as number[]);
   }
   return btoa(s);
+}
+
+/** 单独输出的媒体文件名：media/原名[后缀].校验码.扩展名 */
+function mediaName(target: string, crc: number, ext: string, suffix = ''): string {
+  const base = target.slice(target.lastIndexOf('/') + 1).replace(/\.[^.]*$/, '');
+  return `media/${base}${suffix}.${(crc >>> 0).toString(16).padStart(8, '0')}.${ext}`;
 }
 
 /** 页面里引用共享图片的写法：unppt:asset/编号，播放器显示前替换成真正的数据 */
@@ -103,9 +110,8 @@ export class MediaStore {
       this.pending.push({ id, uri: `data:image/png;base64,${base64(png)}` });
       return `${ASSET_PREFIX}${id}`;
     }
-    const base = target.slice(target.lastIndexOf('/') + 1).replace(/\.[^.]*$/, '');
     const hex = ((key.r << 16) | (key.g << 8) | key.b).toString(16).padStart(6, '0');
-    const name = `media/${base}-key${hex}.png`;
+    const name = mediaName(target, entry.crc, 'png', `-key${hex}`);
     await this.write(name, png);
     return name;
   }
@@ -137,9 +143,14 @@ export class MediaStore {
       const bytes = await this.pkg.zip.read(target);
       const img = bytes ? decoder.decode(bytes) : undefined;
       if (!img) { this.pres.warn(`${ext.toUpperCase()} 图片无法解析`); return undefined; }
-      const id = this.nextAsset++;
-      this.pending.push({ id, uri: `data:${img.mime};base64,${base64(img.data)}` });
-      return `${ASSET_PREFIX}${id}`;
+      if (this.inlineLimit >= 0) {
+        const id = this.nextAsset++;
+        this.pending.push({ id, uri: `data:${img.mime};base64,${base64(img.data)}` });
+        return `${ASSET_PREFIX}${id}`;
+      }
+      const name = mediaName(target, entry.crc, img.mime === 'image/svg+xml' ? 'svg' : img.mime.slice(6));
+      await this.write(name, img.data);
+      return name;
     }
     if (isImage && !BROWSER_IMAGES.has(ext)) {
       this.pres.warn(`不支持的图片格式：${ext}`);
@@ -154,7 +165,7 @@ export class MediaStore {
       this.pending.push({ id, uri: `data:${mime};base64,${base64(bytes)}` });
       return `${ASSET_PREFIX}${id}`;
     }
-    const name = `media/${target.slice(target.lastIndexOf('/') + 1)}`;
+    const name = mediaName(target, entry.crc, ext);
     await this.write(name, this.pkg.zip.stream(entry));
     return name;
   }

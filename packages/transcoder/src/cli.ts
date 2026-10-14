@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * 命令行：unppt convert <输入.pptx> [-o 输出.html] [--fonts 目录]... [--system-fonts] [--data] [--inline-limit 字节]
+ * 命令行：unppt convert <输入.pptx> [-o 输出.html] [--fonts 目录]... [--system-fonts] [--output 形式] [--inline-limit 字节]
  *
  * 这一层负责读写文件；转码本身（convert）不碰文件系统。
  */
@@ -98,11 +98,14 @@ function usage(): never {
 用法：unppt convert <输入.pptx> [-o 输出.html] [选项]
 
 选项：
-  -o, --out <文件>        输出文件，默认和输入同名的 .html（--data 时为 .json）
+  -o, --out <文件>        输出文件，默认和输入同名的 .html（--data 时为 .json）；
+                          paged / pages 形式下是输出目录（入口是目录里的 index.html），默认和输入同名的目录
+  --output <形式>         产物形式：single（默认，一个自包含的 HTML）、paged（按需加载：入口 HTML + 每页单独的数据文件，
+                          看当前页时预加载下一页）、pages（paged 再加每页一个独立的 HTML）、data（同 --data）
   --fonts <目录>          字体目录（可以写多次），用来按真实字宽排版
   --system-fonts          使用本机系统字体目录（另外 Office 自带的私有字体、云字体用到时嵌入产物）
   --embed-fonts           把用到的字做成字体子集嵌入（观看端无需安装字体；商业字体注意授权）
-  --data                  只输出演示数据 deck.json，交给单独部署的播放器
+  --data                  只输出演示数据 deck.json（开发调试用）
   --inline-limit <字节>   小于这个大小的图片内联进 HTML，默认 2097152
   --stats                 结束时显示用时和峰值内存
   -q, --quiet             不显示进度`);
@@ -116,7 +119,7 @@ async function main() {
   let out = '';
   const fontDirs: string[] = [];
   const privateDirs: string[] = [];
-  let dataOnly = false;
+  let form = 'single';
   let embedFonts = false;
   let inlineLimit: number | undefined;
   let quiet = false;
@@ -126,15 +129,20 @@ async function main() {
     if (a === '-o' || a === '--out') out = args[++i];
     else if (a === '--fonts') fontDirs.push(args[++i]);
     else if (a === '--system-fonts') { fontDirs.push(...systemFontDirs()); privateDirs.push(...officeFontDirs()); }
-    else if (a === '--data') dataOnly = true;
+    else if (a === '--data') form = 'data';
+    else if (a === '--output') form = args[++i];
     else if (a === '--embed-fonts') embedFonts = true;
     else if (a === '--inline-limit') inlineLimit = Number(args[++i]);
     else if (a === '-q' || a === '--quiet') quiet = true;
     else if (a === '--stats') stats = true;
     else usage();
   }
-  if (!out) out = join(dirname(input), basename(input, extname(input)) + (dataOnly ? '.json' : '.html'));
+  const dataOnly = form === 'data';
+  // 按需加载的形式输出一个目录
+  const dirForm = form === 'paged' || form === 'pages';
+  if (!out) out = join(dirname(input), basename(input, extname(input)) + (dirForm ? '' : dataOnly ? '.json' : '.html'));
   out = resolve(out);
+  if (dirForm) out = join(out, 'index.html');
 
   const st = await stat(input);
   const fontFiles = (await Promise.all(fontDirs.map((d) => listFonts(d)))).flat();
@@ -148,7 +156,7 @@ async function main() {
   const result = await convert(fileSource(input, st.size), {
     write: (rel, data) => writeTo(dirname(out), rel === 'index.html' || rel === 'deck.json' ? basename(out) : rel, data),
     fonts, privateFonts,
-    output: dataOnly ? 'data' : 'html',
+    output: form,
     embedFonts,
     fileName: dataOnly ? 'deck.json' : 'index.html',
     inlineLimit,

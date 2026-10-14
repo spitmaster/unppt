@@ -11,6 +11,8 @@ export interface ZipEntry {
   compressedSize: number;
   size: number;
   localHeaderOffset: number;
+  /** 文件内容的 CRC32（目录里记录的，不用读文件） */
+  crc: number;
 }
 
 const SIG_EOCD = 0x06054b50;
@@ -89,7 +91,7 @@ export class ZipReader {
         }
         e += 4 + len;
       }
-      const entry = { name, method, compressedSize, size, localHeaderOffset };
+      const entry = { name, method, compressedSize, size, localHeaderOffset, crc: u32(cd, p + 16) };
       this.entries.set(name, entry);
       this.lowerNames.set(name.toLowerCase(), name);
       p = eEnd + commentLen;
