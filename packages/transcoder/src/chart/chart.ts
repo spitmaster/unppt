@@ -16,7 +16,8 @@ import { chartTypeOf } from './chart-types';
 import { gradientRef, label, textStyle, textWidth } from './draw';
 import { BOTTOM_PAD, PAD, pieLegendBand, type TextWidth } from './layout';
 import { renderLegend } from './legend';
-import type { ChartContext, Plot, Rect, SvgDefs, TextStyle, View3D } from './model';
+import type { ChartContext, PattFill, Plot, Rect, SvgDefs, TextStyle, View3D } from './model';
+import { patternFill } from '../style/pattern';
 import { readPlots } from './read';
 
 /** 实测：标题文字的 y（像素，离图表上边）= TITLE_Y0 + TITLE_Y × 字号 */
@@ -46,7 +47,7 @@ export function renderChart(space: XEl | undefined, w: number, h: number, env: C
   const out: string[] = [];
 
   // 整个图表区的背景和边框（纯色、渐变）
-  out.push(areaRect(child(space, 'c:spPr'), { left: 0, top: 0, right: w, bottom: h }, colors, env.part, env.doc));
+  out.push(areaRect(child(space, 'c:spPr'), { left: 0, top: 0, right: w, bottom: h }, colors, env.part, env.doc, env.origin));
 
   const baseText: TextStyle = textStyle(child(space, 'c:txPr'), colors, {
     size: 10 * 96 / 72, color: { r: 89, g: 89, b: 89, a: 1 }, bold: false, font: theme.minorLatin || 'Calibri',
@@ -63,6 +64,16 @@ export function renderChart(space: XEl | undefined, w: number, h: number, env: C
     for (const s of plots.flatMap((p) => p.series)) {
       if (s.grad) s.paint = gradientRef(s.grad, defs);
       if (s.pointGrads) s.pointPaints = new Map([...s.pointGrads].map(([i, g]) => [i, gradientRef(g, defs)]));
+      // 图案填充（"图表样式"里常见的横线、斜线底纹）：按幻灯片原点对齐
+      const pat = (p: PattFill) => {
+        const id = env.doc && patternFill(env.doc, p.prst, p.fg, p.bg, env.origin);
+        return id ? `url(#${id})` : undefined;
+      };
+      if (s.patt) s.paint = pat(s.patt) ?? s.paint;
+      for (const [i, p] of s.pointPatts ?? []) {
+        const u = pat(p);
+        if (u) (s.pointPaints ??= new Map()).set(i, u);
+      }
     }
   }
   if (!plots.length) return out.join('');
@@ -118,7 +129,7 @@ export function renderChart(space: XEl | undefined, w: number, h: number, env: C
   }
 
   const makeAxis = axisMaker(colors, baseText, env.part, lang);
-  const plotBg = (r: Rect) => areaRect(child(plotArea, 'c:spPr'), r, colors, env.part, env.doc);
+  const plotBg = (r: Rect) => areaRect(child(plotArea, 'c:spPr'), r, colors, env.part, env.doc, env.origin);
   const snap = env.origin && pixelGrid(env.origin.x, env.origin.y, env.origin.sx, env.origin.sy);
   const view3D = plots.some((p) => p.is3D) ? readView3D(child(chart, 'c:view3D'), type0.kind === 'pie') : undefined;
   if (type0.layout === 'standalone') {

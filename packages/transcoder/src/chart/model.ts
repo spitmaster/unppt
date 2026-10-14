@@ -4,12 +4,16 @@ import type { Line } from '../style/line';
 import type { XEl } from '../io/xml';
 import type { PixelGrid } from './pixel-grid';
 
-export interface TextStyle { size: number; color: Rgba; bold: boolean; font: string; }
+/** 图表文字样式；rot 是文字转的角度（度，-90 是竖排从下往上，只在 txPr 写了时有），spc 是字间距（像素） */
+export interface TextStyle { size: number; color: Rgba; bold: boolean; font: string; rot?: number; spc?: number }
 
 export interface Labels { val: boolean; pct: boolean; cat: boolean; ser: boolean; pos?: string; fmt?: string; style: TextStyle; sep?: string }
 
 /** 渐变填充（色标和角度，角度是度） */
 export interface GradFill { stops: { pos: number; color: Rgba }[]; angle: number }
+
+/** 图案填充（预设图案、前景色、背景色） */
+export interface PattFill { prst: string; fg: Rgba; bg: Rgba }
 
 /** 多级分类的外层一级：每组的起始分类序号和名称（按序号排好） */
 export type CatLevel = { idx: number; text: string }[];
@@ -20,6 +24,9 @@ export interface Series {
   /** 系列、单个数据点的线性渐变填充（读的时候留下，chart.ts 生成定义后填 paint / pointPaints） */
   grad?: GradFill;
   pointGrads?: Map<number, GradFill>;
+  /** 系列、单个数据点的图案填充（chart.ts 生成定义后填 paint / pointPaints） */
+  patt?: PattFill;
+  pointPatts?: Map<number, PattFill>;
   /** 渐变填充的 SVG 写法 url(#…)：每个柱子、扇区各自铺满一遍（objectBoundingBox） */
   paint?: string;
   pointPaints?: Map<number, string>;

@@ -33,6 +33,13 @@ EN = "The quick brown fox jumps over the lazy dog. Pack my box with five dozen l
 def new_pres(app, w=960, h=540, window=False):
     # 插入图表必须在有窗口的模式下（无窗口时 AddChart2 会报错）
     p = app.Presentations.Add(-1 if window else 0)
+    if window:
+        # 有窗口时立刻最小化，免得弹到用户面前抢焦点（ppWindowMinimized = 2）
+        try:
+            p.Windows(1).WindowState = 2
+            app.WindowState = 2
+        except Exception:
+            pass
     p.PageSetup.SlideWidth = w
     p.PageSetup.SlideHeight = h
     return p
@@ -1229,11 +1236,25 @@ def _chart_values(ch, rows):
     """改图表数据：rows 是从 A1 开始的表格（第一行是系列名，第一列是分类）"""
     cd = ch.Chart.ChartData
     cd.Activate()
+    _hide_excel(cd)
     ws = cd.Workbook.Worksheets(1)
     for r, row in enumerate(rows, start=1):
         for c, v in enumerate(row, start=1):
             ws.Cells(r, c).Value = v
     ch.Chart.SetSourceData(f"Sheet1!$A$1:${chr(64 + len(rows[0]))}${len(rows)}")
+
+
+def _hide_excel(cd):
+    """图表数据打开的 Excel 窗口立刻藏起来（xlMinimized = -4140），不抢焦点"""
+    import time
+    for _ in range(20):
+        try:
+            xl = cd.Workbook.Application
+            xl.WindowState = -4140
+            xl.Visible = False
+            return
+        except Exception:
+            time.sleep(0.3)
 
 
 def _close_data(ch):
@@ -2211,6 +2232,7 @@ def _chart_sheet(ch, rows, rng):
     """把 rows 原样写进图表数据表（空串留空，可以写多级分类），再按 rng 设数据源"""
     cd = ch.Chart.ChartData
     cd.Activate()
+    _hide_excel(cd)
     ws = cd.Workbook.Worksheets(1)
     ws.Range('A1:Z60').ClearContents()
     for r, row in enumerate(rows, start=1):
@@ -2407,7 +2429,19 @@ def shapes_styles(app):
     return p
 
 
-CASES = [shapes_all, text_sizes, text_align, text_spacing, text_bullets, text_missing_font, shapes_basic, fills_lines, table_basic, group_rotate, anim_basic, anim_auto, charts_basic, pictures, smartart, text_effects, text_layout, table_merge, links, emf_images, anim_advanced, charts_labels, freeform_icons, media_audio, anim_trigger, wmf_images, anim_iterate, picture_transparent, charts_more, shape_effects, equations, anim_path, anim_emphasis, transitions, fills_patterns, text_decoration, anim_entrance, svg_images, charts_markers, hidden_slides, media_background, text_glow_reflection, text_tabs, text_picture_bullets, fills_texture, transition_morph, text_embedded_fonts, text_warp, anim_repeat, charts_sizes, slide_timings, lines_compound, table_diagonal, lines_gradient, fills_radial, fills_rect_gradient, shapes_3d, table_vertical, transitions_more, anim_sound, anim_build, anim_after, anim_text_emphasis, charts_bubble, media_video, charts_options, charts_negative, shapes_bevel, charts_legend, shapes_3d_rotation, smartart_3d, charts_ofpie, charts_3d, anim_group_emphasis, activex_controls, charts_extras, charts_axis_titles, charts_fills, charts_outlines, charts_labels_more, group_scale, group_flip, charts_3d_line, charts_legend_pos, charts_crowded_labels, charts_label_skip, charts_bar_long_names, charts_multilevel, picture_recolor, text_symbols, text_numbering, lines_arrows, table_styles, shapes_styles]
+def charts_styles(app):
+    """图表快速样式：簇状柱形图套 ChartStyle 201~212（深色背景、渐变、数据标签、无网格线等），
+    每页 4 个 450×250 的图表，默认示例数据"""
+    p = new_pres(app, window=True)
+    for k, style in enumerate(range(201, 213)):
+        if k % 4 == 0:
+            s = blank(p)
+        ch = s.Shapes.AddChart2(style, 51, 20 + (k % 2) * 470, 15 + (k // 2 % 2) * 265, 450, 250)
+        _close_data(ch)
+    return p
+
+
+CASES = [shapes_all, text_sizes, text_align, text_spacing, text_bullets, text_missing_font, shapes_basic, fills_lines, table_basic, group_rotate, anim_basic, anim_auto, charts_basic, pictures, smartart, text_effects, text_layout, table_merge, links, emf_images, anim_advanced, charts_labels, freeform_icons, media_audio, anim_trigger, wmf_images, anim_iterate, picture_transparent, charts_more, shape_effects, equations, anim_path, anim_emphasis, transitions, fills_patterns, text_decoration, anim_entrance, svg_images, charts_markers, hidden_slides, media_background, text_glow_reflection, text_tabs, text_picture_bullets, fills_texture, transition_morph, text_embedded_fonts, text_warp, anim_repeat, charts_sizes, slide_timings, lines_compound, table_diagonal, lines_gradient, fills_radial, fills_rect_gradient, shapes_3d, table_vertical, transitions_more, anim_sound, anim_build, anim_after, anim_text_emphasis, charts_bubble, media_video, charts_options, charts_negative, shapes_bevel, charts_legend, shapes_3d_rotation, smartart_3d, charts_ofpie, charts_3d, anim_group_emphasis, activex_controls, charts_extras, charts_axis_titles, charts_fills, charts_outlines, charts_labels_more, group_scale, group_flip, charts_3d_line, charts_legend_pos, charts_crowded_labels, charts_label_skip, charts_bar_long_names, charts_multilevel, picture_recolor, text_symbols, text_numbering, lines_arrows, table_styles, shapes_styles, charts_styles]
 
 
 def main():

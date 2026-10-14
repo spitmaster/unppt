@@ -201,6 +201,12 @@ export function renderCategoryChart(plots: Plot[], plotArea: XEl | undefined, ar
   const axisText: string[] = [];
   // 绘图区的背景和边框在最下面
   if (env.plotBg) out.push(env.plotBg(box));
+  // 分类轴的主要网格线：画在刻度线的位置（分类之间，含绘图区两端；按刻度线间隔）
+  const catGrid = child(catAx, 'c:majorGridlines');
+  if (catGrid && !catDeleted) {
+    const ln = parseLine([child(child(catGrid, 'c:spPr'), 'a:ln')], [colors], env.part) ?? { color: { r: 217, g: 217, b: 217, a: 1 }, width: 1, cap: 'butt', join: 'round' };
+    for (let i = 0; i <= (between ? nCat : nCat - 1); i += markSkip) out.push(gridLine(frame.catPx(i * band), ln, !horizontal, box, g));
+  }
   // 网格线（次要的在下面）和数值标签
   for (const t of prim.minor) out.push(gridLine(frame.valPx(prim.pos(t)), prim.minorGrid, horizontal, box, g));
   prim.ticks.forEach((t, i) => {
