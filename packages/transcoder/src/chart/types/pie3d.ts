@@ -9,7 +9,7 @@ import { css, type ColorContext, type Rgba } from '../../model/color';
 import { n2 } from '../../common/svg';
 import { accentColor, cpart, label } from '../draw';
 import { labelText } from '../format';
-import type { Plot, Rect, View3D } from '../model';
+import type { Plot, Rect, SvgDefs, View3D } from '../model';
 
 /** 厚度、相机距离（半径的倍数）、俯角系数和侧壁明暗（实测） */
 const THICK = 0.238;
@@ -18,7 +18,7 @@ const TILT = 28.25 / 30;
 const shade = (t: number) => Math.max(0.4, 0.573 - 0.313 * Math.cos(t));
 const darker = (c: Rgba, k: number): Rgba => ({ r: Math.round(c.r * k), g: Math.round(c.g * k), b: Math.round(c.b * k), a: c.a });
 
-export function renderPie3D(p: Plot, area: Rect, view: View3D, colors: ColorContext): string {
+export function renderPie3D(p: Plot, area: Rect, view: View3D, colors: ColorContext, defs?: SvgDefs): string {
   const s = p.series[0];
   if (!s) return '';
   const vals = s.vals.map((v) => Math.max(0, v ?? 0));
@@ -47,6 +47,47 @@ export function renderPie3D(p: Plot, area: Rect, view: View3D, colors: ColorCont
   const ox = area.left + W / 2 - S * (x0 + x1) / 2, oy = area.top + H * 0.48 - S * (y0 + y1) / 2;
   const pt = (q: [number, number]) => `${n2(ox + S * q[0])} ${n2(oy + S * q[1])}`;
   const rims: string[] = [], tops: string[] = [], labels: string[] = [];
+  /** 一块扇区的侧壁按 3° 一段分别着色（没有渐变定义可用时） */
+  const stepSide = (arc: number[], ex: [number, number], color: Rgba) => {
+    const seg: string[] = [];
+    for (let k = 0; k < arc.length - 1; k++) {
+      const ta = arc[k], tb = arc[k + 1], tm = (ta + tb) / 2;
+      if (Math.sin(tm) <= 0) continue;
+      const c = css(darker(color, shade(tm)));
+      seg.push(`<path d="M${pt(onRim(ta, 0, ex))}L${pt(onRim(tb, 0, ex))}L${pt(onRim(tb, -T, ex))}L${pt(onRim(ta, -T, ex))}Z" fill="${c}" stroke="${c}" stroke-width="0.6"/>`);
+    }
+    return seg.join('');
+  };
+  /**
+   * 一块扇区的侧壁画成整条（看得见的每一段一条路径），明暗用横向渐变：shade 是 cos θ 的分段线性函数，
+   * 侧壁上一点的横坐标和 cos θ 成正比，所以三个色标（左端、到下限的地方、右端）就是精确的明暗，没有分段的条纹和缝
+   */
+  const smoothSide = (a2: number, ex: [number, number], color: Rgba) => {
+    const xl = ox + S * onRim(Math.PI, 0, ex)[0], xr = ox + S * onRim(0, 0, ex)[0];
+    const knee = (0.573 - 0.4) / 0.313;
+    const id = defs!.id('pg');
+    defs!.add(`<linearGradient id="${id}" gradientUnits="userSpaceOnUse" x1="${n2(xl)}" y1="0" x2="${n2(xr)}" y2="0">`
+      + `<stop offset="0" stop-color="${css(darker(color, shade(Math.PI)))}"/><stop offset="${n2((knee + 1) / 2)}" stop-color="${css(darker(color, 0.4))}"/>`
+      + `<stop offset="1" stop-color="${css(darker(color, 0.4))}"/></linearGradient>`);
+    const out: string[] = [];
+    const n = Math.max(2, Math.ceil(((a2 - ang) * 180) / Math.PI));
+    let run: number[] = [];
+    const flush = () => {
+      if (run.length > 1) {
+        const top = run.map((t, k) => `${k ? 'L' : 'M'}${pt(onRim(t, 0, ex))}`).join('');
+        const bottom = [...run].reverse().map((t) => `L${pt(onRim(t, -T, ex))}`).join('');
+        out.push(`<path d="${top}${bottom}Z" fill="url(#${id})"/>`);
+      }
+      run = [];
+    };
+    for (let k = 0; k <= n; k++) {
+      const t = ang + ((a2 - ang) * k) / n;
+      if (Math.sin(t) >= 0) run.push(t);
+      else flush();
+    }
+    flush();
+    return out.join('');
+  };
   // 第一块从正上方（远处）顺时针（俯视）排，和二维饼图一样
   let ang = ((p.firstSliceAng + view.rotY - 90) * Math.PI) / 180;
   vals.forEach((v, i) => {
@@ -59,15 +100,9 @@ export function renderPie3D(p: Plot, area: Rect, view: View3D, colors: ColorCont
     const steps = Math.max(2, Math.ceil(((a2 - ang) * 180) / Math.PI / 3));
     const arc: number[] = [];
     for (let k = 0; k <= steps; k++) arc.push(ang + ((a2 - ang) * k) / steps);
-    // 侧壁：朝向观众（sin t > 0）的部分，按 5° 一段分别着色
-    const seg: string[] = [];
-    for (let k = 0; k < arc.length - 1; k++) {
-      const ta = arc[k], tb = arc[k + 1], tm = (ta + tb) / 2;
-      if (Math.sin(tm) <= 0) continue;
-      const c = css(darker(color, shade(tm)));
-      seg.push(`<path d="M${pt(onRim(ta, 0, ex))}L${pt(onRim(tb, 0, ex))}L${pt(onRim(tb, -T, ex))}L${pt(onRim(ta, -T, ex))}Z" fill="${c}" stroke="${c}" stroke-width="0.6"/>`);
-    }
-    if (seg.length) rims.push(cpart(`${s.index}x${i}r`, seg.join('')));
+    // 侧壁：朝向观众（sin t > 0）的部分
+    const seg = defs ? smoothSide(a2, ex, color) : stepSide(arc, ex, color);
+    if (seg) rims.push(cpart(`${s.index}x${i}r`, seg));
     // 顶面
     const top = `M${pt(proj(ex[0], 0, ex[1]))}${arc.map((t) => `L${pt(onRim(t, 0, ex))}`).join('')}Z`;
     tops.push(cpart(`${s.index}x${i}`, `<path d="${top}" fill="${css(color)}" stroke="#fff" stroke-width="1.5" stroke-linejoin="round"/>`));
