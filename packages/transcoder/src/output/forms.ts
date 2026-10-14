@@ -1,9 +1,10 @@
 /** 产物形式的注册表（扩展点见 output.ts） */
 import { dataForm } from './data';
 import type { OutputForm } from './output';
+import { pagedForm, pagesForm } from './paged';
 import { singleForm } from './single';
 
-export const OUTPUT_FORMS: readonly OutputForm[] = [singleForm, dataForm];
+export const OUTPUT_FORMS: readonly OutputForm[] = [singleForm, pagedForm, pagesForm, dataForm];
 
 /** 按名字找；html 是 single 的旧名字 */
 export function outputForm(name: string | undefined): OutputForm {

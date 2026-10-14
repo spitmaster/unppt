@@ -39,7 +39,7 @@ export interface ConvertOptions {
    * 不受 embedFonts 开关影响（否则浏览器显示时只能用别的字体，和排版对不上）
    */
   privateFonts?: InputSource[];
-  /** 产物形式（见 output/）：single 自包含的 HTML（默认，旧名 html）；data 只输出 deck.json（调试用） */
+  /** 产物形式（见 output/）：single 自包含的 HTML（默认，旧名 html）；paged 按需加载；pages 按需加载并且每页一个 HTML；data 只输出 deck.json（调试用） */
   output?: string;
   /** 输出文件名，默认 index.html 或 deck.json */
   fileName?: string;

@@ -2,7 +2,10 @@
 import type { DeckSlide } from '../../format/src/index';
 import { DECK_FORMAT, DECK_FORMAT_VERSION } from '../../format/src/index';
 
-/** 播放器需要的演示数据：按需取某一页（大文件不必一次解析所有页） */
+/**
+ * 播放器需要的演示数据：按需取某一页（大文件不必一次解析所有页）。
+ * 按需加载的形式里页面数据要先 load(i)，ready(i) 之后才能 slide(i)；内联的形式总是 ready
+ */
 export interface DeckLike {
   slideParts?: string[];
   format: string;
@@ -12,7 +15,16 @@ export interface DeckLike {
   title?: string;
   slideCount: number;
   slide(i: number): DeckSlide;
+  /** 第 i 页是隐藏页（顺序放映跳过）；不用先加载这一页就能知道 */
+  skip(i: number): boolean;
+  ready(i: number): boolean;
+  load(i: number): Promise<void>;
   show?: { loop?: boolean; useTimings?: boolean };
+}
+
+/** 页面数据都在手上的演示数据（内联的形式、宿主自己传进来的 deck 对象） */
+export function inlineDeck<T extends Omit<DeckLike, 'skip' | 'ready' | 'load'>>(d: T): DeckLike {
+  return { ...d, skip: (i) => !!d.slide(i).skip, ready: () => true, load: () => Promise.resolve() };
 }
 
 export function checkFormat(meta: { format?: string; version?: number }) {

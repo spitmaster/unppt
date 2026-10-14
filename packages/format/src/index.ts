@@ -23,6 +23,17 @@ export interface Deck {
   show?: { loop?: boolean; useTimings?: boolean };
 }
 
+/**
+ * 按需加载（paged / pages 形式）的目录，写在入口 HTML 的 <script id="unppt-index"> 里：
+ * 除了页面以外的演示数据，加上每页数据文件和是否隐藏（顺序放映要跳过的页不用先下载就能知道）。
+ * 页面数据文件是一段脚本：__unpptPage(页号, DeckSlide)；字体文件：__unpptFont(别名, base64 的 woff)，路径在 DeckFont.url
+ */
+export interface DeckIndex extends Omit<Deck, 'slides'> {
+  pages: { file: string; skip?: true }[];
+}
+export const PAGE_CALLBACK = '__unpptPage';
+export const FONT_CALLBACK = '__unpptFont';
+
 export interface DeckSlide {
   /** 这一页的静态内容。可动画的元素带 data-uid 属性 */
   svg: string;
@@ -206,7 +217,7 @@ export interface DeckFont {
   weight: 'normal' | 'bold';
   style: 'normal' | 'italic';
   format: 'woff';
-  /** 只输出数据（deck.json）时：字体文件的相对路径。HTML 模式下字体数据在 script.unppt-font 里 */
+  /** 字体文件的相对路径：data 形式是 .woff，按需加载形式是调用 __unpptFont 的脚本；single 形式下字体数据在 script.unppt-font 里 */
   url?: string;
 }
 

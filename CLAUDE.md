@@ -61,7 +61,7 @@ unppt：把 .pptx 转成静态产物（SVG + JSON + 资源），由一个可 ifr
 
 ### Git Commit
 
-- 完成一个完整的改动再提交，不要频繁提交；
+- 适时提交并推送：每完成一个能独立验证的小步（重构、一个功能点）就提交，不要攒成一个大提交；
 - 提交信息前缀：`feat:` `fix:` `docs:` `refactor:` `test:`；
 - 测试和评测通过后再提交；
 - 提交信息里**不能出现任何样本信息**。
@@ -85,6 +85,7 @@ npm test                                              # 单元测试
 .venv/Scripts/python tools/compare/run.py --set all         # 样本比对（只看数字）
 .venv/Scripts/python tools/compare/offsets.py 编号          # 逐行位置偏差（数字）
 .venv/Scripts/python tools/check-player.py [firefox]        # 播放器端到端测试
+.venv/Scripts/python tools/check-paged.py                   # 按需加载形式和单文件逐页、逐步对照
 .venv/Scripts/python tools/powerpoint/transitions.py capture FadeSmoothly,PushLeft  # 放映截图
 .venv/Scripts/python tools/powerpoint/transitions.py capture-anim Fly:Left,Exit:Fade  # 动画放映截图
 .venv/Scripts/python tools/powerpoint/transitions.py compare                        # 切换/动画逐帧对照

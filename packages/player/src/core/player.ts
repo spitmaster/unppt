@@ -2,7 +2,7 @@
  * 播放器核心：翻页状态（第几页、第几步）、显示页面、事件、超链接和触发器。
  * 动画交给 AnimationEngine，页面切换交给 transitions/，按钮和输入交给 ui/。
  */
-import type { AnimAction, PlayerState } from '../../../format/src/index';
+import type { AnimAction, DeckSlide, PlayerState } from '../../../format/src/index';
 import { AnimationEngine } from '../anim/engine';
 import { injectCss } from '../css';
 import type { DeckLike } from '../deck';
@@ -31,6 +31,10 @@ export class Player {
   readonly root: HTMLElement;
   private stage: HTMLElement;
   private current?: HTMLElement;
+  /** 当前页的数据（按需加载时别的页可能还没到，当前页的数据留在手上） */
+  private data?: DeckSlide;
+  /** 每次翻页加一：页面数据加载回来时只显示最后一次要求的那一页 */
+  private navToken = 0;
   private slideIdx = 0;
   private stepIdx = 0;
   private events = new Emitter();
@@ -62,7 +66,7 @@ export class Player {
     this.media = new MediaPlayer(keep, () => this.slideIdx);
     this.engine = new AnimationEngine({ find: (uid) => this.find(uid), width: deck.width, height: deck.height }, this.media);
     this.auto = new AutoPlay({
-      slide: () => this.deck.slide(this.slideIdx),
+      slide: () => this.data!,
       stepIndex: () => this.stepIdx,
       stepCount: () => this.steps().length,
       next: () => this.next(),
@@ -133,7 +137,7 @@ export class Player {
     if (this.stepIdx > 0) this.show(this.slideIdx, this.stepIdx - 1, false);
     else {
       const target = this.visibleFrom(this.slideIdx - 1, -1);
-      if (target !== undefined) this.show(target, this.deck.slide(target).steps.length, false);
+      if (target !== undefined) this.show(target, Infinity, false);
     }
     return this.getState();
   }
@@ -163,7 +167,7 @@ export class Player {
     const link = t.closest('[data-link],[data-href]');
     if (link) { this.follow(link); return; }
     // 设置了"单击鼠标时不换片"的页：单击画面不往下走（键盘和接口照常）
-    if (this.deck.slide(this.slideIdx).advance?.click === false) return;
+    if (this.data?.advance?.click === false) return;
     this.next();
   }
 
@@ -189,7 +193,7 @@ export class Player {
 
   /** 点击的是触发器形状：播放它的下一组动作 */
   private fireTrigger(target: Element): boolean {
-    const triggers = this.deck.slide(this.slideIdx).triggers;
+    const triggers = this.data?.triggers;
     if (!triggers || !triggers.length) return false;
     for (let el: Element | null = target; el && el !== this.root; el = el.parentElement) {
       const uid = el.getAttribute('data-uid');
@@ -207,12 +211,12 @@ export class Player {
 
   /** 从 i 开始按 dir 方向找第一张不隐藏的页 */
   private visibleFrom(i: number, dir: 1 | -1): number | undefined {
-    for (let k = i; k >= 0 && k < this.deck.slideCount; k += dir) if (!this.deck.slide(k).skip) return k;
+    for (let k = i; k >= 0 && k < this.deck.slideCount; k += dir) if (!this.deck.skip(k)) return k;
     return undefined;
   }
 
   private steps(): AnimAction[][] {
-    return this.deck.slide(this.slideIdx).steps;
+    return this.data?.steps ?? [];
   }
 
   private clampSlide(i: number) {
@@ -234,7 +238,22 @@ export class Player {
   }
 
   private show(slideIdx: number, step: number, animated: boolean) {
+    const token = ++this.navToken;
+    if (!this.deck.ready(slideIdx)) {
+      // 按需加载：这页的数据还没到，先加载（超过 0.2 秒显示"加载中"），到了再显示
+      const timer = setTimeout(() => this.root.classList.add('unppt-loading'), 200);
+      const done = () => { clearTimeout(timer); this.root.classList.remove('unppt-loading'); };
+      this.deck.load(slideIdx).then(() => {
+        done();
+        if (token === this.navToken) this.show(slideIdx, step, animated);
+      }, (e: Error) => {
+        done();
+        if (token === this.navToken) this.loadFailed(slideIdx, e);
+      });
+      return;
+    }
     const data = this.deck.slide(slideIdx);
+    this.data = data;
     const doc = this.root.ownerDocument;
     const el = doc.createElement('div');
     el.className = 'unppt-slide';
@@ -267,6 +286,16 @@ export class Player {
     }
     this.auto.entered(animated ? Math.max(playTime(data.auto), data.transition?.dur ?? 0) : 0);
     this.emit('change');
+    // 预加载下一页（按需加载的形式；内联的形式什么都不做）
+    const next = this.visibleFrom(slideIdx + 1, 1);
+    if (next !== undefined) this.deck.load(next).catch(() => {});
+  }
+
+  private loadFailed(slideIdx: number, e: Error) {
+    const el = this.root.ownerDocument.createElement('div');
+    el.className = 'unppt-error';
+    el.textContent = `第 ${slideIdx + 1} 页加载失败：${e.message}`;
+    this.stage.appendChild(el);
   }
 
   private find(uid: string): Element | null {
