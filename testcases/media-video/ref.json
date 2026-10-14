@@ -1,5 +1,5 @@
 {
- "version": 7,
+ "version": 8,
  "slideWidthPt": 960.0,
  "slideHeightPt": 540.0,
  "imageWidth": 1280,
@@ -61,6 +61,7 @@
     3
    ],
    "steps": 0,
+   "keptSlideshow": false,
    "approxSteps": false
   },
   {
@@ -119,6 +120,7 @@
     3
    ],
    "steps": 1,
+   "keptSlideshow": false,
    "approxSteps": false
   }
  ],

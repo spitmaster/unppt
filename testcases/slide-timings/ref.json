@@ -1,5 +1,5 @@
 {
- "version": 7,
+ "version": 8,
  "slideWidthPt": 960.0,
  "slideHeightPt": 540.0,
  "imageWidth": 1280,
@@ -35,7 +35,8 @@
    ],
    "effects": [],
    "triggerHidden": [],
-   "steps": 0
+   "steps": 0,
+   "keptSlideshow": false
   },
   {
    "index": 1,
@@ -113,6 +114,7 @@
    ],
    "triggerHidden": [],
    "steps": 2,
+   "keptSlideshow": false,
    "approxSteps": false
   },
   {
@@ -169,6 +171,7 @@
    ],
    "triggerHidden": [],
    "steps": 0,
+   "keptSlideshow": false,
    "approxSteps": false
   },
   {
@@ -201,7 +204,8 @@
    ],
    "effects": [],
    "triggerHidden": [],
-   "steps": 0
+   "steps": 0,
+   "keptSlideshow": false
   }
  ],
  "ok": true
