@@ -233,6 +233,12 @@ export interface PlayerState {
   step: number;
   slideCount: number;
   stepCount: number;
+  /** 黑屏 / 白屏的颜色（在显示幻灯片时没有这一项） */
+  blank?: string;
+  /** 这一页每个触发器已经播到第几组（点过的才有） */
+  triggers?: Record<string, number>;
+  /** 这一页播放过的音视频：所在形状的编号、是否在播、当前时间（秒） */
+  media?: { uid: string; playing: boolean; time: number }[];
 }
 
 /** bridge 消息：宿主发给播放器 */
@@ -241,7 +247,8 @@ export interface BridgeCommand {
   id?: number | string;
   /** sync：跟上演绎端的状态（正好下一步时播动画，否则直接跳），见 SPEC F2 */
   cmd: 'next' | 'prev' | 'goto' | 'sync' | 'getState';
-  args?: { slide?: number; step?: number };
+  /** goto 用 slide、step；sync 可以带上整个状态（PlayerState 的各项） */
+  args?: Partial<PlayerState>;
 }
 
 /** bridge 消息：播放器发给宿主（指令的返回值） */

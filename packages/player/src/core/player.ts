@@ -14,6 +14,7 @@ import { Controls } from '../ui/controls';
 import { bindInput, type InputOptions } from '../ui/input';
 import { AutoPlay, playTime } from './autoplay';
 import { Emitter, type Listener } from './emitter';
+import { LiveState, type LiveExtras } from './live';
 
 export interface MountOptions extends InputOptions {
   /** 起始位置 */
@@ -50,8 +51,10 @@ export class Player {
   private media: MediaPlayer;
   private mediaBar: MediaBar;
   private blankScreen: BlankScreen;
-  /** 每个触发器已经播到第几组（换页时清零） */
-  private triggerIdx = new Map<string, number>();
+  /** 触发器进度、黑屏、音视频状态（直播课同步，见 live.ts） */
+  private live: LiveState;
+  /** sync 时目标页还在加载：加载完显示后再对齐附加部分 */
+  private pendingLive?: { slide: number; extras: LiveExtras };
   /** 按计时自动放映 */
   private auto: AutoPlay;
 
@@ -81,15 +84,22 @@ export class Player {
     if (opts.ui !== false && !watch) this.controls = new Controls(this.root, () => this.prev(), () => this.next());
     this.mediaBar = new MediaBar(this.root);
     this.blankScreen = new BlankScreen(this.root);
+    this.live = new LiveState({
+      page: () => this.current,
+      data: () => this.data,
+      play: (steps, animated) => { this.engine.finishRunning(); if (animated) this.engine.play(steps); else this.engine.applyInstant(steps); },
+      changed: () => this.emit('change'),
+      blank: this.blankScreen,
+    });
     if (!watch) this.cleanup.push(...bindInput(this.root, opts, {
       click: (t) => this.click(t),
       next: () => this.next(),
       prev: () => this.prev(),
       first: () => this.goto(this.visibleFrom(0, 1) ?? 0, 0),
       last: () => this.goto(this.visibleFrom(this.deck.slideCount - 1, -1) ?? this.deck.slideCount - 1, 0),
-      blank: (color) => this.blankScreen.show(color),
+      blank: (color) => { this.blankScreen.show(color); this.emit('change'); },
       blanked: () => this.blankScreen.active,
-      unblank: () => this.blankScreen.hide(),
+      unblank: () => { this.blankScreen.hide(); this.emit('change'); },
       jump: (n) => { if (n >= 1 && n <= this.deck.slideCount) this.goto(n - 1, 0); },
     }));
     this.fit();
@@ -111,7 +121,7 @@ export class Player {
   // ---------------- 公开接口
 
   getState(): PlayerState {
-    return { slide: this.slideIdx, step: this.stepIdx, slideCount: this.deck.slideCount, stepCount: this.steps().length };
+    return { slide: this.slideIdx, step: this.stepIdx, slideCount: this.deck.slideCount, stepCount: this.steps().length, ...this.live.extras() };
   }
 
   on(event: string, fn: Listener) {
@@ -153,14 +163,20 @@ export class Player {
    * 同步（观看端跟上演绎端）：目标正好是下一步、或者当前页已经播完而目标是下一页的开头时，照常播动画和切换；
    * 和现在一样时什么都不做；其它情况直接跳到目标的最终状态（中途进入、掉线重连、丢了消息）
    */
-  sync(slide: number, step = 0): PlayerState {
-    const s = this.clampSlide(slide);
-    const steps = this.steps().length;
-    if (s === this.slideIdx && step === this.stepIdx) return this.getState();
-    const nextSlide = this.visibleFrom(this.slideIdx + 1, 1) ?? (this.deck.show?.loop ? this.visibleFrom(0, 1) : undefined);
-    const oneStep = s === this.slideIdx && step === this.stepIdx + 1 && step <= steps;
-    const nextPage = s === nextSlide && step === 0 && this.stepIdx >= steps;
-    return oneStep || nextPage ? this.next() : this.goto(s, step);
+  sync(target: Partial<PlayerState>): PlayerState {
+    const s = this.clampSlide(target.slide ?? 0), step = target.step ?? 0;
+    const extras: LiveExtras = { blank: target.blank, triggers: target.triggers, media: target.media };
+    if (s !== this.slideIdx || step !== this.stepIdx) {
+      const steps = this.steps().length;
+      const nextSlide = this.visibleFrom(this.slideIdx + 1, 1) ?? (this.deck.show?.loop ? this.visibleFrom(0, 1) : undefined);
+      const oneStep = s === this.slideIdx && step === this.stepIdx + 1 && step <= steps;
+      const nextPage = s === nextSlide && step === 0 && this.stepIdx >= steps;
+      if (oneStep || nextPage) this.next(); else this.goto(s, step);
+    }
+    // 目标页已经显示出来就对齐附加部分，还在加载就等显示以后
+    if (this.slideIdx === s && this.data) this.live.apply(extras);
+    else this.pendingLive = { slide: s, extras };
+    return this.getState();
   }
 
   /** 确定性跳转：直接到目标页、目标步骤的最终状态 */
@@ -184,7 +200,7 @@ export class Player {
 
   /** 点击画面：触发器 > 超链接 > 下一步 */
   private click(t: Element) {
-    if (this.fireTrigger(t)) return;
+    if (this.live.fire(t, this.root)) return;
     const link = t.closest('[data-link],[data-href]');
     if (link) { this.follow(link); return; }
     // 设置了"单击鼠标时不换片"的页：单击画面不往下走（键盘和接口照常）
@@ -210,24 +226,6 @@ export class Player {
       const i = (this.deck.slideParts ?? []).indexOf(link.slice(6));
       if (i >= 0) this.goto(i, 0);
     }
-  }
-
-  /** 点击的是触发器形状：播放它的下一组动作 */
-  private fireTrigger(target: Element): boolean {
-    const triggers = this.data?.triggers;
-    if (!triggers || !triggers.length) return false;
-    for (let el: Element | null = target; el && el !== this.root; el = el.parentElement) {
-      const uid = el.getAttribute('data-uid');
-      const tr = uid ? triggers.find((x) => x.uid === uid) : undefined;
-      if (!tr) continue;
-      const i = this.triggerIdx.get(tr.uid) ?? 0;
-      if (i >= tr.steps.length) return true;
-      this.engine.finishRunning();
-      this.engine.play(tr.steps[i]);
-      this.triggerIdx.set(tr.uid, i + 1);
-      return true;
-    }
-    return false;
   }
 
   /** 从 i 开始按 dir 方向找第一张不隐藏的页 */
@@ -280,10 +278,10 @@ export class Player {
     el.className = 'unppt-slide';
     el.innerHTML = data.svg;
     this.engine.resetStates();
-    this.triggerIdx = new Map();
     const old = this.current;
     if (old) for (const m of Array.from(old.querySelectorAll('video,audio'))) (m as HTMLMediaElement).pause();
     this.stage.appendChild(el);
+    this.live.enter(el);
     this.mediaBar.attach(el);
     this.current = el;
     this.slideIdx = slideIdx;
@@ -306,6 +304,9 @@ export class Player {
       } else old.remove();
     }
     this.auto.entered(animated ? Math.max(playTime(data.auto), data.transition?.dur ?? 0) : 0);
+    const pl = this.pendingLive;
+    this.pendingLive = undefined;
+    if (pl && pl.slide === slideIdx) this.live.apply(pl.extras);
     this.emit('change');
     // 预加载下一页（按需加载的形式；内联的形式什么都不做）
     const next = this.visibleFrom(slideIdx + 1, 1);

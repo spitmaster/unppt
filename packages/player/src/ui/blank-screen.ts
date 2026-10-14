@@ -12,6 +12,11 @@ export class BlankScreen {
     return this.el.classList.contains('unppt-show');
   }
 
+  /** 正在显示的颜色（没有黑屏、白屏时是 undefined） */
+  get color(): string | undefined {
+    return this.active ? this.el.style.background : undefined;
+  }
+
   show(color: string) {
     this.el.style.background = color;
     this.el.classList.add('unppt-show');
