@@ -6,7 +6,7 @@ import { attr, child, type XEl } from '../io/xml';
 import { cpart, label } from './draw';
 import { errRanges, errSvg } from './error-bars';
 import { extraValues, trendlines } from './extras';
-import { PAD, SIDE_LABEL_PAD, sideAnchor, sideGap, topForLabel, valBand, valCenter } from './layout';
+import { PAD, SIDE_LABEL_PAD, sideGap, valAnchor, topForLabel, valBand, valCenter } from './layout';
 import { axesOf } from './axis';
 import { readAxisTitle, renderAxisTitles, reserveAxisTitles } from './axis-title';
 import type { AxisInfo, ChartContext, Plot, Rect, Series } from './model';
@@ -73,7 +73,7 @@ export function renderXY(p: Plot, ctx: ChartContext, area0: Rect, marks: XYMarks
   Y.ticks.forEach((t, i) => {
     const y = bottom - Y.pos(t) * ph;
     if (Y.grid?.color) out.push(axisLine('h', y, box, Y.grid, g));
-    if (!Y.deleted) out.push(label(Y.labels[i], left - sideAnchor(Y.style.size), y, Y.style, 'end'));
+    if (!Y.deleted) out.push(label(Y.labels[i], left - valAnchor(Y.style.size), y, Y.style, 'end'));
   });
   X.ticks.forEach((t, i) => {
     const x = left + X.pos(t) * pw;

@@ -16,6 +16,8 @@ export const SIDE_LABEL_PAD = 8.6;
 export const sideGap = (s: number) => 0.8 * s;
 /** 标签右端的对齐点：实测的间隙量的是字的墨迹，字宽右侧本身还有约 1.5 像素空白 */
 export const sideAnchor = (s: number) => 0.8 * s - 1.5;
+/** 左侧数值标签（数字）的右端对齐点：比 sideAnchor 再往左 1.7 像素（导出图量数字墨迹：9~20 磅柱形、折线图，绘图区左边一致时我们的数字都偏右 1~2 像素） */
+export const valAnchor = (s: number) => sideAnchor(s) + 1.7;
 /** 底部横轴标签占的高度、标签中心到轴的距离：分类标签（字带中文）和数值标签不同 */
 export const catBand = (s: number) => 1.75 * s + 3;
 export const catCenter = (s: number) => 1.21 * s;
