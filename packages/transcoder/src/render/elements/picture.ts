@@ -48,13 +48,16 @@ export async function renderPicture(r: RenderContext, el: XEl, ctx: SlideContext
       const iw = box.w / Math.max(0.0001, 1 - sr.l - sr.r);
       const ih = box.h / Math.max(0.0001, 1 - sr.t - sr.b);
       let clip = '';
-      const needsClip = prst !== 'rect' || !!custEl || sr.l !== 0 || sr.t !== 0 || sr.r !== 0 || sr.b !== 0;
+      // 水平翻转、整个在幻灯片里的图片，PowerPoint 画出的内容比镜像的位置往右多 1 像素（右边缘多出的裁掉，边框不动；
+      // 垂直翻转、伸出幻灯片的没有，实测）
+      const flipShift = box.flipH && onSlide(box, ctx, r.env.pres) ? ' transform="translate(-1 0)"' : '';
+      const needsClip = prst !== 'rect' || !!custEl || sr.l !== 0 || sr.t !== 0 || sr.r !== 0 || sr.b !== 0 || !!flipShift;
       if (needsClip) {
         const id = r.doc.id('c');
         r.doc.addDef(`<clipPath id="${id}"><path d="${outlineD}"/></clipPath>`);
         clip = ` clip-path="url(#${id})"`;
       }
-      parts.push(`<g${clip}><image href="${esc(href)}" x="${n2(-sr.l * iw)}" y="${n2(-sr.t * ih)}" width="${n2(iw)}" height="${n2(ih)}" preserveAspectRatio="none"${fill.alpha < 1 ? ` opacity="${n2(fill.alpha)}"` : ''}${fid ? ` filter="url(#${fid})"` : ''}/></g>`);
+      parts.push(`<g${clip}><image${flipShift} href="${esc(href)}" x="${n2(-sr.l * iw)}" y="${n2(-sr.t * ih)}" width="${n2(iw)}" height="${n2(ih)}" preserveAspectRatio="none"${fill.alpha < 1 ? ` opacity="${n2(fill.alpha)}"` : ''}${fid ? ` filter="url(#${fid})"` : ''}/></g>`);
     } else {
       r.env.pres.warn('图片无法显示（格式不支持或缺失）');
     }
@@ -120,4 +123,12 @@ export async function renderPicture(r: RenderContext, el: XEl, ctx: SlideContext
   const proj = baseProjection(box, scene3d, ctx.scene, r.env.pres.width)?.base;
   const lit = lit3d ? `<g filter="url(#${lit3d})">${inner}</g>` : inner;
   return withUid(uid, placeBox(box, light ? `<g filter="url(#${light})">${lit}</g>` : lit, r.doc, cam, proj, clickable), el);
+}
+
+/** 图片整个在幻灯片范围里（坐标系换算不知道时按不在算） */
+function onSlide(box: { x: number; y: number; w: number; h: number }, ctx: SlideContext, pres: { width: number; height: number }): boolean {
+  const m = ctx.toSlide === undefined ? { x: 0, y: 0, sx: 1, sy: 1 } : ctx.toSlide;
+  if (!m) return false;
+  const x0 = m.x + m.sx * box.x, x1 = m.x + m.sx * (box.x + box.w), y0 = m.y + m.sy * box.y, y1 = m.y + m.sy * (box.y + box.h);
+  return Math.min(x0, x1) >= 0 && Math.min(y0, y1) >= 0 && Math.max(x0, x1) <= pres.width && Math.max(y0, y1) <= pres.height;
 }
