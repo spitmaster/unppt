@@ -144,3 +144,35 @@ export function outerLevels(bands: LevelBand[], nCat: number, pos: (i: number) =
   }
   return out.join('');
 }
+
+/**
+ * 条形图（分类轴在左）的外层标签：每级占一列，最外一级从图表边 SIDE_LABEL_PAD 处排起，列宽 2.12 × 字号
+ * （外层标签不带中文时 1.84 × 字号）；标签转 −90° 居中于各组，中心离列的左边 0.58 × 字号（不带中文时 0.44 × 字号）；组的分界和绘图区两端画横分隔线，
+ * 从轴线一直到这一列左边再往外 2.3 像素（PowerPoint 实测：9~20 磅、中英文外层、长短内层标签的两级条形图，
+ * 分隔线左端都在图表边 + 6.3 像素，标签墨迹误差 ≤ 1 像素）
+ */
+const SIDE_LEVEL_CJK = 2.12, SIDE_LEVEL_LATIN = 1.84, SIDE_LEVEL_CENTER = 0.58, SIDE_LEVEL_CENTER_LATIN = 0.44, SIDE_LEVEL_LINE = 2.3;
+
+export const sideLevelBands = (levels: CatLevel[], s: number): LevelBand[] => levels.map((level) => {
+  const cjk = level.some((g) => hasCjk(g.text));
+  return { level, band: (cjk ? SIDE_LEVEL_CJK : SIDE_LEVEL_LATIN) * s, cjk };
+});
+
+/** 画左侧外层标签和分隔线：pos(i) 是第 i 个分类边界在屏幕上的 y，axisX 是轴线，x0 是最外一列的左边 */
+export function sideOuterLevels(bands: LevelBand[], nCat: number, pos: (i: number) => number, axisX: number, x0: number,
+  st: TextStyle, line: { color: string; width: number } | undefined): string {
+  const out: string[] = [];
+  let x = x0;
+  for (const { level, band, cjk } of [...bands].reverse()) {
+    level.forEach((g, k) => {
+      const end = k + 1 < level.length ? level[k + 1].idx : nCat;
+      out.push(`<g transform="translate(${n2(x + (cjk ? SIDE_LEVEL_CENTER : SIDE_LEVEL_CENTER_LATIN) * st.size)} ${n2((pos(g.idx) + pos(end)) / 2)}) rotate(-90)">${label(g.text, 0, 0, st)}</g>`);
+    });
+    if (line) {
+      const ys = [...level.map((g) => g.idx), nCat].map(pos);
+      out.push(`<path d="${ys.map((y) => `M${n2(axisX)} ${n2(y)}H${n2(x - SIDE_LEVEL_LINE)}`).join('')}" fill="none" stroke="${line.color}" stroke-width="${n2(line.width)}"/>`);
+    }
+    x += band;
+  }
+  return out.join('');
+}
