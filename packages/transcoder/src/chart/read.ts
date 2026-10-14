@@ -9,7 +9,7 @@ import { chartTypeOfTag } from './chart-types';
 import { axesOf, axId, axisReversed } from './axis';
 import { readErrBars } from './error-bars';
 import { readTrendlines } from './trendline';
-import type { GradFill, Labels, Plot, Series, TextStyle } from './model';
+import type { GradFill, Labels, PattFill, Plot, Series, TextStyle } from './model';
 
 export function readLabels(d: XEl | undefined, base: Labels | undefined, colors: ColorContext, text: TextStyle): Labels | undefined {
   if (!d) return base;
@@ -76,6 +76,7 @@ export function readPlots(plotArea: XEl | undefined, colors: ColorContext, part:
       const catLevels = cat.outer.length ? cat.outer : undefined;
       const pointFills = new Map<number, Rgba>();
       const pointGrads = new Map<number, GradFill>();
+      const pointPatts = new Map<number, PattFill>();
       const pointLines = new Map<number, Line | null>();
       const explode = new Map<number, number>();
       for (const d of children(s, 'c:dPt')) {
@@ -88,6 +89,11 @@ export function readPlots(plotArea: XEl | undefined, colors: ColorContext, part:
         if (f?.kind === 'grad' && f.stops.length) {
           pointFills.set(at, f.stops[0].color);
           if (!f.path) pointGrads.set(at, { stops: f.stops, angle: f.angle });
+        }
+        // 图案：代表色取前景色
+        if (f?.kind === 'pattern') {
+          pointFills.set(at, f.fg);
+          pointPatts.set(at, { prst: f.prst, fg: f.fg, bg: f.bg });
         }
         const e = numAttr(child(d, 'c:explosion'), 'val');
         if (e !== undefined) explode.set(at, e);
@@ -107,9 +113,11 @@ export function readPlots(plotArea: XEl | undefined, colors: ColorContext, part:
         cats, vals, ...(catLevels ? { catLevels } : {}),
         xs: rules.xy ? cats.map((_c, i) => { const v = Number(cat.pts.get(i)); return cat.pts.has(i) && !isNaN(v) ? v : i + 1; }) : undefined,
         ...(child(s, 'c:bubbleSize') ? { sizes: sizesOf(child(s, 'c:bubbleSize'), n), bubble3D: attr(child(s, 'c:bubble3D'), 'val') === '1' } : {}),
-        fill: fill?.kind === 'solid' ? fill.color : fill?.kind === 'none' ? undefined : fill?.kind === 'grad' && fill.stops.length ? fill.stops[0].color : accent,
+        fill: fill?.kind === 'solid' ? fill.color : fill?.kind === 'none' ? undefined : fill?.kind === 'grad' && fill.stops.length ? fill.stops[0].color : fill?.kind === 'pattern' ? fill.fg : accent,
         ...(fill?.kind === 'grad' && fill.stops.length && !fill.path ? { grad: { stops: fill.stops, angle: fill.angle } } : {}),
         ...(pointGrads.size ? { pointGrads } : {}),
+        ...(fill?.kind === 'pattern' ? { patt: { prst: fill.prst, fg: fill.fg, bg: fill.bg } } : {}),
+        ...(pointPatts.size ? { pointPatts } : {}),
         ...(pointLines.size ? { pointLines } : {}),
         // 线条写了"无线条"（散点图只画点）时不画线
         line: child(child(spPr, 'a:ln'), 'a:noFill') ? undefined : line ?? (hasLine ? { color: accent, width: 2.25 * 96 / 72, cap: 'round', join: 'round' } : undefined),
