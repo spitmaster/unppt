@@ -86,6 +86,7 @@ npm test                                              # 单元测试
 .venv/Scripts/python tools/compare/offsets.py 编号          # 逐行位置偏差（数字）
 .venv/Scripts/python tools/check-player.py [firefox]        # 播放器端到端测试
 .venv/Scripts/python tools/check-paged.py                   # 按需加载形式和单文件逐页、逐步对照
+.venv/Scripts/python tools/check-live.py                    # 直播课：演绎模式、观看模式和同步
 .venv/Scripts/python tools/powerpoint/transitions.py capture FadeSmoothly,PushLeft  # 放映截图
 .venv/Scripts/python tools/powerpoint/transitions.py capture-anim Fly:Left,Exit:Fade  # 动画放映截图
 .venv/Scripts/python tools/powerpoint/transitions.py compare                        # 切换/动画逐帧对照
