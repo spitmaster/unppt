@@ -25,8 +25,8 @@ const SER_ROOM = 3.1, FIT_MARGIN = 12.6, LIFT = 0.15;
  * 箱体在绘图区里的位置：
  *   - 内框 = 绘图区去掉标签：左、上、下和平面的分类轴图一样（layout.ts），系列标签在轴外侧时那一边让出标签宽 + 3.1；
  *   - 投影中心在内框中心，箱体在相机坐标里平移；缩放让投影后的箱体外框放进内框、四周各留 6.3；
- *   - 外框横向居中，纵向中心在内框中心上方 0.15 × perspective 像素（20 种视角、尺寸、行列数的探针图和我们的输出对照，
- *     整体位移多数在 ±3 像素以内）。
+ *   - 外框横向居中，纵向中心在内框中心上方 0.15 × perspective × (45° − 俯角) / 30° 像素（俯角 15°、30°、45° 的探针图拟合；
+ *     20 种视角、尺寸、行列数的探针图和我们的输出对照，整体位移多数在 ±3 像素以内）。
  */
 export function innerRect(area: Rect, room: LabelRoom): Rect {
   const val = room.val > 0;
@@ -60,7 +60,7 @@ export function placeBox(view: View3D, H: number, D: number, inner: Rect): Place
     L = cameraDistance(view, ih, s);
     const b = boxBounds(view, H, D, { cx, cy, s, ox, oy, L });
     ox -= ((b.x0 + b.x1) / 2 - cx) / s;
-    oy += ((b.y0 + b.y1) / 2 - (cy - LIFT * view.perspective)) / s;
+    oy += ((b.y0 + b.y1) / 2 - (cy - LIFT * view.perspective * Math.max(0, (45 - view.rotX) / 30))) / s;
   }
   return { cx, cy, s, ox, oy, L };
 }
