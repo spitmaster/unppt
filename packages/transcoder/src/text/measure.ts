@@ -38,9 +38,9 @@ export async function makeAtoms(text: string, style: RunStyle, m: Measurer): Pro
   const pick = async (family: string, subs: string[]): Promise<[Measured | undefined, string]> => {
     const mm = await m.metrics(family, style.bold, style.italic);
     if (mm) return [mm, family];
-    // 替代字体：原字体是粗体字重（看 PANOSE）时用替代字体的粗体
+    // 替代字体：字重跟着文字自己的加粗设置（原字体名或 PANOSE 是粗体也不加粗，实测）
     for (const sub of subs) {
-      const sm = await m.metrics(sub, style.bold || style.panoseBold, style.italic, true);
+      const sm = await m.metrics(sub, style.bold, style.italic, true);
       if (sm) return [sm, sub];
     }
     return [undefined, family];
