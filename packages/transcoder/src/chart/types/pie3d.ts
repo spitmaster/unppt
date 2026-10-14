@@ -2,7 +2,7 @@
  * 三维饼图（c:pie3DChart）：饼是一个有厚度的圆柱，俯视角 rotX，带透视（c:view3D 的 perspective，直角坐标轴时没有透视）。
  * PowerPoint 实测（charts-3d 导出图，默认 rotX 30°、透视 30；用上沿、中心、近处上下沿和宽度联立解出）：等效俯角是 rotX 的 0.94 倍，
  * 相机距离约 6.75 倍半径，厚度约 0.238 倍半径（高度 100%），
- * 投影后的整体外框放进绘图区（宽 97%、高 96.5%）居中；侧壁只看得见朝向观众的一半，明暗约为
+ * 投影后的整体外框放进绘图区（宽 97.5%、高 96.5%）居中；侧壁只看得见朝向观众的一半，明暗约为
  * 顶面颜色 × (0.573 − 0.313·cos θ)（θ 是侧壁朝向，0 朝右，下限 0.40）
  */
 import { css, type ColorContext, type Rgba } from '../../model/color';
@@ -42,9 +42,9 @@ export function renderPie3D(p: Plot, area: Rect, view: View3D, colors: ColorCont
     for (const q of [onRim(t, 0), onRim(t, -T)]) { x0 = Math.min(x0, q[0]); x1 = Math.max(x1, q[0]); y0 = Math.min(y0, q[1]); y1 = Math.max(y1, q[1]); }
   }
   const W = area.right - area.left, H = area.bottom - area.top;
-  const S = Math.min((W * 0.97) / (x1 - x0), (H * 0.965) / (y1 - y0));
-  // 实测整体比绘图区中心高约 2% 的绘图区高度（一个样例）
-  const ox = area.left + W / 2 - S * (x0 + x1) / 2, oy = area.top + H * 0.48 - S * (y0 + y1) / 2;
+  const S = Math.min((W * 0.975) / (x1 - x0), (H * 0.965) / (y1 - y0));
+  // 实测整体中心在绘图区高度的 48.3% 处（一个样例，外框上下沿和导出图逐行吻合）
+  const ox = area.left + W / 2 - S * (x0 + x1) / 2, oy = area.top + H * 0.483 - S * (y0 + y1) / 2;
   const pt = (q: [number, number]) => `${n2(ox + S * q[0])} ${n2(oy + S * q[1])}`;
   const rims: string[] = [], tops: string[] = [], labels: string[] = [];
   /** 一块扇区的侧壁按 3° 一段分别着色（没有渐变定义可用时） */
