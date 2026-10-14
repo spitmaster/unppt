@@ -68,6 +68,7 @@ export function renderChart(space: XEl | undefined, w: number, h: number, env: C
   // ---------------- 标题
   // 实测：图表区四周留白约 11 磅
   let top = PAD, bottom = h - PAD, left = PAD, right = w - PAD;
+  let legendTop: number | undefined;
   const titleEl = child(chart, 'c:title');
   const autoDeleted = attr(child(chart, 'c:autoTitleDeleted'), 'val') === '1';
   let titleText = '';
@@ -85,12 +86,14 @@ export function renderChart(space: XEl | undefined, w: number, h: number, env: C
     const rr = rich ? findAll(rich, 'a:rPr')[0] ?? findAll(rich, 'a:defRPr')[0] : undefined;
     const tst: TextStyle = rr ? { ...ts, size: numAttr(rr, 'sz') ? numAttr(rr, 'sz')! / 100 * 96 / 72 : ts.size } : ts;
     out.push(label(titleText, w / 2, top + tst.size * 0.6, tst));
-    // 实测：带坐标轴的图标题下方多留约 10 像素，饼图不多留（COM 读 18.62 磅标题的绘图区上沿校准到 0.01 像素）
+    // 实测：带坐标轴的图标题下方多留约 10 像素，饼图不多留（COM 读 18.62 磅标题的绘图区上沿校准到 0.01 像素）；
+    // 图例不分图表类型都按多留的算（饼图的上方、左右图例以前高 10、5 像素：COM 生成 10 种图例位置 × 标题的图表实测）
+    legendTop = top + tst.size * 1.2 + 16.16;
     top += tst.size * 1.2 + (type0.hasAxes ? 16.16 : 6);
   }
 
   // ---------------- 图例
-  ({ left, top, right, bottom } = renderLegend(child(chart, 'c:legend'), plots, { left, top, right, bottom }, w, colors, baseText, tw, out));
+  ({ left, top, right, bottom } = renderLegend(child(chart, 'c:legend'), plots, { left, top, right, bottom }, w, colors, baseText, tw, out, legendTop, type0.hasAxes));
   // 底部没有图例时，下边只留 BOTTOM_PAD（COM 读 3 种字号：图例从下方移走后绘图区增高 1.03 × 字号 + 12 磅，比图例带多出约 5 磅）
   if (bottom === h - PAD) bottom = h - BOTTOM_PAD;
 
