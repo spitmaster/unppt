@@ -9,9 +9,11 @@ export interface PixelGrid {
   y(v: number): number;
   /** 宽 w 的细线（竖线 axis 给 x，横线给 y）对齐后中心的位置：线的两边各自对齐到像素边界 */
   line(axis: 'x' | 'y', v: number, w: number): number;
+  /** 宽 w 的细线从 v0 画到 v1：两端各往外半个线宽后，像素中心落在里面的像素都画（返回对齐后的两端） */
+  span(axis: 'x' | 'y', v0: number, v1: number, w: number): [number, number];
 }
 
-export const NO_GRID: PixelGrid = { x: (v) => v, y: (v) => v, line: (_a, v) => v };
+export const NO_GRID: PixelGrid = { x: (v) => v, y: (v) => v, line: (_a, v) => v, span: (_a, v0, v1) => [v0, v1] };
 
 /** 图表里的 (x, y) 在幻灯片上是 (ox + sx·x, oy + sy·y)（在组合里会缩放） */
 export function pixelGrid(ox: number, oy: number, sx = 1, sy = 1): PixelGrid {
@@ -25,6 +27,11 @@ export function pixelGrid(ox: number, oy: number, sx = 1, sy = 1): PixelGrid {
       const half = Math.max(w * s, 1) / 2;
       const a = Math.round(o + s * v - half), b = Math.max(a + 1, Math.round(o + s * v + half));
       return ((a + b) / 2 - o) / s;
+    },
+    span(axis, v0, v1, w) {
+      const [o, s] = axis === 'x' ? [ox, sx] : [oy, sy];
+      const half = Math.max(w * s, 1) / 2;
+      return [(Math.round(o + s * v0 - half) - o) / s, (Math.round(o + s * v1 + half) - o) / s];
     },
   };
 }

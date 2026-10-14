@@ -4,8 +4,8 @@
  *   - 每个标签宽 ≤ 分类宽 × 间隔：横排一行；
  *   - 每个标签都能在空格处折成每行 ≤ 分类宽 × 间隔：折行，标签带每多一行高 1.044 × 字号；
  *   - 分类宽 × 间隔 × 0.707 ≥ 1.3 × 字号：整体转 −45°（含没有空格的中文）：文字（右对齐、居中基线）的锚点在分类中心
- *     左 0.02 × 字号、轴下 1.27 × 字号 − 4.2；标签带高 0.707 × 最宽标签 + 1.54 × 字号；第一个标签伸出分类中心左边
- *     0.707 × 宽 + 0.17 × 字号，绘图区左边让它的墨迹离图表左边至少 10 像素；
+ *     左 0.02 × 字号、轴下 1.27 × 字号 − 4.2；标签带高 0.707 × 最宽标签 + 1.54 × 字号（标签都不带中文时 0.667 × 最宽标签）；
+ *     绘图区左边让第一个分类的中心离图表左边至少 15.4 + 0.667 × 第一个标签宽（9~20 磅、2~8 个字、中英文都成立）；
  *   - 分类宽 × 间隔 ≥ 1.3 × 字号：竖排（转 −90°），文字末端在轴下 0.7 × 字号 − 2，标签带高最宽标签 + 0.62 × 字号；
  *   - 都不行就把间隔加 1（只显示第 1、1 + 间隔……个）。文件里写了间隔（c:tickLblSkip）时只按那个间隔试。
  * 例：24 个"第 N 周"竖排；40 个竖排、隔一个显示；1~40 的数字横排、隔一个显示；9~16 个四字中文转 −45°。
@@ -18,8 +18,8 @@ import type { CatLevel, TextStyle } from './model';
 export type CatFit = ({ kind: 'line' } | { kind: 'wrap'; lines: string[][]; n: number } | { kind: 'rot' } | { kind: 'vert' }) & { skip: number };
 
 const SIN45 = Math.SQRT1_2;
-/** 实测：折行每多一行的高度、斜标签带的常数项、斜标签末端的位置、第一个斜标签离图表左边的距离（像素，s 是字号） */
-const WRAP_LINE = 1.044, ROT_BAND = 1.54, ROT_X = 0.02, ROT_Y = 1.27, ROT_Y0 = 4.2, ROT_LEFT = 0.17, ROT_EDGE = 10;
+/** 实测：折行每多一行的高度、斜标签带的常数项、斜标签末端的位置、第一个斜标签的中心离图表左边的距离（像素，s 是字号） */
+const WRAP_LINE = 1.044, ROT_BAND = 1.54, ROT_X = 0.02, ROT_Y = 1.27, ROT_Y0 = 4.2, ROT_EDGE = 15.4, ROT_SPAN = 0.667;
 /** 实测：斜排、竖排要求的行距（× 字号）、竖排文字末端离轴、竖排标签带的常数项 */
 const ROT_ROOM = 1.3, VERT_Y = 0.7, VERT_Y0 = 2, VERT_BAND = 0.62;
 /** 实测：多级分类外层每级的标签带比单级的少的高度 */
@@ -58,7 +58,7 @@ export function fitCategoryLabels(cats: string[], catW: number, s: number, tw: T
 export function catFitBand(fit: CatFit, base: number, cats: string[], s: number, tw: TextWidth): number {
   const widest = () => Math.max(0, ...cats.filter((_, i) => i % fit.skip === 0).map((c) => tw(c, s)));
   if (fit.kind === 'wrap') return base + (fit.n - 1) * WRAP_LINE * s;
-  if (fit.kind === 'rot') return SIN45 * widest() + ROT_BAND * s;
+  if (fit.kind === 'rot') return (cats.some(hasCjk) ? SIN45 : ROT_SPAN) * widest() + ROT_BAND * s;
   if (fit.kind === 'vert') return widest() + VERT_BAND * s;
   return base;
 }
@@ -67,7 +67,7 @@ export function catFitBand(fit: CatFit, base: number, cats: string[], s: number,
 export const ROT_MIDCAT_RIGHT = 1.05;
 
 /** 斜排时第一个分类中心离图表左边至少要多远 */
-export const rotFirstCenter = (first: string, s: number, tw: TextWidth) => ROT_EDGE + SIN45 * tw(first, s) + ROT_LEFT * s;
+export const rotFirstCenter = (first: string, s: number, tw: TextWidth) => ROT_EDGE + ROT_SPAN * tw(first, s);
 
 /** 画第 i 个分类标签：x 是分类中心，axisY 是轴线，centerY 是横排时标签中心 */
 export function categoryLabel(fit: CatFit, i: number, text: string, x: number, axisY: number, centerY: number, st: TextStyle): string {

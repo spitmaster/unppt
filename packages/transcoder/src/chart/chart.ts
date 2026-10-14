@@ -19,6 +19,9 @@ import { renderLegend } from './legend';
 import type { ChartContext, Plot, Rect, SvgDefs, TextStyle, View3D } from './model';
 import { readPlots } from './read';
 
+/** 实测：标题文字的 y（像素，离图表上边）= TITLE_Y0 + TITLE_Y × 字号 */
+const TITLE_Y0 = 8.68, TITLE_Y = 0.715;
+
 export interface ChartEnv {
   colors: ColorContext;
   theme: Theme;
@@ -86,7 +89,9 @@ export function renderChart(space: XEl | undefined, w: number, h: number, env: C
     const rich = path(titleEl, 'c:tx', 'c:rich');
     const rr = rich ? findAll(rich, 'a:rPr')[0] ?? findAll(rich, 'a:defRPr')[0] : undefined;
     const tst: TextStyle = rr ? { ...ts, size: numAttr(rr, 'sz') ? numAttr(rr, 'sz')! / 100 * 96 / 72 : ts.size } : ts;
-    out.push(label(titleText, w / 2, top + tst.size * 0.6, tst));
+    // 实测（12~32 磅标题的导出图，柱形图、饼图）：标题字的中心离图表上边 8.68 + 0.675 × 字号像素，
+    // label 的 y 比字的墨迹中心低约 0.04 × 字号
+    out.push(label(titleText, w / 2, TITLE_Y0 + TITLE_Y * tst.size, tst));
     // 实测（COM 读绘图区上沿：标题 12~32 磅 × 数值标签 9~20 磅）：带坐标轴的图，标题占 1.3545 × 标题字号，
     // 下面再留 max(12, 0.521 × 竖轴标签字号 + 4) 像素（最上面的标签以网格线为中心要露出半个）；饼图按以前的
     // 1.2 × 字号 + 6（COM 读 18.62 磅标题校准）。图例不分图表类型都按带坐标轴的算（饼图的上方、左右图例以前高 10、5 像素）

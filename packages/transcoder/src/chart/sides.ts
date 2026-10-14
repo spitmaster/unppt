@@ -72,10 +72,12 @@ export function gridLine(v: number, line: Line | undefined, horizontal: boolean,
 export function axisLine(dir: 'h' | 'v', at: number, b: Rect, line: Line, g: PixelGrid): string {
   if (dir === 'h') {
     const y = n2(g.line('y', at, line.width));
-    return `<line x1="${n2(b.left)}" y1="${y}" x2="${n2(b.right)}" y2="${y}" stroke="${css(line.color!)}" stroke-width="${n2(line.width)}"/>`;
+    const [x1, x2] = g.span('x', b.left, b.right, line.width);
+    return `<line x1="${n2(x1)}" y1="${y}" x2="${n2(x2)}" y2="${y}" stroke="${css(line.color!)}" stroke-width="${n2(line.width)}"/>`;
   }
   const x = n2(g.line('x', at, line.width));
-  return `<line x1="${x}" y1="${n2(b.top)}" x2="${x}" y2="${n2(b.bottom)}" stroke="${css(line.color!)}" stroke-width="${n2(line.width)}"/>`;
+  const [y1, y2] = g.span('y', b.top, b.bottom, line.width);
+  return `<line x1="${x}" y1="${n2(y1)}" x2="${x}" y2="${n2(y2)}" stroke="${css(line.color!)}" stroke-width="${n2(line.width)}"/>`;
 }
 
 /** 坐标轴朝外的方向（+1 是往右 / 往下） */
