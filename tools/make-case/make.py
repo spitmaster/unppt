@@ -2048,7 +2048,41 @@ def table_vertical(app):
     return p
 
 
-CASES = [shapes_all, text_sizes, text_align, text_spacing, text_bullets, text_missing_font, shapes_basic, fills_lines, table_basic, group_rotate, anim_basic, anim_auto, charts_basic, pictures, smartart, text_effects, text_layout, table_merge, links, emf_images, anim_advanced, charts_labels, freeform_icons, media_audio, anim_trigger, wmf_images, anim_iterate, picture_transparent, charts_more, shape_effects, equations, anim_path, anim_emphasis, transitions, fills_patterns, text_decoration, anim_entrance, svg_images, charts_markers, hidden_slides, media_background, text_glow_reflection, text_tabs, text_picture_bullets, fills_texture, transition_morph, text_embedded_fonts, text_warp, anim_repeat, charts_sizes, slide_timings, lines_compound, table_diagonal, lines_gradient, fills_radial, fills_rect_gradient, shapes_3d, table_vertical, transitions_more, anim_sound, anim_build, anim_after, anim_text_emphasis, charts_bubble, media_video, charts_options, charts_negative, shapes_bevel, charts_legend, shapes_3d_rotation, smartart_3d, charts_ofpie, charts_3d, anim_group_emphasis, activex_controls, charts_extras, charts_axis_titles, charts_fills, charts_outlines, charts_labels_more]
+def group_scale(app):
+    """缩放过的组合：子元素的线宽、字号不随组合缩放，文字在新的框里重新换行（缩小一半、放大、只横向拉宽、
+    组合里有转了 90° 的形状）；分散对齐：每两个字之间平均加间距（中英混排、纯字母、带空格）"""
+    p = new_pres(app)
+    s = blank(p)
+    def grp(x0, y0, scale_w, scale_h, rotated=False):
+        a = s.Shapes.AddShape(1, x0, y0, 120, 75)
+        a.Fill.ForeColor.RGB = RGB(190, 205, 230); a.Line.ForeColor.RGB = RGB(40, 60, 100); a.Line.Weight = 4
+        tr = a.TextFrame.TextRange
+        tr.Text = "组合里的文字"; tr.Font.Size = 16; tr.Font.Color.RGB = RGB(20, 20, 20)
+        tr.Font.Name = "Microsoft YaHei"; tr.Font.NameFarEast = "Microsoft YaHei"
+        b = s.Shapes.AddShape(9, x0 + 130, y0, 75, 75)
+        b.Fill.ForeColor.RGB = RGB(230, 200, 170); b.Line.ForeColor.RGB = RGB(120, 60, 20); b.Line.Weight = 3
+        names = [a.Name, b.Name]
+        if rotated:
+            c = s.Shapes.AddShape(1, x0 + 40, y0 + 85, 90, 30)
+            c.Rotation = 90
+            c.Fill.ForeColor.RGB = RGB(200, 230, 200); c.Line.ForeColor.RGB = RGB(30, 90, 30); c.Line.Weight = 2
+            names.append(c.Name)
+        g = s.Shapes.Range(names).Group()
+        g.LockAspectRatio = 0
+        g.Width = g.Width * scale_w
+        g.Height = g.Height * scale_h
+        return g
+    grp(20, 20, 1.0, 1.0)
+    grp(280, 20, 0.6, 0.6)
+    grp(20, 170, 1.8, 1.8)
+    grp(500, 170, 1.4, 1.0, rotated=True)
+    for i, t in enumerate(["分散对齐abc排版", "abcdefg", "测试 abc 文字", "Hello World"]):
+        tb = textbox(s, 520, 20 + 34 * i, 400, 30, t, size=16)
+        tb.TextFrame.TextRange.ParagraphFormat.Alignment = 5   # ppAlignDistribute
+    return p
+
+
+CASES = [shapes_all, text_sizes, text_align, text_spacing, text_bullets, text_missing_font, shapes_basic, fills_lines, table_basic, group_rotate, anim_basic, anim_auto, charts_basic, pictures, smartart, text_effects, text_layout, table_merge, links, emf_images, anim_advanced, charts_labels, freeform_icons, media_audio, anim_trigger, wmf_images, anim_iterate, picture_transparent, charts_more, shape_effects, equations, anim_path, anim_emphasis, transitions, fills_patterns, text_decoration, anim_entrance, svg_images, charts_markers, hidden_slides, media_background, text_glow_reflection, text_tabs, text_picture_bullets, fills_texture, transition_morph, text_embedded_fonts, text_warp, anim_repeat, charts_sizes, slide_timings, lines_compound, table_diagonal, lines_gradient, fills_radial, fills_rect_gradient, shapes_3d, table_vertical, transitions_more, anim_sound, anim_build, anim_after, anim_text_emphasis, charts_bubble, media_video, charts_options, charts_negative, shapes_bevel, charts_legend, shapes_3d_rotation, smartart_3d, charts_ofpie, charts_3d, anim_group_emphasis, activex_controls, charts_extras, charts_axis_titles, charts_fills, charts_outlines, charts_labels_more, group_scale]
 
 
 def main():

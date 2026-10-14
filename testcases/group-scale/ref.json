@@ -1,0 +1,328 @@
+{
+ "version": 7,
+ "slideWidthPt": 960.0,
+ "slideHeightPt": 540.0,
+ "imageWidth": 1280,
+ "imageHeight": 720,
+ "slides": [
+  {
+   "index": 0,
+   "hidden": false,
+   "shapes": [
+    {
+     "id": 4,
+     "name": "Group 3",
+     "type": 6,
+     "x": 20.0,
+     "y": 20.0,
+     "w": 205.0,
+     "h": 75.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": -2,
+     "children": [
+      {
+       "id": 2,
+       "name": "Rectangle 1",
+       "type": 1,
+       "x": 20.0,
+       "y": 20.0,
+       "w": 120.0,
+       "h": 75.0,
+       "rot": 0.0,
+       "visible": true,
+       "autoShapeType": 1,
+       "lines": [
+        {
+         "start": 0,
+         "len": 6,
+         "text": "组合里的文字",
+         "x": 32.0,
+         "y": 47.9,
+         "w": 96.005,
+         "h": 19.2
+        }
+       ]
+      },
+      {
+       "id": 3,
+       "name": "Oval 2",
+       "type": 1,
+       "x": 150.0,
+       "y": 20.0,
+       "w": 75.0,
+       "h": 75.0,
+       "rot": 0.0,
+       "visible": true,
+       "autoShapeType": 9
+      }
+     ]
+    },
+    {
+     "id": 7,
+     "name": "Group 6",
+     "type": 6,
+     "x": 280.0,
+     "y": 20.0,
+     "w": 123.0,
+     "h": 45.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": -2,
+     "children": [
+      {
+       "id": 5,
+       "name": "Rectangle 4",
+       "type": 1,
+       "x": 280.0,
+       "y": 20.0,
+       "w": 72.0,
+       "h": 45.0,
+       "rot": 0.0,
+       "visible": true,
+       "autoShapeType": 1,
+       "lines": [
+        {
+         "start": 0,
+         "len": 3,
+         "text": "组合里",
+         "x": 292.0,
+         "y": 23.3,
+         "w": 48.0,
+         "h": 19.2
+        },
+        {
+         "start": 3,
+         "len": 3,
+         "text": "的文字",
+         "x": 292.0,
+         "y": 42.5,
+         "w": 48.005,
+         "h": 19.2
+        }
+       ]
+      },
+      {
+       "id": 6,
+       "name": "Oval 5",
+       "type": 1,
+       "x": 358.0,
+       "y": 20.0,
+       "w": 45.0,
+       "h": 45.0,
+       "rot": 0.0,
+       "visible": true,
+       "autoShapeType": 9
+      }
+     ]
+    },
+    {
+     "id": 10,
+     "name": "Group 9",
+     "type": 6,
+     "x": 20.0,
+     "y": 170.0,
+     "w": 369.0,
+     "h": 135.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": -2,
+     "children": [
+      {
+       "id": 8,
+       "name": "Rectangle 7",
+       "type": 1,
+       "x": 20.0,
+       "y": 170.0,
+       "w": 216.0,
+       "h": 135.0,
+       "rot": 0.0,
+       "visible": true,
+       "autoShapeType": 1,
+       "lines": [
+        {
+         "start": 0,
+         "len": 6,
+         "text": "组合里的文字",
+         "x": 80.0,
+         "y": 227.9,
+         "w": 96.005,
+         "h": 19.2
+        }
+       ]
+      },
+      {
+       "id": 9,
+       "name": "Oval 8",
+       "type": 1,
+       "x": 254.0,
+       "y": 170.0,
+       "w": 135.0,
+       "h": 135.0,
+       "rot": 0.0,
+       "visible": true,
+       "autoShapeType": 9
+      }
+     ]
+    },
+    {
+     "id": 14,
+     "name": "Group 13",
+     "type": 6,
+     "x": 500.0,
+     "y": 170.0,
+     "w": 287.0,
+     "h": 145.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": -2,
+     "children": [
+      {
+       "id": 11,
+       "name": "Rectangle 10",
+       "type": 1,
+       "x": 500.0,
+       "y": 170.0,
+       "w": 168.0,
+       "h": 75.0,
+       "rot": 0.0,
+       "visible": true,
+       "autoShapeType": 1,
+       "lines": [
+        {
+         "start": 0,
+         "len": 6,
+         "text": "组合里的文字",
+         "x": 536.0,
+         "y": 197.9,
+         "w": 96.005,
+         "h": 19.2
+        }
+       ]
+      },
+      {
+       "id": 12,
+       "name": "Oval 11",
+       "type": 1,
+       "x": 682.0,
+       "y": 170.0,
+       "w": 105.0,
+       "h": 75.0,
+       "rot": 0.0,
+       "visible": true,
+       "autoShapeType": 9
+      },
+      {
+       "id": 13,
+       "name": "Rectangle 12",
+       "type": 1,
+       "x": 574.0,
+       "y": 249.0,
+       "w": 90.0,
+       "h": 42.0,
+       "rot": 90.0,
+       "visible": true,
+       "autoShapeType": 1
+      }
+     ]
+    },
+    {
+     "id": 15,
+     "name": "TextBox 14",
+     "type": 17,
+     "x": 520.0,
+     "y": 20.0,
+     "w": 400.0,
+     "h": 30.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 9,
+       "text": "分散对齐abc排版",
+       "x": 527.2,
+       "y": 23.6,
+       "w": 385.505,
+       "h": 19.2
+      }
+     ]
+    },
+    {
+     "id": 16,
+     "name": "TextBox 15",
+     "type": 17,
+     "x": 520.0,
+     "y": 54.0,
+     "w": 400.0,
+     "h": 30.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 7,
+       "text": "abcdefg",
+       "x": 527.2,
+       "y": 57.6,
+       "w": 385.505,
+       "h": 19.2
+      }
+     ]
+    },
+    {
+     "id": 17,
+     "name": "TextBox 16",
+     "type": 17,
+     "x": 520.0,
+     "y": 88.0,
+     "w": 400.0,
+     "h": 30.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 9,
+       "text": "测试 abc 文字",
+       "x": 527.2,
+       "y": 91.6,
+       "w": 385.505,
+       "h": 19.2
+      }
+     ]
+    },
+    {
+     "id": 18,
+     "name": "TextBox 17",
+     "type": 17,
+     "x": 520.0,
+     "y": 122.0,
+     "w": 400.0,
+     "h": 30.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 11,
+       "text": "Hello World",
+       "x": 527.2,
+       "y": 125.6,
+       "w": 385.505,
+       "h": 19.2
+      }
+     ]
+    }
+   ],
+   "effects": [],
+   "triggerHidden": [],
+   "steps": 0
+  }
+ ],
+ "ok": true
+}
