@@ -11,6 +11,10 @@
   slide-001-step-00.png    有点击动画的页：每个步骤结束时的画面
   converted.pptx           老格式 .ppt 另存成的 pptx（只有 .ppt 才有）
 
+静态图先导出 BMP 再无损转成 PNG：PowerPoint 直接导出的 PNG 是调色板图（灰度只剩 16 级、带抖动），
+浅色底纹会变成网点，和放映时看到的不一样。
+环境变量 UNPPT_KEEP_SLIDESHOW=1：已有放映截图的步骤图原样保留、不重新放映（重导参考图时不弹放映窗口）。
+
 注意：PowerPoint 只有一个实例。运行前如果你自己开着 PowerPoint，脚本会拒绝运行（避免动到你的文档）。
 """
 from __future__ import annotations
@@ -30,7 +34,7 @@ from common import REF, ROOT, read_json, testcase_index, update_index, write_jso
 
 EXPORT_WIDTH = 1280
 TIMEOUT_SEC = 600
-VERSION = 7  # 输出格式变化时加 1，会触发重新导出（5：只有段落/强调/路径动画才用放映截图）
+VERSION = 8  # 输出格式变化时加 1，会触发重新导出（5：只有段落/强调/路径动画才用放映截图；8：静态图先导 BMP 再转 PNG）
 
 # PowerPoint / Office 常量
 PP_SAVE_AS_PPTX = 24
@@ -271,7 +275,7 @@ def capture_steps(pres, slides_info, out: Path, width: int, height: int):
         raise RuntimeError("找不到放映窗口")
     view = win.View
     for info in slides_info:
-        if not needs_slideshow(info["effects"]):
+        if not needs_slideshow(info["effects"]) or info.get("keptSlideshow"):
             continue
         n = info["index"] + 1
         groups = _click_groups(info["effects"])
@@ -290,6 +294,15 @@ def capture_steps(pres, slides_info, out: Path, width: int, height: int):
         pass
 
 
+def _export_png(slide, path: Path, width: int, height: int) -> None:
+    """导出一页：先存 BMP（真彩色），再无损转 PNG"""
+    from PIL import Image
+    bmp = path.with_suffix(".bmp")
+    slide.Export(str(bmp.resolve()), "BMP", width, height)
+    Image.open(bmp).convert("RGB").save(path)
+    bmp.unlink()
+
+
 def export_one(src: Path, out: Path) -> dict:
     import pythoncom
     import win32com.client
@@ -303,6 +316,7 @@ def export_one(src: Path, out: Path) -> dict:
         pass
     pres = app.Presentations.Open(str(src.resolve()), True, False, False)  # ReadOnly, Untitled=False, WithWindow=False
     result = {"version": VERSION}
+    keep_shows = os.environ.get("UNPPT_KEEP_SLIDESHOW") == "1"
     try:
         if src.suffix.lower() != ".pptx":
             conv = out / "converted.pptx"
@@ -317,7 +331,7 @@ def export_one(src: Path, out: Path) -> dict:
         for idx in range(1, pres.Slides.Count + 1):
             slide = pres.Slides(idx)
             name = f"slide-{idx:03d}"
-            slide.Export(str((out / f"{name}.png").resolve()), "PNG", width, height)
+            _export_png(slide, out / f"{name}.png", width, height)
             info = {"index": idx - 1, "hidden": slide.SlideShowTransition.Hidden == MSO_TRUE,
                     "shapes": [_shape_info(s) for s in slide.Shapes]}
             effects = _timeline(slide)
@@ -330,7 +344,9 @@ def export_one(src: Path, out: Path) -> dict:
                 info["effects"] = effects
             groups = _click_groups(effects)
             info["steps"] = len(groups) - 1
-            if effects:
+            # 已有放映截图时保留（UNPPT_KEEP_SLIDESHOW=1）
+            info["keptSlideshow"] = keep_shows and needs_slideshow(effects) and all((out / f"{name}-step-{k:02d}.png").exists() for k in range(len(groups)))
+            if effects and not info["keptSlideshow"]:
                 states = _step_visibility(effects)
                 info["approxSteps"] = any(e.get("paragraph") for e in effects)
                 saved = {}
@@ -343,14 +359,14 @@ def export_one(src: Path, out: Path) -> dict:
                             continue
                         saved.setdefault(sid, shp.Visible)
                         shp.Visible = MSO_TRUE if vis else MSO_FALSE
-                    slide.Export(str((out / f"{name}-step-{k:02d}.png").resolve()), "PNG", width, height)
+                    _export_png(slide, out / f"{name}-step-{k:02d}.png", width, height)
                 for sid, v in saved.items():
                     shp = _find_shape(slide, sid)
                     if shp is not None:
                         shp.Visible = v
             result["slides"].append(info)
         # 有动画的页：用放映截图覆盖上面"显示/隐藏"模拟出来的步骤图（更准确）
-        if any(needs_slideshow(si["effects"]) for si in result["slides"]) and os.environ.get("UNPPT_NO_SLIDESHOW") != "1":
+        if any(needs_slideshow(si["effects"]) and not si["keptSlideshow"] for si in result["slides"]) and os.environ.get("UNPPT_NO_SLIDESHOW") != "1":
             try:
                 capture_steps(pres, result["slides"], out, width, height)
             except Exception as e:  # 放映截图失败时保留模拟的步骤图

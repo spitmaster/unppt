@@ -1,5 +1,5 @@
 {
- "version": 7,
+ "version": 8,
  "slideWidthPt": 960.0,
  "slideHeightPt": 540.0,
  "imageWidth": 1280,
@@ -76,6 +76,7 @@
    ],
    "triggerHidden": [],
    "steps": 5,
+   "keptSlideshow": false,
    "approxSteps": false
   },
   {
@@ -139,6 +140,7 @@
    ],
    "triggerHidden": [],
    "steps": 4,
+   "keptSlideshow": false,
    "approxSteps": false
   },
   {
@@ -212,6 +214,7 @@
    ],
    "triggerHidden": [],
    "steps": 5,
+   "keptSlideshow": false,
    "approxSteps": false
   }
  ],
