@@ -53,6 +53,18 @@
      "rot": 0.0,
      "visible": true,
      "autoShapeType": -2
+    },
+    {
+     "id": 3,
+     "name": "Chart 2",
+     "type": 3,
+     "x": 490.0,
+     "y": 40.0,
+     "w": 450.0,
+     "h": 440.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": -2
     }
    ],
    "effects": [],

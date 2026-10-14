@@ -2225,13 +2225,13 @@ def _chart_sheet(ch, rows, rng):
 
 
 def charts_multilevel(app):
-    """多级分类：两级的柱形图（中文年份 → 季度）、数字年份 → Q1~Q3 的柱形图、地区 → 城市的折线图"""
+    """多级分类：两级的柱形图（中文年份 → 季度）、数字年份 → Q1~Q3 的柱形图、地区 → 城市的折线图、条形图（外层竖排在左）"""
     p = new_pres(app, window=True)
     q = ['一季度', '二季度', '三季度', '四季度']
     a = [['', '', '系列 1']] + [[y if i == 0 else '', q[i], v] for y, vs in (('第一年', (2, 5, 4, 3)), ('第二年', (3, 4, 5, 2))) for i, v in enumerate(vs)]
     b = [['', '', '系列 1']] + [[y if i == 0 else '', f'Q{i + 1}', v] for y, vs in (('2019', (2, 5, 4)), ('2020', (3, 2, 5)), ('2021', (4, 3, 2))) for i, v in enumerate(vs)]
     c = [['', '', '系列 1']] + [[g if i == 0 else '', t, v] for g, vs in (('甲区', (2, 5, 4)), ('乙区', (3, 2, 5))) for i, (t, v) in enumerate(zip(('东城', '西城', '南城'), vs))]
-    specs = [(51, a, '$A$1:$C$9'), (51, b, '$A$1:$C$10'), (4, c, '$A$1:$C$7')]
+    specs = [(51, a, '$A$1:$C$9'), (51, b, '$A$1:$C$10'), (4, c, '$A$1:$C$7'), (57, c, '$A$1:$C$7')]
     for k, (kind, rows, rng) in enumerate(specs):
         if k % 2 == 0:
             s = blank(p)

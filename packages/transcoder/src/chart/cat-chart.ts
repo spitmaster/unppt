@@ -21,7 +21,7 @@ import { extraValues, trendlines } from './extras';
 import { dataTableSize, readDataTable, renderDataTable } from './data-table';
 import { readAxisTitle, renderAxisTitles, reserveAxisTitles, type AxisTitles } from './axis-title';
 import { NO_GRID, type PixelGrid } from './pixel-grid';
-import { catFitBand, categoryLabel, fitCategoryLabels, outerLevelBands, outerLevels, ROT_MIDCAT_RIGHT, rotFirstCenter, sideLabel, sideLabelMax, wrapSideLabel, type CatFit, type LevelBand } from './cat-labels';
+import { catFitBand, categoryLabel, fitCategoryLabels, outerLevelBands, outerLevels, ROT_MIDCAT_RIGHT, rotFirstCenter, sideLabel, sideLabelMax, sideLevelBands, sideOuterLevels, wrapSideLabel, type CatFit, type LevelBand } from './cat-labels';
 
 export interface CatEnv { colors: ColorContext; part: string; baseText: TextStyle; makeAxis: AxisMaker; tw: TextWidth; w: number; view?: View3D; zh?: boolean; plotBg?: (r: Rect) => string; snap?: PixelGrid }
 
@@ -120,6 +120,7 @@ export function renderCategoryChart(plots: Plot[], plotArea: XEl | undefined, ar
     const fromLeft = () => (left === PAD ? SIDE_LABEL_PAD : left);
     const fromRight = () => (right === w - PAD ? w - SIDE_LABEL_PAD : right);
     const edgeLeft = fromLeft(), edgeRight = fromRight();
+    let innerBand = 0, levelBands: LevelBand[] = [];
     if (!horizontal) {
       if (valLabels) {
         if (sides.val === 'l') left = edgeLeft + unitW + maxW(tickLabels, valStyle.size) + sideGap(valStyle.size);
@@ -138,7 +139,11 @@ export function renderCategoryChart(plots: Plot[], plotArea: XEl | undefined, ar
     } else {
       if (catLabels) {
         if (sides.catMid) left += emptyLeftPad(catStyle.size);
-        else if (sides.cat === 'l') left = edgeLeft + maxW(sideLines.flat(), catStyle.size) + sideGap(catStyle.size);
+        else if (sides.cat === 'l') {
+          // 多级分类的外层各占一列，排在内层标签左边（cat-labels.ts）
+          levelBands = sideLevelBands(catLevels, catStyle.size);
+          left = edgeLeft + levelBands.reduce((a, b) => a + b.band, 0) + maxW(sideLines.flat(), catStyle.size) + sideGap(catStyle.size);
+        }
         else right = edgeRight - maxW(sideLines.flat(), catStyle.size) - sideGap(catStyle.size);
       }
       if (valLabels) {
@@ -157,7 +162,6 @@ export function renderCategoryChart(plots: Plot[], plotArea: XEl | undefined, ar
     }
     // 底部分类标签：放不下时折行或整体转斜（cat-labels.ts），转斜时左边让出第一个标签
     let catFit: CatFit = { kind: 'line', skip: lblSkip };
-    let innerBand = 0, levelBands: LevelBand[] = [];
     if (!horizontal && catLabels && !sides.catMid && sides.cat === 'b') {
       const bands = between ? nCat : Math.max(1, nCat - 1);
       catFit = fitCategoryLabels(cats, (right - left) / bands, catStyle.size, tw, numAttr(child(catAx, 'c:tickLblSkip'), 'val'));
@@ -229,8 +233,10 @@ export function renderCategoryChart(plots: Plot[], plotArea: XEl | undefined, ar
     });
     if (levelBands.length) {
       const ln = parseLine([child(child(catAx, 'c:spPr'), 'a:ln')], [colors], env.part);
-      axisText.push(outerLevels(levelBands, nCat, (k) => frame.catPx(k * band), edge, edge + innerBand, catStyle,
-        (c, sz) => (c ? catCenter(sz) : valCenter(sz)), ln?.color ? { color: css(ln.color), width: ln.width } : undefined));
+      const sep = ln?.color ? { color: css(ln.color), width: ln.width } : undefined;
+      const pos = (k: number) => frame.catPx(k * band);
+      axisText.push(horizontal ? sideOuterLevels(levelBands, nCat, pos, edge, edgeLeft, catStyle, sep)
+        : outerLevels(levelBands, nCat, pos, edge, edge + innerBand, catStyle, (c, sz) => (c ? catCenter(sz) : valCenter(sz)), sep));
     }
   }
 
