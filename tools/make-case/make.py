@@ -2279,7 +2279,34 @@ def picture_recolor(app):
     return p
 
 
-CASES = [shapes_all, text_sizes, text_align, text_spacing, text_bullets, text_missing_font, shapes_basic, fills_lines, table_basic, group_rotate, anim_basic, anim_auto, charts_basic, pictures, smartart, text_effects, text_layout, table_merge, links, emf_images, anim_advanced, charts_labels, freeform_icons, media_audio, anim_trigger, wmf_images, anim_iterate, picture_transparent, charts_more, shape_effects, equations, anim_path, anim_emphasis, transitions, fills_patterns, text_decoration, anim_entrance, svg_images, charts_markers, hidden_slides, media_background, text_glow_reflection, text_tabs, text_picture_bullets, fills_texture, transition_morph, text_embedded_fonts, text_warp, anim_repeat, charts_sizes, slide_timings, lines_compound, table_diagonal, lines_gradient, fills_radial, fills_rect_gradient, shapes_3d, table_vertical, transitions_more, anim_sound, anim_build, anim_after, anim_text_emphasis, charts_bubble, media_video, charts_options, charts_negative, shapes_bevel, charts_legend, shapes_3d_rotation, smartart_3d, charts_ofpie, charts_3d, anim_group_emphasis, activex_controls, charts_extras, charts_axis_titles, charts_fills, charts_outlines, charts_labels_more, group_scale, group_flip, charts_3d_line, charts_legend_pos, charts_crowded_labels, charts_label_skip, charts_bar_long_names, charts_multilevel, picture_recolor]
+def text_symbols(app):
+    """符号字体：用"插入符号"插的 Wingdings、Webdings、Symbol 字符（存成 a:sym），字体直接设成 Wingdings 的普通字母，
+    以及 Wingdings 项目符号"""
+    p = new_pres(app)
+    s = blank(p)
+    rows = [("Wingdings", [252, 251, 216, 74, 40, 254]), ("Webdings", [97, 52, 89, 105]), ("Symbol", [97, 98, 112, 165, 222])]
+    for k, (font, codes) in enumerate(rows):
+        t = s.Shapes.AddTextbox(1, 40, 40 + k * 70, 600, 60)
+        tr = t.TextFrame.TextRange
+        tr.Text = f"{font}："
+        tr.Font.Size = 28
+        for c in codes:
+            tr.InsertAfter(" ").InsertSymbol(font, c, 0)
+    t = s.Shapes.AddTextbox(1, 40, 260, 600, 60)
+    t.TextFrame.TextRange.Text = "abcdJKL"
+    t.TextFrame.TextRange.Font.Name = "Wingdings"
+    t.TextFrame.TextRange.Font.Size = 28
+    t = s.Shapes.AddTextbox(1, 40, 340, 600, 160)
+    t.TextFrame.TextRange.Text = "第一项\r第二项\r第三项"
+    t.TextFrame.TextRange.Font.Size = 24
+    pf = t.TextFrame.TextRange.ParagraphFormat
+    pf.Bullet.Visible = -1
+    pf.Bullet.Font.Name = "Wingdings"
+    pf.Bullet.Character = 216
+    return p
+
+
+CASES = [shapes_all, text_sizes, text_align, text_spacing, text_bullets, text_missing_font, shapes_basic, fills_lines, table_basic, group_rotate, anim_basic, anim_auto, charts_basic, pictures, smartart, text_effects, text_layout, table_merge, links, emf_images, anim_advanced, charts_labels, freeform_icons, media_audio, anim_trigger, wmf_images, anim_iterate, picture_transparent, charts_more, shape_effects, equations, anim_path, anim_emphasis, transitions, fills_patterns, text_decoration, anim_entrance, svg_images, charts_markers, hidden_slides, media_background, text_glow_reflection, text_tabs, text_picture_bullets, fills_texture, transition_morph, text_embedded_fonts, text_warp, anim_repeat, charts_sizes, slide_timings, lines_compound, table_diagonal, lines_gradient, fills_radial, fills_rect_gradient, shapes_3d, table_vertical, transitions_more, anim_sound, anim_build, anim_after, anim_text_emphasis, charts_bubble, media_video, charts_options, charts_negative, shapes_bevel, charts_legend, shapes_3d_rotation, smartart_3d, charts_ofpie, charts_3d, anim_group_emphasis, activex_controls, charts_extras, charts_axis_titles, charts_fills, charts_outlines, charts_labels_more, group_scale, group_flip, charts_3d_line, charts_legend_pos, charts_crowded_labels, charts_label_skip, charts_bar_long_names, charts_multilevel, picture_recolor, text_symbols]
 
 
 def main():

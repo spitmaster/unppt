@@ -6,6 +6,7 @@
  */
 import { GlyphOutlines, type Contour } from './glyf';
 import { buildKerning } from './kern';
+import { buildCmap } from './cmap';
 import { toSource, type InputSource, type RandomAccessSource } from '../io/source';
 
 export interface FontFace {
@@ -176,57 +177,6 @@ async function loadMetrics(src: RandomAccessSource, tables: Map<string, TableRec
       const o = gid ? await outlinesOf() : undefined;
       return o ? o.glyph(gid) : undefined;
     },
-  };
-}
-
-/** 解析 cmap，支持 format 4（基本平面）和 format 12（全部 Unicode） */
-function buildCmap(t: Uint8Array): (cp: number) => number {
-  const num = be16(t, 2);
-  let best = -1, bestFmt = 0;
-  for (let i = 0; i < num; i++) {
-    const p = be16(t, 4 + i * 8), e = be16(t, 6 + i * 8), off = be32(t, 8 + i * 8);
-    const fmt = be16(t, off);
-    const unicode = (p === 3 && (e === 1 || e === 10)) || p === 0;
-    if (!unicode) continue;
-    if (fmt === 12 && bestFmt !== 12) { best = off; bestFmt = 12; }
-    else if (fmt === 4 && bestFmt === 0) { best = off; bestFmt = 4; }
-  }
-  if (best < 0) return () => 0;
-  if (bestFmt === 12) {
-    const groups = be32(t, best + 12);
-    return (cp) => {
-      let lo = 0, hi = groups - 1;
-      while (lo <= hi) {
-        const mid = (lo + hi) >> 1;
-        const g = best + 16 + mid * 12;
-        const start = be32(t, g), end = be32(t, g + 4);
-        if (cp < start) hi = mid - 1;
-        else if (cp > end) lo = mid + 1;
-        else return be32(t, g + 8) + (cp - start);
-      }
-      return 0;
-    };
-  }
-  const segX2 = be16(t, best + 6);
-  const ends = best + 14, starts = ends + segX2 + 2, deltas = starts + segX2, ranges = deltas + segX2;
-  return (cp) => {
-    if (cp > 0xffff) return 0;
-    let lo = 0, hi = segX2 / 2 - 1;
-    while (lo <= hi) {
-      const mid = (lo + hi) >> 1;
-      const end = be16(t, ends + mid * 2);
-      const start = be16(t, starts + mid * 2);
-      if (cp > end) lo = mid + 1;
-      else if (cp < start) hi = mid - 1;
-      else {
-        const delta = be16(t, deltas + mid * 2);
-        const ro = be16(t, ranges + mid * 2);
-        if (ro === 0) return (cp + delta) & 0xffff;
-        const gi = be16(t, ranges + mid * 2 + ro + (cp - start) * 2);
-        return gi === 0 ? 0 : (gi + delta) & 0xffff;
-      }
-    }
-    return 0;
   };
 }
 

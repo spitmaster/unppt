@@ -1,0 +1,152 @@
+{
+ "version": 7,
+ "slideWidthPt": 960.0,
+ "slideHeightPt": 540.0,
+ "imageWidth": 1280,
+ "imageHeight": 720,
+ "slides": [
+  {
+   "index": 0,
+   "hidden": false,
+   "shapes": [
+    {
+     "id": 2,
+     "name": "TextBox 1",
+     "type": 17,
+     "x": 40.0,
+     "y": 40.0,
+     "w": 600.0,
+     "h": 41.198,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 16,
+       "text": "Wingdings：",
+       "x": 47.2,
+       "y": 43.6,
+       "w": 312.63,
+       "h": 33.6
+      }
+     ]
+    },
+    {
+     "id": 3,
+     "name": "TextBox 2",
+     "type": 17,
+     "x": 40.0,
+     "y": 110.0,
+     "w": 600.0,
+     "h": 41.198,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 13,
+       "text": "Webdings：",
+       "x": 47.2,
+       "y": 113.6,
+       "w": 261.38,
+       "h": 33.6
+      }
+     ]
+    },
+    {
+     "id": 4,
+     "name": "TextBox 3",
+     "type": 17,
+     "x": 40.0,
+     "y": 180.0,
+     "w": 600.0,
+     "h": 41.198,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 12,
+       "text": "Symbol：",
+       "x": 47.2,
+       "y": 183.6,
+       "w": 190.505,
+       "h": 33.6
+      }
+     ]
+    },
+    {
+     "id": 5,
+     "name": "TextBox 4",
+     "type": 17,
+     "x": 40.0,
+     "y": 260.0,
+     "w": 600.0,
+     "h": 41.198,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 7,
+       "text": "abcdJKL",
+       "x": 47.2,
+       "y": 263.6,
+       "w": 180.38,
+       "h": 33.6
+      }
+     ]
+    },
+    {
+     "id": 6,
+     "name": "TextBox 5",
+     "type": 17,
+     "x": 40.0,
+     "y": 340.0,
+     "w": 600.0,
+     "h": 94.514,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 4,
+       "text": "第一项\r",
+       "x": 83.2,
+       "y": 343.6,
+       "w": 78.625,
+       "h": 28.8
+      },
+      {
+       "start": 4,
+       "len": 4,
+       "text": "第二项\r",
+       "x": 83.2,
+       "y": 372.4,
+       "w": 78.625,
+       "h": 28.8
+      },
+      {
+       "start": 8,
+       "len": 3,
+       "text": "第三项",
+       "x": 83.2,
+       "y": 401.2,
+       "w": 72.005,
+       "h": 28.8
+      }
+     ]
+    }
+   ],
+   "effects": [],
+   "triggerHidden": [],
+   "steps": 0
+  }
+ ],
+ "ok": true
+}
