@@ -9,7 +9,7 @@ import type { Theme } from '../model/model';
 import type { SvgDoc } from '../common/svg';
 import { areaRect } from './area-fill';
 import { attr, child, findAll, numAttr, path, type XEl } from '../io/xml';
-import { axisMaker } from './axis';
+import { axesOf, axisMaker } from './axis';
 import { renderCategoryChart } from './cat-chart';
 import { pixelGrid } from './pixel-grid';
 import { chartTypeOf } from './chart-types';
@@ -79,17 +79,20 @@ export function renderChart(space: XEl | undefined, w: number, h: number, env: C
     titleText = plots[0].series[0].name;
   }
   if (titleText) {
-    // 没写字号时：新版 Office 图表标题和其它文字的默认字号比例是 18.62 : 11.97
-    const refSize = textStyle(child(child(chart, 'c:legend'), 'c:txPr'), colors, baseText).size;
+    // 没写字号时：新版 Office 图表标题和其它文字的默认字号比例是 18.62 : 11.97；没有标题元素的自动标题
+    // 总是 18.62 磅（图表文字整体改成 16 磅时自动标题不变，导出图实测）
+    const refSize = titleEl ? textStyle(child(child(chart, 'c:legend'), 'c:txPr'), colors, baseText).size : (11.97 * 96) / 72;
     const ts = textStyle(child(titleEl, 'c:txPr'), colors, { ...baseText, size: refSize * 1862 / 1197 });
     const rich = path(titleEl, 'c:tx', 'c:rich');
     const rr = rich ? findAll(rich, 'a:rPr')[0] ?? findAll(rich, 'a:defRPr')[0] : undefined;
     const tst: TextStyle = rr ? { ...ts, size: numAttr(rr, 'sz') ? numAttr(rr, 'sz')! / 100 * 96 / 72 : ts.size } : ts;
     out.push(label(titleText, w / 2, top + tst.size * 0.6, tst));
-    // 实测：带坐标轴的图标题下方多留约 10 像素，饼图不多留（COM 读 18.62 磅标题的绘图区上沿校准到 0.01 像素）；
-    // 图例不分图表类型都按多留的算（饼图的上方、左右图例以前高 10、5 像素：COM 生成 10 种图例位置 × 标题的图表实测）
-    legendTop = top + tst.size * 1.2 + 16.16;
-    top += tst.size * 1.2 + (type0.hasAxes ? 16.16 : 6);
+    // 实测（COM 读绘图区上沿：标题 12~32 磅 × 数值标签 9~20 磅）：带坐标轴的图，标题占 1.3545 × 标题字号，
+    // 下面再留 max(12, 0.521 × 竖轴标签字号 + 4) 像素（最上面的标签以网格线为中心要露出半个）；饼图按以前的
+    // 1.2 × 字号 + 6（COM 读 18.62 磅标题校准）。图例不分图表类型都按带坐标轴的算（饼图的上方、左右图例以前高 10、5 像素）
+    const band = titleBand(tst.size, plotArea, plots, colors, baseText);
+    legendTop = top + band;
+    top += type0.hasAxes ? band : tst.size * 1.2 + 6;
   }
 
   // ---------------- 图例
@@ -123,6 +126,14 @@ export function renderChart(space: XEl | undefined, w: number, h: number, env: C
 
   renderCategoryChart(plots, plotArea, { left, top, right, bottom }, { colors, part: env.part, baseText, makeAxis, tw, w, view: view3D, zh: lang.startsWith('zh'), plotBg, snap }, out);
   return groupBackground(out);
+}
+
+/** 带坐标轴的图标题占的高度（含下面留的空）：竖轴标签字号来自第一根数值轴（条形图、标签删掉时按下限） */
+function titleBand(titleSize: number, plotArea: XEl | undefined, plots: Plot[], colors: ColorContext, baseText: TextStyle): number {
+  const valAx = axesOf(plotArea).valAxes[0];
+  const vertical = valAx && attr(child(valAx, 'c:delete'), 'val') !== '1' && !plots.some((p) => p.horizontal);
+  const l = vertical ? textStyle(child(valAx, 'c:txPr'), colors, baseText).size : 0;
+  return 1.3545 * titleSize + Math.max(12, 0.521 * l + 4);
 }
 
 /** 三维视图；饼图默认俯角 30°、不转，其它默认俯角 15°、转 20° */
