@@ -15,6 +15,7 @@ import { axisLine, axisSides, catMapping, gridLine, outward, tickLblPos, tickMar
 import type { AxisMaker, AxisOpts, Plot, Rect, TextStyle, View3D } from './model';
 import { isColumn3D, renderColumn3D } from './cat3d';
 import { isColumnDepth3D, renderColumnDepth3D } from './cat3d-depth';
+import { isPersp3D, renderPersp3D } from './cat3d-persp';
 import { lineType } from './types/line-area';
 import { extraValues, trendlines } from './extras';
 import { dataTableSize, readDataTable, renderDataTable } from './data-table';
@@ -33,6 +34,13 @@ export function renderCategoryChart(plots: Plot[], plotArea: XEl | undefined, ar
   const title = (ax: XEl | undefined) => readAxisTitle(ax, colors, baseText, env.zh ?? true);
   const titles: AxisTitles = horizontal ? { left: title(catAx), bottom: title(axisOf(plots[0])) } : { left: title(axisOf(plots[0])), bottom: title(catAx) };
   const area = reserveAxisTitles(area0, titles);
+  // 透视的三维折线图、面积图：箱体、墙上网格线、带子和厚片，单独画
+  if (isPersp3D(plots, env.view)) {
+    const serAx = plotArea?.children.find((c) => c.name === 'c:serAx');
+    renderPersp3D(plots[0], axisOf(plots[0]), catAx, serAx, area, { ...env, view: env.view! }, out);
+    renderAxisTitles(titles, area, area0, out);
+    return;
+  }
   // 三维柱形图（直角坐标轴）：墙、斜网格线、立方体，单独画
   if (isColumnDepth3D(plots, env.view)) {
     const serAx = plotArea?.children.find((c) => c.name === 'c:serAx');
