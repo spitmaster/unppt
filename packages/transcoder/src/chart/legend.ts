@@ -44,7 +44,7 @@ function entriesOf(plots: Plot[], colors: ColorContext): LegendEntry[] {
 }
 
 /** 画图例（加到 out），返回去掉图例后的区域；drawTop 是摆图例用的上沿（标题下面，不给时用 area.top） */
-export function renderLegend(legend: XEl | undefined, plots: Plot[], area: Rect, w: number, colors: ColorContext, baseText: TextStyle, tw: TextWidth, out: string[], drawTop?: number, hasAxes = true): Rect {
+export function renderLegend(legend: XEl | undefined, plots: Plot[], area: Rect, w: number, colors: ColorContext, baseText: TextStyle, tw: TextWidth, out: string[], drawTop?: number, hasAxes = true, bandOf = legendBand): Rect {
   let { left, top, right, bottom } = area;
   const shift = (drawTop ?? top) - top;
   if (!legend) return area;
@@ -70,7 +70,7 @@ export function renderLegend(legend: XEl | undefined, plots: Plot[], area: Rect,
       out.push(label(e.name, x + keyW(e) + kGap, y, legendText, 'start'));
       x += parts[i] + gap;
     });
-    if (legendPos === 'b') bottom -= legendBand(legendText.size);
+    if (legendPos === 'b') bottom -= bandOf(legendText.size);
     else top += legendTopBand(sz);
   } else {
     // 竖排图例（左、右）：键和横排一样（有线条项时所有键等宽），每行 legendRow；整体在上下范围里居中，

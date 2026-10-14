@@ -24,6 +24,8 @@ export const valBand = (s: number) => 1.4375 * s + 3;
 export const valCenter = (s: number) => 1.1 * s - 0.75;
 /** 底部图例：占的高度、中心到底部留白线的距离（高度按 COM 读 9~28 磅的绘图区下沿校准到 0.05 像素；中心按 9、12、20、28 磅导出图的文字行拟合，12、20 磅逐行吻合，9、28 磅差 1 像素） */
 export const legendBand = (s: number) => 1.1763 * s + 6.984;
+/** 平面饼图下方图例占的高度（饼没有坐标轴标签，图例上面多留一点；COM 读 9~20 磅饼图外接正方形的下沿） */
+export const pieLegendBand = (s: number) => 1.036 * s + 15.9;
 export const legendCenter = (s: number) => 0.558 * s - 3.36;
 /** 竖轴最上面的标签以网格线为中心，上边至少要留出半个标签（COM 读 9~20 磅的绘图区上沿：图表区 4 磅 + 0.521 × 字号 + 1 磅） */
 export const topForLabel = (s: number) => 0.521 * s + 6.66;

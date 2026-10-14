@@ -14,7 +14,7 @@ import { renderCategoryChart } from './cat-chart';
 import { pixelGrid } from './pixel-grid';
 import { chartTypeOf } from './chart-types';
 import { gradientRef, label, textStyle, textWidth } from './draw';
-import { BOTTOM_PAD, PAD, type TextWidth } from './layout';
+import { BOTTOM_PAD, PAD, pieLegendBand, type TextWidth } from './layout';
 import { renderLegend } from './legend';
 import type { ChartContext, Plot, Rect, SvgDefs, TextStyle, View3D } from './model';
 import { readPlots } from './read';
@@ -73,6 +73,9 @@ export function renderChart(space: XEl | undefined, w: number, h: number, env: C
   let top = PAD, bottom = h - PAD, left = PAD, right = w - PAD;
   let legendTop: number | undefined;
   const titleEl = child(chart, 'c:title');
+  // 平面的饼图、圆环图、复合饼图：标题带和带坐标轴的图一样（1.3545 × 字号 + 12），底部没有图例时留 11 磅，
+  // 饼的外接正方形 = 绘图区的短边（COM 读 PlotArea.Inside*：12~32 磅标题、9~20 磅文字、有无图例）
+  const flatPie = !type0.hasAxes && !plots[0].is3D;
   const autoDeleted = attr(child(chart, 'c:autoTitleDeleted'), 'val') === '1';
   let titleText = '';
   if (titleEl) {
@@ -97,13 +100,14 @@ export function renderChart(space: XEl | undefined, w: number, h: number, env: C
     // 1.2 × 字号 + 6（COM 读 18.62 磅标题校准）。图例不分图表类型都按带坐标轴的算（饼图的上方、左右图例以前高 10、5 像素）
     const band = titleBand(tst.size, plotArea, plots, colors, baseText);
     legendTop = top + band;
-    top += type0.hasAxes ? band : tst.size * 1.2 + 6;
+    top += type0.hasAxes || flatPie ? band : tst.size * 1.2 + 6;
   }
 
   // ---------------- 图例
-  ({ left, top, right, bottom } = renderLegend(child(chart, 'c:legend'), plots, { left, top, right, bottom }, w, colors, baseText, tw, out, legendTop, type0.hasAxes));
+  ({ left, top, right, bottom } = renderLegend(child(chart, 'c:legend'), plots, { left, top, right, bottom }, w, colors, baseText, tw, out, legendTop, type0.hasAxes, flatPie ? pieLegendBand : undefined));
   // 底部没有图例时，下边只留 BOTTOM_PAD（COM 读 3 种字号：图例从下方移走后绘图区增高 1.03 × 字号 + 12 磅，比图例带多出约 5 磅）
-  if (bottom === h - PAD) bottom = h - BOTTOM_PAD;
+  // 平面饼图例外：下边仍留 11 磅（COM 读饼图的外接正方形：9~20 磅、有无标题和图例）
+  if (bottom === h - PAD && !flatPie) bottom = h - BOTTOM_PAD;
 
   // ---------------- 绘图区（手动布局优先）
   const ml = path(plotArea, 'c:layout', 'c:manualLayout');

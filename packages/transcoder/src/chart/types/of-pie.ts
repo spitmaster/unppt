@@ -2,8 +2,9 @@
  * 复合饼图、复合条饼图：主饼里后面几个点合成一块"其他"，右边用第二个饼（或一根堆积条）展开，两条线连起来。
  * PowerPoint 实测（charts-ofpie 导出图、COM 读 9 种点数的默认拆分）：
  *   - 默认（auto）按位置拆，右边放最后 round((点数 + 1) / 3) 个点；
- *   - 主饼半径 r：2r + 间距 + 右图宽 = 绘图区宽（高度不够时按 0.965 × 高，和饼图一样）；右边的饼直径 = 第二绘图区大小% × 2r，
- *     条宽 = 大小% × r、条高 = 大小% × 2r；间距 = 0.7 × 间隙宽度% × 右图宽；整体在绘图区里居中；
+ *   - 主饼半径 r：2r + 间距 + 右图宽 = 绘图区宽（高度不够时 2r = 绘图区高，和饼图一样）；右边的饼直径 = 第二绘图区大小% × 2r，
+ *     条宽 = 大小% × r、条高 = 大小% × 2r；间距 = 间隙宽度% × r（复合条饼图 × r / 2），和第二绘图区大小无关
+ *     （COM 生成间隙 0~200%、大小 50~100% 的复合饼图、复合条饼图，导出图量主饼、右图的位置）；整体在绘图区里居中；
  *   - "其他"块的中心朝右（0°），主饼从它的一半处顺时针排，右边的饼也从同一角度开始，条从上往下排；
  *   - 连接线：主饼"其他"块两个外角到右边饼的切线（条图连到条的上下角）
  */
@@ -13,6 +14,9 @@ import { accentColor, cpart } from '../draw';
 import type { Plot, Rect } from '../model';
 import type { ChartType } from '../chart-type';
 import { slicePath } from './pie';
+
+/** 实测：主饼和右图的间距（× 间隙宽度% × 主饼半径） */
+const GAP_PIE = 1, GAP_BAR = 0.5;
 
 /** 哪些点（原来的序号）放到右边 */
 function splitIndices(p: Plot, vals: number[]): Set<number> {
@@ -42,8 +46,8 @@ function renderOfPie(p: Plot, a: Rect, colors: ColorContext): string {
   const sz = o.second / 100, g = o.gap / 100;
   const bar = o.type === 'bar';
   // 右图宽（相对主饼半径）、间距
-  const rightW = bar ? sz : 2 * sz, gapK = 0.7 * g * rightW;
-  const r = Math.min(W / (2 + gapK + rightW), (H * 0.965) / 2);
+  const rightW = bar ? sz : 2 * sz, gapK = (bar ? GAP_BAR : GAP_PIE) * g;
+  const r = Math.min(W / (2 + gapK + rightW), H / 2);
   const x0 = a.left + (W - r * (2 + gapK + rightW)) / 2, cy = (a.top + a.bottom) / 2;
   const cx = x0 + r;
   const colorOf = (i: number): Rgba => s.pointFills.get(i) ?? accentColor(i, colors);
