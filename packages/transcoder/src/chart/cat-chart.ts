@@ -2,7 +2,7 @@
  * 分类轴图（柱、条、折线、面积，可以组合、带次坐标轴）的公共部分：算数值轴、留出坐标轴标签的空间、
  * 画网格和坐标轴标签，再把绘图区（CategoryFrame）交给每种类型画系列。
  */
-import type { ColorContext } from '../model/color';
+import { css, type ColorContext } from '../model/color';
 import { parseLine } from '../style/line';
 import { n2 } from '../common/svg';
 import { attr, child, numAttr, type XEl } from '../io/xml';
@@ -21,7 +21,7 @@ import { extraValues, trendlines } from './extras';
 import { dataTableSize, readDataTable, renderDataTable } from './data-table';
 import { readAxisTitle, renderAxisTitles, reserveAxisTitles, type AxisTitles } from './axis-title';
 import { NO_GRID, type PixelGrid } from './pixel-grid';
-import { catFitBand, categoryLabel, fitCategoryLabels, ROT_MIDCAT_RIGHT, rotFirstCenter, sideLabel, sideLabelMax, wrapSideLabel, type CatFit } from './cat-labels';
+import { catFitBand, categoryLabel, fitCategoryLabels, outerLevelBands, outerLevels, ROT_MIDCAT_RIGHT, rotFirstCenter, sideLabel, sideLabelMax, wrapSideLabel, type CatFit, type LevelBand } from './cat-labels';
 
 export interface CatEnv { colors: ColorContext; part: string; baseText: TextStyle; makeAxis: AxisMaker; tw: TextWidth; w: number; view?: View3D; zh?: boolean; plotBg?: (r: Rect) => string; snap?: PixelGrid }
 
@@ -96,6 +96,8 @@ export function renderCategoryChart(plots: Plot[], plotArea: XEl | undefined, ar
   const catLabels = !catDeleted && tickLblPos(catAx) !== 'none' && !dt;
   // 分类标签、刻度线的间隔（"标签间隔""刻度线间隔"，没写时标签间隔按能不能放下自动定，见 cat-labels.ts）
   const lblSkip = Math.max(1, numAttr(child(catAx, 'c:tickLblSkip'), 'val') ?? 1), markSkip = Math.max(1, numAttr(child(catAx, 'c:tickMarkSkip'), 'val') ?? 1);
+  // 多级分类的外层（"不显示多级标签"时不画）
+  const catLevels = attr(child(catAx, 'c:noMultiLvlLbl'), 'val') === '1' ? [] : plots[0].series[0]?.catLevels ?? [];
   // 左右两侧的分类标签（条形图）太长时折行（cat-labels.ts）
   const sideLines = cats.map((c) => wrapSideLabel(c, sideLabelMax(w, PAD), catStyle.size, tw));
   // 按数值轴的长度 len 算刻度并排出绘图区（len 不给时用默认刻度）
@@ -155,6 +157,7 @@ export function renderCategoryChart(plots: Plot[], plotArea: XEl | undefined, ar
     }
     // 底部分类标签：放不下时折行或整体转斜（cat-labels.ts），转斜时左边让出第一个标签
     let catFit: CatFit = { kind: 'line', skip: lblSkip };
+    let innerBand = 0, levelBands: LevelBand[] = [];
     if (!horizontal && catLabels && !sides.catMid && sides.cat === 'b') {
       const bands = between ? nCat : Math.max(1, nCat - 1);
       catFit = fitCategoryLabels(cats, (right - left) / bands, catStyle.size, tw, numAttr(child(catAx, 'c:tickLblSkip'), 'val'));
@@ -164,16 +167,18 @@ export function renderCategoryChart(plots: Plot[], plotArea: XEl | undefined, ar
         const f = between ? 0.5 / bands : 0;
         left = Math.max(left, (rotFirstCenter(cats[0], catStyle.size, tw) - f * right) / (1 - f));
       }
-      bottom -= catFitBand(catFit, catH(catStyle.size), cats, catStyle.size, tw);
+      innerBand = catFitBand(catFit, catH(catStyle.size), cats, catStyle.size, tw);
+      levelBands = outerLevelBands(catLevels, catStyle.size, (c, sz) => (c ? catBand(sz) : valBand(sz)));
+      bottom -= innerBand + levelBands.reduce((a, b) => a + b.band, 0);
     }
-    return { prim, sec, left, top, right, bottom, sides, unit, edgeLeft, edgeRight, valLabels, valStyle, tickLabels, between, catFit };
+    return { prim, sec, left, top, right, bottom, sides, unit, edgeLeft, edgeRight, valLabels, valStyle, tickLabels, between, catFit, innerBand, levelBands };
   };
   // 自动刻度的疏密取决于轴长（axis.ts）：先按默认刻度排一遍得到轴长，再按轴长选刻度重排
   const first = place();
   // 横向数值轴（条形图）的刻度疏密按"绘图区宽 + 左右分类标签列宽的一半"算（COM 探针：长分类名的条形图刻度比按绘图区宽算的密）
   const sideCol = horizontal && catLabels && !first.sides.catMid ? Math.max(0, ...sideLines.flat().map((t) => tw(t, catStyle.size))) + sideGap(catStyle.size) : 0;
   const placed = place(horizontal ? first.right - first.left + sideCol / 2 : first.bottom - first.top);
-  const { prim, sec, sides, unit, edgeLeft, edgeRight, valLabels, valStyle, tickLabels, between, catFit } = placed;
+  const { prim, sec, sides, unit, edgeLeft, edgeRight, valLabels, valStyle, tickLabels, between, catFit, innerBand, levelBands } = placed;
   const { left, top, right, bottom } = placed;
   // 网格线、坐标轴线、柱子按像素中心的规则对齐整像素（pixel-grid.ts）
   const g = env.snap ?? NO_GRID;
@@ -222,6 +227,11 @@ export function renderCategoryChart(plots: Plot[], plotArea: XEl | undefined, ar
       }
       else axisText.push(sides.cat === 'l' ? sideLabel(sideLines[i], edge - sideAnchor(catStyle.size), at, catStyle, 'end', tw) : sideLabel(sideLines[i], edge + sideAnchor(catStyle.size), at, catStyle, 'start', tw));
     });
+    if (levelBands.length) {
+      const ln = parseLine([child(child(catAx, 'c:spPr'), 'a:ln')], [colors], env.part);
+      axisText.push(outerLevels(levelBands, nCat, (k) => frame.catPx(k * band), edge, edge + innerBand, catStyle,
+        (c, sz) => (c ? catCenter(sz) : valCenter(sz)), ln?.color ? { color: css(ln.color), width: ln.width } : undefined));
+    }
   }
 
   // ---------------- 系列（数据标签最后画，盖在图形上面）

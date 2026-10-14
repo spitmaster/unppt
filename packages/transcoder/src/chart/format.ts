@@ -1,6 +1,6 @@
 /** 图表里的数字 / 日期格式、数据标签文字、缓存数据读取 */
 import { child, children, findAll, numAttr, type XEl } from '../io/xml';
-import type { Labels } from './model';
+import type { CatLevel, Labels } from './model';
 
 /**
  * 数据标签的文字：系列名、类别名、数值、百分比按这个顺序，用 c:separator 隔开（没写时一般是", "，
@@ -34,17 +34,21 @@ export function piePercents(vals: number[]): number[] {
   return out;
 }
 
-export function cacheValues(ref: XEl | undefined): { pts: Map<number, string>; count: number; format: string } {
+export function cacheValues(ref: XEl | undefined): { pts: Map<number, string>; count: number; format: string; outer: CatLevel[] } {
   const cache = findAll(ref, 'c:numCache')[0] ?? findAll(ref, 'c:strCache')[0] ?? findAll(ref, 'c:numLit')[0] ?? findAll(ref, 'c:strLit')[0];
   const pts = new Map<number, string>();
   for (const pt of children(cache, 'c:pt')) pts.set(numAttr(pt, 'idx') ?? 0, child(pt, 'c:v')?.text ?? '');
-  // 多级分类：取最后一级
+  // 多级分类：第一级是最内层（每个分类的标签），后面的是外层的分组（从里往外）
   const multi = findAll(ref, 'c:multiLvlStrCache')[0];
+  const outer: CatLevel[] = [];
   if (multi) {
     const lvls = children(multi, 'c:lvl');
     for (const pt of children(lvls[0], 'c:pt')) pts.set(numAttr(pt, 'idx') ?? 0, child(pt, 'c:v')?.text ?? '');
+    for (const l of lvls.slice(1)) {
+      outer.push(children(l, 'c:pt').map((pt) => ({ idx: numAttr(pt, 'idx') ?? 0, text: child(pt, 'c:v')?.text ?? '' })).sort((a, b) => a.idx - b.idx));
+    }
   }
-  return { pts, count: numAttr(child(cache ?? multi, 'c:ptCount'), 'val') ?? pts.size, format: child(cache, 'c:formatCode')?.text ?? 'General' };
+  return { pts, count: numAttr(child(cache ?? multi, 'c:ptCount'), 'val') ?? pts.size, format: child(cache, 'c:formatCode')?.text ?? 'General', outer };
 }
 
 /** Excel 日期序号 -> 年/月/日 */

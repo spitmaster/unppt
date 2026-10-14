@@ -11,6 +11,9 @@ export interface Labels { val: boolean; pct: boolean; cat: boolean; ser: boolean
 /** 渐变填充（色标和角度，角度是度） */
 export interface GradFill { stops: { pos: number; color: Rgba }[]; angle: number }
 
+/** 多级分类的外层一级：每组的起始分类序号和名称（按序号排好） */
+export type CatLevel = { idx: number; text: string }[];
+
 export interface Series {
   /** 在整个图表里的序号（按读到的顺序，多个图叠在一起时连续编号）：按系列动画用 */
   index: number;
@@ -25,6 +28,8 @@ export interface Series {
   labels?: Labels;
   name: string;
   cats: string[];
+  /** 多级分类的外层（从里往外），每级是各组的起始分类序号和名称 */
+  catLevels?: CatLevel[];
   vals: (number | null)[];
   /** 散点图的 X 值 */
   xs?: (number | null)[];
