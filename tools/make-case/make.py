@@ -2358,7 +2358,39 @@ def lines_arrows(app):
     return p
 
 
-CASES = [shapes_all, text_sizes, text_align, text_spacing, text_bullets, text_missing_font, shapes_basic, fills_lines, table_basic, group_rotate, anim_basic, anim_auto, charts_basic, pictures, smartart, text_effects, text_layout, table_merge, links, emf_images, anim_advanced, charts_labels, freeform_icons, media_audio, anim_trigger, wmf_images, anim_iterate, picture_transparent, charts_more, shape_effects, equations, anim_path, anim_emphasis, transitions, fills_patterns, text_decoration, anim_entrance, svg_images, charts_markers, hidden_slides, media_background, text_glow_reflection, text_tabs, text_picture_bullets, fills_texture, transition_morph, text_embedded_fonts, text_warp, anim_repeat, charts_sizes, slide_timings, lines_compound, table_diagonal, lines_gradient, fills_radial, fills_rect_gradient, shapes_3d, table_vertical, transitions_more, anim_sound, anim_build, anim_after, anim_text_emphasis, charts_bubble, media_video, charts_options, charts_negative, shapes_bevel, charts_legend, shapes_3d_rotation, smartart_3d, charts_ofpie, charts_3d, anim_group_emphasis, activex_controls, charts_extras, charts_axis_titles, charts_fills, charts_outlines, charts_labels_more, group_scale, group_flip, charts_3d_line, charts_legend_pos, charts_crowded_labels, charts_label_skip, charts_bar_long_names, charts_multilevel, picture_recolor, text_symbols, text_numbering, lines_arrows]
+def table_styles(app):
+    """内置表格样式：浅色、中度、深色、主题样式各几种（GUID 是 Office 内置样式的编号），
+    每张表再打开不同的首列、末行、末列、镶边列开关"""
+    p = new_pres(app)
+    ids = ["{2D5ABB26-0587-4C30-8999-92F81FD0307C}", "{5940675A-B579-460E-94D1-54222C63F5DA}", "{3C2FFA5D-87B4-456A-9821-1D502468CF0F}",
+           "{D113A9D2-9D6B-4929-AA2D-F23B5EE8CBE7}", "{9D7B26C5-4107-4FEC-AEDC-1716B250EE53}", "{3B4B98B0-60AC-42C2-AFA5-B58CD77FA1E5}",
+           "{69012ECD-51FC-41F1-AA8D-1B2483CD663E}", "{BC89EF96-8CEA-46FF-86C4-4CE0E7609802}", "{B301B821-A1FF-4177-AEE7-76D212191A09}",
+           "{073A0DAA-6AF3-43AB-8588-CEC1D06C72B9}", "{F5AB1C69-6EDB-4FF4-983F-18BD219EF322}", "{8EC20E35-A176-4012-BC5E-935CFFF8708E}",
+           "{6E25E649-3F16-4E02-A733-19D2CDBF48F0}", "{D7AC3CCA-C797-4891-BE02-D94E43425B78}", "{69CF1AB2-1976-4502-BF36-3FF5EA218861}",
+           "{E8034E78-7F5D-4C2E-B375-FC64B27BC917}", "{125E5076-3810-47DD-B79F-674D7AD40C01}", "{93296810-A885-4BE3-A3E7-6D5BEEA58F35}"]
+    for k, sid in enumerate(ids):
+        if k % 6 == 0:
+            s = blank(p)
+        sh = s.Shapes.AddTable(4, 4, 20 + (k % 3) * 315, 30 + (k // 3 % 2) * 250, 300, 160)
+        tb = sh.Table
+        for r in range(1, 5):
+            for c in range(1, 5):
+                tf = tb.Cell(r, c).Shape.TextFrame
+                tf.TextRange.Text = "表头" if r == 1 else f"{r}{c}"
+                tf.TextRange.Font.Size = 12
+        try:
+            tb.ApplyStyle(sid, False)
+        except Exception:
+            pass
+        tb.FirstCol = k % 2 == 1
+        tb.LastRow = k % 3 == 1
+        tb.LastCol = k % 4 == 2
+        tb.VertBanding = k % 5 == 3
+        tb.HorizBanding = k % 6 != 4
+    return p
+
+
+CASES = [shapes_all, text_sizes, text_align, text_spacing, text_bullets, text_missing_font, shapes_basic, fills_lines, table_basic, group_rotate, anim_basic, anim_auto, charts_basic, pictures, smartart, text_effects, text_layout, table_merge, links, emf_images, anim_advanced, charts_labels, freeform_icons, media_audio, anim_trigger, wmf_images, anim_iterate, picture_transparent, charts_more, shape_effects, equations, anim_path, anim_emphasis, transitions, fills_patterns, text_decoration, anim_entrance, svg_images, charts_markers, hidden_slides, media_background, text_glow_reflection, text_tabs, text_picture_bullets, fills_texture, transition_morph, text_embedded_fonts, text_warp, anim_repeat, charts_sizes, slide_timings, lines_compound, table_diagonal, lines_gradient, fills_radial, fills_rect_gradient, shapes_3d, table_vertical, transitions_more, anim_sound, anim_build, anim_after, anim_text_emphasis, charts_bubble, media_video, charts_options, charts_negative, shapes_bevel, charts_legend, shapes_3d_rotation, smartart_3d, charts_ofpie, charts_3d, anim_group_emphasis, activex_controls, charts_extras, charts_axis_titles, charts_fills, charts_outlines, charts_labels_more, group_scale, group_flip, charts_3d_line, charts_legend_pos, charts_crowded_labels, charts_label_skip, charts_bar_long_names, charts_multilevel, picture_recolor, text_symbols, text_numbering, lines_arrows, table_styles]
 
 
 def main():
