@@ -39,7 +39,8 @@ flowchart LR
 
 ```mermaid
 flowchart TB
-  entry["入口 index.ts / cli.ts<br/>convert：逐页、流式输出 HTML 或数据"]
+  entry["入口 index.ts / cli.ts<br/>convert：逐页产出页面数据，交给产物形式写出"]
+  output["output/<br/>← OutputForm 扩展点：single 自包含 HTML、data 只出数据（调试）<br/>output.ts 接口和 HTML 公共部分"]
   anim["anim/<br/>时间线编排 anim.ts、单个效果 effect.ts<br/>进入/退出的行为 behaviors.ts（关键帧、公式、时间变换原样带给播放器）<br/>时间设置和变换 timing-util.ts、动画和切换的声音 sound.ts<br/>音视频放映选项 media-opts.ts<br/>强调终态 emphasis.ts、运动路径 motion.ts、切换 transition.ts"]
   render["render/<br/>render.ts 分派、继承；context.ts 渲染能力接口<br/>elements/ 形状、图片、组合；table.ts 表格（table-style.ts 表格样式的叠加、边框、整表背景）；box.ts 位置框<br/>controls.ts ActiveX 控件预览图；projection.ts 透视相机下逐点投影、pixel-snap.ts 形状和图片外框对齐整像素、group-map.ts 组合缩放时子元素换算<br/>frames/ ← FrameHandler 扩展点"]
   chart["chart/<br/>图表：chart.ts 标题和编排、legend.ts 图例<br/>cat-chart.ts 分类轴图、cat3d.ts 三维簇状/堆积柱形图、cat3d-depth.ts 系列沿深度排的三维柱形图、box3d.ts 立方体和墙网格线、cat3d-persp.ts 透视的三维折线/面积图（camera3d.ts 相机和光照、persp-layout.ts 箱体比例和摆放、solids3d.ts 带子和厚片的面）、sides.ts 坐标轴在哪一侧和刻度线、cat-labels.ts 分类标签放不下时折行或转斜、多级分类的外层标签、pixel-grid.ts 整像素对齐<br/>axis.ts 刻度（对数、逆序、显示单位）、xy.ts 数值×数值坐标<br/>trendline.ts 趋势线、error-bars.ts 误差线、data-table.ts 数据表、axis-title.ts 坐标轴标题、area-fill.ts 图表区和绘图区背景<br/>layout.ts 实测间距规律、types/ ← ChartType 扩展点"]
@@ -52,7 +53,8 @@ flowchart TB
   model["model/<br/>演示文稿 / 主题 / 母版 / 版式、颜色"]
   common["common/<br/>SVG 输出工具、超链接"]
   io["io/<br/>数据源、ZIP、XML、OPC 包"]
-  entry --> anim & render & media & font
+  entry --> anim & render & media & font & output
+  output --> media
   render --> chart & media & text & effects & style & geometry
   chart --> style & font
   text --> effects & style & font & geometry
@@ -109,6 +111,7 @@ flowchart TB
 flowchart TB
   subgraph ext[扩展点（接口 + 注册表）]
     dec[ImageDecoder<br/>emf / wmf / …]
+    of[OutputForm<br/>single / data / …]
     eff[ShapeEffect<br/>外阴影 / 发光 / 柔化边缘 / 内阴影 / …]
     frame[FrameHandler<br/>表格 / 图表 / SmartArt / OLE]
     ct[ChartType<br/>柱形 / 折线面积 / 饼 / 散点 / 雷达 / …]
@@ -119,6 +122,7 @@ flowchart TB
 
 | 扩展点 | 接口 | 怎么加一个新的 |
 |---|---|---|
+| 产物形式 | `OutputForm`（`output/output.ts`） | 新建 `output/xxx.ts` 导出一个 `OutputForm`（名字、小图片要不要内联、怎么把 `OutputSource` 给的逐页数据 / 字体 / 元数据写成文件），在 `output/forms.ts` 加一行。例：`single.ts`、`data.ts` |
 | 图片格式 | `ImageDecoder`（`media/image-decoder.ts`） | 新建 `media/xxx.ts` 导出一个 `ImageDecoder`，在 `media/decoders.ts` 加一行。例：`emf.ts`、`wmf.ts` |
 | 形状效果 | `ShapeEffect`（`effects/shape-effect.ts`） | 新建 `effects/xxx.ts` 导出一个 `ShapeEffect`（返回一层滤镜：画在形状下面 / 替换形状 / 盖在上面），在 `effects/effects.ts` 按叠放顺序加一行。例：`glow.ts`、`soft-edge.ts`、`outer-shadow.ts`、`inner-shadow.ts`。不在 `a:effectLst` 里的层（三维棱台 `bevel.ts`，来自 `a:sp3d`）通过 `effectFilter` 的 `extra` 参数加入 |
 | graphicFrame 内容 | `FrameHandler`（`render/frames/frame-handler.ts`） | 新建 `render/frames/xxx-frame.ts` 导出一个 `FrameHandler`（按 `a:graphicData` 的 uri 结尾匹配），在 `render/frames/frames.ts` 加一行。handler 只依赖窄接口 `FrameRenderer`；需要内部单独做动画的部分时用传进来的框编号拼子编号（拼法统一在 `common/uid.ts`，例：SmartArt 的每个形状）。例：表格、图表、SmartArt、OLE |
