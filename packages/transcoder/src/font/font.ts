@@ -24,6 +24,7 @@ export interface FontMetrics {
   unitsPerEm: number;
   ascent: number;   // 正数，单位 em
   descent: number;  // 正数，单位 em
+  /** hhea 表的行间距（em）：不参与行高，只用来判断混排时要不要和另一种字体比上下伸（见 text/measure.ts） */
   lineGap: number;
   /** 返回字符宽度（单位 em）；字体里没有这个字时返回 undefined */
   advance(codePoint: number): number | undefined;
@@ -124,10 +125,9 @@ async function loadMetrics(src: RandomAccessSource, tables: Map<string, TableRec
   const numHMetrics = be16(hhea, 34);
   let ascent = bes16(hhea, 4) / upem, descent = -bes16(hhea, 6) / upem, lineGap = bes16(hhea, 8) / upem;
   if (os2b && os2b.length >= 78) {
-    // Windows 上 PowerPoint 用 usWinAscent / usWinDescent
+    // Windows 上 PowerPoint 用 usWinAscent / usWinDescent（行间距仍取 hhea 的）
     ascent = be16(os2b, 74) / upem;
     descent = be16(os2b, 76) / upem;
-    lineGap = 0;
   }
   const hmtx = await get('hmtx');
   const cmap = await get('cmap');

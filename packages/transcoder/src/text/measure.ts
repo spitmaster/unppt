@@ -28,6 +28,12 @@ export function makeMeasurer(env: TextEnv): Measurer {
   };
 }
 
+/**
+ * 混排行高要和另一种字体比上下伸的字体（实测）：自己带行间距（hhea lineGap > 0.05 em，如宋体 0.14、Calibri 0.22；Arial 0.03 不算），
+ * 或者下伸很小（< 0.15 em，按 em 框设计的老式中文字体：宋体、楷体、黑体、方正舒体都是 0.141）
+ */
+const MIX_GAP = 0.05, MIX_DESC = 0.15;
+
 const LATIN_SUBS = ['Calibri', 'Arial', 'Liberation Sans', 'Helvetica'];
 // 实测：字体标了中文字符集且本机缺失时，PowerPoint 用微软雅黑替代（样本换行 40/40 一致）
 const EA_SUBS = ['Microsoft YaHei', '微软雅黑', 'DengXian', '等线', 'PingFang SC', 'Noto Sans CJK SC', 'Source Han Sans SC'];
@@ -76,9 +82,12 @@ export async function makeAtoms(text: string, style: RunStyle, m: Measurer): Pro
     const prevAtom = out[out.length - 1];
     if (kerning && prevAtom && adv !== undefined && usedM && usedM === prevM) prevAtom.width += usedM.metrics.kern(prevAtom.cp, cp) * size;
     prevM = adv !== undefined ? usedM : undefined;
-    // 行高按这段文字的西文、东亚两种字体中较大的上伸、下伸算：即使这一行没有西文字符，西文字体也参与（实测）
-    const asc = Math.max(used?.ascent ?? 0.92, latinM?.metrics.ascent ?? 0, eaM?.metrics.ascent ?? 0);
-    const desc = Math.max(used?.descent ?? 0.24, latinM?.metrics.descent ?? 0, eaM?.metrics.descent ?? 0);
+    // 行高：有些字体（见 MIX_GAP）要和这段文字的另一种字体（西文 / 东亚）比上伸、下伸取较大的，即使这一行没有那种字；
+    // 其它字体（微软雅黑、等线、华文新魏、Arial 等）只用自己的（实测）
+    const other = (usedM === latinM ? eaM : latinM)?.metrics;
+    const mix = !!used && !!other && (used.lineGap > MIX_GAP || used.descent < MIX_DESC);
+    const asc = Math.max(used?.ascent ?? 0.92, mix ? other!.ascent : 0);
+    const desc = Math.max(used?.descent ?? 0.24, mix ? other!.descent : 0);
     out.push({
       text: ch, cp, width, style: st, family, face: adv !== undefined ? usedM?.face : undefined,
       // 实测：上下标按缩小后的字号算上伸、下伸和行高
