@@ -1,0 +1,1799 @@
+{
+ "version": 7,
+ "slideWidthPt": 960.0,
+ "slideHeightPt": 540.0,
+ "imageWidth": 1280,
+ "imageHeight": 720,
+ "slides": [
+  {
+   "index": 0,
+   "hidden": false,
+   "shapes": [
+    {
+     "id": 2,
+     "name": "Rounded Rectangle 1",
+     "type": 1,
+     "x": 15.0,
+     "y": 15.0,
+     "w": 120.0,
+     "h": 70.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 5,
+     "lines": [
+      {
+       "start": 0,
+       "len": 3,
+       "text": "样式1",
+       "x": 57.313,
+       "y": 41.6,
+       "w": 35.38,
+       "h": 16.8
+      }
+     ]
+    },
+    {
+     "id": 3,
+     "name": "Rounded Rectangle 2",
+     "type": 1,
+     "x": 150.0,
+     "y": 15.0,
+     "w": 120.0,
+     "h": 70.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 5,
+     "lines": [
+      {
+       "start": 0,
+       "len": 3,
+       "text": "样式2",
+       "x": 192.313,
+       "y": 41.6,
+       "w": 35.38,
+       "h": 16.8
+      }
+     ]
+    },
+    {
+     "id": 4,
+     "name": "Rounded Rectangle 3",
+     "type": 1,
+     "x": 285.0,
+     "y": 15.0,
+     "w": 120.0,
+     "h": 70.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 5,
+     "lines": [
+      {
+       "start": 0,
+       "len": 3,
+       "text": "样式3",
+       "x": 327.313,
+       "y": 41.6,
+       "w": 35.38,
+       "h": 16.8
+      }
+     ]
+    },
+    {
+     "id": 5,
+     "name": "Rounded Rectangle 4",
+     "type": 1,
+     "x": 420.0,
+     "y": 15.0,
+     "w": 120.0,
+     "h": 70.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 5,
+     "lines": [
+      {
+       "start": 0,
+       "len": 3,
+       "text": "样式4",
+       "x": 462.313,
+       "y": 41.6,
+       "w": 35.38,
+       "h": 16.8
+      }
+     ]
+    },
+    {
+     "id": 6,
+     "name": "Rounded Rectangle 5",
+     "type": 1,
+     "x": 555.0,
+     "y": 15.0,
+     "w": 120.0,
+     "h": 70.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 5,
+     "lines": [
+      {
+       "start": 0,
+       "len": 3,
+       "text": "样式5",
+       "x": 597.312,
+       "y": 41.6,
+       "w": 35.38,
+       "h": 16.8
+      }
+     ]
+    },
+    {
+     "id": 7,
+     "name": "Rounded Rectangle 6",
+     "type": 1,
+     "x": 690.0,
+     "y": 15.0,
+     "w": 120.0,
+     "h": 70.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 5,
+     "lines": [
+      {
+       "start": 0,
+       "len": 3,
+       "text": "样式6",
+       "x": 732.312,
+       "y": 41.6,
+       "w": 35.38,
+       "h": 16.8
+      }
+     ]
+    },
+    {
+     "id": 8,
+     "name": "Rounded Rectangle 7",
+     "type": 1,
+     "x": 825.0,
+     "y": 15.0,
+     "w": 120.0,
+     "h": 70.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 5,
+     "lines": [
+      {
+       "start": 0,
+       "len": 3,
+       "text": "样式7",
+       "x": 867.312,
+       "y": 41.6,
+       "w": 35.38,
+       "h": 16.8
+      }
+     ]
+    },
+    {
+     "id": 9,
+     "name": "Rounded Rectangle 8",
+     "type": 1,
+     "x": 15.0,
+     "y": 103.0,
+     "w": 120.0,
+     "h": 70.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 5,
+     "lines": [
+      {
+       "start": 0,
+       "len": 3,
+       "text": "样式8",
+       "x": 57.313,
+       "y": 129.6,
+       "w": 35.38,
+       "h": 16.8
+      }
+     ]
+    },
+    {
+     "id": 10,
+     "name": "Rounded Rectangle 9",
+     "type": 1,
+     "x": 150.0,
+     "y": 103.0,
+     "w": 120.0,
+     "h": 70.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 5,
+     "lines": [
+      {
+       "start": 0,
+       "len": 3,
+       "text": "样式9",
+       "x": 192.313,
+       "y": 129.6,
+       "w": 35.38,
+       "h": 16.8
+      }
+     ]
+    },
+    {
+     "id": 11,
+     "name": "Rounded Rectangle 10",
+     "type": 1,
+     "x": 285.0,
+     "y": 103.0,
+     "w": 120.0,
+     "h": 70.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 5,
+     "lines": [
+      {
+       "start": 0,
+       "len": 4,
+       "text": "样式10",
+       "x": 323.625,
+       "y": 129.6,
+       "w": 42.755,
+       "h": 16.8
+      }
+     ]
+    },
+    {
+     "id": 12,
+     "name": "Rounded Rectangle 11",
+     "type": 1,
+     "x": 420.0,
+     "y": 103.0,
+     "w": 120.0,
+     "h": 70.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 5,
+     "lines": [
+      {
+       "start": 0,
+       "len": 4,
+       "text": "样式11",
+       "x": 458.625,
+       "y": 129.6,
+       "w": 42.755,
+       "h": 16.8
+      }
+     ]
+    },
+    {
+     "id": 13,
+     "name": "Rounded Rectangle 12",
+     "type": 1,
+     "x": 555.0,
+     "y": 103.0,
+     "w": 120.0,
+     "h": 70.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 5,
+     "lines": [
+      {
+       "start": 0,
+       "len": 4,
+       "text": "样式12",
+       "x": 593.625,
+       "y": 129.6,
+       "w": 42.755,
+       "h": 16.8
+      }
+     ]
+    },
+    {
+     "id": 14,
+     "name": "Rounded Rectangle 13",
+     "type": 1,
+     "x": 690.0,
+     "y": 103.0,
+     "w": 120.0,
+     "h": 70.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 5,
+     "lines": [
+      {
+       "start": 0,
+       "len": 4,
+       "text": "样式13",
+       "x": 728.625,
+       "y": 129.6,
+       "w": 42.755,
+       "h": 16.8
+      }
+     ]
+    },
+    {
+     "id": 15,
+     "name": "Rounded Rectangle 14",
+     "type": 1,
+     "x": 825.0,
+     "y": 103.0,
+     "w": 120.0,
+     "h": 70.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 5,
+     "lines": [
+      {
+       "start": 0,
+       "len": 4,
+       "text": "样式14",
+       "x": 863.625,
+       "y": 129.6,
+       "w": 42.755,
+       "h": 16.8
+      }
+     ]
+    },
+    {
+     "id": 16,
+     "name": "Rounded Rectangle 15",
+     "type": 1,
+     "x": 15.0,
+     "y": 191.0,
+     "w": 120.0,
+     "h": 70.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 5,
+     "lines": [
+      {
+       "start": 0,
+       "len": 4,
+       "text": "样式15",
+       "x": 53.625,
+       "y": 217.6,
+       "w": 42.755,
+       "h": 16.8
+      }
+     ]
+    },
+    {
+     "id": 17,
+     "name": "Rounded Rectangle 16",
+     "type": 1,
+     "x": 150.0,
+     "y": 191.0,
+     "w": 120.0,
+     "h": 70.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 5,
+     "lines": [
+      {
+       "start": 0,
+       "len": 4,
+       "text": "样式16",
+       "x": 188.625,
+       "y": 217.6,
+       "w": 42.755,
+       "h": 16.8
+      }
+     ]
+    },
+    {
+     "id": 18,
+     "name": "Rounded Rectangle 17",
+     "type": 1,
+     "x": 285.0,
+     "y": 191.0,
+     "w": 120.0,
+     "h": 70.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 5,
+     "lines": [
+      {
+       "start": 0,
+       "len": 4,
+       "text": "样式17",
+       "x": 323.625,
+       "y": 217.6,
+       "w": 42.755,
+       "h": 16.8
+      }
+     ]
+    },
+    {
+     "id": 19,
+     "name": "Rounded Rectangle 18",
+     "type": 1,
+     "x": 420.0,
+     "y": 191.0,
+     "w": 120.0,
+     "h": 70.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 5,
+     "lines": [
+      {
+       "start": 0,
+       "len": 4,
+       "text": "样式18",
+       "x": 458.625,
+       "y": 217.6,
+       "w": 42.755,
+       "h": 16.8
+      }
+     ]
+    },
+    {
+     "id": 20,
+     "name": "Rounded Rectangle 19",
+     "type": 1,
+     "x": 555.0,
+     "y": 191.0,
+     "w": 120.0,
+     "h": 70.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 5,
+     "lines": [
+      {
+       "start": 0,
+       "len": 4,
+       "text": "样式19",
+       "x": 593.625,
+       "y": 217.6,
+       "w": 42.755,
+       "h": 16.8
+      }
+     ]
+    },
+    {
+     "id": 21,
+     "name": "Rounded Rectangle 20",
+     "type": 1,
+     "x": 690.0,
+     "y": 191.0,
+     "w": 120.0,
+     "h": 70.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 5,
+     "lines": [
+      {
+       "start": 0,
+       "len": 4,
+       "text": "样式20",
+       "x": 728.625,
+       "y": 217.6,
+       "w": 42.755,
+       "h": 16.8
+      }
+     ]
+    },
+    {
+     "id": 22,
+     "name": "Rounded Rectangle 21",
+     "type": 1,
+     "x": 825.0,
+     "y": 191.0,
+     "w": 120.0,
+     "h": 70.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 5,
+     "lines": [
+      {
+       "start": 0,
+       "len": 4,
+       "text": "样式21",
+       "x": 863.625,
+       "y": 217.6,
+       "w": 42.755,
+       "h": 16.8
+      }
+     ]
+    },
+    {
+     "id": 23,
+     "name": "Rounded Rectangle 22",
+     "type": 1,
+     "x": 15.0,
+     "y": 279.0,
+     "w": 120.0,
+     "h": 70.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 5,
+     "lines": [
+      {
+       "start": 0,
+       "len": 4,
+       "text": "样式22",
+       "x": 53.625,
+       "y": 305.6,
+       "w": 42.755,
+       "h": 16.8
+      }
+     ]
+    },
+    {
+     "id": 24,
+     "name": "Rounded Rectangle 23",
+     "type": 1,
+     "x": 150.0,
+     "y": 279.0,
+     "w": 120.0,
+     "h": 70.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 5,
+     "lines": [
+      {
+       "start": 0,
+       "len": 4,
+       "text": "样式23",
+       "x": 188.625,
+       "y": 305.6,
+       "w": 42.755,
+       "h": 16.8
+      }
+     ]
+    },
+    {
+     "id": 25,
+     "name": "Rounded Rectangle 24",
+     "type": 1,
+     "x": 285.0,
+     "y": 279.0,
+     "w": 120.0,
+     "h": 70.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 5,
+     "lines": [
+      {
+       "start": 0,
+       "len": 4,
+       "text": "样式24",
+       "x": 323.625,
+       "y": 305.6,
+       "w": 42.755,
+       "h": 16.8
+      }
+     ]
+    },
+    {
+     "id": 26,
+     "name": "Rounded Rectangle 25",
+     "type": 1,
+     "x": 420.0,
+     "y": 279.0,
+     "w": 120.0,
+     "h": 70.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 5,
+     "lines": [
+      {
+       "start": 0,
+       "len": 4,
+       "text": "样式25",
+       "x": 458.625,
+       "y": 305.6,
+       "w": 42.755,
+       "h": 16.8
+      }
+     ]
+    },
+    {
+     "id": 27,
+     "name": "Rounded Rectangle 26",
+     "type": 1,
+     "x": 555.0,
+     "y": 279.0,
+     "w": 120.0,
+     "h": 70.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 5,
+     "lines": [
+      {
+       "start": 0,
+       "len": 4,
+       "text": "样式26",
+       "x": 593.625,
+       "y": 305.6,
+       "w": 42.755,
+       "h": 16.8
+      }
+     ]
+    },
+    {
+     "id": 28,
+     "name": "Rounded Rectangle 27",
+     "type": 1,
+     "x": 690.0,
+     "y": 279.0,
+     "w": 120.0,
+     "h": 70.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 5,
+     "lines": [
+      {
+       "start": 0,
+       "len": 4,
+       "text": "样式27",
+       "x": 728.625,
+       "y": 305.6,
+       "w": 42.755,
+       "h": 16.8
+      }
+     ]
+    },
+    {
+     "id": 29,
+     "name": "Rounded Rectangle 28",
+     "type": 1,
+     "x": 825.0,
+     "y": 279.0,
+     "w": 120.0,
+     "h": 70.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 5,
+     "lines": [
+      {
+       "start": 0,
+       "len": 4,
+       "text": "样式28",
+       "x": 863.625,
+       "y": 305.6,
+       "w": 42.755,
+       "h": 16.8
+      }
+     ]
+    },
+    {
+     "id": 30,
+     "name": "Rounded Rectangle 29",
+     "type": 1,
+     "x": 15.0,
+     "y": 367.0,
+     "w": 120.0,
+     "h": 70.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 5,
+     "lines": [
+      {
+       "start": 0,
+       "len": 4,
+       "text": "样式29",
+       "x": 53.625,
+       "y": 393.6,
+       "w": 42.755,
+       "h": 16.8
+      }
+     ]
+    },
+    {
+     "id": 31,
+     "name": "Rounded Rectangle 30",
+     "type": 1,
+     "x": 150.0,
+     "y": 367.0,
+     "w": 120.0,
+     "h": 70.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 5,
+     "lines": [
+      {
+       "start": 0,
+       "len": 4,
+       "text": "样式30",
+       "x": 188.625,
+       "y": 393.6,
+       "w": 42.755,
+       "h": 16.8
+      }
+     ]
+    },
+    {
+     "id": 32,
+     "name": "Rounded Rectangle 31",
+     "type": 1,
+     "x": 285.0,
+     "y": 367.0,
+     "w": 120.0,
+     "h": 70.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 5,
+     "lines": [
+      {
+       "start": 0,
+       "len": 4,
+       "text": "样式31",
+       "x": 323.625,
+       "y": 393.6,
+       "w": 42.755,
+       "h": 16.8
+      }
+     ]
+    },
+    {
+     "id": 33,
+     "name": "Rounded Rectangle 32",
+     "type": 1,
+     "x": 420.0,
+     "y": 367.0,
+     "w": 120.0,
+     "h": 70.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 5,
+     "lines": [
+      {
+       "start": 0,
+       "len": 4,
+       "text": "样式32",
+       "x": 458.625,
+       "y": 393.6,
+       "w": 42.755,
+       "h": 16.8
+      }
+     ]
+    },
+    {
+     "id": 34,
+     "name": "Rounded Rectangle 33",
+     "type": 1,
+     "x": 555.0,
+     "y": 367.0,
+     "w": 120.0,
+     "h": 70.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 5,
+     "lines": [
+      {
+       "start": 0,
+       "len": 4,
+       "text": "样式33",
+       "x": 593.625,
+       "y": 393.6,
+       "w": 42.755,
+       "h": 16.8
+      }
+     ]
+    },
+    {
+     "id": 35,
+     "name": "Rounded Rectangle 34",
+     "type": 1,
+     "x": 690.0,
+     "y": 367.0,
+     "w": 120.0,
+     "h": 70.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 5,
+     "lines": [
+      {
+       "start": 0,
+       "len": 4,
+       "text": "样式34",
+       "x": 728.625,
+       "y": 393.6,
+       "w": 42.755,
+       "h": 16.8
+      }
+     ]
+    },
+    {
+     "id": 36,
+     "name": "Rounded Rectangle 35",
+     "type": 1,
+     "x": 825.0,
+     "y": 367.0,
+     "w": 120.0,
+     "h": 70.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 5,
+     "lines": [
+      {
+       "start": 0,
+       "len": 4,
+       "text": "样式35",
+       "x": 863.625,
+       "y": 393.6,
+       "w": 42.755,
+       "h": 16.8
+      }
+     ]
+    },
+    {
+     "id": 37,
+     "name": "Rounded Rectangle 36",
+     "type": 1,
+     "x": 15.0,
+     "y": 455.0,
+     "w": 120.0,
+     "h": 70.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 5,
+     "lines": [
+      {
+       "start": 0,
+       "len": 4,
+       "text": "样式36",
+       "x": 53.625,
+       "y": 481.6,
+       "w": 42.755,
+       "h": 16.8
+      }
+     ]
+    },
+    {
+     "id": 38,
+     "name": "Rounded Rectangle 37",
+     "type": 1,
+     "x": 150.0,
+     "y": 455.0,
+     "w": 120.0,
+     "h": 70.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 5,
+     "lines": [
+      {
+       "start": 0,
+       "len": 4,
+       "text": "样式37",
+       "x": 188.625,
+       "y": 481.6,
+       "w": 42.755,
+       "h": 16.8
+      }
+     ]
+    },
+    {
+     "id": 39,
+     "name": "Rounded Rectangle 38",
+     "type": 1,
+     "x": 285.0,
+     "y": 455.0,
+     "w": 120.0,
+     "h": 70.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 5,
+     "lines": [
+      {
+       "start": 0,
+       "len": 4,
+       "text": "样式38",
+       "x": 323.625,
+       "y": 481.6,
+       "w": 42.755,
+       "h": 16.8
+      }
+     ]
+    },
+    {
+     "id": 40,
+     "name": "Rounded Rectangle 39",
+     "type": 1,
+     "x": 420.0,
+     "y": 455.0,
+     "w": 120.0,
+     "h": 70.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 5,
+     "lines": [
+      {
+       "start": 0,
+       "len": 4,
+       "text": "样式39",
+       "x": 458.625,
+       "y": 481.6,
+       "w": 42.755,
+       "h": 16.8
+      }
+     ]
+    },
+    {
+     "id": 41,
+     "name": "Rounded Rectangle 40",
+     "type": 1,
+     "x": 555.0,
+     "y": 455.0,
+     "w": 120.0,
+     "h": 70.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 5,
+     "lines": [
+      {
+       "start": 0,
+       "len": 4,
+       "text": "样式40",
+       "x": 593.625,
+       "y": 481.6,
+       "w": 42.755,
+       "h": 16.8
+      }
+     ]
+    },
+    {
+     "id": 42,
+     "name": "Rounded Rectangle 41",
+     "type": 1,
+     "x": 690.0,
+     "y": 455.0,
+     "w": 120.0,
+     "h": 70.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 5,
+     "lines": [
+      {
+       "start": 0,
+       "len": 4,
+       "text": "样式41",
+       "x": 728.625,
+       "y": 481.6,
+       "w": 42.755,
+       "h": 16.8
+      }
+     ]
+    },
+    {
+     "id": 43,
+     "name": "Rounded Rectangle 42",
+     "type": 1,
+     "x": 825.0,
+     "y": 455.0,
+     "w": 120.0,
+     "h": 70.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 5,
+     "lines": [
+      {
+       "start": 0,
+       "len": 4,
+       "text": "样式42",
+       "x": 863.625,
+       "y": 481.6,
+       "w": 42.755,
+       "h": 16.8
+      }
+     ]
+    }
+   ],
+   "effects": [],
+   "triggerHidden": [],
+   "steps": 0
+  },
+  {
+   "index": 1,
+   "hidden": false,
+   "shapes": [
+    {
+     "id": 2,
+     "name": "Rounded Rectangle 1",
+     "type": 1,
+     "x": 15.0,
+     "y": 15.0,
+     "w": 120.0,
+     "h": 70.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 5,
+     "lines": [
+      {
+       "start": 0,
+       "len": 4,
+       "text": "样式43",
+       "x": 53.625,
+       "y": 41.6,
+       "w": 42.755,
+       "h": 16.8
+      }
+     ]
+    },
+    {
+     "id": 3,
+     "name": "Rounded Rectangle 2",
+     "type": 1,
+     "x": 150.0,
+     "y": 15.0,
+     "w": 120.0,
+     "h": 70.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 5,
+     "lines": [
+      {
+       "start": 0,
+       "len": 4,
+       "text": "样式44",
+       "x": 188.625,
+       "y": 41.6,
+       "w": 42.755,
+       "h": 16.8
+      }
+     ]
+    },
+    {
+     "id": 4,
+     "name": "Rounded Rectangle 3",
+     "type": 1,
+     "x": 285.0,
+     "y": 15.0,
+     "w": 120.0,
+     "h": 70.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 5,
+     "lines": [
+      {
+       "start": 0,
+       "len": 4,
+       "text": "样式45",
+       "x": 323.625,
+       "y": 41.6,
+       "w": 42.755,
+       "h": 16.8
+      }
+     ]
+    },
+    {
+     "id": 5,
+     "name": "Rounded Rectangle 4",
+     "type": 1,
+     "x": 420.0,
+     "y": 15.0,
+     "w": 120.0,
+     "h": 70.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 5,
+     "lines": [
+      {
+       "start": 0,
+       "len": 4,
+       "text": "样式46",
+       "x": 458.625,
+       "y": 41.6,
+       "w": 42.755,
+       "h": 16.8
+      }
+     ]
+    },
+    {
+     "id": 6,
+     "name": "Rounded Rectangle 5",
+     "type": 1,
+     "x": 555.0,
+     "y": 15.0,
+     "w": 120.0,
+     "h": 70.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 5,
+     "lines": [
+      {
+       "start": 0,
+       "len": 4,
+       "text": "样式47",
+       "x": 593.625,
+       "y": 41.6,
+       "w": 42.755,
+       "h": 16.8
+      }
+     ]
+    },
+    {
+     "id": 7,
+     "name": "Rounded Rectangle 6",
+     "type": 1,
+     "x": 690.0,
+     "y": 15.0,
+     "w": 120.0,
+     "h": 70.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 5,
+     "lines": [
+      {
+       "start": 0,
+       "len": 4,
+       "text": "样式48",
+       "x": 728.625,
+       "y": 41.6,
+       "w": 42.755,
+       "h": 16.8
+      }
+     ]
+    },
+    {
+     "id": 8,
+     "name": "Rounded Rectangle 7",
+     "type": 1,
+     "x": 825.0,
+     "y": 15.0,
+     "w": 120.0,
+     "h": 70.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 5,
+     "lines": [
+      {
+       "start": 0,
+       "len": 4,
+       "text": "样式49",
+       "x": 863.625,
+       "y": 41.6,
+       "w": 42.755,
+       "h": 16.8
+      }
+     ]
+    },
+    {
+     "id": 9,
+     "name": "Rounded Rectangle 8",
+     "type": 1,
+     "x": 15.0,
+     "y": 103.0,
+     "w": 120.0,
+     "h": 70.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 5,
+     "lines": [
+      {
+       "start": 0,
+       "len": 4,
+       "text": "样式50",
+       "x": 53.625,
+       "y": 129.6,
+       "w": 42.755,
+       "h": 16.8
+      }
+     ]
+    },
+    {
+     "id": 10,
+     "name": "Rounded Rectangle 9",
+     "type": 1,
+     "x": 150.0,
+     "y": 103.0,
+     "w": 120.0,
+     "h": 70.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 5,
+     "lines": [
+      {
+       "start": 0,
+       "len": 4,
+       "text": "样式51",
+       "x": 188.625,
+       "y": 129.6,
+       "w": 42.755,
+       "h": 16.8
+      }
+     ]
+    },
+    {
+     "id": 11,
+     "name": "Rounded Rectangle 10",
+     "type": 1,
+     "x": 285.0,
+     "y": 103.0,
+     "w": 120.0,
+     "h": 70.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 5,
+     "lines": [
+      {
+       "start": 0,
+       "len": 4,
+       "text": "样式52",
+       "x": 323.625,
+       "y": 129.6,
+       "w": 42.755,
+       "h": 16.8
+      }
+     ]
+    },
+    {
+     "id": 12,
+     "name": "Rounded Rectangle 11",
+     "type": 1,
+     "x": 420.0,
+     "y": 103.0,
+     "w": 120.0,
+     "h": 70.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 5,
+     "lines": [
+      {
+       "start": 0,
+       "len": 4,
+       "text": "样式53",
+       "x": 458.625,
+       "y": 129.6,
+       "w": 42.755,
+       "h": 16.8
+      }
+     ]
+    },
+    {
+     "id": 13,
+     "name": "Rounded Rectangle 12",
+     "type": 1,
+     "x": 555.0,
+     "y": 103.0,
+     "w": 120.0,
+     "h": 70.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 5,
+     "lines": [
+      {
+       "start": 0,
+       "len": 4,
+       "text": "样式54",
+       "x": 593.625,
+       "y": 129.6,
+       "w": 42.755,
+       "h": 16.8
+      }
+     ]
+    },
+    {
+     "id": 14,
+     "name": "Rounded Rectangle 13",
+     "type": 1,
+     "x": 690.0,
+     "y": 103.0,
+     "w": 120.0,
+     "h": 70.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 5,
+     "lines": [
+      {
+       "start": 0,
+       "len": 4,
+       "text": "样式55",
+       "x": 728.625,
+       "y": 129.6,
+       "w": 42.755,
+       "h": 16.8
+      }
+     ]
+    },
+    {
+     "id": 15,
+     "name": "Rounded Rectangle 14",
+     "type": 1,
+     "x": 825.0,
+     "y": 103.0,
+     "w": 120.0,
+     "h": 70.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 5,
+     "lines": [
+      {
+       "start": 0,
+       "len": 4,
+       "text": "样式56",
+       "x": 863.625,
+       "y": 129.6,
+       "w": 42.755,
+       "h": 16.8
+      }
+     ]
+    },
+    {
+     "id": 16,
+     "name": "Rounded Rectangle 15",
+     "type": 1,
+     "x": 15.0,
+     "y": 191.0,
+     "w": 120.0,
+     "h": 70.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 5,
+     "lines": [
+      {
+       "start": 0,
+       "len": 4,
+       "text": "样式57",
+       "x": 53.625,
+       "y": 217.6,
+       "w": 42.755,
+       "h": 16.8
+      }
+     ]
+    },
+    {
+     "id": 17,
+     "name": "Rounded Rectangle 16",
+     "type": 1,
+     "x": 150.0,
+     "y": 191.0,
+     "w": 120.0,
+     "h": 70.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 5,
+     "lines": [
+      {
+       "start": 0,
+       "len": 4,
+       "text": "样式58",
+       "x": 188.625,
+       "y": 217.6,
+       "w": 42.755,
+       "h": 16.8
+      }
+     ]
+    },
+    {
+     "id": 18,
+     "name": "Rounded Rectangle 17",
+     "type": 1,
+     "x": 285.0,
+     "y": 191.0,
+     "w": 120.0,
+     "h": 70.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 5,
+     "lines": [
+      {
+       "start": 0,
+       "len": 4,
+       "text": "样式59",
+       "x": 323.625,
+       "y": 217.6,
+       "w": 42.755,
+       "h": 16.8
+      }
+     ]
+    },
+    {
+     "id": 19,
+     "name": "Rounded Rectangle 18",
+     "type": 1,
+     "x": 420.0,
+     "y": 191.0,
+     "w": 120.0,
+     "h": 70.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 5,
+     "lines": [
+      {
+       "start": 0,
+       "len": 4,
+       "text": "样式60",
+       "x": 458.625,
+       "y": 217.6,
+       "w": 42.755,
+       "h": 16.8
+      }
+     ]
+    },
+    {
+     "id": 20,
+     "name": "Rounded Rectangle 19",
+     "type": 1,
+     "x": 555.0,
+     "y": 191.0,
+     "w": 120.0,
+     "h": 70.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 5,
+     "lines": [
+      {
+       "start": 0,
+       "len": 4,
+       "text": "样式61",
+       "x": 593.625,
+       "y": 217.6,
+       "w": 42.755,
+       "h": 16.8
+      }
+     ]
+    },
+    {
+     "id": 21,
+     "name": "Rounded Rectangle 20",
+     "type": 1,
+     "x": 690.0,
+     "y": 191.0,
+     "w": 120.0,
+     "h": 70.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 5,
+     "lines": [
+      {
+       "start": 0,
+       "len": 4,
+       "text": "样式62",
+       "x": 728.625,
+       "y": 217.6,
+       "w": 42.755,
+       "h": 16.8
+      }
+     ]
+    },
+    {
+     "id": 22,
+     "name": "Rounded Rectangle 21",
+     "type": 1,
+     "x": 825.0,
+     "y": 191.0,
+     "w": 120.0,
+     "h": 70.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 5,
+     "lines": [
+      {
+       "start": 0,
+       "len": 4,
+       "text": "样式63",
+       "x": 863.625,
+       "y": 217.6,
+       "w": 42.755,
+       "h": 16.8
+      }
+     ]
+    },
+    {
+     "id": 23,
+     "name": "Rounded Rectangle 22",
+     "type": 1,
+     "x": 15.0,
+     "y": 279.0,
+     "w": 120.0,
+     "h": 70.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 5,
+     "lines": [
+      {
+       "start": 0,
+       "len": 4,
+       "text": "样式64",
+       "x": 53.625,
+       "y": 305.6,
+       "w": 42.755,
+       "h": 16.8
+      }
+     ]
+    },
+    {
+     "id": 24,
+     "name": "Rounded Rectangle 23",
+     "type": 1,
+     "x": 150.0,
+     "y": 279.0,
+     "w": 120.0,
+     "h": 70.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 5,
+     "lines": [
+      {
+       "start": 0,
+       "len": 4,
+       "text": "样式65",
+       "x": 188.625,
+       "y": 305.6,
+       "w": 42.755,
+       "h": 16.8
+      }
+     ]
+    },
+    {
+     "id": 25,
+     "name": "Rounded Rectangle 24",
+     "type": 1,
+     "x": 285.0,
+     "y": 279.0,
+     "w": 120.0,
+     "h": 70.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 5,
+     "lines": [
+      {
+       "start": 0,
+       "len": 4,
+       "text": "样式66",
+       "x": 323.625,
+       "y": 305.6,
+       "w": 42.755,
+       "h": 16.8
+      }
+     ]
+    },
+    {
+     "id": 26,
+     "name": "Rounded Rectangle 25",
+     "type": 1,
+     "x": 420.0,
+     "y": 279.0,
+     "w": 120.0,
+     "h": 70.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 5,
+     "lines": [
+      {
+       "start": 0,
+       "len": 4,
+       "text": "样式67",
+       "x": 458.625,
+       "y": 305.6,
+       "w": 42.755,
+       "h": 16.8
+      }
+     ]
+    },
+    {
+     "id": 27,
+     "name": "Rounded Rectangle 26",
+     "type": 1,
+     "x": 555.0,
+     "y": 279.0,
+     "w": 120.0,
+     "h": 70.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 5,
+     "lines": [
+      {
+       "start": 0,
+       "len": 4,
+       "text": "样式68",
+       "x": 593.625,
+       "y": 305.6,
+       "w": 42.755,
+       "h": 16.8
+      }
+     ]
+    },
+    {
+     "id": 28,
+     "name": "Rounded Rectangle 27",
+     "type": 1,
+     "x": 690.0,
+     "y": 279.0,
+     "w": 120.0,
+     "h": 70.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 5,
+     "lines": [
+      {
+       "start": 0,
+       "len": 4,
+       "text": "样式69",
+       "x": 728.625,
+       "y": 305.6,
+       "w": 42.755,
+       "h": 16.8
+      }
+     ]
+    },
+    {
+     "id": 29,
+     "name": "Rounded Rectangle 28",
+     "type": 1,
+     "x": 825.0,
+     "y": 279.0,
+     "w": 120.0,
+     "h": 70.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 5,
+     "lines": [
+      {
+       "start": 0,
+       "len": 4,
+       "text": "样式70",
+       "x": 863.625,
+       "y": 305.6,
+       "w": 42.755,
+       "h": 16.8
+      }
+     ]
+    },
+    {
+     "id": 30,
+     "name": "Rounded Rectangle 29",
+     "type": 1,
+     "x": 15.0,
+     "y": 367.0,
+     "w": 120.0,
+     "h": 70.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 5,
+     "lines": [
+      {
+       "start": 0,
+       "len": 4,
+       "text": "样式71",
+       "x": 53.625,
+       "y": 393.6,
+       "w": 42.755,
+       "h": 16.8
+      }
+     ]
+    },
+    {
+     "id": 31,
+     "name": "Rounded Rectangle 30",
+     "type": 1,
+     "x": 150.0,
+     "y": 367.0,
+     "w": 120.0,
+     "h": 70.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 5,
+     "lines": [
+      {
+       "start": 0,
+       "len": 4,
+       "text": "样式72",
+       "x": 188.625,
+       "y": 393.6,
+       "w": 42.755,
+       "h": 16.8
+      }
+     ]
+    },
+    {
+     "id": 32,
+     "name": "Rounded Rectangle 31",
+     "type": 1,
+     "x": 285.0,
+     "y": 367.0,
+     "w": 120.0,
+     "h": 70.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 5,
+     "lines": [
+      {
+       "start": 0,
+       "len": 4,
+       "text": "样式73",
+       "x": 323.625,
+       "y": 393.6,
+       "w": 42.755,
+       "h": 16.8
+      }
+     ]
+    },
+    {
+     "id": 33,
+     "name": "Rounded Rectangle 32",
+     "type": 1,
+     "x": 420.0,
+     "y": 367.0,
+     "w": 120.0,
+     "h": 70.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 5,
+     "lines": [
+      {
+       "start": 0,
+       "len": 4,
+       "text": "样式74",
+       "x": 458.625,
+       "y": 393.6,
+       "w": 42.755,
+       "h": 16.8
+      }
+     ]
+    },
+    {
+     "id": 34,
+     "name": "Rounded Rectangle 33",
+     "type": 1,
+     "x": 555.0,
+     "y": 367.0,
+     "w": 120.0,
+     "h": 70.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 5,
+     "lines": [
+      {
+       "start": 0,
+       "len": 4,
+       "text": "样式75",
+       "x": 593.625,
+       "y": 393.6,
+       "w": 42.755,
+       "h": 16.8
+      }
+     ]
+    },
+    {
+     "id": 35,
+     "name": "Rounded Rectangle 34",
+     "type": 1,
+     "x": 690.0,
+     "y": 367.0,
+     "w": 120.0,
+     "h": 70.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 5,
+     "lines": [
+      {
+       "start": 0,
+       "len": 4,
+       "text": "样式76",
+       "x": 728.625,
+       "y": 393.6,
+       "w": 42.755,
+       "h": 16.8
+      }
+     ]
+    },
+    {
+     "id": 36,
+     "name": "Rounded Rectangle 35",
+     "type": 1,
+     "x": 825.0,
+     "y": 367.0,
+     "w": 120.0,
+     "h": 70.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 5,
+     "lines": [
+      {
+       "start": 0,
+       "len": 4,
+       "text": "样式77",
+       "x": 863.625,
+       "y": 393.6,
+       "w": 42.755,
+       "h": 16.8
+      }
+     ]
+    }
+   ],
+   "effects": [],
+   "triggerHidden": [],
+   "steps": 0
+  }
+ ],
+ "ok": true
+}
