@@ -91,6 +91,7 @@
   |---|---|---|
   | `next` / `prev` | 无 | 新状态 |
   | `goto` | `{ slide, step }`（从 0 开始） | 新状态 |
+  | `sync` | `{ slide, step }`：观看端跟上演绎端（正好下一步时播动画，否则直接跳） | 新状态 |
   | `getState` | 无 | `{ slide, step, slideCount, stepCount }` |
 
   | 事件 | 数据 |
