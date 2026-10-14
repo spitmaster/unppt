@@ -125,7 +125,10 @@ export async function renderTable(tbl: XEl | undefined, origin: { x: number; y: 
 
   // 第一遍：排文字，算行高
   interface Cell { ri: number; ci: number; span: number; rowSpan: number; tc: XEl; style: CellStyle; text?: string; textH: number; }
-  const env: TextEnv = { colors, theme: ctx.theme, fonts: r.env.fonts, missingFonts: r.env.missingFonts, embed: r.env.embed, doc: r.doc, images: r.images, part: ctx.part };
+  // 单元格文字的基线也对齐整像素：以表格左上角为原点（坐标系没缩放、没转动时）
+  const m = ctx.toSlide === undefined ? { x: 0, y: 0, sx: 1, sy: 1 } : ctx.toSlide;
+  const pixelTop = m && m.sy === 1 ? m.y + origin.y : undefined;
+  const env: TextEnv = { colors, theme: ctx.theme, fonts: r.env.fonts, missingFonts: r.env.missingFonts, embed: r.env.embed, doc: r.doc, images: r.images, part: ctx.part, pixelTop };
   /** 排一个单元格的文字：表格样式的加粗和文字颜色作为最底层的默认值，单元格边距来自 tcPr */
   const cellText = (c: Cell, box: { x: number; y: number; w: number; h: number }, out?: { height: number }) => {
     const tcPr = child(c.tc, 'a:tcPr');
