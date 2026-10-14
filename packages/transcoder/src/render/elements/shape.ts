@@ -2,6 +2,7 @@
 import type { SlideContext } from '../../model/model';
 import { bgStyle, fillAttrs, findFillEl, parseFill, styleRef, type Fill } from '../../style/fill';
 import { compoundMask, parseLine, strokeAttrs } from '../../style/line';
+import { arrowheads } from '../../style/arrowheads';
 import { faceLighting, has3d, litFill } from '../../style/lighting';
 import { cameraLightFilter, cameraTransform, extrusionOffset, extrusionScreenOffset, extrusionSides, hasCamera } from '../../style/camera';
 import { EMU_PER_PX } from '../../model/model';
@@ -10,7 +11,7 @@ import { bevelLayer } from '../../effects/bevel';
 import { effectFilter } from '../../effects/effect-filter';
 import { reflection } from '../../effects/reflection';
 import { buildGeometry, parseGeomXml, presetGeometry } from '../../geometry/geometry';
-import { colorIn } from '../../model/color';
+import { colorIn, css } from '../../model/color';
 import { renderText, type TextEnv } from '../../text/text';
 import { attr, child, children, numAttr, path, type XEl } from '../../io/xml';
 import { flipTransform, nvProps, pc, placeBox, readXfrm, withUid } from '../box';
@@ -87,6 +88,12 @@ export async function renderShape(r: RenderContext, el: XEl, ctx: SlideContext, 
     const sa = p.stroke ? strokeAttrs(line, r.doc, p.fill, gb) : ' stroke="none"';
     if (fa === ' fill="none"' && sa === ' stroke="none"') continue;
     const evenodd = p.d.split('M').length > 2 ? ' fill-rule="evenodd"' : '';
+    // 线条两端的箭头：直接画成图形，线在箭头处截短（arrowheads.ts）
+    const ar = p.stroke && line?.color && !sp ? arrowheads(p.d, line, css(line.color)) : undefined;
+    if (ar) {
+      geomParts.push(`<path d="${ar.d}"${fa}${sa}/>${ar.heads}`);
+      continue;
+    }
     if (sp && projected) {
       geomParts.push(projectedPath(projected[i].d, box, fa, sa, evenodd, sp.fillAffine, r.doc));
       continue;

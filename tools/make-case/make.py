@@ -2324,7 +2324,41 @@ def text_numbering(app):
     return p
 
 
-CASES = [shapes_all, text_sizes, text_align, text_spacing, text_bullets, text_missing_font, shapes_basic, fills_lines, table_basic, group_rotate, anim_basic, anim_auto, charts_basic, pictures, smartart, text_effects, text_layout, table_merge, links, emf_images, anim_advanced, charts_labels, freeform_icons, media_audio, anim_trigger, wmf_images, anim_iterate, picture_transparent, charts_more, shape_effects, equations, anim_path, anim_emphasis, transitions, fills_patterns, text_decoration, anim_entrance, svg_images, charts_markers, hidden_slides, media_background, text_glow_reflection, text_tabs, text_picture_bullets, fills_texture, transition_morph, text_embedded_fonts, text_warp, anim_repeat, charts_sizes, slide_timings, lines_compound, table_diagonal, lines_gradient, fills_radial, fills_rect_gradient, shapes_3d, table_vertical, transitions_more, anim_sound, anim_build, anim_after, anim_text_emphasis, charts_bubble, media_video, charts_options, charts_negative, shapes_bevel, charts_legend, shapes_3d_rotation, smartart_3d, charts_ofpie, charts_3d, anim_group_emphasis, activex_controls, charts_extras, charts_axis_titles, charts_fills, charts_outlines, charts_labels_more, group_scale, group_flip, charts_3d_line, charts_legend_pos, charts_crowded_labels, charts_label_skip, charts_bar_long_names, charts_multilevel, picture_recolor, text_symbols, text_numbering]
+def lines_arrows(app):
+    """线条箭头：5 种箭头（三角、开放、燕尾、菱形、圆）× 3 种线宽（1、3、6 磅），两端都有；
+    第 2 页三角箭头 3 × 3 种宽度、长度组合（3 磅线），再加斜线、折线连接符"""
+    p = new_pres(app)
+    s = blank(p)
+    for i, style in enumerate((2, 3, 4, 5, 6)):
+        for j, w in enumerate((1, 3, 6)):
+            ln = s.Shapes.AddLine(40 + j * 300, 50 + i * 95, 280 + j * 300, 50 + i * 95)
+            ln.Line.Weight = w
+            ln.Line.ForeColor.RGB = RGB(40, 60, 120)
+            ln.Line.BeginArrowheadStyle = style
+            ln.Line.EndArrowheadStyle = style
+    s = blank(p)
+    for i, length in enumerate((1, 2, 3)):
+        for j, width in enumerate((1, 2, 3)):
+            ln = s.Shapes.AddLine(40 + j * 300, 50 + i * 95, 280 + j * 300, 50 + i * 95)
+            ln.Line.Weight = 3
+            ln.Line.ForeColor.RGB = RGB(40, 60, 120)
+            ln.Line.EndArrowheadStyle = 2
+            ln.Line.EndArrowheadLength = length
+            ln.Line.EndArrowheadWidth = width
+            ln.Line.BeginArrowheadStyle = 2
+            ln.Line.BeginArrowheadLength = length
+            ln.Line.BeginArrowheadWidth = width
+    ln = s.Shapes.AddLine(60, 340, 400, 500)
+    ln.Line.Weight = 2
+    ln.Line.EndArrowheadStyle = 2
+    ln.Line.BeginArrowheadStyle = 6
+    c = s.Shapes.AddConnector(2, 480, 340, 880, 500)
+    c.Line.Weight = 2
+    c.Line.EndArrowheadStyle = 4
+    return p
+
+
+CASES = [shapes_all, text_sizes, text_align, text_spacing, text_bullets, text_missing_font, shapes_basic, fills_lines, table_basic, group_rotate, anim_basic, anim_auto, charts_basic, pictures, smartart, text_effects, text_layout, table_merge, links, emf_images, anim_advanced, charts_labels, freeform_icons, media_audio, anim_trigger, wmf_images, anim_iterate, picture_transparent, charts_more, shape_effects, equations, anim_path, anim_emphasis, transitions, fills_patterns, text_decoration, anim_entrance, svg_images, charts_markers, hidden_slides, media_background, text_glow_reflection, text_tabs, text_picture_bullets, fills_texture, transition_morph, text_embedded_fonts, text_warp, anim_repeat, charts_sizes, slide_timings, lines_compound, table_diagonal, lines_gradient, fills_radial, fills_rect_gradient, shapes_3d, table_vertical, transitions_more, anim_sound, anim_build, anim_after, anim_text_emphasis, charts_bubble, media_video, charts_options, charts_negative, shapes_bevel, charts_legend, shapes_3d_rotation, smartart_3d, charts_ofpie, charts_3d, anim_group_emphasis, activex_controls, charts_extras, charts_axis_titles, charts_fills, charts_outlines, charts_labels_more, group_scale, group_flip, charts_3d_line, charts_legend_pos, charts_crowded_labels, charts_label_skip, charts_bar_long_names, charts_multilevel, picture_recolor, text_symbols, text_numbering, lines_arrows]
 
 
 def main():
