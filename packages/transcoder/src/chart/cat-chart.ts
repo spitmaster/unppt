@@ -170,7 +170,9 @@ export function renderCategoryChart(plots: Plot[], plotArea: XEl | undefined, ar
   };
   // 自动刻度的疏密取决于轴长（axis.ts）：先按默认刻度排一遍得到轴长，再按轴长选刻度重排
   const first = place();
-  const placed = place(horizontal ? first.right - first.left : first.bottom - first.top);
+  // 横向数值轴（条形图）的刻度疏密按"绘图区宽 + 左右分类标签列宽的一半"算（COM 探针：长分类名的条形图刻度比按绘图区宽算的密）
+  const sideCol = horizontal && catLabels && !first.sides.catMid ? Math.max(0, ...sideLines.flat().map((t) => tw(t, catStyle.size))) + sideGap(catStyle.size) : 0;
+  const placed = place(horizontal ? first.right - first.left + sideCol / 2 : first.bottom - first.top);
   const { prim, sec, sides, unit, edgeLeft, edgeRight, valLabels, valStyle, tickLabels, between, catFit } = placed;
   const { left, top, right, bottom } = placed;
   // 网格线、坐标轴线、柱子按像素中心的规则对齐整像素（pixel-grid.ts）

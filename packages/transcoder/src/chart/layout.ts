@@ -68,7 +68,7 @@ export const RADAR_DY = 2 * PT;
  * 数值轴上最多放几个刻度标签：len 是轴长、s 是标签字号（同一单位）。竖轴 0.65·len/s + 2.9、横轴 0.26·len/s + 1.9
  * （COM 读 480 组"数据 × 图表大小 × 字号"的自动刻度拟合：竖轴 240/240、横轴 234/240 吻合）
  */
-export const maxTickLabels = (len: number, s: number, horizontal: boolean) => (horizontal ? 0.26 * len / s + 1.9 : 0.65 * len / s + 2.9);
+export const maxTickLabels = (len: number, s: number, horizontal: boolean) => (horizontal ? 0.258 * len / s + 0.97 : 0.65 * len / s + 2.9);
 
 /** 数值轴在上面（条形图分类轴逆序）时占的高度（实测 12 磅一个字号，COM 读绘图区上沿校准） */
 export const valBandTop = (s: number) => 1.19 * s + 0.25;
