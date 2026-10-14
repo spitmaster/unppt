@@ -43,9 +43,10 @@ function entriesOf(plots: Plot[], colors: ColorContext): LegendEntry[] {
   return entries;
 }
 
-/** 画图例（加到 out），返回去掉图例后的区域 */
-export function renderLegend(legend: XEl | undefined, plots: Plot[], area: Rect, w: number, colors: ColorContext, baseText: TextStyle, tw: TextWidth, out: string[]): Rect {
+/** 画图例（加到 out），返回去掉图例后的区域；drawTop 是摆图例用的上沿（标题下面，不给时用 area.top） */
+export function renderLegend(legend: XEl | undefined, plots: Plot[], area: Rect, w: number, colors: ColorContext, baseText: TextStyle, tw: TextWidth, out: string[], drawTop?: number, hasAxes = true): Rect {
   let { left, top, right, bottom } = area;
+  const shift = (drawTop ?? top) - top;
   if (!legend) return area;
   const legendPos = attr(child(legend, 'c:legendPos'), 'val') ?? 'r';
   const legendText = textStyle(child(legend, 'c:txPr'), colors, baseText);
@@ -63,7 +64,7 @@ export function renderLegend(legend: XEl | undefined, plots: Plot[], area: Rect,
     const total = lead + parts.reduce((a, b) => a + b, 0) + gap * Math.max(0, entries.length - 1);
     let x = (w - total) / 2 + lead;
     // 上方图例：中心在 9 磅 + 0.515 倍字号处，下沿（12 磅 + 1.03 倍字号）再往下 11 磅才是绘图区（COM 读 3 种字号，导出图核对）
-    const y = legendPos === 'b' ? bottom - legendCenter(sz) : top - PAD + legendTopCenter(sz);
+    const y = legendPos === 'b' ? bottom - legendCenter(sz) : top + shift - PAD + legendTopCenter(sz);
     entries.forEach((e, i) => {
       if (!e.none) out.push(anyLine ? legendKey(e, x, y, legendSquare(sz), keyW(e)) : legendKey(e, x, y, e.line ? ks : legendSquare(sz)));
       out.push(label(e.name, x + keyW(e) + kGap, y, legendText, 'start'));
@@ -81,14 +82,14 @@ export function renderLegend(legend: XEl | undefined, plots: Plot[], area: Rect,
     const lw = keyW + kGap + Math.max(0, ...entries.map((e) => tw(e.name, sz)));
     const row = legendRow(sz);
     const x = legendPos === 'l' ? left : right - lw;
-    let y = (top + bottom) / 2 - (entries.length * row) / 2 + row / 2;
+    let y = (top + shift + bottom) / 2 - (entries.length * row) / 2 + row / 2;
     for (const e of entries) {
       if (!e.none) out.push(anyLine ? legendKey(e, x, y, legendSquare(sz), keyW) : legendKey(e, x, y, legendSquare(sz)));
       out.push(label(e.name, x + keyW + kGap, y, legendText, 'start'));
       y += row;
     }
-    // 左侧图例和数值标签之间是图表留白（PAD，COM 读 12 磅时少 0.7 像素）；右侧图例和绘图区之间 legendPlotGap
-    if (legendPos === 'l') left += lw + PAD - 0.7;
+    // 左侧图例和数值标签之间是图表留白（PAD，COM 读 12 磅时少 0.7 像素）；右侧图例、没有坐标轴的图（饼图）左侧图例和绘图区之间 legendPlotGap
+    if (legendPos === 'l') left += lw + (hasAxes ? PAD - 0.7 : legendPlotGap(sz, anyLine));
     else right -= lw + legendPlotGap(sz, anyLine);
   }
   return { left, top, right, bottom };
