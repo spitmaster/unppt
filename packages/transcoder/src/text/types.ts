@@ -69,8 +69,6 @@ export interface RunStyle {
   caps: 'none' | 'all' | 'small';
   /** 西文字体标记的是东亚字符集（如 GB2312）：缺字体时西文也用东亚字体替代 */
   latinEaCharset: boolean;
-  /** 字体的 PANOSE 字重 ≥ 7（粗体）：缺字体时用替代字体的粗体 */
-  panoseBold: boolean;
   outline?: { color: Rgba; width: number };
   /** 文字效果（a:effectLst）：阴影、发光、内阴影、映像…… */
   effects?: XEl;

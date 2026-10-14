@@ -70,17 +70,21 @@ export function placeLines(
       const free = line.avail - line.width;
       if (pl.algn === 'ctr') x += free / 2;
       else if (pl.algn === 'r') x += free;
+      // 两端对齐：多出的宽度分到空格和中文字后面；分散对齐：平均分到每两个字之间（西文单词里的字母之间、空格也算，实测）
       let extra = 0;
+      let lastInk = line.atoms.length - 1;
+      while (lastInk > 0 && line.atoms[lastInk].space) lastInk--;
+      const stretch = (a: Atom, k: number) => (pl.algn === 'dist' ? k < lastInk : k < line.atoms.length - 1 && (a.space || a.wide));
       if (((pl.algn === 'just' && li < pl.lines.length - 1) || pl.algn === 'dist') && wrap && free > 0) {
-        const gaps = line.atoms.filter((a, k) => k < line.atoms.length - 1 && (a.space || a.wide)).length;
+        const gaps = line.atoms.filter(stretch).length;
         extra = gaps ? free / gaps : 0;
       }
       const xs: number[] = [];
       let cx = x;
-      for (const a of line.atoms) {
+      line.atoms.forEach((a, k) => {
         xs.push(cx);
-        cx += a.width + (extra && (a.space || a.wide) ? extra : 0);
-      }
+        cx += a.width + (extra && stretch(a, k) ? extra : 0);
+      });
       placed.push({ pi, li, line, baseline, top: linesLeftToRight ? outer.h - y - lh : y, lh, x, xs, extra, colX });
       y += lh;
     });
@@ -125,7 +129,7 @@ export function emitParagraphs(
         const a = atoms[k];
         const p = atoms[k - 1];
         const upright = (q: Atom) => (uprightAll || (uprightWide && q.wide)) && !q.space;
-        const boundary = k === atoms.length || a.style !== p.style || a.family !== p.family || a.face !== p.face || (extra > 0 && (p.space || p.wide)) || upright(a) || upright(p);
+        const boundary = k === atoms.length || a.style !== p.style || a.family !== p.family || a.face !== p.face || (extra > 0 && (pl.algn === 'dist' || p.space || p.wide)) || upright(a) || upright(p);
         if (!boundary) continue;
         const seg = atoms.slice(s0, k);
         const s = seg[0].style;

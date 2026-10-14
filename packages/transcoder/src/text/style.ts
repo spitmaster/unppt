@@ -45,12 +45,6 @@ export function resolveTypeface(tf: string | undefined, theme: Theme): string | 
   return tf;
 }
 
-/** PANOSE 分类码的第 3 个字节是字重（2~11，8 是粗体） */
-function panoseWeight(p: string | undefined): number {
-  if (!p || p.length < 6) return 0;
-  return parseInt(p.slice(4, 6), 16) || 0;
-}
-
 function textOutline(ln: XEl | undefined, env: TextEnv): RunStyle['outline'] {
   if (!ln || child(ln, 'a:noFill')) return undefined;
   const c0 = colorIn(child(ln, 'a:solidFill'), env.colors);
@@ -95,7 +89,6 @@ export function runStyle(r: XEl, env: TextEnv, scale: number): RunStyle {
     kern: numAttr(r, 'kern') !== undefined ? numAttr(r, 'kern')! / 100 : undefined,
     caps: (attr(r, 'cap') as RunStyle['caps']) ?? 'none',
     latinEaCharset: EA_CHARSETS.has(attr(child(r, 'a:latin'), 'charset') ?? ''),
-    panoseBold: panoseWeight(attr(child(r, 'a:ea'), 'panose') ?? attr(child(r, 'a:latin'), 'panose')) >= 7,
     outline: textOutline(child(r, 'a:ln'), env),
     effects: child(r, 'a:effectLst')?.children.length ? child(r, 'a:effectLst') : undefined,
     grad: fill?.name === 'a:gradFill' ? fill : undefined,
