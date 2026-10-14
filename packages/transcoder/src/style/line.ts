@@ -94,26 +94,6 @@ export function compoundMask(line: Line, d: string, doc: SvgDoc, box: { w: numbe
   return ` mask="url(#${id})"`;
 }
 
-function markerSize(sz: string) {
-  return sz === 'sm' ? 2 : sz === 'lg' ? 5 : 3;
-}
-
-function marker(doc: SvgDoc, end: { type: string; w: string; len: string }, color: string, isStart: boolean): string | undefined {
-  if (end.type === 'none') return undefined;
-  const id = doc.id('m');
-  const mw = markerSize(end.w), ml = markerSize(end.len);
-  let shape: string;
-  switch (end.type) {
-    case 'oval': shape = `<ellipse cx="${ml / 2}" cy="${mw / 2}" rx="${ml / 2}" ry="${mw / 2}"/>`; break;
-    case 'diamond': shape = `<path d="M0 ${mw / 2}L${ml / 2} 0L${ml} ${mw / 2}L${ml / 2} ${mw}Z"/>`; break;
-    case 'arrow': shape = `<path d="M0 0L${ml} ${mw / 2}L0 ${mw}" fill="none" stroke="${color}" stroke-width="0.6"/>`; break;
-    case 'stealth': shape = `<path d="M0 0L${ml} ${mw / 2}L0 ${mw}L${ml * 0.3} ${mw / 2}Z"/>`; break;
-    default: shape = `<path d="M0 0L${ml} ${mw / 2}L0 ${mw}Z"/>`;
-  }
-  doc.addDef(`<marker id="${id}" viewBox="0 0 ${ml} ${mw}" refX="${ml * 0.8}" refY="${mw / 2}" markerWidth="${ml}" markerHeight="${mw}" orient="${isStart ? 'auto-start-reverse' : 'auto'}" fill="${color}">${shape}</marker>`);
-  return id;
-}
-
 /** 描边属性；box 是形状尺寸，给了才能画渐变线（不给时用渐变的第一个颜色） */
 export function strokeAttrs(line: Line | undefined, doc: SvgDoc, mode: string, box?: { w: number; h: number }): string {
   if (!line) return ' stroke="none"';
@@ -124,7 +104,5 @@ export function strokeAttrs(line: Line | undefined, doc: SvgDoc, mode: string, b
   if (line.dash) s += ` stroke-dasharray="${line.dash}"`;
   if (line.cap !== 'butt') s += ` stroke-linecap="${line.cap}"`;
   if (line.join !== 'miter') s += ` stroke-linejoin="${line.join}"`;
-  if (line.head) { const id = marker(doc, line.head, css(c), true); if (id) s += ` marker-start="url(#${id})"`; }
-  if (line.tail) { const id = marker(doc, line.tail, css(c), false); if (id) s += ` marker-end="url(#${id})"`; }
   return s;
 }
