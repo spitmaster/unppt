@@ -76,11 +76,14 @@ export async function makeAtoms(text: string, style: RunStyle, m: Measurer): Pro
     const prevAtom = out[out.length - 1];
     if (kerning && prevAtom && adv !== undefined && usedM && usedM === prevM) prevAtom.width += usedM.metrics.kern(prevAtom.cp, cp) * size;
     prevM = adv !== undefined ? usedM : undefined;
+    // 行高按这段文字的西文、东亚两种字体中较大的上伸、下伸算：即使这一行没有西文字符，西文字体也参与（实测）
+    const asc = Math.max(used?.ascent ?? 0.92, latinM?.metrics.ascent ?? 0, eaM?.metrics.ascent ?? 0);
+    const desc = Math.max(used?.descent ?? 0.24, latinM?.metrics.descent ?? 0, eaM?.metrics.descent ?? 0);
     out.push({
       text: ch, cp, width, style: st, family, face: adv !== undefined ? usedM?.face : undefined,
       // 实测：上下标按缩小后的字号算上伸、下伸和行高
-      ascent: (used?.ascent ?? 0.92) * size,
-      descent: (used?.descent ?? 0.24) * size,
+      ascent: asc * size,
+      descent: desc * size,
       strikeY: (used?.strikeTop !== undefined && used.strikeSize !== undefined ? used.strikeTop - used.strikeSize / 2 : 0.25) * size,
       space: ch === ' ' || ch === '　', wide, tab: ch === '\t',
     });
