@@ -2242,7 +2242,44 @@ def charts_multilevel(app):
     return p
 
 
-CASES = [shapes_all, text_sizes, text_align, text_spacing, text_bullets, text_missing_font, shapes_basic, fills_lines, table_basic, group_rotate, anim_basic, anim_auto, charts_basic, pictures, smartart, text_effects, text_layout, table_merge, links, emf_images, anim_advanced, charts_labels, freeform_icons, media_audio, anim_trigger, wmf_images, anim_iterate, picture_transparent, charts_more, shape_effects, equations, anim_path, anim_emphasis, transitions, fills_patterns, text_decoration, anim_entrance, svg_images, charts_markers, hidden_slides, media_background, text_glow_reflection, text_tabs, text_picture_bullets, fills_texture, transition_morph, text_embedded_fonts, text_warp, anim_repeat, charts_sizes, slide_timings, lines_compound, table_diagonal, lines_gradient, fills_radial, fills_rect_gradient, shapes_3d, table_vertical, transitions_more, anim_sound, anim_build, anim_after, anim_text_emphasis, charts_bubble, media_video, charts_options, charts_negative, shapes_bevel, charts_legend, shapes_3d_rotation, smartart_3d, charts_ofpie, charts_3d, anim_group_emphasis, activex_controls, charts_extras, charts_axis_titles, charts_fills, charts_outlines, charts_labels_more, group_scale, group_flip, charts_3d_line, charts_legend_pos, charts_crowded_labels, charts_label_skip, charts_bar_long_names, charts_multilevel]
+def _color_image():
+    """中性的彩色测试图：横向色相渐变、纵向从亮到暗，左上角一块灰阶条"""
+    from PIL import Image
+    import colorsys
+    out = (CACHE / "make-case" / "color-grid.png").resolve()
+    out.parent.mkdir(parents=True, exist_ok=True)
+    w, h = 480, 270
+    im = Image.new("RGB", (w, h))
+    px = im.load()
+    for x in range(w):
+        for y in range(h):
+            r, g, b = colorsys.hls_to_rgb(x / w, 0.9 - 0.8 * y / h, 0.85)
+            px[x, y] = (round(r * 255), round(g * 255), round(b * 255))
+    for k in range(8):
+        for x in range(10 + k * 20, 30 + k * 20):
+            for y in range(10, 40):
+                px[x, y] = (k * 36,) * 3
+    im.save(out)
+    return str(out)
+
+
+def picture_recolor(app):
+    """图片重新着色和亮度对比度：灰度、黑白、冲蚀、亮度 +20%、对比度 −40%、亮度 −20% 对比度 +40%"""
+    p = new_pres(app)
+    img = _color_image()
+    s = blank(p)
+    pics = [s.Shapes.AddPicture(img, 0, -1, 20 + (k % 3) * 315, 40 + (k // 3) * 240, 300, 169) for k in range(6)]
+    pics[0].PictureFormat.ColorType = 2
+    pics[1].PictureFormat.ColorType = 3
+    pics[2].PictureFormat.ColorType = 4
+    pics[3].PictureFormat.Brightness = 0.7
+    pics[4].PictureFormat.Contrast = 0.3
+    pics[5].PictureFormat.Brightness = 0.3
+    pics[5].PictureFormat.Contrast = 0.7
+    return p
+
+
+CASES = [shapes_all, text_sizes, text_align, text_spacing, text_bullets, text_missing_font, shapes_basic, fills_lines, table_basic, group_rotate, anim_basic, anim_auto, charts_basic, pictures, smartart, text_effects, text_layout, table_merge, links, emf_images, anim_advanced, charts_labels, freeform_icons, media_audio, anim_trigger, wmf_images, anim_iterate, picture_transparent, charts_more, shape_effects, equations, anim_path, anim_emphasis, transitions, fills_patterns, text_decoration, anim_entrance, svg_images, charts_markers, hidden_slides, media_background, text_glow_reflection, text_tabs, text_picture_bullets, fills_texture, transition_morph, text_embedded_fonts, text_warp, anim_repeat, charts_sizes, slide_timings, lines_compound, table_diagonal, lines_gradient, fills_radial, fills_rect_gradient, shapes_3d, table_vertical, transitions_more, anim_sound, anim_build, anim_after, anim_text_emphasis, charts_bubble, media_video, charts_options, charts_negative, shapes_bevel, charts_legend, shapes_3d_rotation, smartart_3d, charts_ofpie, charts_3d, anim_group_emphasis, activex_controls, charts_extras, charts_axis_titles, charts_fills, charts_outlines, charts_labels_more, group_scale, group_flip, charts_3d_line, charts_legend_pos, charts_crowded_labels, charts_label_skip, charts_bar_long_names, charts_multilevel, picture_recolor]
 
 
 def main():
