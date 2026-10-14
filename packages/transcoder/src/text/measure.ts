@@ -53,6 +53,7 @@ export async function makeAtoms(text: string, style: RunStyle, m: Measurer): Pro
   };
   const [latinM, latinFam] = await pick(style.latin, style.latinEaCharset ? EA_SUBS : LATIN_SUBS);
   const [eaM, eaFam] = style.ea === style.latin ? [latinM, latinFam] : await pick(style.ea, EA_SUBS);
+  const [symM, symFam] = style.sym ? await pick(style.sym, []) : [undefined, ''];
   let src = text;
   if (style.caps === 'all') src = src.toUpperCase();
   const kerning = kernOn(style);
@@ -65,11 +66,12 @@ export async function makeAtoms(text: string, style: RunStyle, m: Measurer): Pro
     const st = lower ? smallCaps! : style;
     const cp = ch.codePointAt(0)!;
     const wide = isWide(cp);
-    const primary = wide ? eaM : latinM;
+    const isSym = !!symM && cp >= 0xf000 && cp <= 0xf0ff;
+    const primary = isSym ? symM : wide ? eaM : latinM;
     const secondary = wide ? latinM : eaM;
     let adv = primary?.metrics.advance(cp);
     let usedM = primary;
-    let family = wide ? eaFam : latinFam;
+    let family = isSym ? symFam : wide ? eaFam : latinFam;
     if (adv === undefined && secondary) {
       adv = secondary.metrics.advance(cp);
       if (adv !== undefined) { usedM = secondary; family = wide ? latinFam : eaFam; }

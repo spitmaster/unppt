@@ -75,6 +75,7 @@ export function runStyle(r: XEl, env: TextEnv, scale: number): RunStyle {
   return {
     size: sz * scale * 96 / 72,
     latin, ea,
+    sym: resolveTypeface(attr(child(r, 'a:sym'), 'typeface'), env.theme),
     bold: attr(r, 'b') === '1' || attr(r, 'b') === 'true',
     italic: attr(r, 'i') === '1' || attr(r, 'i') === 'true',
     color,

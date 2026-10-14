@@ -51,6 +51,8 @@ export interface RunStyle {
   size: number;           // 像素
   latin: string;
   ea: string;
+  /** 符号字体（a:sym）：私用区 U+F000~F0FF 的字符用它画（"插入符号"插的 Wingdings、Symbol 等） */
+  sym?: string;
   bold: boolean;
   italic: boolean;
   color: Rgba;

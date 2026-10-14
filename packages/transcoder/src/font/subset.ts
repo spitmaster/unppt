@@ -3,6 +3,7 @@
  * 只支持 glyf 轮廓的字体（.ttf / .ttc 里的 TrueType）；CFF 轮廓（多数 .otf）返回 undefined。
  */
 import type { RandomAccessSource } from '../io/source';
+import { buildCmap } from './cmap';
 import { be16, be32, bes16, checksum, finishTables, tagOf, Writer, type SfntTables } from './sfnt';
 
 interface Tables { [tag: string]: { offset: number; length: number } }
@@ -16,43 +17,12 @@ async function readDir(src: RandomAccessSource, faceOffset: number): Promise<Tab
   return t;
 }
 
-/** 解析 cmap 得到 码点 -> 字形 的映射（只取用到的码点） */
+/** 码点 -> 字形 的映射（只取用到的码点；cmap.ts） */
 function mapCodepoints(cmap: Uint8Array, cps: number[]): Map<number, number> {
-  const num = be16(cmap, 2);
-  let best = -1, fmt = 0;
-  for (let i = 0; i < num; i++) {
-    const p = be16(cmap, 4 + i * 8), e = be16(cmap, 6 + i * 8), off = be32(cmap, 8 + i * 8);
-    const f = be16(cmap, off);
-    if (!((p === 3 && (e === 1 || e === 10)) || p === 0)) continue;
-    if (f === 12 && fmt !== 12) { best = off; fmt = 12; } else if (f === 4 && fmt === 0) { best = off; fmt = 4; }
-  }
+  const lookup = buildCmap(cmap);
   const out = new Map<number, number>();
-  if (best < 0) return out;
   for (const cp of cps) {
-    let gid = 0;
-    if (fmt === 12) {
-      const groups = be32(cmap, best + 12);
-      for (let lo = 0, hi = groups - 1; lo <= hi;) {
-        const mid = (lo + hi) >> 1, g = best + 16 + mid * 12;
-        const s = be32(cmap, g), e = be32(cmap, g + 4);
-        if (cp < s) hi = mid - 1; else if (cp > e) lo = mid + 1; else { gid = be32(cmap, g + 8) + cp - s; break; }
-      }
-    } else if (cp <= 0xffff) {
-      const segX2 = be16(cmap, best + 6);
-      const ends = best + 14, starts = ends + segX2 + 2, deltas = starts + segX2, ranges = deltas + segX2;
-      for (let lo = 0, hi = segX2 / 2 - 1; lo <= hi;) {
-        const mid = (lo + hi) >> 1;
-        const end = be16(cmap, ends + mid * 2), start = be16(cmap, starts + mid * 2);
-        if (cp > end) lo = mid + 1;
-        else if (cp < start) hi = mid - 1;
-        else {
-          const delta = be16(cmap, deltas + mid * 2), ro = be16(cmap, ranges + mid * 2);
-          if (ro === 0) gid = (cp + delta) & 0xffff;
-          else { const gi = be16(cmap, ranges + mid * 2 + ro + (cp - start) * 2); gid = gi ? (gi + delta) & 0xffff : 0; }
-          break;
-        }
-      }
-    }
+    const gid = lookup(cp);
     if (gid) out.set(cp, gid);
   }
   return out;
