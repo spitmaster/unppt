@@ -2082,7 +2082,37 @@ def group_scale(app):
     return p
 
 
-CASES = [shapes_all, text_sizes, text_align, text_spacing, text_bullets, text_missing_font, shapes_basic, fills_lines, table_basic, group_rotate, anim_basic, anim_auto, charts_basic, pictures, smartart, text_effects, text_layout, table_merge, links, emf_images, anim_advanced, charts_labels, freeform_icons, media_audio, anim_trigger, wmf_images, anim_iterate, picture_transparent, charts_more, shape_effects, equations, anim_path, anim_emphasis, transitions, fills_patterns, text_decoration, anim_entrance, svg_images, charts_markers, hidden_slides, media_background, text_glow_reflection, text_tabs, text_picture_bullets, fills_texture, transition_morph, text_embedded_fonts, text_warp, anim_repeat, charts_sizes, slide_timings, lines_compound, table_diagonal, lines_gradient, fills_radial, fills_rect_gradient, shapes_3d, table_vertical, transitions_more, anim_sound, anim_build, anim_after, anim_text_emphasis, charts_bubble, media_video, charts_options, charts_negative, shapes_bevel, charts_legend, shapes_3d_rotation, smartart_3d, charts_ofpie, charts_3d, anim_group_emphasis, activex_controls, charts_extras, charts_axis_titles, charts_fills, charts_outlines, charts_labels_more, group_scale]
+def group_flip(app):
+    """翻转的组合：翻转下放到子元素（位置镜像），水平翻转时文字不镜像，垂直翻转时文字转 180°；
+    组合里有转了角度的形状、组合套组合"""
+    p = new_pres(app)
+    s = blank(p)
+    for k, flip in enumerate((None, "h", "v", "hv")):
+        x0, y0 = 20 + 235 * k, 30
+        a = s.Shapes.AddShape(1, x0, y0, 120, 70)
+        a.Fill.ForeColor.RGB = RGB(190, 205, 230); a.Line.ForeColor.RGB = RGB(40, 60, 100); a.Line.Weight = 2
+        tr = a.TextFrame.TextRange
+        tr.Text = "左上文字 ABC"; tr.Font.Size = 14; tr.Font.Color.RGB = RGB(20, 20, 20)
+        tr.Font.Name = "Microsoft YaHei"; tr.Font.NameFarEast = "Microsoft YaHei"
+        a.TextFrame.TextRange.ParagraphFormat.Alignment = 1
+        a.TextFrame.VerticalAnchor = 1
+        b = s.Shapes.AddShape(7, x0 + 130, y0, 70, 50)
+        b.Fill.ForeColor.RGB = RGB(230, 150, 90); b.Line.Visible = False
+        c = s.Shapes.AddShape(13, x0 + 130, y0 + 60, 70, 40)     # 右箭头，转 30°
+        c.Rotation = 30
+        c.Fill.ForeColor.RGB = RGB(120, 180, 120); c.Line.Visible = False
+        d = s.Shapes.AddShape(9, x0 + 10, y0 + 80, 40, 40)
+        d.Fill.ForeColor.RGB = RGB(200, 120, 160); d.Line.Visible = False
+        e = s.Shapes.AddShape(1, x0 + 60, y0 + 90, 50, 25)
+        e.Fill.ForeColor.RGB = RGB(150, 150, 220); e.Line.Visible = False
+        inner = s.Shapes.Range([d.Name, e.Name]).Group()
+        g = s.Shapes.Range([a.Name, b.Name, c.Name, inner.Name]).Group()
+        if flip and "h" in flip: g.Flip(0)
+        if flip and "v" in flip: g.Flip(1)
+    return p
+
+
+CASES = [shapes_all, text_sizes, text_align, text_spacing, text_bullets, text_missing_font, shapes_basic, fills_lines, table_basic, group_rotate, anim_basic, anim_auto, charts_basic, pictures, smartart, text_effects, text_layout, table_merge, links, emf_images, anim_advanced, charts_labels, freeform_icons, media_audio, anim_trigger, wmf_images, anim_iterate, picture_transparent, charts_more, shape_effects, equations, anim_path, anim_emphasis, transitions, fills_patterns, text_decoration, anim_entrance, svg_images, charts_markers, hidden_slides, media_background, text_glow_reflection, text_tabs, text_picture_bullets, fills_texture, transition_morph, text_embedded_fonts, text_warp, anim_repeat, charts_sizes, slide_timings, lines_compound, table_diagonal, lines_gradient, fills_radial, fills_rect_gradient, shapes_3d, table_vertical, transitions_more, anim_sound, anim_build, anim_after, anim_text_emphasis, charts_bubble, media_video, charts_options, charts_negative, shapes_bevel, charts_legend, shapes_3d_rotation, smartart_3d, charts_ofpie, charts_3d, anim_group_emphasis, activex_controls, charts_extras, charts_axis_titles, charts_fills, charts_outlines, charts_labels_more, group_scale, group_flip]
 
 
 def main():
