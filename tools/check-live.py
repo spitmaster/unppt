@@ -76,6 +76,42 @@ def main():
         t.wait_for_function(READY)
         check(t.evaluate(STATE) != s0, "演绎模式按键翻页")
         t.close()
+
+        # ---------------- 同步：老师端一路按键，外部程序把老师的状态用 sync 发给学生（单文件和按需加载两种学生端）
+        for case in ("anim-entrance", "transitions"):
+            lesson = convert(case, f"{case}-s")
+            lesson_paged = convert(case, f"{case}-p", "paged")
+            t = open_page(b, lesson + "?mode=present&timings=0")
+            students = [open_page(b, lesson + "?mode=watch"), open_page(b, lesson_paged + "?mode=watch")]
+            n = t.evaluate("async () => (await window.unppt.getState()).slideCount")
+            same, animated, total = True, 0, 0
+            for _ in range(min(40, n * 6)):
+                t.keyboard.press("ArrowRight")
+                ts = t.evaluate(STATE)
+                for st in students:
+                    st.evaluate("([s, k]) => window.unppt.sync({slide: s, step: k})", ts)
+                    # 正好下一步时学生端也在播动画或切换（不是直接跳到结果）
+                    animated += st.evaluate("document.getAnimations().length > 0 || document.querySelectorAll('.unppt-slide').length > 1 || !!document.querySelector('.unppt-loading')")
+                    total += 1
+                t.wait_for_timeout(50)
+                for st in students:
+                    st.wait_for_function(READY, timeout=20000)
+                    same &= st.evaluate(STATE) == ts
+            check(same, f"{case}：学生端（单文件、按需加载）每一步都和老师一致")
+            check(animated > total * 0.6, f"{case}：大多数步骤学生端是播动画跟上的：{animated}/{total}")
+        # 重复收到同一个状态什么都不做；中途进入直接对齐；跳着走（丢消息）也能对齐
+        ts = t.evaluate(STATE)
+        students[0].wait_for_function("document.getAnimations().length === 0", timeout=20000)
+        r = students[0].evaluate("async ([s, k]) => { await window.unppt.sync({slide: s, step: k}); return document.getAnimations().length }", ts)
+        check(r == 0, f"重复的同步消息不重播动画：{r}")
+        late = open_page(b, lesson + "?mode=watch")
+        late.evaluate("([s, k]) => window.unppt.sync({slide: s, step: k})", ts)
+        late.wait_for_function(READY)
+        check(late.evaluate(STATE) == ts, f"中途进入的学生直接对齐：{late.evaluate(STATE)} {ts}")
+        late.evaluate("window.unppt.sync({slide: 0, step: 0})")
+        late.evaluate("([s, k]) => window.unppt.sync({slide: s, step: k})", ts)
+        late.wait_for_function(READY)
+        check(late.evaluate(STATE) == ts, "丢了中间的消息也能对齐")
         b.close()
     print("\n全部通过" if not failed else f"\n{failed} 项失败")
     sys.exit(1 if failed else 0)

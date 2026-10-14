@@ -149,6 +149,20 @@ export class Player {
     return this.getState();
   }
 
+  /**
+   * 同步（观看端跟上演绎端）：目标正好是下一步、或者当前页已经播完而目标是下一页的开头时，照常播动画和切换；
+   * 和现在一样时什么都不做；其它情况直接跳到目标的最终状态（中途进入、掉线重连、丢了消息）
+   */
+  sync(slide: number, step = 0): PlayerState {
+    const s = this.clampSlide(slide);
+    const steps = this.steps().length;
+    if (s === this.slideIdx && step === this.stepIdx) return this.getState();
+    const nextSlide = this.visibleFrom(this.slideIdx + 1, 1) ?? (this.deck.show?.loop ? this.visibleFrom(0, 1) : undefined);
+    const oneStep = s === this.slideIdx && step === this.stepIdx + 1 && step <= steps;
+    const nextPage = s === nextSlide && step === 0 && this.stepIdx >= steps;
+    return oneStep || nextPage ? this.next() : this.goto(s, step);
+  }
+
   /** 确定性跳转：直接到目标页、目标步骤的最终状态 */
   goto(slide: number, step = 0): PlayerState {
     this.engine.finishRunning();

@@ -10,6 +10,8 @@ export interface UnpptApi {
   next(): Promise<PlayerState>;
   prev(): Promise<PlayerState>;
   goto(target: { slide?: number; step?: number } | number, step?: number): Promise<PlayerState>;
+  /** 观看端跟上演绎端的状态（直播课同步） */
+  sync(target: { slide?: number; step?: number } | number, step?: number): Promise<PlayerState>;
   getState(): Promise<PlayerState>;
   on(event: string, fn: Listener): () => void;
   off(event: string, fn: Listener): void;
@@ -30,6 +32,7 @@ function runCommand(player: Player, cmd: BridgeCommand): PlayerState {
     case 'next': return player.next();
     case 'prev': return player.prev();
     case 'goto': return player.goto(args.slide ?? 0, args.step ?? 0);
+    case 'sync': return player.sync(args.slide ?? 0, args.step ?? 0);
     case 'getState': return player.getState();
     default: throw new Error(`未知指令：${String((cmd as { cmd: unknown }).cmd)}`);
   }
@@ -81,6 +84,7 @@ export function installBridge(win: Window, player: Player, allowedOrigins: strin
     next: async () => player.next(),
     prev: async () => player.prev(),
     goto: async (target, step) => (typeof target === 'number' ? player.goto(target, step ?? 0) : player.goto(target.slide ?? 0, target.step ?? 0)),
+    sync: async (target, step) => (typeof target === 'number' ? player.sync(target, step ?? 0) : player.sync(target.slide ?? 0, target.step ?? 0)),
     getState: async () => player.getState(),
     on: (ev, fn) => player.on(ev, fn),
     off: (ev, fn) => player.off(ev, fn),

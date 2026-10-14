@@ -239,7 +239,8 @@ export interface PlayerState {
 export interface BridgeCommand {
   unppt: 1;
   id?: number | string;
-  cmd: 'next' | 'prev' | 'goto' | 'getState';
+  /** sync：跟上演绎端的状态（正好下一步时播动画，否则直接跳），见 SPEC F2 */
+  cmd: 'next' | 'prev' | 'goto' | 'sync' | 'getState';
   args?: { slide?: number; step?: number };
 }
 
