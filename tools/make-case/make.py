@@ -2172,7 +2172,25 @@ def charts_crowded_labels(app):
     return p
 
 
-CASES = [shapes_all, text_sizes, text_align, text_spacing, text_bullets, text_missing_font, shapes_basic, fills_lines, table_basic, group_rotate, anim_basic, anim_auto, charts_basic, pictures, smartart, text_effects, text_layout, table_merge, links, emf_images, anim_advanced, charts_labels, freeform_icons, media_audio, anim_trigger, wmf_images, anim_iterate, picture_transparent, charts_more, shape_effects, equations, anim_path, anim_emphasis, transitions, fills_patterns, text_decoration, anim_entrance, svg_images, charts_markers, hidden_slides, media_background, text_glow_reflection, text_tabs, text_picture_bullets, fills_texture, transition_morph, text_embedded_fonts, text_warp, anim_repeat, charts_sizes, slide_timings, lines_compound, table_diagonal, lines_gradient, fills_radial, fills_rect_gradient, shapes_3d, table_vertical, transitions_more, anim_sound, anim_build, anim_after, anim_text_emphasis, charts_bubble, media_video, charts_options, charts_negative, shapes_bevel, charts_legend, shapes_3d_rotation, smartart_3d, charts_ofpie, charts_3d, anim_group_emphasis, activex_controls, charts_extras, charts_axis_titles, charts_fills, charts_outlines, charts_labels_more, group_scale, group_flip, charts_3d_line, charts_legend_pos, charts_crowded_labels]
+def charts_label_skip(app):
+    """分类很多时的标签：24 个竖排、40 个竖排隔一个显示、1~40 的数字横排隔一个显示、手动设的标签间隔 3 和刻度线间隔 2"""
+    p = new_pres(app, window=True)
+    wk = [f'第{i + 1}周' for i in range(40)]
+    num = [str(i + 1) for i in range(40)]
+    rows = lambda cats: [['', '系列 1']] + [[c, 3 + i % 3] for i, c in enumerate(cats)]
+    specs = [(51, rows(wk[:24]), None), (51, rows(wk), None), (4, rows(num), None), (51, rows(wk[:12]), (3, 2))]
+    for k, (kind, data, skip) in enumerate(specs):
+        if k % 2 == 0:
+            s = blank(p)
+        ch = s.Shapes.AddChart2(-1, kind, 20 + (k % 2) * 470, 40, 450, 440)
+        _chart_values(ch, data)
+        _close_data(ch)
+        if skip:
+            ch.Chart.Axes(1).TickLabelSpacing, ch.Chart.Axes(1).TickMarkSpacing = skip
+    return p
+
+
+CASES = [shapes_all, text_sizes, text_align, text_spacing, text_bullets, text_missing_font, shapes_basic, fills_lines, table_basic, group_rotate, anim_basic, anim_auto, charts_basic, pictures, smartart, text_effects, text_layout, table_merge, links, emf_images, anim_advanced, charts_labels, freeform_icons, media_audio, anim_trigger, wmf_images, anim_iterate, picture_transparent, charts_more, shape_effects, equations, anim_path, anim_emphasis, transitions, fills_patterns, text_decoration, anim_entrance, svg_images, charts_markers, hidden_slides, media_background, text_glow_reflection, text_tabs, text_picture_bullets, fills_texture, transition_morph, text_embedded_fonts, text_warp, anim_repeat, charts_sizes, slide_timings, lines_compound, table_diagonal, lines_gradient, fills_radial, fills_rect_gradient, shapes_3d, table_vertical, transitions_more, anim_sound, anim_build, anim_after, anim_text_emphasis, charts_bubble, media_video, charts_options, charts_negative, shapes_bevel, charts_legend, shapes_3d_rotation, smartart_3d, charts_ofpie, charts_3d, anim_group_emphasis, activex_controls, charts_extras, charts_axis_titles, charts_fills, charts_outlines, charts_labels_more, group_scale, group_flip, charts_3d_line, charts_legend_pos, charts_crowded_labels, charts_label_skip]
 
 
 def main():

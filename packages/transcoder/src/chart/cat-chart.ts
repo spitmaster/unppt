@@ -5,7 +5,7 @@
 import type { ColorContext } from '../model/color';
 import { parseLine } from '../style/line';
 import { n2 } from '../common/svg';
-import { attr, child, type XEl } from '../io/xml';
+import { attr, child, numAttr, type XEl } from '../io/xml';
 import { axesOf, axId, axisCrosses, axisReversed, tickMark } from './axis';
 import type { CategoryFrame } from './chart-type';
 import { chartTypeOf } from './chart-types';
@@ -94,6 +94,8 @@ export function renderCategoryChart(plots: Plot[], plotArea: XEl | undefined, ar
   const dt = horizontal ? undefined : readDataTable(plotArea, colors, baseText, env.part);
   const dtSize = dt ? dataTableSize(dt, plots, colors, tw) : undefined;
   const catLabels = !catDeleted && tickLblPos(catAx) !== 'none' && !dt;
+  // 分类标签、刻度线的间隔（"标签间隔""刻度线间隔"，没写时标签间隔按能不能放下自动定，见 cat-labels.ts）
+  const lblSkip = Math.max(1, numAttr(child(catAx, 'c:tickLblSkip'), 'val') ?? 1), markSkip = Math.max(1, numAttr(child(catAx, 'c:tickMarkSkip'), 'val') ?? 1);
   // 按数值轴的长度 len 算刻度并排出绘图区（len 不给时用默认刻度）
   const place = (len?: number) => {
     const prim = makeAxis(primaryAx, primRange[0], primRange[1], { ...primRange[2], length: len, horizontal });
@@ -150,10 +152,10 @@ export function renderCategoryChart(plots: Plot[], plotArea: XEl | undefined, ar
       right = Math.min(right, w - PAD - tw(cats[cats.length - 1], catStyle.size) / 2);
     }
     // 底部分类标签：放不下时折行或整体转斜（cat-labels.ts），转斜时左边让出第一个标签
-    let catFit: CatFit = { kind: 'line' };
+    let catFit: CatFit = { kind: 'line', skip: lblSkip };
     if (!horizontal && catLabels && !sides.catMid && sides.cat === 'b') {
       const bands = between ? nCat : Math.max(1, nCat - 1);
-      catFit = fitCategoryLabels(cats, (right - left) / bands, catStyle.size, tw);
+      catFit = fitCategoryLabels(cats, (right - left) / bands, catStyle.size, tw, numAttr(child(catAx, 'c:tickLblSkip'), 'val'));
       if (catFit.kind === 'rot' && cats.length) {
         // 斜标签不往右伸，不用给首尾留半个宽度；分类在端点上时右边仍留约 1.05 × 字号（面积图一个样例）
         [left, right] = [left0, between ? right0 : Math.min(right0, area.right - ROT_MIDCAT_RIGHT * catStyle.size)];
@@ -209,6 +211,7 @@ export function renderCategoryChart(plots: Plot[], plotArea: XEl | undefined, ar
     const edge = sides.catMid ? frame.valPx(prim.pos(sides.catCross)) : sides.cat === 'b' ? bottom : sides.cat === 't' ? top : sides.cat === 'l' ? left : right;
     cats.forEach((c, i) => {
       const at = frame.catPx(bandCenter(i));
+      if (i % catFit.skip) return;
       if (!horizontal) {
         axisText.push(sides.cat === 'b' && !sides.catMid ? categoryLabel(catFit, i, c, at, edge, edge + catC(catStyle.size), catStyle)
           : label(c, at, sides.cat === 'b' ? edge + catC(catStyle.size) : edge - catC(catStyle.size), catStyle));
@@ -238,7 +241,7 @@ export function renderCategoryChart(plots: Plot[], plotArea: XEl | undefined, ar
   if (catLine?.color && !catDeleted) {
     const at = frame.valPx(prim.pos(sides.catCross));
     // 刻度在分类之间（midCat 时在每个分类上）
-    const marks = Array.from({ length: between ? nCat + 1 : nCat }, (_, i) => frame.catPx(i * band));
+    const marks = Array.from({ length: between ? nCat + 1 : nCat }, (_, i) => frame.catPx(i * band)).filter((_, i) => i % markSkip === 0);
     out.push(axisLine(horizontal ? 'v' : 'h', at, box, catLine, g));
     out.push(tickMarks(marks, at, horizontal ? 'v' : 'h', outward(sides.cat), tickMark(catAx, 'c:majorTickMark'), catLine, g));
   }
