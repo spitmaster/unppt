@@ -75,7 +75,7 @@ flowchart TB
   entry["player.ts 入口<br/>导出 mount / Player / installBridge，自动启动"]
   boot["boot.ts<br/>从 HTML 读数据（按需解析、只缓存附近几页）/ mount<br/>paged.ts 按需加载的形式：用 script 标签加载每页数据和字体、预取图片"]
   bridge["bridge.ts<br/>window.unppt、postMessage、原生 WebView"]
-  core["core/player.ts<br/>翻页状态、显示页面、事件、超链接、触发器<br/>autoplay.ts 按计时自动放映"]
+  core["core/player.ts<br/>翻页状态、显示页面、事件、超链接；两种模式（演绎 / 观看）、sync 同步<br/>autoplay.ts 按计时自动放映<br/>live.ts 触发器进度、黑屏、音视频状态的采集和对齐（直播课同步）"]
   engine["anim/engine.ts<br/>播放 / 瞬时应用 / 结束正在播的动画"]
   effects["anim/effects/<br/>← AnimEffect 扩展点（没有行为数据时按效果名）"]
   behav["anim/behaviors.ts 按 PowerPoint 行为采样关键帧<br/>formula.ts 公式求值、reveal.ts ← 显现滤镜扩展点"]

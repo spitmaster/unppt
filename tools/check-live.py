@@ -49,7 +49,8 @@ def main():
     OUT.mkdir(parents=True)
     hidden = convert("hidden-slides", "hidden")
     with sync_playwright() as p:
-        mute = {"args": ["--mute-audio"]} if BROWSER == "chromium" else {"firefox_user_prefs": {"media.volume_scale": "0.0"}}
+        # 静音，并允许没有点击就自动播放（学生端由接口驱动音视频）
+        mute = {"args": ["--mute-audio", "--autoplay-policy=no-user-gesture-required"]} if BROWSER == "chromium" else {"firefox_user_prefs": {"media.volume_scale": "0.0", "media.autoplay.default": 0}}
         b = getattr(p, BROWSER).launch(**mute)
         print(f"浏览器：{BROWSER}")
 
@@ -112,6 +113,51 @@ def main():
         late.evaluate("([s, k]) => window.unppt.sync({slide: s, step: k})", ts)
         late.wait_for_function(READY)
         check(late.evaluate(STATE) == ts, "丢了中间的消息也能对齐")
+
+        # ---------------- 触发器、黑屏、音视频：老师端的 change 事件原样交给学生端的 sync
+        # 注意要写成函数：evaluate 的结果是函数时 Playwright 会调用它（on 返回的是取消监听的函数）
+        relay = "() => { window.__last = null; window.unppt.on('change', (s) => { window.__last = s; }); }"
+        trig = convert("anim-trigger", "trigger")
+        t = open_page(b, trig + "?mode=present&timings=0")
+        t.evaluate(relay)
+        st = open_page(b, trig + "?mode=watch")
+        t.mouse.click(160, 235)
+        t.wait_for_timeout(100)
+        last = t.evaluate("window.__last")
+        st.evaluate("(s) => window.unppt.sync(s)", last)
+        st.wait_for_timeout(800)
+        hidden_t = t.evaluate("document.querySelectorAll('.unppt-hide').length")
+        hidden_s = st.evaluate("document.querySelectorAll('.unppt-hide').length")
+        check(bool(last and last.get("triggers")) and hidden_t == hidden_s, f"触发器：老师点了按钮，学生端跟着播：{last and last.get('triggers')} 隐藏 {hidden_t}/{hidden_s}")
+        t.keyboard.press("b")
+        last = t.evaluate("window.__last")
+        st.evaluate("(s) => window.unppt.sync(s)", last)
+        check(last.get("blank") and st.evaluate("!!document.querySelector('.unppt-blank.unppt-show')"), f"黑屏同步：{last.get('blank')}")
+        t.keyboard.press("Escape")
+        last = t.evaluate("window.__last")
+        st.evaluate("(s) => window.unppt.sync(s)", last)
+        check(not last.get("blank") and st.evaluate("!document.querySelector('.unppt-blank.unppt-show')"), "回到幻灯片同步")
+        t.close(); st.close()
+
+        video = convert("media-video", "video")
+        t = open_page(b, video + "?mode=present&timings=0")
+        t.evaluate(relay)
+        st = open_page(b, video + "?mode=watch")
+        sv_js = "(() => { const v = document.querySelector('video'); return [!v.paused, v.currentTime]; })()"
+        t.evaluate("document.querySelector('video').play()")
+        t.wait_for_timeout(600)
+        last = t.evaluate("window.__last")
+        st.evaluate("(s) => window.unppt.sync(s)", last)
+        st.wait_for_timeout(300)
+        sv = st.evaluate(sv_js)
+        check(bool(last and last.get("media")) and sv[0], f"视频播放同步：老师 {last and last.get('media')} 学生 {sv}")
+        t.evaluate("(() => { const v = document.querySelector('video'); v.pause(); v.currentTime = 2.5; })()")
+        t.wait_for_timeout(400)
+        last = t.evaluate("window.__last")
+        st.evaluate("(s) => window.unppt.sync(s)", last)
+        st.wait_for_timeout(300)
+        sv = st.evaluate(sv_js)
+        check(not sv[0] and abs(sv[1] - 2.5) < 0.2, f"视频暂停、拖进度同步：老师 {last.get('media')} 学生 {sv}")
         b.close()
     print("\n全部通过" if not failed else f"\n{failed} 项失败")
     sys.exit(1 if failed else 0)
