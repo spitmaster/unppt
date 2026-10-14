@@ -20,7 +20,8 @@ export const sideAnchor = (s: number) => 0.8 * s - 1.5;
 export const catBand = (s: number) => 1.75 * s + 3;
 export const catCenter = (s: number) => 1.21 * s;
 export const valBand = (s: number) => 1.4375 * s + 3;
-export const valCenter = (s: number) => 1.02 * s;
+/** 数值标签（和不带中文的分类标签）中心离轴：9、12、20、28 磅导出图的文字行逐行拟合（以前 1.02s，12 磅时高 1 像素） */
+export const valCenter = (s: number) => 1.1 * s - 0.75;
 /** 底部图例：占的高度、中心到底部留白线的距离（高度按 COM 读 9~28 磅的绘图区下沿校准到 0.05 像素；中心按 9、12、20、28 磅导出图的文字行拟合，12、20 磅逐行吻合，9、28 磅差 1 像素） */
 export const legendBand = (s: number) => 1.1763 * s + 6.984;
 export const legendCenter = (s: number) => 0.558 * s - 3.36;
