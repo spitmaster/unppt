@@ -25,6 +25,11 @@ export interface MountOptions extends InputOptions {
   openLinks?: boolean;
   /** 是否按演示文稿里设置的自动换片时间自动放映，默认是 */
   timings?: boolean;
+  /**
+   * present 演绎模式（默认）：观看者自己点击、按键、滑动翻页，有按钮和音视频控制条；
+   * watch 观看模式：只由 JS 接口驱动，没有按钮，点击、键盘、触屏、链接、触发器、控制条都不响应，也不按计时自动放映
+   */
+  mode?: 'present' | 'watch';
 }
 
 export class Player {
@@ -54,6 +59,8 @@ export class Player {
     injectCss(host.ownerDocument);
     this.root = host.ownerDocument.createElement('div');
     this.root.className = 'unppt-root';
+    const watch = opts.mode === 'watch';
+    if (watch) this.root.classList.add('unppt-watch');
     this.stage = host.ownerDocument.createElement('div');
     this.stage.className = 'unppt-stage';
     this.stage.style.width = `${deck.width}px`;
@@ -70,11 +77,11 @@ export class Player {
       stepIndex: () => this.stepIdx,
       stepCount: () => this.steps().length,
       next: () => this.next(),
-    }, opts.timings !== false && deck.show?.useTimings !== false);
-    if (opts.ui !== false) this.controls = new Controls(this.root, () => this.prev(), () => this.next());
+    }, !watch && opts.timings !== false && deck.show?.useTimings !== false);
+    if (opts.ui !== false && !watch) this.controls = new Controls(this.root, () => this.prev(), () => this.next());
     this.mediaBar = new MediaBar(this.root);
     this.blankScreen = new BlankScreen(this.root);
-    this.cleanup.push(...bindInput(this.root, opts, {
+    if (!watch) this.cleanup.push(...bindInput(this.root, opts, {
       click: (t) => this.click(t),
       next: () => this.next(),
       prev: () => this.prev(),

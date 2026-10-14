@@ -10,6 +10,8 @@ const CSS = `
 .unppt-slide [data-uid],.unppt-slide .unppt-unit{transform-box:fill-box;transform-origin:center}
 .unppt-hide{visibility:hidden}
 .unppt-trigger{cursor:pointer}
+.unppt-watch .unppt-stage{pointer-events:none}
+.unppt-watch .unppt-trigger{cursor:default}
 .unppt-ui{position:absolute;right:12px;bottom:12px;display:flex;gap:6px;align-items:center;opacity:0;transition:opacity .3s;font:13px/1 system-ui,sans-serif;z-index:2}
 .unppt-root:hover .unppt-ui,.unppt-ui.unppt-show{opacity:1}
 .unppt-mbar{position:absolute;display:none;align-items:center;gap:8px;height:30px;padding:0 10px;box-sizing:border-box;background:rgba(0,0,0,.65);border-radius:4px;color:#fff;font:12px/1 system-ui,sans-serif;z-index:3}
