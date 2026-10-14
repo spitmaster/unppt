@@ -70,7 +70,7 @@ export async function layoutParagraph(p: XEl, pi: number, ctx: ParagraphContext)
   // 项目符号
   let bullet: ParagraphLayout['bullet'];
   const bu = ctx.numbering.textFor(pPr, lvl, atoms.length > 0);
-  if (bu) bullet = await makeBullet(bu.text, pPr, baseStyle, atoms, fontScale, marL + indent, env, measurer, bu.bu);
+  if (bu) bullet = await makeBullet(bu.text, pPr, baseStyle, atoms, fontScale, marL + indent, env, measurer, bu.bu, bu.font);
 
   let firstX = marL + (indent >= 0 ? indent : 0);
   if (bullet && bullet.x + bullet.width > firstX) firstX = bullet.x + bullet.width + (indent >= 0 ? 0 : 0);
