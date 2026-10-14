@@ -2207,7 +2207,42 @@ def charts_bar_long_names(app):
     return p
 
 
-CASES = [shapes_all, text_sizes, text_align, text_spacing, text_bullets, text_missing_font, shapes_basic, fills_lines, table_basic, group_rotate, anim_basic, anim_auto, charts_basic, pictures, smartart, text_effects, text_layout, table_merge, links, emf_images, anim_advanced, charts_labels, freeform_icons, media_audio, anim_trigger, wmf_images, anim_iterate, picture_transparent, charts_more, shape_effects, equations, anim_path, anim_emphasis, transitions, fills_patterns, text_decoration, anim_entrance, svg_images, charts_markers, hidden_slides, media_background, text_glow_reflection, text_tabs, text_picture_bullets, fills_texture, transition_morph, text_embedded_fonts, text_warp, anim_repeat, charts_sizes, slide_timings, lines_compound, table_diagonal, lines_gradient, fills_radial, fills_rect_gradient, shapes_3d, table_vertical, transitions_more, anim_sound, anim_build, anim_after, anim_text_emphasis, charts_bubble, media_video, charts_options, charts_negative, shapes_bevel, charts_legend, shapes_3d_rotation, smartart_3d, charts_ofpie, charts_3d, anim_group_emphasis, activex_controls, charts_extras, charts_axis_titles, charts_fills, charts_outlines, charts_labels_more, group_scale, group_flip, charts_3d_line, charts_legend_pos, charts_crowded_labels, charts_label_skip, charts_bar_long_names]
+def _chart_sheet(ch, rows, rng):
+    """把 rows 原样写进图表数据表（空串留空，可以写多级分类），再按 rng 设数据源"""
+    cd = ch.Chart.ChartData
+    cd.Activate()
+    ws = cd.Workbook.Worksheets(1)
+    ws.Range('A1:Z60').ClearContents()
+    for r, row in enumerate(rows, start=1):
+        for c, v in enumerate(row, start=1):
+            if v != '':
+                ws.Cells(r, c).Value = v
+    try:
+        ws.ListObjects(1).Unlist()
+    except Exception:
+        pass
+    ch.Chart.SetSourceData(f"='Sheet1'!{rng}")
+
+
+def charts_multilevel(app):
+    """多级分类：两级的柱形图（中文年份 → 季度）、数字年份 → Q1~Q3 的柱形图、地区 → 城市的折线图"""
+    p = new_pres(app, window=True)
+    q = ['一季度', '二季度', '三季度', '四季度']
+    a = [['', '', '系列 1']] + [[y if i == 0 else '', q[i], v] for y, vs in (('第一年', (2, 5, 4, 3)), ('第二年', (3, 4, 5, 2))) for i, v in enumerate(vs)]
+    b = [['', '', '系列 1']] + [[y if i == 0 else '', f'Q{i + 1}', v] for y, vs in (('2019', (2, 5, 4)), ('2020', (3, 2, 5)), ('2021', (4, 3, 2))) for i, v in enumerate(vs)]
+    c = [['', '', '系列 1']] + [[g if i == 0 else '', t, v] for g, vs in (('甲区', (2, 5, 4)), ('乙区', (3, 2, 5))) for i, (t, v) in enumerate(zip(('东城', '西城', '南城'), vs))]
+    specs = [(51, a, '$A$1:$C$9'), (51, b, '$A$1:$C$10'), (4, c, '$A$1:$C$7')]
+    for k, (kind, rows, rng) in enumerate(specs):
+        if k % 2 == 0:
+            s = blank(p)
+        ch = s.Shapes.AddChart2(-1, kind, 20 + (k % 2) * 470, 40, 450, 440)
+        _chart_sheet(ch, rows, rng)
+        _close_data(ch)
+        ch.Chart.HasLegend = False
+    return p
+
+
+CASES = [shapes_all, text_sizes, text_align, text_spacing, text_bullets, text_missing_font, shapes_basic, fills_lines, table_basic, group_rotate, anim_basic, anim_auto, charts_basic, pictures, smartart, text_effects, text_layout, table_merge, links, emf_images, anim_advanced, charts_labels, freeform_icons, media_audio, anim_trigger, wmf_images, anim_iterate, picture_transparent, charts_more, shape_effects, equations, anim_path, anim_emphasis, transitions, fills_patterns, text_decoration, anim_entrance, svg_images, charts_markers, hidden_slides, media_background, text_glow_reflection, text_tabs, text_picture_bullets, fills_texture, transition_morph, text_embedded_fonts, text_warp, anim_repeat, charts_sizes, slide_timings, lines_compound, table_diagonal, lines_gradient, fills_radial, fills_rect_gradient, shapes_3d, table_vertical, transitions_more, anim_sound, anim_build, anim_after, anim_text_emphasis, charts_bubble, media_video, charts_options, charts_negative, shapes_bevel, charts_legend, shapes_3d_rotation, smartart_3d, charts_ofpie, charts_3d, anim_group_emphasis, activex_controls, charts_extras, charts_axis_titles, charts_fills, charts_outlines, charts_labels_more, group_scale, group_flip, charts_3d_line, charts_legend_pos, charts_crowded_labels, charts_label_skip, charts_bar_long_names, charts_multilevel]
 
 
 def main():

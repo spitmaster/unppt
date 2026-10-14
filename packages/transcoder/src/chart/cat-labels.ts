@@ -11,9 +11,9 @@
  * 例：24 个"第 N 周"竖排；40 个竖排、隔一个显示；1~40 的数字横排、隔一个显示；9~16 个四字中文转 −45°。
  */
 import { n2 } from '../common/svg';
-import { label } from './draw';
+import { hasCjk, label } from './draw';
 import type { TextWidth } from './layout';
-import type { TextStyle } from './model';
+import type { CatLevel, TextStyle } from './model';
 
 export type CatFit = ({ kind: 'line' } | { kind: 'wrap'; lines: string[][]; n: number } | { kind: 'rot' } | { kind: 'vert' }) & { skip: number };
 
@@ -22,6 +22,8 @@ const SIN45 = Math.SQRT1_2;
 const WRAP_LINE = 1.044, ROT_BAND = 1.54, ROT_X = 0.02, ROT_Y = 1.27, ROT_Y0 = 4.2, ROT_LEFT = 0.17, ROT_EDGE = 10;
 /** 实测：斜排、竖排要求的行距（× 字号）、竖排文字末端离轴、竖排标签带的常数项 */
 const ROT_ROOM = 1.3, VERT_Y = 0.7, VERT_Y0 = 2, VERT_BAND = 0.62;
+/** 实测：多级分类外层每级的标签带比单级的少的高度 */
+const LEVEL_TRIM = 0.6;
 
 /** 按空格贪心折行；有一个词比宽度还宽时返回 undefined */
 function wrapWords(t: string, width: number, s: number, tw: TextWidth): string[] | undefined {
@@ -108,4 +110,37 @@ export function sideLabel(lines: string[], x: number, y: number, st: TextStyle, 
   const w = Math.max(...lines.map((l) => tw(l, st.size)));
   const cx = anchor === 'end' ? x - w / 2 : x + w / 2;
   return lines.map((l, k) => label(l, cx, y + (k - (lines.length - 1) / 2) * SIDE_LINE * st.size, st)).join('');
+}
+
+/**
+ * 多级分类（c:multiLvlStrRef）底部的外层标签：每级占一条标签带（和单级一样按带不带中文取 catBand / valBand，
+ * 再少 0.6 像素），标签居中于各组；组的分界和绘图区两端画竖分隔线，从轴线一直到这一级标签带的底边
+ * （PowerPoint 实测：两级的柱形、折线图，"年份 → 季度"中文和数字两种）
+ */
+export interface LevelBand { level: CatLevel; band: number; cjk: boolean }
+
+export function outerLevelBands(levels: CatLevel[], s: number, bandOf: (cjk: boolean, s: number) => number): LevelBand[] {
+  return levels.map((level) => {
+    const cjk = level.some((g) => hasCjk(g.text));
+    return { level, band: bandOf(cjk, s) - LEVEL_TRIM, cjk };
+  });
+}
+
+/** 画外层标签和分隔线：pos(i) 是第 i 个分类边界（0~nCat）在屏幕上的 x，top 是内层标签带的底边 */
+export function outerLevels(bands: LevelBand[], nCat: number, pos: (i: number) => number, axisY: number, top: number,
+  st: TextStyle, centerOf: (cjk: boolean, s: number) => number, line: { color: string; width: number } | undefined): string {
+  const out: string[] = [];
+  let y = top;
+  for (const { level, band, cjk } of bands) {
+    level.forEach((g, k) => {
+      const end = k + 1 < level.length ? level[k + 1].idx : nCat;
+      out.push(label(g.text, (pos(g.idx) + pos(end)) / 2, y + centerOf(cjk, st.size), st));
+    });
+    if (line) {
+      const xs = [...level.map((g) => g.idx), nCat].map(pos);
+      out.push(`<path d="${xs.map((x) => `M${n2(x)} ${n2(axisY)}V${n2(y + band)}`).join('')}" fill="none" stroke="${line.color}" stroke-width="${n2(line.width)}"/>`);
+    }
+    y += band;
+  }
+  return out.join('');
 }
