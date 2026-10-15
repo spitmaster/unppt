@@ -65,6 +65,8 @@ export async function makeAtoms(text: string, style: RunStyle, m: Measurer): Pro
     return [undefined, ''];
   };
   const pick = async (family: string, subs: string[]): Promise<[Measured | undefined, string]> => {
+    // 空字体名：主题字体按语言没选到（style.ts resolveTypeface），直接用替代字体
+    if (!family) return substitute(subs);
     const mm = await m.metrics(family, style.bold, style.italic);
     if (mm) return [mm, family];
     const [sm, sub] = await substitute(subs);
@@ -72,6 +74,7 @@ export async function makeAtoms(text: string, style: RunStyle, m: Measurer): Pro
   };
   const [latinM, latinFam] = await pick(style.latin, subsFor(style.latinScript, true));
   const [eaM, eaFam] = style.ea === style.latin ? [latinM, latinFam] : await pick(style.ea, subsFor(style.eaScript, false));
+  const [glyphM, glyphFam] = style.eaGlyph !== undefined ? await pick(style.eaGlyph, EA_SUBS) : [eaM, eaFam];
   // 两种字体里都没有的中日韩字：用雅黑补（实测：Yu Gothic 里没有的简体字 PowerPoint 用雅黑 Regular 画）
   let cjk: Promise<[Measured | undefined, string]> | undefined;
   const [symM, symFam] = style.sym ? await pick(style.sym, []) : [undefined, ''];
@@ -88,11 +91,11 @@ export async function makeAtoms(text: string, style: RunStyle, m: Measurer): Pro
     const cp = ch.codePointAt(0)!;
     const wide = isWide(cp) || (st.eaLang && AMBIGUOUS.has(cp));
     const isSym = !!symM && cp >= 0xf000 && cp <= 0xf0ff;
-    const primary = isSym ? symM : wide ? eaM : latinM;
+    const primary = isSym ? symM : wide ? glyphM : latinM;
     const secondary = wide ? latinM : eaM;
     let adv = primary?.metrics.advance(cp);
     let usedM = primary;
-    let family = isSym ? symFam : wide ? eaFam : latinFam;
+    let family = isSym ? symFam : wide ? glyphFam : latinFam;
     if (adv === undefined && secondary) {
       adv = secondary.metrics.advance(cp);
       if (adv !== undefined) { usedM = secondary; family = wide ? latinFam : eaFam; }
