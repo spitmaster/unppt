@@ -32,6 +32,8 @@ await build({
   bundle: true,
   format: 'esm',
   platform: 'neutral',
+  // 第三方类库（saxes 等）只写了 main 字段，通用平台默认不读，要显式指定
+  mainFields: ['module', 'main'],
   target: ['es2020'],
   define,
 });

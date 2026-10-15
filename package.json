@@ -14,9 +14,10 @@
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "devDependencies": {
+    "@resvg/resvg-wasm": "2.6.2",
     "@types/node": "^26.6.5",
     "esbuild": "^0.28.2",
-    "typescript": "^5.9.3",
-    "@resvg/resvg-wasm": "2.6.2"
+    "saxes": "6.0.0",
+    "typescript": "^5.9.3"
   }
 }
