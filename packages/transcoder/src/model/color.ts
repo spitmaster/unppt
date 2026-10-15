@@ -57,14 +57,24 @@ const clamp01 = (x: number) => Math.min(1, Math.max(0, x));
 
 // sRGB 与线性空间互转（tint/shade 在线性空间里计算，和 PowerPoint 一致）
 const toLin = (c: number) => { const x = c / 255; return x <= 0.04045 ? x / 12.92 : Math.pow((x + 0.055) / 1.055, 2.4); };
-const toSrgb = (x: number) => { const v = x <= 0.0031308 ? x * 12.92 : 1.055 * Math.pow(x, 1 / 2.4) - 0.055; return Math.round(clamp01(v) * 255); };
+const toSrgbF = (x: number) => { const v = x <= 0.0031308 ? x * 12.92 : 1.055 * Math.pow(x, 1 / 2.4) - 0.055; return clamp01(v) * 255; };
+const toSrgb = (x: number) => Math.round(toSrgbF(x));
 
 function applyMods(c: Rgba, mods: XEl[]): Rgba {
   let col = { ...c };
+  // gamma ... invGamma 之间：中间结果不取整（实测 colors-gamma：取整会差 1~2）
+  let inGamma = false;
+  const ch = (f: (x: number) => number) => { col = { r: f(col.r), g: f(col.g), b: f(col.b), a: col.a }; };
   for (const m of mods) {
     const val = Number(m.attrs.val ?? 0) / 100000;
     const name = m.name.slice(2);
     switch (name) {
+      // 实测（colors-gamma，老 .ppt 转换来的文件常见）：gamma 把颜色当线性值按 sRGB 编码，invGamma 解码回来；
+      // 包在中间的 tint / shade 因此等于直接在 sRGB 上混合（shade 0.46 的 FEEC94 -> 76 6D 44），lumMod 等也在编码后的值上算
+      case 'gamma': inGamma = true; ch((x) => toSrgbF(x / 255)); break;
+      case 'invGamma': inGamma = false; ch((x) => Math.round(toLin(x) * 255)); break;
+      case 'tint': ch((x) => (inGamma ? toSrgbF : toSrgb)(toLin(x) * val + (1 - val))); break;
+      case 'shade': ch((x) => (inGamma ? toSrgbF : toSrgb)(toLin(x) * val)); break;
       case 'alpha': col.a = val; break;
       case 'alphaMod': col.a = clamp01(col.a * val); break;
       case 'alphaOff': col.a = clamp01(col.a + val); break;
@@ -82,16 +92,6 @@ function applyMods(c: Rgba, mods: XEl[]): Rgba {
         col = hslToRgb(h, clamp01(s), clamp01(l), col.a);
         break;
       }
-      case 'tint': {
-        const f = (x: number) => toSrgb(toLin(x) * val + (1 - val));
-        col = { r: f(col.r), g: f(col.g), b: f(col.b), a: col.a };
-        break;
-      }
-      case 'shade': {
-        const f = (x: number) => toSrgb(toLin(x) * val);
-        col = { r: f(col.r), g: f(col.g), b: f(col.b), a: col.a };
-        break;
-      }
       case 'inv': col = { r: 255 - col.r, g: 255 - col.g, b: 255 - col.b, a: col.a }; break;
       case 'gray': { const v = Math.round(col.r * 0.3 + col.g * 0.59 + col.b * 0.11); col = { r: v, g: v, b: v, a: col.a }; break; }
       case 'comp': { const [h, s, l] = rgbToHsl(col); col = hslToRgb((h + 0.5) % 1, s, l, col.a); break; }
@@ -104,6 +104,7 @@ function applyMods(c: Rgba, mods: XEl[]): Rgba {
       default: break;
     }
   }
+  if (inGamma) ch(Math.round);
   return col;
 }
 
