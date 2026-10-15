@@ -1,5 +1,6 @@
 /** 换行：中英文断行规则和标点禁则（行首不放句号逗号等，行尾不放左括号等） */
 import type { Atom } from './types';
+import { LAYOUT_UNIT } from './measure';
 
 const NO_START = new Set([...'、。，．・：；？！゛゜ヽヾゝゞ々ー）］｝」』〕〉》】〙〗〟’”｠»,.:;?!)]}%…‥']);
 const NO_END = new Set([...'（［｛「『〔〈《【〘〖〝‘“｟«([{']);
@@ -31,7 +32,9 @@ export function breakLines(atoms: Atom[], avail: (first: boolean) => number, wra
       if (a.text === '\n') { forced = i; break; }
       if (i > start && canBreakBetween(atoms[i - 1], a)) lastBreak = i;
       const w = width + a.width;
-      if (wrap && w > max + 0.01 && i > start && !a.space) {
+      // 实测：行宽向上取整到排版单位（1/8 磅）后不超过可用宽度才放得下（可用宽度、内边距不取整；字间距让行宽不在格子上时，
+      // 正好等宽也要换行）
+      if (wrap && Math.ceil(w / LAYOUT_UNIT - 1e-6) * LAYOUT_UNIT > max + 1e-6 && i > start && !a.space) {
         if (!hang || hung || !NO_START.has(a.text)) break;
         hung = true;
       }

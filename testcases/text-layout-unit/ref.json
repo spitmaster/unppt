@@ -1,0 +1,346 @@
+{
+ "version": 8,
+ "level": "full",
+ "slideWidthPt": 960.0,
+ "slideHeightPt": 540.0,
+ "imageWidth": 1280,
+ "imageHeight": 720,
+ "slides": [
+  {
+   "index": 0,
+   "hidden": false,
+   "shapes": [
+    {
+     "id": 2,
+     "name": "TextBox 1",
+     "type": 17,
+     "x": 20.0,
+     "y": 20.0,
+     "w": 535.302,
+     "h": 20.599,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 61,
+       "text": "mmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmm|",
+       "x": 20.0,
+       "y": 23.6,
+       "w": 530.13,
+       "h": 13.2
+      }
+     ]
+    },
+    {
+     "id": 3,
+     "name": "TextBox 2",
+     "type": 17,
+     "x": 20.0,
+     "y": 110.0,
+     "w": 328.805,
+     "h": 35.14,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 61,
+       "text": "iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii|",
+       "x": 20.0,
+       "y": 113.6,
+       "w": 325.63,
+       "h": 27.6
+      }
+     ]
+    },
+    {
+     "id": 4,
+     "name": "TextBox 3",
+     "type": 17,
+     "x": 20.0,
+     "y": 200.0,
+     "w": 538.599,
+     "h": 23.023,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 91,
+       "text": "The quick brown fox jumps over the lazy dog. The quick brown fox jumps over the lazy dog. |",
+       "x": 20.0,
+       "y": 203.6,
+       "w": 533.395,
+       "h": 15.6
+      }
+     ]
+    },
+    {
+     "id": 5,
+     "name": "TextBox 4",
+     "type": 17,
+     "x": 20.0,
+     "y": 290.0,
+     "w": 445.175,
+     "h": 24.234,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 77,
+       "text": "Sphinx of black quartz, judge my vow; Sphinx of black quartz, judge my vow; |",
+       "x": 20.0,
+       "y": 293.6,
+       "w": 440.875,
+       "h": 16.8
+      }
+     ]
+    },
+    {
+     "id": 6,
+     "name": "TextBox 5",
+     "type": 17,
+     "x": 20.0,
+     "y": 380.0,
+     "w": 509.679,
+     "h": 25.446,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 83,
+       "text": "Pack my box with five dozen liquor jugs. Pack my box with five dozen liquor jugs. |",
+       "x": 20.0,
+       "y": 383.6,
+       "w": 504.755,
+       "h": 18.0
+      }
+     ]
+    }
+   ],
+   "effects": [],
+   "triggerHidden": [],
+   "steps": 0,
+   "keptSlideshow": false
+  },
+  {
+   "index": 1,
+   "hidden": false,
+   "shapes": [
+    {
+     "id": 2,
+     "name": "TextBox 1",
+     "type": 17,
+     "x": 30.0,
+     "y": 30.0,
+     "w": 40.6,
+     "h": 21.811,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 1,
+       "text": "一",
+       "x": 30.0,
+       "y": 30.0,
+       "w": 20.3,
+       "h": 22.8
+      },
+      {
+       "start": 1,
+       "len": 1,
+       "text": "二",
+       "x": 30.0,
+       "y": 52.8,
+       "w": 20.305,
+       "h": 22.8
+      }
+     ]
+    },
+    {
+     "id": 3,
+     "name": "TextBox 2",
+     "type": 17,
+     "x": 230.0,
+     "y": 30.0,
+     "w": 40.65,
+     "h": 21.811,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 2,
+       "text": "一二",
+       "x": 230.0,
+       "y": 30.0,
+       "w": 40.605,
+       "h": 22.8
+      }
+     ]
+    },
+    {
+     "id": 4,
+     "name": "TextBox 3",
+     "type": 17,
+     "x": 430.0,
+     "y": 30.0,
+     "w": 36.02,
+     "h": 21.811,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 1,
+       "text": "一",
+       "x": 430.0,
+       "y": 30.0,
+       "w": 18.01,
+       "h": 20.4
+      },
+      {
+       "start": 1,
+       "len": 1,
+       "text": "二",
+       "x": 430.0,
+       "y": 50.4,
+       "w": 18.015,
+       "h": 20.4
+      }
+     ]
+    },
+    {
+     "id": 5,
+     "name": "TextBox 4",
+     "type": 17,
+     "x": 630.0,
+     "y": 30.0,
+     "w": 36.13,
+     "h": 21.811,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 2,
+       "text": "一二",
+       "x": 630.0,
+       "y": 30.0,
+       "w": 36.025,
+       "h": 20.4
+      }
+     ]
+    },
+    {
+     "id": 6,
+     "name": "TextBox 5",
+     "type": 17,
+     "x": 30.0,
+     "y": 140.0,
+     "w": 51.0,
+     "h": 21.811,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 3,
+       "text": "一二三",
+       "x": 30.0,
+       "y": 140.0,
+       "w": 51.005,
+       "h": 20.4
+      }
+     ]
+    },
+    {
+     "id": 7,
+     "name": "TextBox 6",
+     "type": 17,
+     "x": 230.0,
+     "y": 140.0,
+     "w": 87.6,
+     "h": 21.811,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 10,
+       "text": "mmmmmmmmmm",
+       "x": 230.0,
+       "y": 140.0,
+       "w": 87.505,
+       "h": 13.2
+      }
+     ]
+    },
+    {
+     "id": 8,
+     "name": "TextBox 7",
+     "type": 17,
+     "x": 430.0,
+     "y": 140.0,
+     "w": 87.45,
+     "h": 21.811,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 9,
+       "text": "mmmmmmmmm",
+       "x": 430.0,
+       "y": 140.0,
+       "w": 78.75,
+       "h": 13.2
+      },
+      {
+       "start": 9,
+       "len": 1,
+       "text": "m",
+       "x": 430.0,
+       "y": 153.2,
+       "w": 8.755,
+       "h": 13.2
+      }
+     ]
+    },
+    {
+     "id": 9,
+     "name": "Table 8",
+     "type": 19,
+     "x": 30.0,
+     "y": 300.0,
+     "w": 341.267,
+     "h": 120.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": -2
+    }
+   ],
+   "effects": [],
+   "triggerHidden": [],
+   "steps": 0,
+   "keptSlideshow": false
+  }
+ ],
+ "ok": true
+}

@@ -34,6 +34,13 @@ export function makeMeasurer(env: TextEnv): Measurer {
  */
 const MIX_GAP = 0.05, MIX_DESC = 0.15;
 
+/**
+ * PowerPoint 排版的最小单位是 1/8 磅（= 1/6 像素）：每个字的宽度四舍五入到这个单位，摆位置和断行都用取整后的宽度；
+ * 字间距、字偶间距不取整（实测：Calibri 11 磅 40 个 "m" 每个占 8.75 磅而不是 8.787 磅；断行阈值见 linebreak.ts）
+ */
+export const LAYOUT_UNIT = 1 / 6;
+const snapAdvance = (w: number) => Math.round(w / LAYOUT_UNIT) * LAYOUT_UNIT;
+
 const LATIN_SUBS = ['Calibri', 'Arial', 'Liberation Sans', 'Helvetica'];
 // 实测：字体标了中文字符集且本机缺失时，PowerPoint 用微软雅黑替代（样本换行 40/40 一致）
 const EA_SUBS = ['Microsoft YaHei', '微软雅黑', 'DengXian', '等线', 'PingFang SC', 'Noto Sans CJK SC', 'Source Han Sans SC'];
@@ -79,7 +86,7 @@ export async function makeAtoms(text: string, style: RunStyle, m: Measurer): Pro
     const used = usedM?.metrics;
     if (usedM && adv !== undefined && m.embed && cp > 0x20) m.embed.use(usedM.face, cp);
     const size = st.baseline ? st.size * 0.67 : st.size;
-    const width = (adv ?? fallbackAdvance(cp)) * size + st.spc;
+    const width = snapAdvance((adv ?? fallbackAdvance(cp)) * size) + st.spc;
     // 字距调整：和前一个字同一个字体时，把成对调整量加到前一个字的宽度上
     const prevAtom = out[out.length - 1];
     if (kerning && prevAtom && adv !== undefined && usedM && usedM === prevM) prevAtom.width += usedM.metrics.kern(prevAtom.cp, cp) * size;

@@ -2928,7 +2928,61 @@ def smartart_matrix(app):
     return p
 
 
-CASES = [shapes_all, text_sizes, text_align, text_spacing, text_bullets, text_missing_font, shapes_basic, fills_lines, table_basic, group_rotate, anim_basic, anim_auto, charts_basic, pictures, smartart, text_effects, text_layout, table_merge, links, emf_images, anim_advanced, charts_labels, freeform_icons, media_audio, anim_trigger, wmf_images, anim_iterate, picture_transparent, charts_more, shape_effects, equations, anim_path, anim_emphasis, transitions, fills_patterns, text_decoration, anim_entrance, svg_images, charts_markers, hidden_slides, media_background, text_glow_reflection, text_tabs, text_picture_bullets, fills_texture, transition_morph, text_embedded_fonts, text_warp, anim_repeat, charts_sizes, slide_timings, lines_compound, table_diagonal, lines_gradient, fills_radial, fills_rect_gradient, shapes_3d, table_vertical, transitions_more, anim_sound, anim_build, anim_after, anim_text_emphasis, charts_bubble, media_video, charts_options, charts_negative, shapes_bevel, charts_legend, shapes_3d_rotation, smartart_3d, charts_ofpie, charts_3d, anim_group_emphasis, activex_controls, charts_extras, charts_axis_titles, charts_fills, charts_outlines, charts_labels_more, group_scale, group_flip, charts_3d_line, charts_legend_pos, charts_crowded_labels, charts_label_skip, charts_bar_long_names, charts_multilevel, picture_recolor, text_symbols, text_numbering, lines_arrows, table_styles, shapes_styles, charts_styles, placeholders_inherit, text_bold_light, ole_objects, text_hanging_punct, speaker_notes, pictures_tiff, placeholders_picture, pictures_exif, text_picture_fill, pictures_mislabeled, emf_alphablend, placeholders_orphan, picture_fill_rect, slide_number_fields, table_builtin_styles, smartart_matrix]
+def text_layout_unit(app):
+    """排版单位 1/8 磅：第 1 页不换行的长西文行（每个字宽取整后的累积位移在行尾最明显）；
+    第 2 页断行边界：文本框（内边距 0）、表格单元格的宽度正好等于或略大于文字宽度"""
+    p = new_pres(app)
+    s = blank(p)
+    lines = [("m" * 60 + "|", "Calibri", 11), ("i" * 60 + "|", "Calibri", 23), ("The quick brown fox jumps over the lazy dog. " * 2 + "|", "Arial", 13),
+             ("Sphinx of black quartz, judge my vow; " * 2 + "|", "Calibri", 14), ("Pack my box with five dozen liquor jugs. " * 2 + "|", "Times New Roman", 15)]
+    for k, (text, font, size) in enumerate(lines):
+        tb = s.Shapes.AddTextbox(1, 20, 20 + k * 90, 900, 40)
+        tf = tb.TextFrame
+        tf.MarginLeft = tf.MarginRight = 0
+        tf.WordWrap = 0
+        tr = tf.TextRange
+        tr.Text = text
+        tr.Font.Name = font
+        tr.Font.Size = size
+    s = blank(p)
+    # (文字, 字体, 字号, 加粗, 字间距, 框宽)：一二 19 磅加粗、字间距 1.3 磅要 40.6 磅，正好等宽时 PowerPoint 换行；10 个 m 原宽 87.87 磅、取整后 87.5 磅
+    boxes = [("一二", 19, True, 1.3, 40.6), ("一二", 19, True, 1.3, 40.65), ("一二", 17, False, 1.01, 36.02), ("一二", 17, False, 1.01, 36.13),
+             ("一二三", 17, False, 0, 51), ("m" * 10, 11, False, 0, 87.6), ("m" * 10, 11, False, 0, 87.45)]
+    for k, (text, size, bold, spc, w) in enumerate(boxes):
+        tb = s.Shapes.AddTextbox(1, 30 + (k % 4) * 200, 30 + (k // 4) * 110, w, 60)
+        tf = tb.TextFrame2
+        tf.MarginLeft = tf.MarginRight = tf.MarginTop = tf.MarginBottom = 0
+        tf.WordWrap = -1
+        tf.AutoSize = 0
+        tb.Width = w
+        tr = tf.TextRange
+        tr.Text = text
+        tr.Font.Name = "Microsoft YaHei" if text[0] != "m" else "Calibri"
+        tr.Font.NameFarEast = "Microsoft YaHei"
+        tr.Font.Size = size
+        tr.Font.Bold = -1 if bold else 0
+        tr.Font.Spacing = spc
+        tb.Line.Visible = -1
+        tb.Line.ForeColor.RGB = RGB(200, 200, 200)
+    # 表格：第一列宽 74.6 磅、左右边距各 17 磅，可用 40.6 磅
+    t = s.Shapes.AddTable(2, 3, 30, 300, 400, 120).Table
+    t.Columns(1).Width = 74.6
+    for r in range(1, 3):
+        for c in range(1, 4):
+            cell = t.Cell(r, c).Shape.TextFrame
+            cell.MarginLeft = cell.MarginRight = 17
+            tr = cell.TextRange
+            tr.Text = "一二" if c == 1 else f"单元格{r}{c}"
+            tr.Font.Size = 19
+            tr.Font.Bold = -1
+            tr.Font.Name = "Microsoft YaHei"
+            tr.Font.NameFarEast = "Microsoft YaHei"
+            if c == 1:
+                cell.Parent.TextFrame2.TextRange.Font.Spacing = 1.3
+    return p
+
+
+CASES = [shapes_all, text_sizes, text_align, text_spacing, text_bullets, text_missing_font, shapes_basic, fills_lines, table_basic, group_rotate, anim_basic, anim_auto, charts_basic, pictures, smartart, text_effects, text_layout, table_merge, links, emf_images, anim_advanced, charts_labels, freeform_icons, media_audio, anim_trigger, wmf_images, anim_iterate, picture_transparent, charts_more, shape_effects, equations, anim_path, anim_emphasis, transitions, fills_patterns, text_decoration, anim_entrance, svg_images, charts_markers, hidden_slides, media_background, text_glow_reflection, text_tabs, text_picture_bullets, fills_texture, transition_morph, text_embedded_fonts, text_warp, anim_repeat, charts_sizes, slide_timings, lines_compound, table_diagonal, lines_gradient, fills_radial, fills_rect_gradient, shapes_3d, table_vertical, transitions_more, anim_sound, anim_build, anim_after, anim_text_emphasis, charts_bubble, media_video, charts_options, charts_negative, shapes_bevel, charts_legend, shapes_3d_rotation, smartart_3d, charts_ofpie, charts_3d, anim_group_emphasis, activex_controls, charts_extras, charts_axis_titles, charts_fills, charts_outlines, charts_labels_more, group_scale, group_flip, charts_3d_line, charts_legend_pos, charts_crowded_labels, charts_label_skip, charts_bar_long_names, charts_multilevel, picture_recolor, text_symbols, text_numbering, lines_arrows, table_styles, shapes_styles, charts_styles, placeholders_inherit, text_bold_light, ole_objects, text_hanging_punct, speaker_notes, pictures_tiff, placeholders_picture, pictures_exif, text_picture_fill, pictures_mislabeled, emf_alphablend, placeholders_orphan, picture_fill_rect, slide_number_fields, table_builtin_styles, smartart_matrix, text_layout_unit]
 
 
 def main():
