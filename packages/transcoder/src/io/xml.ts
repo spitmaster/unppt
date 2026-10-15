@@ -1,9 +1,10 @@
 /**
- * 精简的 XML 解析器，专为 OOXML 设计（格式规范、无 DTD）。
+ * XML 解析（用 saxes）和查询辅助，专为 OOXML 设计。
  *
  * 命名空间会被换成固定前缀（p:、a:、r: 等），不管文件里实际用的是什么前缀，
  * 后面的代码都可以直接按 "p:sp"、"a:off" 这样的名字查找。
  */
+import { SaxesParser } from 'saxes';
 
 export interface XEl {
   name: string;
@@ -38,111 +39,40 @@ const NS: Record<string, string> = {
   'http://purl.oclc.org/ooxml/drawingml/chart': 'c',
 };
 
-function decodeEntities(s: string): string {
-  if (s.indexOf('&') < 0) return s;
-  return s.replace(/&(#x[0-9a-fA-F]+|#\d+|lt|gt|amp|quot|apos);/g, (_, e: string) => {
-    switch (e) {
-      case 'lt': return '<';
-      case 'gt': return '>';
-      case 'amp': return '&';
-      case 'quot': return '"';
-      case 'apos': return "'";
-    }
-    const code = e[1] === 'x' ? parseInt(e.slice(2), 16) : parseInt(e.slice(1), 10);
-    return Number.isFinite(code) ? String.fromCodePoint(code) : '';
-  });
-}
-
-interface Scope { map: Map<string, string>; }
-
-function resolveName(qname: string, scopes: Scope[], isAttr: boolean): string {
-  const colon = qname.indexOf(':');
-  if (colon < 0) {
-    if (isAttr) return qname; // 无前缀属性不属于任何命名空间
-    for (let i = scopes.length - 1; i >= 0; i--) {
-      const uri = scopes[i].map.get('');
-      if (uri !== undefined) return NS[uri] ? `${NS[uri]}:${qname}` : qname;
-    }
-    return qname;
-  }
-  const prefix = qname.slice(0, colon);
-  const local = qname.slice(colon + 1);
+/** 元素、属性名：已知的命名空间换成固定前缀；未知的保留文件里的前缀；xml: 不变 */
+function qualify(uri: string | undefined, prefix: string, local: string): string {
   if (prefix === 'xml') return `xml:${local}`;
-  for (let i = scopes.length - 1; i >= 0; i--) {
-    const uri = scopes[i].map.get(prefix);
-    if (uri !== undefined) return `${NS[uri] ?? prefix}:${local}`;
-  }
-  return qname;
+  const fixed = uri ? NS[uri] : undefined;
+  if (fixed) return `${fixed}:${local}`;
+  return prefix ? `${prefix}:${local}` : local;
 }
 
-const ATTR_RE = /([^\s=]+)\s*=\s*("([^"]*)"|'([^']*)')/g;
-
+/**
+ * 解析交给 saxes（ISC 许可，周下载量上亿的 SAX 解析器），这里只把事件拼成 XEl 树。
+ * 元素里的文字（包括空白）原样累加到 text；格式不规范时（文件被截断、坏字符）不报错，保留已经解析出的部分。
+ */
 export function parseXml(src: string): XEl {
   const root: XEl = { name: '#root', attrs: {}, children: [], text: '' };
   const stack: XEl[] = [root];
-  const scopes: Scope[] = [{ map: new Map() }];
-  let i = 0;
-  const n = src.length;
-  while (i < n) {
-    const lt = src.indexOf('<', i);
-    if (lt < 0) break;
-    if (lt > i) {
-      const top = stack[stack.length - 1];
-      top.text += decodeEntities(src.slice(i, lt));
+  const parser = new SaxesParser({ xmlns: true, position: false });
+  parser.on('error', () => { /* 不规范的地方跳过，继续解析 */ });
+  parser.on('opentag', (tag) => {
+    const el: XEl = { name: qualify(tag.uri, tag.prefix, tag.local), attrs: {}, children: [], text: '' };
+    for (const a of Object.values(tag.attributes)) {
+      if (a.prefix === 'xmlns' || a.name === 'xmlns') continue;
+      // 无前缀属性不属于任何命名空间，保持原名
+      el.attrs[a.prefix ? qualify(a.uri, a.prefix, a.local) : a.name] = a.value;
     }
-    // 找不到结尾（文件被截断）时直接结束，不能把 -1 当位置用，否则会死循环
-    const skipTo = (token: string, from: number) => {
-      const k = src.indexOf(token, from);
-      return k < 0 ? n : k + token.length;
-    };
-    if (src.startsWith('<?', lt)) { i = skipTo('?>', lt); continue; }
-    if (src.startsWith('<!--', lt)) { i = skipTo('-->', lt); continue; }
-    if (src.startsWith('<![CDATA[', lt)) {
-      const end = src.indexOf(']]>', lt);
-      stack[stack.length - 1].text += src.slice(lt + 9, end < 0 ? n : end);
-      i = end < 0 ? n : end + 3;
-      continue;
-    }
-    if (src.startsWith('<!', lt)) { i = skipTo('>', lt); continue; }
-    if (src[lt + 1] === '/') {
-      if (stack.length > 1) { stack.pop(); scopes.pop(); }
-      i = skipTo('>', lt);
-      continue;
-    }
-    // 开始标签：找到真正的 '>'（属性值里可能有 '>'）
-    let j = lt + 1;
-    let quote = '';
-    for (; j < n; j++) {
-      const c = src[j];
-      if (quote) { if (c === quote) quote = ''; }
-      else if (c === '"' || c === "'") quote = c;
-      else if (c === '>') break;
-    }
-    const selfClose = src[j - 1] === '/';
-    const body = src.slice(lt + 1, selfClose ? j - 1 : j);
-    const sp = body.search(/\s/);
-    const qname = sp < 0 ? body : body.slice(0, sp);
-    const rawAttrs: [string, string][] = [];
-    const scope: Scope = { map: new Map() };
-    if (sp >= 0) {
-      ATTR_RE.lastIndex = 0;
-      const attrSrc = body.slice(sp);
-      let m: RegExpExecArray | null;
-      while ((m = ATTR_RE.exec(attrSrc))) {
-        const k = m[1];
-        const v = decodeEntities(m[3] ?? m[4] ?? '');
-        if (k === 'xmlns') scope.map.set('', v);
-        else if (k.startsWith('xmlns:')) scope.map.set(k.slice(6), v);
-        else rawAttrs.push([k, v]);
-      }
-    }
-    scopes.push(scope);
-    const el: XEl = { name: resolveName(qname, scopes, false), attrs: {}, children: [], text: '' };
-    for (const [k, v] of rawAttrs) el.attrs[resolveName(k, scopes, true)] = v;
     stack[stack.length - 1].children.push(el);
-    if (selfClose) scopes.pop();
-    else stack.push(el);
-    i = j + 1;
+    stack.push(el);
+  });
+  parser.on('closetag', () => { if (stack.length > 1) stack.pop(); });
+  parser.on('text', (t) => { stack[stack.length - 1].text += t; });
+  parser.on('cdata', (t) => { stack[stack.length - 1].text += t; });
+  try {
+    parser.write(src).close();
+  } catch {
+    // 截断等情况：保留已经解析出的部分
   }
   return root.children[0] ?? root;
 }
