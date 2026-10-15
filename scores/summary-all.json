@@ -1,13 +1,15 @@
 {
- "date": "2026-10-15 22:33",
+ "date": "2026-10-15 23:42",
  "set": "all",
- "files": 1,
+ "files": 219,
  "failedToConvert": 0,
- "pages": 78,
- "passed": 69,
- "passRate": 0.8846,
- "meanSsim": 0.9705,
+ "pages": 7051,
+ "passed": 5094,
+ "passRate": 0.7225,
+ "meanSsim": 0.9607,
  "passLine": 0.95,
- "issues": {},
- "missingFontCount": 3
+ "issues": {
+  "图片无法显示": 1
+ },
+ "missingFontCount": 133
 }
