@@ -84,6 +84,8 @@ export interface RunStyle {
   /** 西文、东亚字体的字符集类别（缺字体时按它选替代字体，见 measure.ts）：jp 日文，ea 其它东亚字符集（如 GB2312） */
   latinScript?: 'jp' | 'ea';
   eaScript?: 'jp' | 'ea';
+  /** 文字语言是中日韩（a:rPr lang）：引号按东亚字体、全角排（measure.ts） */
+  eaLang: boolean;
   outline?: { color: Rgba; width: number };
   /** 文字效果（a:effectLst）：阴影、发光、内阴影、映像…… */
   effects?: XEl;

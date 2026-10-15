@@ -9,7 +9,8 @@ function canBreakBetween(a: Atom, b: Atom, kinsoku: boolean): boolean {
   if (kinsoku && (NO_START.has(b.text) || NO_END.has(a.text))) return false;
   if (a.space || a.tab) return true;
   if (a.wide || b.wide) return true;
-  if (a.text === '-' || a.text === '/') return true;
+  // 实测：破折号后面可以断（两个 — 能拆到两行）
+  if (a.text === '-' || a.text === '/' || a.text === '—') return true;
   return false;
 }
 

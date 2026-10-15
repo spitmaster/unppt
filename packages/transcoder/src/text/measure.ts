@@ -46,6 +46,11 @@ const LATIN_SUBS = ['Calibri', 'Arial', 'Liberation Sans', 'Helvetica'];
 const EA_SUBS = ['Microsoft YaHei', '微软雅黑', 'DengXian', '等线', 'PingFang SC', 'Noto Sans CJK SC', 'Source Han Sans SC'];
 // 实测（text-missing-font-jp）：标了日文字符集的缺失字体用 Yu Gothic（Regular，和 PANOSE 字重无关），它没有的字（简体字）再用雅黑
 const JP_SUBS = ['Yu Gothic', '游ゴシック', ...EA_SUBS];
+/**
+ * 引号 ‘’“”：实测（text-ambiguous-punct）文字语言是中日韩时 PowerPoint 用东亚字体、按全角排，英文时用西文字体
+ * （破折号、省略号、间隔号在中文里也用西文字体）
+ */
+const AMBIGUOUS = new Set([0x2018, 0x2019, 0x201c, 0x201d]);
 const subsFor = (script: 'jp' | 'ea' | undefined, latin: boolean) => (script === 'jp' ? JP_SUBS : script === 'ea' || !latin ? EA_SUBS : LATIN_SUBS);
 
 export async function makeAtoms(text: string, style: RunStyle, m: Measurer): Promise<Atom[]> {
@@ -81,7 +86,7 @@ export async function makeAtoms(text: string, style: RunStyle, m: Measurer): Pro
     const ch = lower ? raw.toUpperCase() : raw;
     const st = lower ? smallCaps! : style;
     const cp = ch.codePointAt(0)!;
-    const wide = isWide(cp);
+    const wide = isWide(cp) || (st.eaLang && AMBIGUOUS.has(cp));
     const isSym = !!symM && cp >= 0xf000 && cp <= 0xf0ff;
     const primary = isSym ? symM : wide ? eaM : latinM;
     const secondary = wide ? latinM : eaM;
