@@ -221,6 +221,7 @@
 
 | 规则 | 实测依据 |
 |---|---|
+| 页码字段（a:fld type="slidenum"）显示所在幻灯片的页码 = 页序 + 起始页码（p:presentation 的 firstSlideNum，默认 1）−1，母版、版式上普通文本框里的页码字段也一样（文件里存的是占位文字 ‹#›） | slide-number-fields：起始页码 5、母版文本框里的页码和页码占位符 |
 | 图片拉伸时先按 a:stretch/a:fillRect 的内边距（相对形状框，负数是伸出形状）得到目标矩形，再按 srcRect 裁剪铺满它；形状的图片填充和普通图片都一样 | picture-fill-rect：负、正、不对称的内边距 |
 | 图片格式按文件内容认，不看扩展名（内容是 TIFF 叫 .png、内容是 PNG 叫 .emf、内容是 JPEG 叫 .png 都照常显示） | pictures-mislabeled；第一批真实课件里 17 份有这种图片 |
 | EMF 里 AlphaBlend 贴的位图（114 号记录）：混合方式第 3 个字节是整体透明度，第 4 个字节为 1 时用位图自带的逐像素透明度（预乘） | emf-alphablend：逐像素透明的圆点、整体 50% 的方块 |

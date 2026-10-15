@@ -160,7 +160,7 @@ export async function renderSlide(ref: SlideRef, env: RenderEnv): Promise<Render
   const ovr = path(xml, 'p:clrMapOvr', 'a:overrideClrMapping');
   const clrMap = ovr ? { ...layout.clrMap, ...ovr.attrs } : layout.clrMap;
   const colors = colorContext(theme, clrMap);
-  const mk = (part: string, own: boolean): SlideContext => ({ pres, part, layout, master, theme, colors, ownSlide: own });
+  const mk = (part: string, own: boolean): SlideContext => ({ pres, part, layout, master, theme, colors, ownSlide: own, slideNumber: ref.index + pres.firstSlideNum });
   const r = new SlideRenderer(env, ref.index);
   const W = pres.width, H = pres.height;
 

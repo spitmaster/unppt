@@ -44,7 +44,9 @@ export async function layoutParagraph(p: XEl, pi: number, ctx: ParagraphContext)
     if (r.name === 'a:r' || r.name === 'a:fld') {
       const style = runStyle(merge([defRPr, child(r, 'a:rPr')]), env, fontScale);
       firstStyle ??= style;
-      const runAtoms = await makeAtoms(child(r, 'a:t')?.text ?? '', style, measurer);
+      // 页码字段显示当前幻灯片的页码（文件里存的是保存时的页码，母版、版式上的是占位文字 ‹#›）
+      const text = r.name === 'a:fld' && attr(r, 'type') === 'slidenum' && env.slideNumber !== undefined ? String(env.slideNumber) : child(r, 'a:t')?.text ?? '';
+      const runAtoms = await makeAtoms(text, style, measurer);
       await kernAcross(atoms[atoms.length - 1], runAtoms[0]);
       atoms.push(...runAtoms);
     } else if (r.name === 'a:br') {

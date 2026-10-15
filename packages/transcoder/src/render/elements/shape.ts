@@ -120,7 +120,7 @@ export async function renderShape(r: RenderContext, el: XEl, ctx: SlideContext, 
     colors, theme: ctx.theme, fonts: r.env.fonts, missingFonts: r.env.missingFonts,
     fontRefColor: colorIn(fontRef, colors), uid, embed: r.env.embed, doc: r.doc,
     rels: await r.env.pres.pkg.rels(ctx.part),
-    images: r.images, part: ctx.part,
+    images: r.images, part: ctx.part, slideNumber: ctx.slideNumber,
     // 外框对齐了整像素（没转动）、所在坐标系没缩放时，文字基线也对齐整像素
     pixelTop: snap && !box.flipV && (ctx.toSlide === undefined || ctx.toSlide?.sy === 1) ? (ctx.toSlide?.y ?? 0) + box.y : undefined,
   };
