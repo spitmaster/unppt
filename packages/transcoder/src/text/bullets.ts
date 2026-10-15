@@ -1,5 +1,6 @@
 /** 项目符号和自动编号 */
 import { colorIn } from '../model/color';
+import { BLIP_PART } from '../model/model';
 import { attr, child, numAttr, type XEl } from '../io/xml';
 import { makeAtoms, type Measurer } from './measure';
 import { GROUP, resolveTypeface } from './style';
@@ -104,7 +105,7 @@ export async function makeBullet(
   // 图片符号：实测边长约 0.70 倍字号 × 符号大小；取不到图片时退回圆点
   if (bu?.name === 'a:buBlip' && env.images && env.part) {
     const rid = attr(child(bu, 'a:blip'), 'r:embed');
-    const href = rid ? await env.images.image(env.part, rid) : undefined;
+    const href = rid ? await env.images.image(attr(bu, BLIP_PART) ?? env.part, rid) : undefined;
     if (href) return { text: '', style, x, width: size * 0.7, family: style.latin, image: href };
   }
   const ba = await makeAtoms(text, style, measurer);
