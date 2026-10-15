@@ -252,8 +252,19 @@ def run(set_name: str, only: str | None, do_build: bool):
                 if not ref_png.exists():
                     continue
                 url = out_html.resolve().as_uri() + f"?slide={slide}&step={step}&ui=0"
-                page.goto(url)
-                page.wait_for_function("window.unppt !== undefined", timeout=20000)
+                # 机器忙时偶尔加载超时：换一个新页面重试一次，还不行就跳过这一页（记在输出里），不让整轮中断
+                try:
+                    page.goto(url)
+                    page.wait_for_function("window.unppt !== undefined", timeout=20000)
+                except Exception:
+                    page.close()
+                    page = browser.new_page(viewport={"width": w, "height": h})
+                    try:
+                        page.goto(url, timeout=90000)
+                        page.wait_for_function("window.unppt !== undefined", timeout=60000)
+                    except Exception as e:
+                        print(f"{it['key']} 第 {slide + 1} 页加载失败，跳过：{type(e).__name__}")
+                        continue
                 page.evaluate("document.fonts.ready")
                 if ref.get("level") == "static":
                     # 静态导出的参考图上所有对象都显示（不管动画），我们这边也把动画藏起来的对象全部显示
