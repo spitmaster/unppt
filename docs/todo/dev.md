@@ -117,13 +117,16 @@ node packages/transcoder/dist/cli.js convert 你的文件.pptx -o out/index.html
 ### 10/15 夜：用第一批真实课件（200 多份）验证和优化
 
 每一项都先用 PowerPoint 生成中性探针或测试用例量出规则（写进 SPEC 第 7 节），再改代码；合成用例全部无回退。
-样本整体（只记总分）：第二轮 通过 63.7% / 平均 0.950 → 第三轮 64.7% / 0.952 → 第四轮 66.2% / 0.955（第五轮包含下面全部修复，结果见 scores/summary-all.json）。
+样本整体（只记总分）：第二轮 通过 63.7% / 平均 0.950 → 第三轮 64.7% / 0.952 → 第四轮 66.2% / 0.955 → 第五轮 72.3% / 0.961 → 第六轮 73.7% / 0.962 → 第七轮 73.8% / 0.963（第八轮在跑，结果见 scores/summary-all.json）。
 
 - **排版单位 1/8 磅**：PowerPoint 每个字的宽度四舍五入到 1/8 磅，摆位置和断行都用取整后的宽度；整行宽度向上取整后不超过可用宽度才放得下（字间距让行宽正好等于框宽时也要换行）。以前长西文行行尾差 1~2 磅。用例 text-layout-unit；
 - **缺失字体按字符集选替代字体**：标日文字符集的缺失字体（思源黑体类常见）PowerPoint 用 Yu Gothic，它没有的简体字用雅黑补——以前一律雅黑，字明显偏粗、断行不同。同一个字体名共用一个字符集，PowerPoint 按页加载：渲染第 k 页时用到这页为止最后一次写的（后面页面写的不影响前面）。用例 text-missing-font-jp、text-charset-slides；
 - **文本框和形状只用演示文稿默认样式**（母版 otherStyle 只给表格用），形状样式和表格样式的 fontRef 主题字体生效。用例 text-default-style、text-latin-cjk-font；
 - **按中文习惯控制首尾字符（eaLnBrk）关掉时不做行首行尾禁则**（老模板的默认样式常见）。用例 text-ea-line-break；
 - **中文里的引号按全角**：文字语言是中日韩时引号用东亚字体、占一个字宽；破折号后面可以断行。用例 text-ambiguous-punct；
+- **图片的形状沿占位符继承链找**：版式占位符是自定义形状时按它裁剪，哪里都没有形状就不画（以前一律按矩形画）。用例 placeholders-picture-geom；
+- **EMF 渐变填充**（118 号记录）。用例 emf-gradient-fill；
+- **主题东亚字体为空时按文字语言选主题脚本字体**（zh-CN 等线、ja-JP 游ゴシック、zh-TW 新細明體、ko-KR 맑은 고딕；英文或没写语言用雅黑）。用例 text-theme-font-lang；
 - **自动缩小后的字号四舍五入到整数磅**（行距也按取整后的字号算）。用例 text-autofit-round；
 - **跨行合并的单元格**文字放不下时，多出的高度加到它跨的最后一行。用例 table-rowspan-tall；
 - **三维轮廓**（sp3d contourW）：贴着外框的一圈。用例 shapes-3d-contour；
