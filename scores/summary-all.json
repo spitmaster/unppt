@@ -1,13 +1,13 @@
 {
- "date": "2026-10-13 16:31",
+ "date": "2026-10-15 22:33",
  "set": "all",
- "files": 5,
+ "files": 1,
  "failedToConvert": 0,
- "pages": 7,
- "passed": 7,
- "passRate": 1.0,
- "meanSsim": 0.9702,
+ "pages": 78,
+ "passed": 69,
+ "passRate": 0.8846,
+ "meanSsim": 0.9705,
  "passLine": 0.95,
  "issues": {},
- "missingFontCount": 2
+ "missingFontCount": 3
 }
