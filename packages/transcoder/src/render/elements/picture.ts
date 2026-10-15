@@ -1,6 +1,6 @@
 /** 图片（p:pic）：裁剪、外形、边框、效果；以及视频、音频 */
 import type { SlideContext } from '../../model/model';
-import { blipImage, parseFill, styleRef } from '../../style/fill';
+import { blipImage, imagePlacement, parseFill, styleRef } from '../../style/fill';
 import { parseLine, strokeAttrs } from '../../style/line';
 import { effectFilter } from '../../effects/effect-filter';
 import { reflection } from '../../effects/reflection';
@@ -47,19 +47,19 @@ export async function renderPicture(r: RenderContext, el: XEl, ctx: SlideContext
     poster = href;
     if (href) {
       const sr = fill.srcRect ?? { l: 0, t: 0, r: 0, b: 0 };
-      const iw = box.w / Math.max(0.0001, 1 - sr.l - sr.r);
-      const ih = box.h / Math.max(0.0001, 1 - sr.t - sr.b);
+      const fr = fill.fillRect;
+      const { x: ix, y: iy, iw, ih } = imagePlacement(fill, box.w, box.h);
       let clip = '';
       // 水平翻转、整个在幻灯片里的图片，PowerPoint 画出的内容比镜像的位置往右多 1 像素（右边缘多出的裁掉，边框不动；
       // 垂直翻转、伸出幻灯片的没有，实测）
       const flipShift = box.flipH && onSlide(box, ctx, r.env.pres) ? ' transform="translate(-1 0)"' : '';
-      const needsClip = prst !== 'rect' || !!custEl || sr.l !== 0 || sr.t !== 0 || sr.r !== 0 || sr.b !== 0 || !!flipShift;
+      const needsClip = prst !== 'rect' || !!custEl || sr.l !== 0 || sr.t !== 0 || sr.r !== 0 || sr.b !== 0 || !!fr || !!flipShift;
       if (needsClip) {
         const id = r.doc.id('c');
         r.doc.addDef(`<clipPath id="${id}"><path d="${outlineD}"/></clipPath>`);
         clip = ` clip-path="url(#${id})"`;
       }
-      parts.push(`<g${clip}><image${flipShift} href="${esc(href)}" x="${n2(-sr.l * iw)}" y="${n2(-sr.t * ih)}" width="${n2(iw)}" height="${n2(ih)}" preserveAspectRatio="none"${fill.alpha < 1 ? ` opacity="${n2(fill.alpha)}"` : ''}${fid ? ` filter="url(#${fid})"` : ''}/></g>`);
+      parts.push(`<g${clip}><image${flipShift} href="${esc(href)}" x="${n2(ix)}" y="${n2(iy)}" width="${n2(iw)}" height="${n2(ih)}" preserveAspectRatio="none"${fill.alpha < 1 ? ` opacity="${n2(fill.alpha)}"` : ''}${fid ? ` filter="url(#${fid})"` : ''}/></g>`);
     } else {
       r.env.pres.warn('图片无法显示（格式不支持或缺失）');
     }

@@ -1,0 +1,113 @@
+{
+ "version": 8,
+ "level": "full",
+ "slideWidthPt": 960.0,
+ "slideHeightPt": 540.0,
+ "imageWidth": 1280,
+ "imageHeight": 720,
+ "slides": [
+  {
+   "index": 0,
+   "hidden": false,
+   "shapes": [
+    {
+     "id": 200,
+     "name": "Orphan 0",
+     "type": 14,
+     "x": 23.622,
+     "y": 23.622,
+     "w": 314.961,
+     "h": 188.976,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 138,
+     "lines": [
+      {
+       "start": 0,
+       "len": 7,
+       "text": "孤立占位符 1",
+       "x": 48.822,
+       "y": 27.222,
+       "w": 116.005,
+       "h": 21.6
+      }
+     ]
+    },
+    {
+     "id": 201,
+     "name": "Orphan 1",
+     "type": 14,
+     "x": 377.953,
+     "y": 23.622,
+     "w": 314.961,
+     "h": 188.976,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 138,
+     "lines": [
+      {
+       "start": 0,
+       "len": 7,
+       "text": "孤立占位符 2",
+       "x": 403.153,
+       "y": 27.222,
+       "w": 116.005,
+       "h": 21.6
+      }
+     ]
+    },
+    {
+     "id": 202,
+     "name": "Orphan 2",
+     "type": 14,
+     "x": 23.622,
+     "y": 251.969,
+     "w": 314.961,
+     "h": 188.976,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 138,
+     "lines": [
+      {
+       "start": 0,
+       "len": 7,
+       "text": "孤立占位符 3",
+       "x": 48.822,
+       "y": 255.568,
+       "w": 116.005,
+       "h": 21.6
+      }
+     ]
+    },
+    {
+     "id": 203,
+     "name": "Orphan 3",
+     "type": 14,
+     "x": 377.953,
+     "y": 251.969,
+     "w": 314.961,
+     "h": 188.976,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 138,
+     "lines": [
+      {
+       "start": 0,
+       "len": 7,
+       "text": "孤立占位符 4",
+       "x": 403.153,
+       "y": 255.568,
+       "w": 116.005,
+       "h": 21.6
+      }
+     ]
+    }
+   ],
+   "effects": [],
+   "triggerHidden": [],
+   "steps": 0,
+   "keptSlideshow": false
+  }
+ ],
+ "ok": true
+}

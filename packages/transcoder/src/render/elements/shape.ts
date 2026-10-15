@@ -60,8 +60,10 @@ export async function renderShape(r: RenderContext, el: XEl, ctx: SlideContext, 
 
   // 几何
   const geomParts: string[] = [];
-  // 实测（placeholders-inherit）：版式里没有对应项的占位符不继承母版的形状；自己、版式、母版都没写形状时不画填充和边框，只排文字
-  const prst = child(spPr, 'a:prstGeom') ?? child(lSpPr, 'a:prstGeom') ?? (ph && !layoutPh ? undefined : child(mSpPr, 'a:prstGeom'));
+  // 实测（placeholders-inherit、placeholders-orphan）：版式里没有对应项的占位符不继承母版的形状——编号是 4294967295（"没有编号"，
+  // 老格式 .ppt 转换常见）的除外，它按类型继承母版；自己、版式、母版都没写形状时不画填充和边框，只排文字
+  const orphan = !!ph && !layoutPh && ph.idx !== '4294967295';
+  const prst = child(spPr, 'a:prstGeom') ?? child(lSpPr, 'a:prstGeom') ?? (orphan ? undefined : child(mSpPr, 'a:prstGeom'));
   const cust = child(spPr, 'a:custGeom');
   let def = cust ? parseGeomXml(cust) : prst ? presetGeometry(attr(prst, 'prst') ?? 'rect') : presetGeometry('rect');
   if (!def) {

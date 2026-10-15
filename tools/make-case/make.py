@@ -2790,7 +2790,86 @@ def emf_alphablend(app):
     return p
 
 
-CASES = [shapes_all, text_sizes, text_align, text_spacing, text_bullets, text_missing_font, shapes_basic, fills_lines, table_basic, group_rotate, anim_basic, anim_auto, charts_basic, pictures, smartart, text_effects, text_layout, table_merge, links, emf_images, anim_advanced, charts_labels, freeform_icons, media_audio, anim_trigger, wmf_images, anim_iterate, picture_transparent, charts_more, shape_effects, equations, anim_path, anim_emphasis, transitions, fills_patterns, text_decoration, anim_entrance, svg_images, charts_markers, hidden_slides, media_background, text_glow_reflection, text_tabs, text_picture_bullets, fills_texture, transition_morph, text_embedded_fonts, text_warp, anim_repeat, charts_sizes, slide_timings, lines_compound, table_diagonal, lines_gradient, fills_radial, fills_rect_gradient, shapes_3d, table_vertical, transitions_more, anim_sound, anim_build, anim_after, anim_text_emphasis, charts_bubble, media_video, charts_options, charts_negative, shapes_bevel, charts_legend, shapes_3d_rotation, smartart_3d, charts_ofpie, charts_3d, anim_group_emphasis, activex_controls, charts_extras, charts_axis_titles, charts_fills, charts_outlines, charts_labels_more, group_scale, group_flip, charts_3d_line, charts_legend_pos, charts_crowded_labels, charts_label_skip, charts_bar_long_names, charts_multilevel, picture_recolor, text_symbols, text_numbering, lines_arrows, table_styles, shapes_styles, charts_styles, placeholders_inherit, text_bold_light, ole_objects, text_hanging_punct, speaker_notes, pictures_tiff, placeholders_picture, pictures_exif, text_picture_fill, pictures_mislabeled, emf_alphablend]
+def placeholders_orphan(app):
+    """版式里找不到对应项的占位符（保存后改 XML），都带填充、没写形状：
+    副标题 + 编号 4294967295（老 .ppt 转换常见）、正文 + 编号 77、不写类型 + 编号 4294967295、副标题 + 编号 88"""
+    p = new_pres(app)
+    blank(p)
+    return p
+
+
+def _patch_orphan(path):
+    import zipfile
+    specs = [('type="subTitle" idx="4294967295"', "C00000", 300000, 300000), ('type="body" idx="77"', "00B050", 4800000, 300000),
+             ('idx="4294967295"', "0070C0", 300000, 3200000), ('type="subTitle" idx="88"', "FFC000", 4800000, 3200000)]
+    sps = []
+    for k, (ph, col, x, y) in enumerate(specs):
+        sps.append(f'<p:sp><p:nvSpPr><p:cNvPr id="{200 + k}" name="Orphan {k}"/><p:cNvSpPr><a:spLocks noGrp="1"/></p:cNvSpPr><p:nvPr><p:ph {ph}/></p:nvPr></p:nvSpPr>'
+                   f'<p:spPr><a:xfrm><a:off x="{x}" y="{y}"/><a:ext cx="4000000" cy="2400000"/></a:xfrm><a:solidFill><a:srgbClr val="{col}"/></a:solidFill></p:spPr>'
+                   f'<p:txBody><a:bodyPr/><a:lstStyle/><a:p><a:r><a:rPr lang="zh-CN" altLang="en-US" sz="2000"/><a:t>孤立占位符 {k + 1}</a:t></a:r></a:p></p:txBody></p:sp>')
+    extra = "".join(sps).encode("utf8")
+    tmp = path.with_suffix(".tmp")
+    with zipfile.ZipFile(path) as zin, zipfile.ZipFile(tmp, "w", zipfile.ZIP_DEFLATED) as zout:
+        for item in zin.infolist():
+            data = zin.read(item.filename)
+            if item.filename == "ppt/slides/slide1.xml":
+                data = data.replace(b"</p:spTree>", extra + b"</p:spTree>")
+            zout.writestr(item, data)
+    tmp.replace(path)
+
+
+placeholders_orphan.patch = _patch_orphan
+
+
+def picture_fill_rect(app):
+    """图片拉伸时的目标矩形（a:stretch/a:fillRect 的内边距，保存后改 XML）：四色象限图，
+    形状图片填充：负内边距（图片伸出形状）、正内边距（图片缩在形状里）、左右不对称；普通图片：负内边距"""
+    png = (CACHE / "make-case" / "quadrants.png").resolve()
+    if not png.exists():
+        from PIL import Image, ImageDraw
+        png.parent.mkdir(parents=True, exist_ok=True)
+        im = Image.new("RGB", (400, 200))
+        dr = ImageDraw.Draw(im)
+        dr.rectangle((0, 0, 199, 99), fill=(220, 40, 40)); dr.rectangle((200, 0, 399, 99), fill=(40, 160, 60))
+        dr.rectangle((0, 100, 199, 199), fill=(40, 80, 220)); dr.rectangle((200, 100, 399, 199), fill=(240, 200, 30))
+        im.save(png)
+    p = new_pres(app)
+    s = blank(p)
+    for k, (x, y, shp) in enumerate([(40, 40, 1), (500, 40, 9), (40, 290, 1)]):
+        sh = s.Shapes.AddShape(shp, x, y, 400, 200)
+        sh.Fill.UserPicture(str(png))
+        sh.Line.Visible = 0
+        sh.Name = f"FR{k}"
+    pic = s.Shapes.AddPicture(str(png), 0, -1, 500, 290, 400, 200)
+    pic.Name = "FR3"
+    return p
+
+
+def _patch_fill_rect(path):
+    import re
+    import zipfile
+    rects = ['l="-20000" t="-20000" r="-20000" b="-20000"', 'l="15000" t="10000" r="15000" b="10000"',
+             'l="-5000" t="0" r="-40000" b="0"', 'l="-25000" t="-25000" r="0" b="0"']
+    tmp = path.with_suffix(".tmp")
+    with zipfile.ZipFile(path) as zin, zipfile.ZipFile(tmp, "w", zipfile.ZIP_DEFLATED) as zout:
+        for item in zin.infolist():
+            data = zin.read(item.filename)
+            if item.filename == "ppt/slides/slide1.xml":
+                xml = data.decode("utf8")
+                for k, rect in enumerate(rects):
+                    m = next(m for m in re.finditer(r"<p:(sp|pic)>.*?</p:\1>", xml, re.S) if f'name="FR{k}"' in m.group(0))
+                    el = m.group(0)
+                    new = re.sub(r"<a:fillRect\s*/>", f"<a:fillRect {rect}/>", el, count=1)
+                    xml = xml.replace(el, new)
+                data = xml.encode("utf8")
+            zout.writestr(item, data)
+    tmp.replace(path)
+
+
+picture_fill_rect.patch = _patch_fill_rect
+
+
+CASES = [shapes_all, text_sizes, text_align, text_spacing, text_bullets, text_missing_font, shapes_basic, fills_lines, table_basic, group_rotate, anim_basic, anim_auto, charts_basic, pictures, smartart, text_effects, text_layout, table_merge, links, emf_images, anim_advanced, charts_labels, freeform_icons, media_audio, anim_trigger, wmf_images, anim_iterate, picture_transparent, charts_more, shape_effects, equations, anim_path, anim_emphasis, transitions, fills_patterns, text_decoration, anim_entrance, svg_images, charts_markers, hidden_slides, media_background, text_glow_reflection, text_tabs, text_picture_bullets, fills_texture, transition_morph, text_embedded_fonts, text_warp, anim_repeat, charts_sizes, slide_timings, lines_compound, table_diagonal, lines_gradient, fills_radial, fills_rect_gradient, shapes_3d, table_vertical, transitions_more, anim_sound, anim_build, anim_after, anim_text_emphasis, charts_bubble, media_video, charts_options, charts_negative, shapes_bevel, charts_legend, shapes_3d_rotation, smartart_3d, charts_ofpie, charts_3d, anim_group_emphasis, activex_controls, charts_extras, charts_axis_titles, charts_fills, charts_outlines, charts_labels_more, group_scale, group_flip, charts_3d_line, charts_legend_pos, charts_crowded_labels, charts_label_skip, charts_bar_long_names, charts_multilevel, picture_recolor, text_symbols, text_numbering, lines_arrows, table_styles, shapes_styles, charts_styles, placeholders_inherit, text_bold_light, ole_objects, text_hanging_punct, speaker_notes, pictures_tiff, placeholders_picture, pictures_exif, text_picture_fill, pictures_mislabeled, emf_alphablend, placeholders_orphan, picture_fill_rect]
 
 
 def main():

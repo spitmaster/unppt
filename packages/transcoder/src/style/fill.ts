@@ -17,7 +17,7 @@ export type Fill =
   | { kind: 'none' }
   | { kind: 'solid'; color: Rgba }
   | { kind: 'grad'; stops: { pos: number; color: Rgba }[]; angle: number; scaled?: boolean; path?: string; rect?: { l: number; t: number; r: number; b: number } }
-  | { kind: 'image'; rid: string; part: string; alpha: number; tile?: Tile; srcRect?: { l: number; t: number; r: number; b: number }; effects?: BlipEffects }
+  | { kind: 'image'; rid: string; part: string; alpha: number; tile?: Tile; srcRect?: { l: number; t: number; r: number; b: number }; fillRect?: { l: number; t: number; r: number; b: number }; effects?: BlipEffects }
   | { kind: 'pattern'; prst: string; fg: Rgba; bg: Rgba };
 
 const FILL_NAMES = new Set(['a:noFill', 'a:solidFill', 'a:gradFill', 'a:blipFill', 'a:pattFill', 'a:grpFill']);
@@ -60,12 +60,18 @@ export function parseFill(f: XEl | undefined, ctx: ColorContext, part: string, g
       const rid = attr(findAll(blip, 'asvg:svgBlip')[0], 'r:embed') ?? attr(blip, 'r:embed') ?? '';
       const amf = child(blip, 'a:alphaModFix');
       const sr = child(f, 'a:srcRect');
+      const fr = child(child(f, 'a:stretch'), 'a:fillRect');
       return {
         kind: 'image', rid, part, alpha: (numAttr(amf, 'amt') ?? 100000) / 100000, tile: parseTile(child(f, 'a:tile')),
         effects: parseBlipEffects(blip, ctx),
         srcRect: sr ? {
           l: (numAttr(sr, 'l') ?? 0) / 100000, t: (numAttr(sr, 't') ?? 0) / 100000,
           r: (numAttr(sr, 'r') ?? 0) / 100000, b: (numAttr(sr, 'b') ?? 0) / 100000,
+        } : undefined,
+        // 拉伸的目标矩形：相对形状框的内边距（负数是伸出形状，伸出的部分被形状裁掉）
+        fillRect: fr && (fr.attrs.l || fr.attrs.t || fr.attrs.r || fr.attrs.b) ? {
+          l: (numAttr(fr, 'l') ?? 0) / 100000, t: (numAttr(fr, 't') ?? 0) / 100000,
+          r: (numAttr(fr, 'r') ?? 0) / 100000, b: (numAttr(fr, 'b') ?? 0) / 100000,
         } : undefined,
       };
     }
@@ -252,9 +258,19 @@ export async function fillAttrs(
     if (tiled) return tiled;
   }
   const id = doc.id('p');
-  const sr = fill.srcRect ?? { l: 0, t: 0, r: 0, b: 0 };
-  const iw = w / Math.max(0.0001, 1 - sr.l - sr.r);
-  const ih = h / Math.max(0.0001, 1 - sr.t - sr.b);
-  doc.addDef(`<pattern id="${id}" patternUnits="userSpaceOnUse" width="${n2(w)}" height="${n2(h)}"><image href="${esc(href)}" x="${n2(-sr.l * iw)}" y="${n2(-sr.t * ih)}" width="${n2(iw)}" height="${n2(ih)}" preserveAspectRatio="none"${fill.alpha < 1 ? ` opacity="${n2(fill.alpha)}"` : ''}${fid ? ` filter="url(#${fid})"` : ''}/></pattern>`);
+  const { x, y, iw, ih } = imagePlacement(fill, w, h);
+  doc.addDef(`<pattern id="${id}" patternUnits="userSpaceOnUse" width="${n2(w)}" height="${n2(h)}"><image href="${esc(href)}" x="${n2(x)}" y="${n2(y)}" width="${n2(iw)}" height="${n2(ih)}" preserveAspectRatio="none"${fill.alpha < 1 ? ` opacity="${n2(fill.alpha)}"` : ''}${fid ? ` filter="url(#${fid})"` : ''}/></pattern>`);
   return ` fill="url(#${id})"`;
+}
+
+/**
+ * 拉伸的图片放在形状框（w × h）里的位置和大小：先按 fillRect 的内边距得到目标矩形（实测 picture-fill-rect），
+ * 再按 srcRect 的裁剪把原图放大，使裁剪后的部分正好铺满目标矩形
+ */
+export function imagePlacement(fill: { srcRect?: { l: number; t: number; r: number; b: number }; fillRect?: { l: number; t: number; r: number; b: number } }, w: number, h: number) {
+  const sr = fill.srcRect ?? { l: 0, t: 0, r: 0, b: 0 };
+  const fr = fill.fillRect ?? { l: 0, t: 0, r: 0, b: 0 };
+  const tw = w * (1 - fr.l - fr.r), th = h * (1 - fr.t - fr.b);
+  const iw = tw / Math.max(0.0001, 1 - sr.l - sr.r), ih = th / Math.max(0.0001, 1 - sr.t - sr.b);
+  return { x: fr.l * w - sr.l * iw, y: fr.t * h - sr.t * ih, iw, ih };
 }
