@@ -272,7 +272,15 @@ def run(set_name: str, only: str | None, do_build: bool):
                 page.wait_for_timeout(50)
                 stem = f"{it['key']}-{slide:03d}-{step:02d}"
                 ours_png = shots / f"{stem}-ours.png"
-                page.screenshot(path=str(ours_png))
+                try:
+                    page.screenshot(path=str(ours_png))
+                except Exception:
+                    # 截图也会在机器忙时超时：放宽时限重试一次，还不行就跳过这一页
+                    try:
+                        page.screenshot(path=str(ours_png), timeout=90000)
+                    except Exception as e:
+                        print(f"{it['key']} 第 {slide + 1} 页截图失败，跳过：{type(e).__name__}")
+                        continue
                 ref_copy = shots / f"{stem}-ref.png"
                 if not ref_copy.exists() or ref_copy.stat().st_mtime < ref_png.stat().st_mtime:
                     Image.open(ref_png).save(ref_copy)
