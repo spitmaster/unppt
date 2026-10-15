@@ -80,7 +80,8 @@ export function runStyle(r: XEl, env: TextEnv, scale: number): RunStyle {
     if (!u || u === 'none') u = 'sng';
   }
   return {
-    size: sz * scale * 96 / 72,
+    // 实测：自动缩小（normAutofit fontScale）后的字号四舍五入到整数磅（28 × 92.5% = 25.9 -> 26、14 × 90% = 12.6 -> 13，7 组行距全部吻合）
+    size: (scale === 1 ? sz : Math.round(sz * scale)) * 96 / 72,
     latin, ea,
     sym: resolveTypeface(attr(child(r, 'a:sym'), 'typeface'), env.theme),
     bold: attr(r, 'b') === '1' || attr(r, 'b') === 'true',
