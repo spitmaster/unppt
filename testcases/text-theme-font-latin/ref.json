@@ -1,0 +1,159 @@
+{
+ "version": 8,
+ "level": "full",
+ "slideWidthPt": 960.0,
+ "slideHeightPt": 540.0,
+ "imageWidth": 1280,
+ "imageHeight": 720,
+ "slides": [
+  {
+   "index": 0,
+   "hidden": false,
+   "shapes": [
+    {
+     "id": 2,
+     "name": "LATINFONT0",
+     "type": 17,
+     "x": 30.0,
+     "y": 10.0,
+     "w": 900.0,
+     "h": 41.198,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 21,
+       "text": "第1行 虽然能够保证触发更新的组件 ABC",
+       "x": 37.2,
+       "y": 13.6,
+       "w": 504.005,
+       "h": 33.6
+      }
+     ]
+    },
+    {
+     "id": 3,
+     "name": "LATINFONT1",
+     "type": 17,
+     "x": 30.0,
+     "y": 90.0,
+     "w": 900.0,
+     "h": 41.198,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 21,
+       "text": "第2行 虽然能够保证触发更新的组件 ABC",
+       "x": 37.2,
+       "y": 93.6,
+       "w": 504.005,
+       "h": 33.6
+      }
+     ]
+    },
+    {
+     "id": 4,
+     "name": "LATINFONT2",
+     "type": 17,
+     "x": 30.0,
+     "y": 170.0,
+     "w": 900.0,
+     "h": 41.198,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 21,
+       "text": "第3行 虽然能够保证触发更新的组件 ABC",
+       "x": 37.2,
+       "y": 173.6,
+       "w": 507.88,
+       "h": 33.6
+      }
+     ]
+    },
+    {
+     "id": 5,
+     "name": "LATINFONT3",
+     "type": 17,
+     "x": 30.0,
+     "y": 250.0,
+     "w": 900.0,
+     "h": 41.198,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 21,
+       "text": "第4行 虽然能够保证触发更新的组件 ABC",
+       "x": 37.2,
+       "y": 253.6,
+       "w": 507.085,
+       "h": 33.6
+      }
+     ]
+    },
+    {
+     "id": 6,
+     "name": "LATINFONT4",
+     "type": 17,
+     "x": 30.0,
+     "y": 330.0,
+     "w": 900.0,
+     "h": 41.198,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 21,
+       "text": "第5行 虽然能够保证触发更新的组件 ABC",
+       "x": 37.2,
+       "y": 333.6,
+       "w": 509.005,
+       "h": 33.6
+      }
+     ]
+    },
+    {
+     "id": 7,
+     "name": "LATINFONT5",
+     "type": 17,
+     "x": 30.0,
+     "y": 410.0,
+     "w": 900.0,
+     "h": 41.198,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 21,
+       "text": "第6行 虽然能够保证触发更新的组件 ABC",
+       "x": 37.2,
+       "y": 413.6,
+       "w": 504.005,
+       "h": 33.6
+      }
+     ]
+    }
+   ],
+   "effects": [],
+   "triggerHidden": [],
+   "steps": 0,
+   "keptSlideshow": false
+  }
+ ],
+ "ok": true
+}
