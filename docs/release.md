@@ -1,6 +1,6 @@
 # 发布到 npm
 
-只发布转码器一个包 `unppt`（`packages/transcoder`）：播放器已经内嵌在它的产物里，`@unppt/format`、`@unppt/player` 暂不发布。
+只发布转码器一个包 `@unppt/unppt`（`packages/transcoder`；不带作用域的 `unppt` 被 npm 判为和 unpdf、unpipe、nopt 太像而拒绝，`@unppt` 是发布账号的用户名作用域）：播放器已经内嵌在它的产物里，`@unppt/format`、`@unppt/player` 暂不发布。
 
 ## 注意：发布源
 
