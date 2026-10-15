@@ -212,8 +212,10 @@ export class Player {
   private follow(el: Element) {
     const href = el.getAttribute('data-href');
     if (href) {
+      // 只认网址、邮件、电话（产物可能被改过，转码时已经过滤一遍）；总是在新标签页打开，不让课件里的链接把播放器所在的页面跳走
+      if (!/^(https?:|mailto:|tel:)/i.test(href)) return;
       this.emit('link', href);
-      if (this.opts.openLinks !== false) this.root.ownerDocument.defaultView?.open(href, '_blank', 'noopener');
+      if (this.opts.openLinks !== false) this.root.ownerDocument.defaultView?.open(href, '_blank', 'noopener,noreferrer');
       return;
     }
     const link = el.getAttribute('data-link') ?? '';
