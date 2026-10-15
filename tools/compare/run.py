@@ -166,7 +166,9 @@ EXTRA_ARGS: list[str] = []
 def convert(src: Path, out: Path) -> dict:
     out.parent.mkdir(parents=True, exist_ok=True)
     t0 = time.time()
-    r = subprocess.run(["node", "packages/transcoder/dist/cli.js", "convert", str(src), "-o", str(out), "--system-fonts", *EXTRA_ARGS],
+    # 按需加载形式：截每一页只加载这一页的数据（单文件形式每次都要重新解析整个 HTML，大课件很慢；两种形式画面逐像素一致，见 tools/check-paged.py）。
+    # 比对用不到整页图和缩略图，不出图
+    r = subprocess.run(["node", "packages/transcoder/dist/cli.js", "convert", str(src), "-o", str(out.parent), "--output", "paged", "--no-images", "--system-fonts", *EXTRA_ARGS],
                        cwd=ROOT, capture_output=True, text=True, encoding="utf-8", errors="replace")
     lines = [l.strip() for l in (r.stdout or "").splitlines()]
     return {
