@@ -1,0 +1,62 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>unppt 直播课同步示例</title>
+<style>
+  body { font: 14px system-ui, sans-serif; margin: 16px; background: #f4f4f4; }
+  .row { display: flex; gap: 16px; flex-wrap: wrap; }
+  .col { flex: 1 1 420px; }
+  .frame { width: 100%; aspect-ratio: 16 / 9; background: #000; }
+  iframe { width: 100%; height: 100%; border: 0; display: block; }
+  h4 { margin: 8px 0; }
+  #log { font: 12px monospace; white-space: pre; background: #fff; padding: 8px; height: 140px; overflow: auto; margin-top: 12px; }
+  label { margin-left: 12px; }
+</style>
+</head>
+<body>
+<p>左边是老师端（演绎模式，自己点击、按键翻页，B / W 黑屏白屏，可以点触发器、播放视频），右边是学生端（观看模式，不能操作）。
+页面里的脚本扮演外部程序：把老师端的每个 change 事件原样转给学生端的 sync —— 真实场景里这一步走 IM。
+<label><input type="checkbox" id="delay"> 模拟 1 秒网络延迟</label>
+<label><input type="checkbox" id="drop"> 模拟丢一半消息</label></p>
+<div class="row">
+  <div class="col"><h4>老师端（?mode=present）</h4><div class="frame"><iframe id="teacher" allow="autoplay; fullscreen"></iframe></div></div>
+  <div class="col"><h4>学生端（?mode=watch）<button id="late">模拟学生重新进入</button></h4><div class="frame"><iframe id="student" allow="autoplay; fullscreen"></iframe></div></div>
+</div>
+<div id="log"></div>
+<script>
+  // 课件地址：?src=转码出来的 index.html（默认同目录下的 index.html）
+  const src = new URLSearchParams(location.search).get('src') || 'index.html';
+  const $ = (id) => document.getElementById(id);
+  const log = (m) => { $('log').textContent += m + '\n'; $('log').scrollTop = 1e9; };
+  const url = (mode) => { const u = new URL(src, location.href); u.searchParams.set('mode', mode); return u.toString(); };
+  $('teacher').src = url('present');
+  $('student').src = url('watch');
+  let last = null, id = 0;
+  // 老师端的事件 → "IM" → 学生端的 sync 指令
+  window.addEventListener('message', (e) => {
+    const d = e.data;
+    if (!d || d.unppt !== 1 || !d.event || e.source !== $('teacher').contentWindow) return;
+    if (d.event !== 'change' && d.event !== 'ready') return;
+    last = d.data;
+    if ($('drop').checked && Math.random() < 0.5) { log('丢掉一条消息'); return; }
+    const send = () => $('student').contentWindow.postMessage({ unppt: 1, id: ++id, cmd: 'sync', args: d.data }, '*');
+    if ($('delay').checked) setTimeout(send, 1000); else send();
+    log(`老师 → 学生：第 ${d.data.slide + 1} 页 第 ${d.data.step} 步` + (d.data.blank ? ` 黑屏 ${d.data.blank}` : '') + (d.data.triggers ? ` 触发器 ${JSON.stringify(d.data.triggers)}` : '') + (d.data.media ? ` 音视频 ${JSON.stringify(d.data.media)}` : ''));
+  });
+  // 学生端重新进入：重新加载，ready 之后用老师当前的状态对齐
+  $('late').onclick = () => {
+    const s = $('student');
+    s.src = url('watch') + '&t=' + Date.now();
+    const onReady = (e) => {
+      if (e.source !== s.contentWindow || e.data?.event !== 'ready') return;
+      window.removeEventListener('message', onReady);
+      if (last) s.contentWindow.postMessage({ unppt: 1, id: ++id, cmd: 'sync', args: last }, '*');
+      log('学生重新进入，按老师当前状态对齐');
+    };
+    window.addEventListener('message', onReady);
+  };
+</script>
+</body>
+</html>
