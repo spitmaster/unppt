@@ -8,6 +8,7 @@ import { cameraLightFilter, cameraTransform, extrusionOffset, extrusionScreenOff
 import { EMU_PER_PX } from '../../model/model';
 import { n2 } from '../../common/svg';
 import { bevelLayer } from '../../effects/bevel';
+import { contour } from '../../effects/contour';
 import { effectFilter } from '../../effects/effect-filter';
 import { reflection } from '../../effects/reflection';
 import { buildGeometry, parseGeomXml, presetGeometry } from '../../geometry/geometry';
@@ -107,6 +108,8 @@ export async function renderShape(r: RenderContext, el: XEl, ctx: SlideContext, 
       geomParts.push(`<path d="${p.d}" fill="none"${sa}${cm}/>`);
     } else geomParts.push(`<path d="${p.d}"${fa}${sa}${evenodd}/>`);
   }
+  // 三维轮廓（contour.ts）：投影的三维形状还没做
+  if (!sp) geomParts.push(contour(sp3d, colors, paths.filter((p) => p.d && p.fill !== 'none').map((p) => p.d).join(''), line?.width ?? 0, gb.w, gb.h, r.doc));
   let geom = geomParts.join('');
   if (geom && !sp && (box.flipH || box.flipV)) geom = `<g${flipTransform(gb)}>${geom}</g>`;
   const plainGeom = geom;
