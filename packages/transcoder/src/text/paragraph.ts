@@ -109,7 +109,9 @@ export async function layoutParagraph(p: XEl, pi: number, ctx: ParagraphContext)
   if (ls.pct !== undefined) ls.pct = Math.max(0.1, ls.pct - lnReduce);
   const toPx = (s: { pct?: number; pts?: number } | undefined, ref: number) =>
     !s ? 0 : s.pts !== undefined ? s.pts * 96 / 72 : (s.pct ?? 0) * ref;
-  const refH = (lines[0].ascent + lines[0].descent) * 1.2;
+  // 段前段后的百分比按单倍行高 1.2 × 字号算，和字体的上下伸无关（实测：雅黑、正黑、宋体、Arial、Calibri、等线、Times 28 磅
+  // 段前 20%/50%/100% 都是 6.72/16.8/33.6 磅）
+  const refH = lines[0].size * 1.2;
   return {
     lines,
     // 实测：自动缩小（lnSpcReduction）只减行距，不减段前段后
