@@ -1,0 +1,132 @@
+{
+ "version": 8,
+ "level": "full",
+ "slideWidthPt": 960.0,
+ "slideHeightPt": 540.0,
+ "imageWidth": 1280,
+ "imageHeight": 720,
+ "slides": [
+  {
+   "index": 0,
+   "hidden": false,
+   "shapes": [
+    {
+     "id": 2,
+     "name": "TextBox 1",
+     "type": 17,
+     "x": 30.0,
+     "y": 20.0,
+     "w": 900.0,
+     "h": 29.081,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 14,
+       "text": "图片填充文字 PICTURE",
+       "x": 37.2,
+       "y": 23.6,
+       "w": 702.005,
+       "h": 79.2
+      }
+     ]
+    },
+    {
+     "id": 3,
+     "name": "TextBox 2",
+     "type": 17,
+     "x": 30.0,
+     "y": 150.0,
+     "w": 600.0,
+     "h": 29.081,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 8,
+       "text": "两行文字第一行\r",
+       "x": 37.2,
+       "y": 153.6,
+       "w": 481.625,
+       "h": 79.2
+      },
+      {
+       "start": 8,
+       "len": 8,
+       "text": "第二行 TEXT",
+       "x": 37.2,
+       "y": 232.8,
+       "w": 386.74,
+       "h": 79.2
+      }
+     ]
+    },
+    {
+     "id": 4,
+     "name": "TextBox 3",
+     "type": 17,
+     "x": 30.0,
+     "y": 380.0,
+     "w": 900.0,
+     "h": 29.081,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 4,
+       "text": "居中一行",
+       "x": 348.0,
+       "y": 383.6,
+       "w": 264.005,
+       "h": 79.2
+      }
+     ]
+    }
+   ],
+   "effects": [],
+   "triggerHidden": [],
+   "steps": 0,
+   "keptSlideshow": false
+  },
+  {
+   "index": 1,
+   "hidden": false,
+   "shapes": [
+    {
+     "id": 2,
+     "name": "Rectangle 1",
+     "type": 1,
+     "x": 60.0,
+     "y": 120.0,
+     "w": 580.009,
+     "h": 104.208,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 7,
+       "text": "艺术字图片填充",
+       "x": 70.005,
+       "y": 123.6,
+       "w": 560.005,
+       "h": 96.0
+      }
+     ]
+    }
+   ],
+   "effects": [],
+   "triggerHidden": [],
+   "steps": 0,
+   "keptSlideshow": false
+  }
+ ],
+ "ok": true
+}

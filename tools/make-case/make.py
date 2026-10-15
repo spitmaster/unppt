@@ -2681,7 +2681,41 @@ def pictures_exif(app):
     return p
 
 
-CASES = [shapes_all, text_sizes, text_align, text_spacing, text_bullets, text_missing_font, shapes_basic, fills_lines, table_basic, group_rotate, anim_basic, anim_auto, charts_basic, pictures, smartart, text_effects, text_layout, table_merge, links, emf_images, anim_advanced, charts_labels, freeform_icons, media_audio, anim_trigger, wmf_images, anim_iterate, picture_transparent, charts_more, shape_effects, equations, anim_path, anim_emphasis, transitions, fills_patterns, text_decoration, anim_entrance, svg_images, charts_markers, hidden_slides, media_background, text_glow_reflection, text_tabs, text_picture_bullets, fills_texture, transition_morph, text_embedded_fonts, text_warp, anim_repeat, charts_sizes, slide_timings, lines_compound, table_diagonal, lines_gradient, fills_radial, fills_rect_gradient, shapes_3d, table_vertical, transitions_more, anim_sound, anim_build, anim_after, anim_text_emphasis, charts_bubble, media_video, charts_options, charts_negative, shapes_bevel, charts_legend, shapes_3d_rotation, smartart_3d, charts_ofpie, charts_3d, anim_group_emphasis, activex_controls, charts_extras, charts_axis_titles, charts_fills, charts_outlines, charts_labels_more, group_scale, group_flip, charts_3d_line, charts_legend_pos, charts_crowded_labels, charts_label_skip, charts_bar_long_names, charts_multilevel, picture_recolor, text_symbols, text_numbering, lines_arrows, table_styles, shapes_styles, charts_styles, placeholders_inherit, text_bold_light, ole_objects, text_hanging_punct, speaker_notes, pictures_tiff, placeholders_picture, pictures_exif]
+def text_picture_fill(app):
+    """文字用图片填充（a:rPr 里的 a:blipFill）：四色象限图，看图片怎么铺到文字上——单行大字、两行字、居中的一行、艺术字"纯文本"变形"""
+    from PIL import Image, ImageDraw
+    png = (CACHE / "make-case" / "quadrants.png").resolve()
+    png.parent.mkdir(parents=True, exist_ok=True)
+    im = Image.new("RGB", (400, 200))
+    dr = ImageDraw.Draw(im)
+    dr.rectangle((0, 0, 199, 99), fill=(220, 40, 40)); dr.rectangle((200, 0, 399, 99), fill=(40, 160, 60))
+    dr.rectangle((0, 100, 199, 199), fill=(40, 80, 220)); dr.rectangle((200, 100, 399, 199), fill=(240, 200, 30))
+    im.save(png)
+    p = new_pres(app)
+    s = blank(p)
+    specs = [(30, 20, 900, 110, "图片填充文字 PICTURE", "l"), (30, 150, 600, 200, "两行文字第一行|第二行 TEXT", "l"), (30, 380, 900, 110, "居中一行", "c")]
+    for x, y, w, h, text, al in specs:
+        tb = s.Shapes.AddTextbox(1, x, y, w, h)
+        tf = tb.TextFrame
+        tf.WordWrap = -1
+        tf.AutoSize = 0
+        tr = tf.TextRange
+        tr.Text = text.replace("|", chr(13))
+        tr.Font.Name = "Microsoft YaHei"
+        tr.Font.NameFarEast = "Microsoft YaHei"
+        tr.Font.Size = 66
+        tr.Font.Bold = -1
+        tr.ParagraphFormat.Alignment = 2 if al == "c" else 1
+        tb.TextFrame2.TextRange.Font.Fill.UserPicture(str(png))
+        tb.Line.Visible = -1
+        tb.Line.ForeColor.RGB = RGB(200, 200, 200)
+    s2 = blank(p)
+    wa = s2.Shapes.AddTextEffect(0, "艺术字图片填充", "Microsoft YaHei", 80, -1, 0, 60, 120)
+    wa.TextFrame2.TextRange.Font.Fill.UserPicture(str(png))
+    return p
+
+
+CASES = [shapes_all, text_sizes, text_align, text_spacing, text_bullets, text_missing_font, shapes_basic, fills_lines, table_basic, group_rotate, anim_basic, anim_auto, charts_basic, pictures, smartart, text_effects, text_layout, table_merge, links, emf_images, anim_advanced, charts_labels, freeform_icons, media_audio, anim_trigger, wmf_images, anim_iterate, picture_transparent, charts_more, shape_effects, equations, anim_path, anim_emphasis, transitions, fills_patterns, text_decoration, anim_entrance, svg_images, charts_markers, hidden_slides, media_background, text_glow_reflection, text_tabs, text_picture_bullets, fills_texture, transition_morph, text_embedded_fonts, text_warp, anim_repeat, charts_sizes, slide_timings, lines_compound, table_diagonal, lines_gradient, fills_radial, fills_rect_gradient, shapes_3d, table_vertical, transitions_more, anim_sound, anim_build, anim_after, anim_text_emphasis, charts_bubble, media_video, charts_options, charts_negative, shapes_bevel, charts_legend, shapes_3d_rotation, smartart_3d, charts_ofpie, charts_3d, anim_group_emphasis, activex_controls, charts_extras, charts_axis_titles, charts_fills, charts_outlines, charts_labels_more, group_scale, group_flip, charts_3d_line, charts_legend_pos, charts_crowded_labels, charts_label_skip, charts_bar_long_names, charts_multilevel, picture_recolor, text_symbols, text_numbering, lines_arrows, table_styles, shapes_styles, charts_styles, placeholders_inherit, text_bold_light, ole_objects, text_hanging_punct, speaker_notes, pictures_tiff, placeholders_picture, pictures_exif, text_picture_fill]
 
 
 def main():

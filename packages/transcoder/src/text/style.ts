@@ -57,7 +57,7 @@ export function runStyle(r: XEl, env: TextEnv, scale: number): RunStyle {
   const sz = (numAttr(r, 'sz') ?? 1800) / 100;
   const latin = resolveTypeface(attr(child(r, 'a:latin'), 'typeface'), env.theme) ?? env.theme.minorLatin ?? 'Calibri';
   const ea = resolveTypeface(attr(child(r, 'a:ea'), 'typeface'), env.theme) ?? (env.theme.minorEa || latin);
-  const fill = r.children.find((c) => c.name === 'a:solidFill' || c.name === 'a:gradFill' || c.name === 'a:noFill');
+  const fill = r.children.find((c) => c.name === 'a:solidFill' || c.name === 'a:gradFill' || c.name === 'a:noFill' || c.name === 'a:blipFill');
   let color: Rgba = env.fontRefColor ?? { r: 0, g: 0, b: 0, a: 1 };
   if (fill?.name === 'a:solidFill') color = colorIn(fill, env.colors) ?? color;
   else if (fill?.name === 'a:gradFill') color = colorIn(child(child(fill, 'a:gsLst'), 'a:gs'), env.colors) ?? color;
@@ -93,6 +93,7 @@ export function runStyle(r: XEl, env: TextEnv, scale: number): RunStyle {
     outline: textOutline(child(r, 'a:ln'), env),
     effects: child(r, 'a:effectLst')?.children.length ? child(r, 'a:effectLst') : undefined,
     grad: fill?.name === 'a:gradFill' ? fill : undefined,
+    blip: fill?.name === 'a:blipFill' ? fill : undefined,
     link: link || undefined,
   };
 }

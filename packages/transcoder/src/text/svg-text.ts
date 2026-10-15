@@ -38,9 +38,31 @@ export function textEl(txt: string, x: number | number[], y: number, s: RunStyle
   // 人工加粗：描边宽度是字号的 1/56（实测 text-bold-light：按加粗前后笔画浓度的增量对齐）
   else if (s.fakeBold) a += ` stroke="${css(s.color)}" stroke-width="${n2(s.size / 56)}" stroke-linejoin="round"${s.color.a < 0.999 ? ` stroke-opacity="${n2(s.color.a)}"` : ''}`;
   if (env?.doc && s.grad) a = a.replace(/ fill="[^"]*"( fill-opacity="[^"]*")?/, ` fill="${textGradient(s.grad, env)}"`);
+  const pic = env && s.blip ? textPicture(s.blip, env) : '';
+  if (pic) a = a.replace(/ fill="[^"]*"( fill-opacity="[^"]*")?/, ` fill="${pic}"`);
   const fid = env ? textFilter(s, env) : '';
   if (fid) a += ` filter="url(#${fid})"`;
   return `<text ${a} xml:space="preserve">${esc(txt)}</text>`;
+}
+
+/** 渐变、图片填充的文字铺在哪个范围：有行框时按行（横向是这一行文字的宽度、竖向是行高），艺术字变形时铺满整个文本框 */
+function fillBox(env: TextEnv): { x: number; y: number; w: number; h: number } {
+  const lb = env.lineBox;
+  if (lb && lb.w > 0) return lb;
+  return { x: 0, y: 0, w: env.gradBox?.w ?? 1, h: env.gradBox?.h ?? 1 };
+}
+
+/**
+ * 图片填充的文字（a:blipFill 拉伸）：实测（text-picture-fill）和渐变文字一样按行铺——图片拉伸到这一行的外框，
+ * 每一行各铺一遍；艺术字变形时铺满整个文本框。返回 url(#编号)；图片解析不到时返回空串（退回文字颜色）。
+ */
+export function textPicture(blip: XEl, env: TextEnv): string {
+  const href = env.blipHrefs?.get(blip);
+  if (!href || !env.doc) return '';
+  const b = fillBox(env);
+  const id = env.doc.id('tp');
+  env.doc.addDef(`<pattern id="${id}" patternUnits="userSpaceOnUse" x="${n2(b.x)}" y="${n2(b.y)}" width="${n2(b.w)}" height="${n2(b.h)}"><image href="${esc(href)}" width="${n2(b.w)}" height="${n2(b.h)}" preserveAspectRatio="none"/></pattern>`);
+  return `url(#${id})`;
 }
 
 /**
