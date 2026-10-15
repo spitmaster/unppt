@@ -124,6 +124,7 @@ node packages/transcoder/dist/cli.js convert 你的文件.pptx -o out/index.html
 - **文本框和形状只用演示文稿默认样式**（母版 otherStyle 只给表格用），形状样式和表格样式的 fontRef 主题字体生效。用例 text-default-style、text-latin-cjk-font；
 - **按中文习惯控制首尾字符（eaLnBrk）关掉时不做行首行尾禁则**（老模板的默认样式常见）。用例 text-ea-line-break；
 - **中文里的引号按全角**：文字语言是中日韩时引号用东亚字体、占一个字宽；破折号后面可以断行。用例 text-ambiguous-punct；
+- **文字块高度**：多倍行距的最后一行只算到基线加下伸（居中、底端对齐和撑高表格行都用它；段落字体对齐 ctr、t 时除外）。用例 text-anchor-linespacing、table-linespacing、table-fontalgn；
 - **图片的形状沿占位符继承链找**：版式占位符是自定义形状时按它裁剪，哪里都没有形状就不画（以前一律按矩形画）。用例 placeholders-picture-geom；
 - **EMF 渐变填充**（118 号记录）。用例 emf-gradient-fill；
 - **主题东亚字体为空时按文字语言选主题脚本字体**（zh-CN 等线、ja-JP 游ゴシック、zh-TW 新細明體、ko-KR 맑은 고딕；英文或没写语言用雅黑）。用例 text-theme-font-lang；
@@ -135,7 +136,7 @@ node packages/transcoder/dist/cli.js convert 你的文件.pptx -o out/index.html
 - **导出工具**：PowerPoint 认为需要修复的文件改用"打开并修复"导出参考图；比对工具加了灰度抗锯齿的实验开关（默认关）；
 - **颜色变换 gamma / invGamma**（老 .ppt 转换来的文件常见）：包在中间的 shade、tint 在 sRGB 上混合，以前颜色偏浅。用例 colors-gamma；
 - **对齐整像素按 PowerPoint 的渲染网格**：PowerPoint 按整数 DPI（round(96 × 1280 / 幻灯片像素宽)）渲染并对齐，再缩放到输出尺寸。标准 16:9 幻灯片和幻灯片像素重合；4:3 和其它尺寸以前对齐的网格不对（形状、图片外框、图表网格线、文字基线、线宽）。超大幻灯片上这个模型略差，证据不完全一致。改之前按幻灯片宽度分的通过率：1280 宽 74%、4:3 56%、其它尺寸 34%；
-- 已知遗留：图标类 EMF 里几乎透明的位图，PowerPoint 画得比透明度深（原因未明）；"自动缩小"加空段落时段距还差约 1 像素/段；同一字体名混着日文 / 中文字符集时，后半段西文 PowerPoint 更紧 1~4 像素（原因未明）；照片缩放后 PowerPoint 更柔和（缩放滤镜不同）；比对截图里我们的文字是彩色边的子像素抗锯齿，PowerPoint 是灰度（见「四」待定第 1 条）。
+- 已知遗留：段落字体对齐（fontAlgn ctr/t/b）对字在多倍行距行内位置的影响还没实现（ctr 的实测数据规律不明）；繁体中文主题字体新細明體本机没有时 PowerPoint 替代成细明体、我们是雅黑；超大幻灯片（约 4000 像素宽）上整数 DPI 网格模型比直接按比例略差；图标类 EMF 里几乎透明的位图，PowerPoint 画得比透明度深（原因未明）；"自动缩小"加空段落时段距还差约 1 像素/段；同一字体名混着日文 / 中文字符集时，后半段西文 PowerPoint 更紧 1~4 像素（原因未明）；照片缩放后 PowerPoint 更柔和（缩放滤镜不同）；比对截图里我们的文字是彩色边的子像素抗锯齿，PowerPoint 是灰度（见「四」待定第 1 条）。
 
 ### 10/13 晚 ~ 10/14：继续补的功能（按完成时间倒序）
 
