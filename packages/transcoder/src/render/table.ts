@@ -88,6 +88,13 @@ export async function renderTable(tbl: XEl | undefined, origin: { x: number; y: 
       if (rowSpan === 1 && out.height > rowH[ri]) rowH[ri] = out.height;
     }
   }
+  // 实测：跨行合并的单元格文字放不下时，多出的高度全部加到它跨的最后一行（各行自己的文字先撑好）
+  for (const c of cells.filter((q) => q.rowSpan > 1).sort((a, b) => a.ri + a.rowSpan - (b.ri + b.rowSpan))) {
+    const end = Math.min(nR, c.ri + c.rowSpan);
+    let sum = 0;
+    for (let r = c.ri; r < end; r++) sum += rowH[r];
+    if (c.textH > sum) rowH[end - 1] += c.textH - sum;
+  }
   const rowY = [0];
   for (const h of rowH) rowY.push(rowY[rowY.length - 1] + h);
 
