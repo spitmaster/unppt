@@ -52,7 +52,7 @@ export interface ConvertOptions {
    * 注意：商业字体的分发需要相应授权。
    */
   embedFonts?: boolean;
-  /** 是否输出缩略图文件夹 thumbs/（见 thumbs/thumbnail.ts）；不写时按产物形式（paged、pages 默认输出） */
+  /** 是否输出缩略图文件夹 thumbs/（见 thumbs/thumbnail.ts）；默认不输出（缩略图功能暂缓） */
   thumbs?: boolean;
   /** 缩略图宽度（像素），默认 320 */
   thumbWidth?: number;
@@ -60,7 +60,7 @@ export interface ConvertOptions {
    * 缩略图光栅化用的 resvg WASM 文件字节（发布包里的 dist/resvg.wasm；命令行自动读取）。
    * 给了就输出 JPG 缩略图，不给（或加载失败）就输出自包含的 SVG 缩略图
    */
-  thumbWasm?: Uint8Array | Promise<Uint8Array>;
+  thumbWasm?: Uint8Array | Promise<Uint8Array | undefined>;
   /** 每处理完一页回调一次 */
   onProgress?: (done: number, total: number) => void;
 }
@@ -100,8 +100,10 @@ export async function convert(input: InputSource, options: ConvertOptions): Prom
   const media = new MediaStore(pres, pkg, options.write, inlineLimit);
   // 缩略图用的字体：嵌入字体的别名找回原来的字体，其它按名字找
   const aliasFace = (name: string) => [...usage].find(([, u]) => u.alias === name)?.[0];
-  const raster = (options.thumbs ?? form.thumbs) && options.thumbWasm
-    ? await resvgRasterizer(options.thumbWasm, (n, b, i) => aliasFace(n) ?? fonts.find(n, b, i)).catch((e: Error) => { pres.warn(`缩略图光栅化加载失败，改用 SVG 缩略图：${e.message}`); return undefined; })
+  const wasm = (options.thumbs ?? form.thumbs) ? await Promise.resolve(options.thumbWasm).catch(() => undefined) : undefined;
+  if ((options.thumbs ?? form.thumbs) && options.thumbWasm && !wasm) pres.warn('缩略图光栅化用的 resvg.wasm 读不到，改用 SVG 缩略图');
+  const raster = wasm
+    ? await resvgRasterizer(wasm, (n, b, i) => aliasFace(n) ?? fonts.find(n, b, i)).catch((e: Error) => { pres.warn(`缩略图光栅化加载失败，改用 SVG 缩略图：${e.message}`); return undefined; })
     : undefined;
   const thumbs = options.thumbs ?? form.thumbs
     ? new Thumbnails({ width: options.thumbWidth ?? 320, slideWidth: pres.width, slideHeight: pres.height }, (h) => media.bytes(h), options.write, raster, (m) => pres.warn(m))

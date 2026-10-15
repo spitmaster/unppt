@@ -106,7 +106,7 @@ function usage(): never {
   --system-fonts          使用本机系统字体目录（另外 Office 自带的私有字体、云字体用到时嵌入产物）
   --embed-fonts           把用到的字做成字体子集嵌入（观看端无需安装字体；商业字体注意授权）
   --data                  只输出演示数据 deck.json（开发调试用）
-  --thumbs / --no-thumbs  输出 / 不输出缩略图文件夹 thumbs/（paged、pages 默认输出，single 默认不输出）
+  --thumbs                输出缩略图文件夹 thumbs/（默认不输出；缩略图功能暂缓，见 docs/todo/dev.md）
   --thumb-width <像素>    缩略图宽度，默认 320
   --inline-limit <字节>   小于这个大小的图片内联进 HTML，默认 2097152
   --stats                 结束时显示用时和峰值内存
@@ -166,7 +166,7 @@ async function main() {
     output: form,
     thumbs, thumbWidth,
     // 缩略图光栅化用的 resvg：和 cli.js 放在一起的 resvg.wasm（读不到时缩略图退回 SVG）
-    thumbWasm: readFile(new URL('./resvg.wasm', import.meta.url)).then((b) => new Uint8Array(b)),
+    thumbWasm: readFile(new URL('./resvg.wasm', import.meta.url)).then((b) => new Uint8Array(b), () => undefined),
     embedFonts,
     fileName: dataOnly ? 'deck.json' : 'index.html',
     inlineLimit,

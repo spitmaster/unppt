@@ -25,10 +25,11 @@ export class Thumbnails {
 
   /** 第 i 页（从 0 开始） */
   async add(i: number, svg: string, skip: boolean) {
-    const svgThumb = await this.thumbnail(svg);
-    const jpg = this.raster ? await this.jpeg(svgThumb) : undefined;
+    const base = this.page(svg);
+    // 画 JPG 时原图直接交给 resvg（它自己解码、缩放，比先缩小再内嵌快得多）；画不了时才缩小图片内嵌成 SVG
+    const jpg = this.raster ? await this.jpeg(base) : undefined;
     const file = `${String(i + 1).padStart(3, '0')}.${jpg ? 'jpg' : 'svg'}`;
-    const out = jpg ?? svgThumb;
+    const out = jpg ?? (await this.inlineImages(base));
     await this.write(`thumbs/${file}`, out);
     this.pages[i] = { file, hash: contentHash(out), ...(skip ? { skip: true as const } : {}) };
   }
@@ -40,7 +41,7 @@ export class Thumbnails {
   /** 画成像素存 JPG（质量 85）；画失败时返回 undefined，这一页退回 SVG */
   private async jpeg(svg: string): Promise<Uint8Array | undefined> {
     try {
-      const img = await this.raster!.render(svg, this.opts.width, this.height);
+      const img = await this.raster!.render(svg, this.opts.width, (h) => this.bytes(unescape(h)));
       if (!img) return undefined;
       const rgb = new Uint8Array(img.width * img.height * 3);
       for (let i = 0, j = 0; i < img.data.length; i += 4, j += 3) { rgb[j] = img.data[i]; rgb[j + 1] = img.data[i + 1]; rgb[j + 2] = img.data[i + 2]; }
@@ -51,11 +52,14 @@ export class Thumbnails {
     }
   }
 
-  private async thumbnail(svg: string): Promise<string> {
-    // 音视频（foreignObject 里的 video / audio）去掉，海报帧本身是图片照常显示
-    let s = svg.replace(/<foreignObject\b[^>]*>[\s\S]*?<\/foreignObject>/g, '');
-    // 根元素的宽高换成缩略图大小（viewBox 不变，整页等比缩小）
-    s = s.replace(/^(<svg\b[^>]*?)\swidth="[^"]*"/, `$1 width="${this.opts.width}"`).replace(/^(<svg\b[^>]*?)\sheight="[^"]*"/, `$1 height="${this.height}"`);
+  /** 页面 SVG -> 缩略图大小：音视频（foreignObject 里的 video / audio）去掉，海报帧本身是图片照常显示；根元素的宽高换成缩略图大小 */
+  private page(svg: string): string {
+    return svg.replace(/<foreignObject\b[^>]*>[\s\S]*?<\/foreignObject>/g, '')
+      .replace(/^(<svg\b[^>]*?)\swidth="[^"]*"/, `$1 width="${this.opts.width}"`).replace(/^(<svg\b[^>]*?)\sheight="[^"]*"/, `$1 height="${this.height}"`);
+  }
+
+  /** 自包含的 SVG 缩略图：图片缩小后内嵌 */
+  private async inlineImages(s: string): Promise<string> {
     // 图片按它在页面上的大小（<image> 的宽高，不算外面组合的缩放）换算到缩略图的 2 倍清晰度，64 像素一档，最大 2 × 缩略图宽
     const max = this.opts.width * 2;
     const map = new Map<string, string>();

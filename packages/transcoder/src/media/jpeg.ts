@@ -16,7 +16,10 @@ const ZIGZAG = Int8Array.from([
   54, 47, 55, 62, 63,
 ]);
 
-interface Huffman { maxcode: Int32Array; valptr: Int32Array; mincode: Int32Array; values: Uint8Array }
+/** fast：前 FAST_BITS 位的速查表，每项是 (码长 << 8) | 符号，0 表示码长超过 FAST_BITS、要逐位找 */
+interface Huffman { maxcode: Int32Array; valptr: Int32Array; mincode: Int32Array; values: Uint8Array; fast: Uint16Array }
+
+const FAST_BITS = 9;
 
 function buildHuffman(counts: Uint8Array, values: Uint8Array): Huffman {
   const maxcode = new Int32Array(18).fill(-1), valptr = new Int32Array(17), mincode = new Int32Array(17);
@@ -31,7 +34,16 @@ function buildHuffman(counts: Uint8Array, values: Uint8Array): Huffman {
     code <<= 1;
   }
   maxcode[17] = 0x7fffffff;
-  return { maxcode, valptr, mincode, values };
+  const fast = new Uint16Array(1 << FAST_BITS);
+  code = 0; k = 0;
+  for (let len = 1; len <= FAST_BITS; len++) {
+    for (let i = 0; i < counts[len - 1]; i++, k++, code++) {
+      const shift = FAST_BITS - len;
+      for (let j = 0; j < 1 << shift; j++) fast[(code << shift) | j] = (len << 8) | values[k];
+    }
+    code <<= 1;
+  }
+  return { maxcode, valptr, mincode, values, fast };
 }
 
 interface Component {
@@ -44,31 +56,42 @@ interface Component {
   dc?: Huffman; ac?: Huffman;
 }
 
-/** 熵编码数据的位读取：跳过 0xFF00 的填充字节，遇到标记时停止（之后读出的都是 0） */
+/** 熵编码数据的位读取：一次缓存多个字节，跳过 0xFF00 的填充字节，遇到标记时停止（之后读出的都是 0） */
 class Bits {
   buf = 0; n = 0; marker = false;
   constructor(public b: Uint8Array, public pos: number) {}
-  bit(): number {
-    if (this.n === 0) {
-      if (this.marker || this.pos >= this.b.length) return 0;
-      const x = this.b[this.pos];
-      if (x === 0xff) {
-        const y = this.b[this.pos + 1];
-        if (y === 0) this.pos += 2;
-        else { this.marker = true; return 0; }
-      } else this.pos++;
-      this.buf = x;
-      this.n = 8;
+  /** 缓存补到至少 25 位 */
+  private fill() {
+    while (this.n <= 24) {
+      let x = 0;
+      if (!this.marker && this.pos < this.b.length) {
+        x = this.b[this.pos];
+        if (x === 0xff) {
+          const y = this.b[this.pos + 1];
+          if (y === 0) this.pos += 2;
+          else { this.marker = true; x = 0; }
+        } else this.pos++;
+      }
+      this.buf = (this.buf << 8) | x;
+      this.n += 8;
     }
+  }
+  bit(): number {
+    if (this.n === 0) this.fill();
     this.n--;
-    return (this.buf >> this.n) & 1;
+    return (this.buf >>> this.n) & 1;
   }
   bits(k: number): number {
-    let v = 0;
-    for (let i = 0; i < k; i++) v = (v << 1) | this.bit();
-    return v;
+    if (!k) return 0;
+    if (this.n < k) this.fill();
+    this.n -= k;
+    return (this.buf >>> this.n) & ((1 << k) - 1);
   }
   decode(t: Huffman): number {
+    if (this.n < 16) this.fill();
+    const e = t.fast[(this.buf >>> (this.n - FAST_BITS)) & ((1 << FAST_BITS) - 1)];
+    if (e) { this.n -= e >> 8; return e & 0xff; }
+    // 码长超过速查表：逐位找
     let code = 0;
     for (let len = 1; len <= 16; len++) {
       code = (code << 1) | this.bit();
@@ -76,9 +99,10 @@ class Bits {
     }
     return 0;
   }
-  /** 重启标记：丢掉不满一个字节的位，跳过 RSTn */
+  /** 重启标记：丢掉缓存里剩下的位，跳过 RSTn */
   restart(): void {
     this.n = 0;
+    this.buf = 0;
     this.marker = false;
     while (this.pos + 1 < this.b.length && !(this.b[this.pos] === 0xff && this.b[this.pos + 1] >= 0xd0 && this.b[this.pos + 1] <= 0xd7)) this.pos++;
     this.pos += 2;
@@ -89,15 +113,19 @@ const extend = (v: number, s: number) => (s && v < 1 << (s - 1) ? v - (1 << s) +
 
 interface Scan { comps: Component[]; ss: number; se: number; ah: number; al: number }
 
-export function decodeJpeg(b: Uint8Array): RgbImage | undefined {
+/**
+ * minSize：只要最长边不小于这个尺寸就够用时（缩略图），按 1/8 解码——每个 8×8 块只取平均值（DC 系数），
+ * 省掉反向 DCT，快好几倍；按 1/8 解出来不够大时照常全尺寸解码
+ */
+export function decodeJpeg(b: Uint8Array, minSize?: number): RgbImage | undefined {
   try {
-    return decode(b);
+    return decode(b, minSize);
   } catch {
     return undefined;
   }
 }
 
-function decode(b: Uint8Array): RgbImage | undefined {
+function decode(b: Uint8Array, minSize?: number): RgbImage | undefined {
   if (b.length < 4 || b[0] !== 0xff || b[1] !== 0xd8) return undefined;
   const qt: Int32Array[] = [];
   const dcT: Huffman[] = [], acT: Huffman[] = [];
@@ -209,7 +237,8 @@ function decode(b: Uint8Array): RgbImage | undefined {
     pos = end;
   }
   if (!comps.length) return undefined;
-  return toRgb(comps, qt, width, height, maxH, maxV, adobe);
+  const eighth = minSize !== undefined && Math.max(Math.ceil(width / 8), Math.ceil(height / 8)) >= minSize;
+  return toRgb(comps, qt, eighth ? Math.ceil(width / 8) : width, eighth ? Math.ceil(height / 8) : height, maxH, maxV, adobe, eighth ? 1 : 8);
 }
 
 type BlockFn = (c: Component, off: number) => void;
@@ -321,6 +350,16 @@ const COS = (() => {
   return t;
 })();
 
+/** 1/8 解码：每个块只用 DC 系数（反变换后整块的平均值 = DC × 量化值 / 8） */
+function dcPlane(c: Component, q: Int32Array): Uint8Array {
+  const out = new Uint8Array(c.bpl * c.bpc);
+  for (let i = 0; i < out.length; i++) {
+    const p = Math.round((c.coef[i * 64] * q[0]) / 8 + 128);
+    out[i] = p < 0 ? 0 : p > 255 ? 255 : p;
+  }
+  return out;
+}
+
 /** 反量化 + 反变换，得到每个分量的像素平面（按 MCU 补齐的大小） */
 function plane(c: Component, q: Int32Array): Uint8Array {
   const w = c.bpl * 8, out = new Uint8Array(w * c.bpc * 8);
@@ -350,17 +389,18 @@ function plane(c: Component, q: Int32Array): Uint8Array {
   return out;
 }
 
-function toRgb(comps: Component[], qt: Int32Array[], width: number, height: number, maxH: number, maxV: number, adobe: number): RgbImage | undefined {
+/** bs：每个块在输出里占几个像素（8 是全尺寸，1 是 1/8 解码） */
+function toRgb(comps: Component[], qt: Int32Array[], width: number, height: number, maxH: number, maxV: number, adobe: number, bs: number): RgbImage | undefined {
   const planes = comps.map((c) => {
     const q = qt[c.tq];
-    return q ? plane(c, q) : undefined;
+    return q ? (bs === 1 ? dcPlane(c, q) : plane(c, q)) : undefined;
   });
   if (planes.some((p) => !p)) return undefined;
   const data = new Uint8Array(width * height * 3);
   const n = comps.length;
   // 每个分量放大到全分辨率（宽度按 MCU 补齐，所有分量一样）
-  const full = comps.map((c, k) => upsample(planes[k]!, c.bpl * 8, c.bpc * 8, maxH / c.h, maxV / c.v));
-  const fw = comps[0].bpl * 8 * (maxH / comps[0].h);
+  const full = comps.map((c, k) => upsample(planes[k]!, c.bpl * bs, c.bpc * bs, maxH / c.h, maxV / c.v));
+  const fw = comps[0].bpl * bs * (maxH / comps[0].h);
   const sample = (k: number, x: number, y: number) => full[k][y * fw + x];
   const clamp = (v: number) => (v < 0 ? 0 : v > 255 ? 255 : Math.round(v));
   const ycc = (Y: number, cb: number, cr: number): [number, number, number] =>

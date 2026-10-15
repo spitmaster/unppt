@@ -38,5 +38,5 @@ async function writePaged(src: OutputSource, perPage: boolean) {
   }
 }
 
-export const pagedForm: OutputForm = { name: 'paged', inlineImages: false, thumbs: true, write: (src) => writePaged(src, false) };
-export const pagesForm: OutputForm = { name: 'pages', inlineImages: false, thumbs: true, write: (src) => writePaged(src, true) };
+export const pagedForm: OutputForm = { name: 'paged', inlineImages: false, thumbs: false, write: (src) => writePaged(src, false) };
+export const pagesForm: OutputForm = { name: 'pages', inlineImages: false, thumbs: false, write: (src) => writePaged(src, true) };
