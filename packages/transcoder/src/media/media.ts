@@ -6,6 +6,7 @@ import type { OpcPackage } from '../io/package';
 import type { Presentation } from '../model/model';
 import { IMAGE_DECODERS } from './decoders';
 import { clearOrientation } from './exif-orientation';
+import { sniffImage } from './sniff';
 import type { ImageDecoder } from './image-decoder';
 import { imageInfo, type ImageInfo } from './image-info';
 import { colorKey } from './color-key';
@@ -24,6 +25,8 @@ const MIME: Record<string, string> = {
 /** "设置透明色"要在原图上抠的图片，文件超过这个大小的不做（退回滤镜近似） */
 const KEY_MAX_BYTES = 32 * 1024 * 1024;
 
+/** 扩展名 -> 文件头识别出的格式名（sniff.ts） */
+const FORMAT_OF: Record<string, string> = { png: 'png', jpg: 'jpeg', jpeg: 'jpeg', jpe: 'jpeg', jfif: 'jpeg', gif: 'gif', bmp: 'bmp', tif: 'tiff', tiff: 'tiff', webp: 'webp', emf: 'emf', wmf: 'wmf' };
 const BROWSER_IMAGES = new Set(['png', 'jpg', 'jpeg', 'jpe', 'gif', 'bmp', 'svg', 'webp', 'ico']);
 
 export function extOf(p: string): string {
@@ -166,44 +169,40 @@ export class MediaStore {
   private async make(target: string, isImage: boolean): Promise<string | undefined> {
     const entry = this.pkg.zip.entry(target);
     if (!entry) return undefined;
-    const ext = extOf(target);
-    const decoder = isImage ? this.decoders.get(ext) : undefined;
+    if (!isImage) {
+      // 视频、音频：总是写成单独文件，按数据流拷贝（内存占用恒定）
+      const name = mediaName(target, entry.crc, extOf(target));
+      await this.write(name, this.pkg.zip.stream(entry));
+      return name;
+    }
+    const raw = await this.pkg.zip.read(target);
+    if (!raw) return undefined;
+    // 格式按文件头认（扩展名可能是错的，见 sniff.ts）；和扩展名是同一种格式时保留原扩展名
+    const named = extOf(target), real = sniffImage(raw);
+    const ext = real && real !== FORMAT_OF[named] ? real : named;
+    const reread = async () => this.pkg.zip.read(target);
+    const decoder = this.decoders.get(ext);
     if (decoder) {
       // 浏览器不能直接显示的格式（EMF / WMF / TIFF 等）：转换后存一份（同一张只转一次）
-      const bytes = await this.pkg.zip.read(target);
-      const img = bytes ? await decoder.decode(bytes) : undefined;
+      const img = await decoder.decode(raw);
       if (!img) { this.pres.warn(`${ext.toUpperCase()} 图片无法解析`); return undefined; }
       if (this.inlineLimit >= 0) return this.asset(`data:${img.mime};base64,${base64(img.data)}`);
       const name = mediaName(target, entry.crc, img.mime === 'image/svg+xml' ? 'svg' : img.mime.slice(6));
       await this.file(name, img.data);
       return name;
     }
-    if (isImage && !BROWSER_IMAGES.has(ext)) {
+    if (!BROWSER_IMAGES.has(ext)) {
       this.pres.warn(`不支持的图片格式：${ext}`);
       return undefined;
     }
     const mime = MIME[ext] ?? 'application/octet-stream';
-    if (isImage && (ext === 'jpg' || ext === 'jpeg' || ext === 'jfif')) {
-      // JPEG：去掉 EXIF 方向标记（PowerPoint 按原始像素画，浏览器默认会按标记再转一次，见 exif-orientation.ts）
-      const raw = await this.pkg.zip.read(target);
-      if (!raw) return undefined;
-      const fixed = clearOrientation(raw);
-      const bytes = fixed ?? raw;
-      if (bytes.length <= this.inlineLimit) return this.asset(`data:${mime};base64,${base64(bytes)}`);
-      const name = mediaName(target, entry.crc, ext);
-      await this.file(name, bytes, async () => { const b = await this.pkg.zip.read(target); return b && (clearOrientation(b) ?? b); });
-      return name;
-    }
-    if (isImage && entry.size <= this.inlineLimit) {
-      // 同一张图片只存一份（母版上的 logo、背景每页都会用到）
-      const bytes = await this.pkg.zip.read(target);
-      if (!bytes) return undefined;
-      return this.asset(`data:${mime};base64,${base64(bytes)}`);
-    }
+    // JPEG：去掉 EXIF 方向标记（PowerPoint 按原始像素画，浏览器默认会按标记再转一次，见 exif-orientation.ts）
+    const jpeg = ext === 'jpg' || ext === 'jpeg' || ext === 'jpe' || ext === 'jfif';
+    const bytes = (jpeg ? clearOrientation(raw) : undefined) ?? raw;
+    // 同一张图片只存一份（母版上的 logo、背景每页都会用到）
+    if (bytes.length <= this.inlineLimit) return this.asset(`data:${mime};base64,${base64(bytes)}`);
     const name = mediaName(target, entry.crc, ext);
-    await this.write(name, this.pkg.zip.stream(entry));
-    // 图片文件要出缩略图时从包里再读一次（不在内存里留着）
-    if (this.keep && isImage) this.kept.set(name, () => this.pkg.zip.read(target));
+    await this.file(name, bytes, jpeg ? async () => { const b = await reread(); return b && (clearOrientation(b) ?? b); } : reread);
     return name;
   }
 }

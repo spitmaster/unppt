@@ -42,9 +42,19 @@ function base64(bytes: Uint8Array): string {
   return btoa(s);
 }
 
-/** DIB（BITMAPINFO + 像素）-> BMP 文件的 data URI，浏览器能直接显示 */
-function dibToBmp(d: DataView, offBmi: number, cbBmi: number, offBits: number, cbBits: number): string | undefined {
+/**
+ * DIB（BITMAPINFO + 像素）-> BMP 文件的 data URI，浏览器能直接显示。
+ * alpha：ALPHABLEND 的逐像素透明度（AC_SRC_ALPHA，32 位、预乘）——普通 BMP 头浏览器会忽略透明度，
+ * 换成带透明通道掩码的 BITMAPV4HEADER，像素还原成不预乘的
+ */
+function dibToBmp(d: DataView, offBmi: number, cbBmi: number, offBits: number, cbBits: number, alpha = false): string | undefined {
   if (!cbBmi || !cbBits) return undefined;
+  // 32 位、普通格式（BI_RGB），或者标准 RGB 掩码的位域格式（BI_BITFIELDS）：像素都是 BGRA
+  const comp = cbBmi >= 40 ? d.getUint32(offBmi + 16, true) : -1;
+  const stdMasks = comp === 3 && cbBmi >= 52 && d.getUint32(offBmi + 40, true) === 0xff0000 && d.getUint32(offBmi + 44, true) === 0xff00 && d.getUint32(offBmi + 48, true) === 0xff;
+  if (alpha && d.getUint32(offBmi, true) === 40 && d.getUint16(offBmi + 14, true) === 32 && (comp === 0 || stdMasks)) {
+    return alphaBmp(d, offBmi, offBits, cbBits);
+  }
   const total = 14 + cbBmi + cbBits;
   const out = new Uint8Array(total);
   const v = new DataView(out.buffer);
@@ -53,6 +63,26 @@ function dibToBmp(d: DataView, offBmi: number, cbBmi: number, offBits: number, c
   v.setUint32(10, 14 + cbBmi, true);
   out.set(new Uint8Array(d.buffer, d.byteOffset + offBmi, cbBmi), 14);
   out.set(new Uint8Array(d.buffer, d.byteOffset + offBits, cbBits), 14 + cbBmi);
+  return `data:image/bmp;base64,${base64(out)}`;
+}
+
+function alphaBmp(d: DataView, offBmi: number, offBits: number, cbBits: number): string {
+  const w = d.getInt32(offBmi + 4, true), h = d.getInt32(offBmi + 8, true);
+  const n = Math.min(cbBits, Math.abs(w * h) * 4);
+  const px = new Uint8Array(d.buffer, d.byteOffset + offBits, n).slice();
+  for (let i = 0; i < n; i += 4) {
+    const a = px[i + 3];
+    if (a && a < 255) for (let k = 0; k < 3; k++) px[i + k] = Math.min(255, Math.round((px[i + k] * 255) / a));
+  }
+  const out = new Uint8Array(14 + 108 + n);
+  const v = new DataView(out.buffer);
+  out[0] = 0x42; out[1] = 0x4d;
+  v.setUint32(2, out.length, true); v.setUint32(10, 14 + 108, true);
+  v.setUint32(14, 108, true); v.setInt32(18, w, true); v.setInt32(22, h, true);
+  v.setUint16(26, 1, true); v.setUint16(28, 32, true); v.setUint32(30, 3, true); v.setUint32(34, n, true);   // BI_BITFIELDS
+  v.setUint32(54, 0x00ff0000, true); v.setUint32(58, 0x0000ff00, true); v.setUint32(62, 0x000000ff, true); v.setUint32(66, 0xff000000, true);
+  v.setUint32(70, 0x73524742, true);                                                                       // 'sRGB'
+  out.set(px, 14 + 108);
   return `data:image/bmp;base64,${base64(out)}`;
 }
 
@@ -337,7 +367,8 @@ function emfToSvgUnsafe(bytes: Uint8Array): string | undefined {
         break;
       }
       // ---------------- 位图
-      case 76: case 77: case 81: {
+      // 114 是 ALPHABLEND：和 STRETCHBLT 的布局一样，只是光栅操作字段换成了混合方式
+      case 76: case 77: case 81: case 114: {
         let x: number, y: number, w: number, h: number, offBmi: number, cbBmi: number, offBits: number, cbBits: number;
         if (type === 81) {
           x = i32(r + 16); y = i32(r + 20);
@@ -349,8 +380,10 @@ function emfToSvgUnsafe(bytes: Uint8Array): string | undefined {
         }
         const [ax, ay] = tp(x, y), [bx, by] = tp(x + w, y + h);
         const X = Math.min(ax, bx), Y = Math.min(ay, by), W = Math.abs(bx - ax), H = Math.abs(by - ay);
-        const href = cbBmi ? dibToBmp(d, p + offBmi, cbBmi, p + offBits, cbBits) : undefined;
-        if (href) emit(`<image href="${href}" x="${f2(X)}" y="${f2(Y)}" width="${f2(W)}" height="${f2(H)}" preserveAspectRatio="none"${clipAttr()}/>`);
+        // ALPHABLEND 的混合方式：第 3 个字节是整体透明度，第 4 个字节 AC_SRC_ALPHA（1）表示用位图自带的逐像素透明度
+        const alpha = type === 114 ? d.getUint8(r + 34) / 255 : 1;
+        const href = cbBmi ? dibToBmp(d, p + offBmi, cbBmi, p + offBits, cbBits, type === 114 && d.getUint8(r + 35) === 1) : undefined;
+        if (href) emit(`<image href="${href}" x="${f2(X)}" y="${f2(Y)}" width="${f2(W)}" height="${f2(H)}" preserveAspectRatio="none"${alpha < 1 ? ` opacity="${f2(alpha)}"` : ''}${clipAttr()}/>`);
         else if (type === 76 && !st.brush.none) {
           // 没有源位图的 BitBlt：用当前画刷填充（常见于背景）
           const rop = u32(r + 32);
