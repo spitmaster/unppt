@@ -38,6 +38,16 @@ export function base64(bytes: Uint8Array): string {
   return btoa(s);
 }
 
+/** data URI -> 字节（只认 base64 写法） */
+function dataBytes(uri: string): Uint8Array | undefined {
+  const i = uri.indexOf(';base64,');
+  if (i < 0) return undefined;
+  const s = atob(uri.slice(i + 8));
+  const b = new Uint8Array(s.length);
+  for (let k = 0; k < s.length; k++) b[k] = s.charCodeAt(k);
+  return b;
+}
+
 /** 单独输出的媒体文件名：media/原名[后缀].校验码.扩展名 */
 function mediaName(target: string, crc: number, ext: string, suffix = ''): string {
   const base = target.slice(target.lastIndexOf('/') + 1).replace(/\.[^.]*$/, '');
@@ -52,6 +62,9 @@ export class MediaStore {
   private nextAsset = 0;
   /** 新产生、还没写进输出的共享图片 */
   pending: { id: number; uri: string }[] = [];
+  /** 要出缩略图时：记住共享图片和写出去的图片文件，缩略图要再读一次（见 bytes） */
+  keep = false;
+  private kept = new Map<string, () => Promise<Uint8Array | undefined>>();
 
   private decoders = new Map<string, ImageDecoder>();
 
@@ -60,6 +73,26 @@ export class MediaStore {
     decoders: readonly ImageDecoder[] = IMAGE_DECODERS,
   ) {
     for (const d of decoders) for (const e of d.exts) this.decoders.set(e, d);
+  }
+
+  /** 页面里图片地址（data URI、共享图片编号、media/ 下写出去的文件）-> 图片字节；缩略图用 */
+  async bytes(href: string): Promise<Uint8Array | undefined> {
+    if (href.startsWith('data:')) return dataBytes(href);
+    return this.kept.get(href)?.();
+  }
+
+  /** 新产生一张共享图片（内联的 data URI），返回页面里引用它的写法 */
+  private asset(uri: string): string {
+    const id = this.nextAsset++;
+    this.pending.push({ id, uri });
+    if (this.keep) this.kept.set(`${ASSET_PREFIX}${id}`, async () => dataBytes(uri));
+    return `${ASSET_PREFIX}${id}`;
+  }
+
+  /** 写出一个单独的图片文件；要出缩略图时记住怎么再读到它 */
+  private async file(name: string, data: Uint8Array, reread?: () => Promise<Uint8Array | undefined>) {
+    await this.write(name, data);
+    if (this.keep) this.kept.set(name, reread ?? (async () => data));
   }
 
   /** 关系 rid（在 part 里）指向的图片 -> href；浏览器不支持的格式返回 undefined */
@@ -105,14 +138,10 @@ export class MediaStore {
     const bytes = await this.pkg.zip.read(target);
     const png = bytes ? await colorKey(bytes, key) : undefined;
     if (!png) return undefined;
-    if (png.length <= this.inlineLimit) {
-      const id = this.nextAsset++;
-      this.pending.push({ id, uri: `data:image/png;base64,${base64(png)}` });
-      return `${ASSET_PREFIX}${id}`;
-    }
+    if (png.length <= this.inlineLimit) return this.asset(`data:image/png;base64,${base64(png)}`);
     const hex = ((key.r << 16) | (key.g << 8) | key.b).toString(16).padStart(6, '0');
     const name = mediaName(target, entry.crc, 'png', `-key${hex}`);
-    await this.write(name, png);
+    await this.file(name, png);
     return name;
   }
 
@@ -143,13 +172,9 @@ export class MediaStore {
       const bytes = await this.pkg.zip.read(target);
       const img = bytes ? decoder.decode(bytes) : undefined;
       if (!img) { this.pres.warn(`${ext.toUpperCase()} 图片无法解析`); return undefined; }
-      if (this.inlineLimit >= 0) {
-        const id = this.nextAsset++;
-        this.pending.push({ id, uri: `data:${img.mime};base64,${base64(img.data)}` });
-        return `${ASSET_PREFIX}${id}`;
-      }
+      if (this.inlineLimit >= 0) return this.asset(`data:${img.mime};base64,${base64(img.data)}`);
       const name = mediaName(target, entry.crc, img.mime === 'image/svg+xml' ? 'svg' : img.mime.slice(6));
-      await this.write(name, img.data);
+      await this.file(name, img.data);
       return name;
     }
     if (isImage && !BROWSER_IMAGES.has(ext)) {
@@ -161,12 +186,12 @@ export class MediaStore {
       // 同一张图片只存一份（母版上的 logo、背景每页都会用到）
       const bytes = await this.pkg.zip.read(target);
       if (!bytes) return undefined;
-      const id = this.nextAsset++;
-      this.pending.push({ id, uri: `data:${mime};base64,${base64(bytes)}` });
-      return `${ASSET_PREFIX}${id}`;
+      return this.asset(`data:${mime};base64,${base64(bytes)}`);
     }
     const name = mediaName(target, entry.crc, ext);
     await this.write(name, this.pkg.zip.stream(entry));
+    // 图片文件要出缩略图时从包里再读一次（不在内存里留着）
+    if (this.keep && isImage) this.kept.set(name, () => this.pkg.zip.read(target));
     return name;
   }
 }

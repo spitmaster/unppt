@@ -21,6 +21,7 @@ import { renderSlide } from './render/render';
 import type { FontEmbedder } from './text/types';
 import { toSource, type InputSource } from './io/source';
 import { outputForm } from './output/forms';
+import { Thumbnails } from './thumbs/thumbnail';
 import { ZipReader } from './io/zip';
 
 export type { InputSource, RandomAccessSource } from './io/source';
@@ -50,6 +51,10 @@ export interface ConvertOptions {
    * 注意：商业字体的分发需要相应授权。
    */
   embedFonts?: boolean;
+  /** 是否输出缩略图文件夹 thumbs/（见 thumbs/thumbnail.ts）；不写时按产物形式（paged、pages 默认输出） */
+  thumbs?: boolean;
+  /** 缩略图宽度（像素），默认 320 */
+  thumbWidth?: number;
   /** 每处理完一页回调一次 */
   onProgress?: (done: number, total: number) => void;
 }
@@ -87,6 +92,10 @@ export async function convert(input: InputSource, options: ConvertOptions): Prom
   // 不内联图片的形式：图片一律写成单独文件（不在内存里攒）
   const inlineLimit = form.inlineImages ? options.inlineLimit ?? 2 * 1024 * 1024 : -1;
   const media = new MediaStore(pres, pkg, options.write, inlineLimit);
+  const thumbs = options.thumbs ?? form.thumbs
+    ? new Thumbnails({ width: options.thumbWidth ?? 320, slideWidth: pres.width, slideHeight: pres.height }, (h) => media.bytes(h), options.write)
+    : undefined;
+  media.keep = !!thumbs;
   // 字体嵌入：记录每个字体用到的字，每个字体一个唯一别名
   const usage = new Map<FontFace, { alias: string; cps: Set<number> }>();
   const entry = (face: FontFace) => {
@@ -144,12 +153,14 @@ export async function convert(input: InputSource, options: ConvertOptions): Prom
       count++;
       slideParts.push(ref.part);
       const advance = compileAdvance(r.transition);
+      await thumbs?.add(ref.index, r.svg, !!r.hidden);
       yield {
         svg: r.svg, steps: anim.steps, auto: anim.auto, hidden: anim.hidden, transition: compileTransition(r.transition, sounds),
         ...(anim.triggers.length ? { triggers: anim.triggers } : {}), ...(anim.fullScreen.length ? { fullScreen: anim.fullScreen } : {}), ...(r.hidden ? { skip: true } : {}),
         ...(advance ? { advance } : {}),
       };
     }
+    await thumbs?.finish();
   }
 
   const meta = () => {
