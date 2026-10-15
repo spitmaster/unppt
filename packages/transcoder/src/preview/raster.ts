@@ -1,12 +1,14 @@
 /**
- * 缩略图光栅化：用 resvg（WASM，MPL-2.0，SPEC D1/D6）把缩略图 SVG 画成像素，再由 thumbnail.ts 存成 JPG。
+ * 光栅化：用 resvg（WASM，MPL-2.0，SPEC D1/D6）把页面 SVG 画成像素，再由 slide-images.ts 存成 JPG。
  * resvg 不认浏览器的字体回退，所以画之前：
  *   - 页面里的字体名换成这一页实际用到的字体文件里的英文名，并把这些字体文件交给 resvg；
  *   - 嵌套的 SVG 图片（EMF / WMF 转出来的）展开成页面里的普通元素（resvg 画嵌套图片时不带字体，文字会丢）。
  */
 import { initWasm, Resvg } from '@resvg/resvg-wasm';
 import type { FontFace } from '../font/font';
-import type { RgbaImage } from '../media/png-decode';
+import { base64 } from '../media/media';
+
+export interface RgbaImage { width: number; height: number; data: Uint8Array }
 
 /** 按字体名（可能是嵌入字体的别名）和粗细斜找字体文件 */
 export type FontResolver = (family: string, bold: boolean, italic: boolean) => FontFace | undefined;
@@ -39,7 +41,7 @@ export async function resvgRasterizer(wasm: Uint8Array, fonts: FontResolver): Pr
       const used = new Set<FontFace>();
       // resvg 只把 http(s) 地址报成"待解析图片"：media/…、共享图片编号先换成占位地址，再按占位地址把原图交给它
       const real = new Map<string, string>();
-      const src = rewriteFonts(await inlineSvgImages(svg, images), fonts, used)
+      const src = rewriteFonts(await inlinePatternImages(await inlineSvgImages(svg, images), images), fonts, used)
         .replace(/(<image\b[^>]*?\s(?:xlink:)?href=")([^"#][^"]*)"/g, (m, pre: string, h: string) => {
           if (h.startsWith('data:')) return m;
           const u = `https://unppt.local/${real.size}`;
@@ -122,6 +124,33 @@ async function inlineSvgImages(svg: string, images: ImageSource): Promise<string
   }
   return map.size ? svg.replace(/<image\b[^>]*>/g, (t) => map.get(t) ?? t) : svg;
 }
+
+/** resvg 不把 <pattern> 里的图片报成待解析（实测：图片填充、背景图都画成空白），这些图片直接内联成 data URI */
+async function inlinePatternImages(svg: string, images: ImageSource): Promise<string> {
+  const out: string[] = [];
+  let last = 0;
+  for (const m of svg.matchAll(/<pattern\b[\s\S]*?<\/pattern>/g)) {
+    let body = m[0];
+    for (const [tag, pre, href] of body.matchAll(/(<image\b[^>]*?\s(?:xlink:)?href=")([^"#][^"]*)"/g)) {
+      if (href.startsWith('data:')) continue;
+      const b = await images(href);
+      if (b) body = body.replace(tag, () => `${pre}data:${mimeOf(b)};base64,${base64(b)}"`);
+    }
+    out.push(svg.slice(last, m.index), body);
+    last = m.index! + m[0].length;
+  }
+  out.push(svg.slice(last));
+  return out.join('');
+}
+
+function mimeOf(b: Uint8Array): string {
+  if (b[0] === 0x89 && b[1] === 0x50) return 'image/png';
+  if (b[0] === 0xff && b[1] === 0xd8) return 'image/jpeg';
+  if (b[0] === 0x47 && b[1] === 0x49) return 'image/gif';
+  if (b[0] === 0x52 && b[1] === 0x49) return 'image/webp';
+  return 'image/svg+xml';
+}
+
 
 function decodeBase64(b64: string): string {
   const s = atob(b64);

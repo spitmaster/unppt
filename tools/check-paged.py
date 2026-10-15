@@ -78,32 +78,27 @@ def check(page, name: str) -> list[str]:
     steps = min(30, n * 4 + 3)
     if walk(page, single, steps) != walk(page, paged, steps):
         errors.append("翻页过程不同")
-    # ⑤ 缩略图：<img> 显示（不加载别的文件），和正式画面缩小到同样大小比较
-    if not (out / "paged" / "thumbs" / "index.json").exists():
-        idx = {"pages": [], "width": 0, "height": 0}
-    else:
-        idx = json.loads((out / "paged" / "thumbs" / "index.json").read_text(encoding="utf-8"))
-    if idx["pages"] and len(idx["pages"]) != n:
-        errors.append(f"缩略图 {len(idx['pages'])} 张，应为 {n}")
-    tw, th = idx["width"], idx["height"]
-    for i, pg in enumerate(idx["pages"]):
-        (out / "paged" / f"thumb-{i}.html").write_text(f'<html><body style="margin:0"><img src="thumbs/{pg["file"]}"></body></html>', encoding="utf-8")
-        page.set_viewport_size({"width": tw, "height": th})
-        page.goto((out / "paged" / f"thumb-{i}.html").resolve().as_uri())
-        page.wait_for_timeout(300)
-        t = out / f"t-{i}.png"
-        page.screenshot(path=str(t))
-        # 对照画面：这一页所有对象都显示（缩略图不管动画，和 PowerPoint 左侧缩略图一样）
-        page.set_viewport_size({"width": 1280, "height": 720})
+    # ⑤ prop.json 和整页图、缩略图：页数对得上；整页图和"所有对象都显示"的画面缩小到同样大小比较，缩略图尺寸对
+    prop = json.loads((out / "paged" / "prop.json").read_text(encoding="utf-8"))
+    if prop["count"] != n or len(prop["slides"]) != n:
+        errors.append(f"prop.json 页数 {prop['count']}，应为 {n}")
+    for i, sl in enumerate(prop["slides"]):
+        pic, thum = out / "paged" / sl["pic"], out / "paged" / sl["thum"]
+        if not pic.exists() or not thum.exists():
+            errors.append(f"第 {i + 1} 页缺整页图或缩略图")
+            continue
+        if Image.open(thum).size != (prop["thumw"], prop["thumh"]):
+            errors.append(f"第 {i + 1} 页缩略图尺寸 {Image.open(thum).size}")
         open_at(page, paged + f"?slide={i}&step=0&ui=0&timings=0")
         page.evaluate("document.querySelectorAll('.unppt-hide').forEach((e) => e.classList.remove('unppt-hide'))")
         full = out / f"f-{i}.png"
         page.screenshot(path=str(full))
-        a = np.asarray(Image.open(t).convert("RGB"), dtype=float)
-        bimg = np.asarray(Image.open(full).convert("RGB").resize((tw, th), Image.LANCZOS), dtype=float)
+        a = np.asarray(Image.open(pic).convert("RGB"), dtype=float)
+        h, w = a.shape[:2]
+        bimg = np.asarray(Image.open(full).convert("RGB").resize((w, h), Image.LANCZOS), dtype=float)
         err = float(np.abs(a - bimg).mean())
         if err > THUMB_ERR:
-            errors.append(f"第 {i + 1} 页缩略图和画面差别大（平均 {err:.1f}）")
+            errors.append(f"第 {i + 1} 页整页图和画面差别大（平均 {err:.1f}）")
     page.set_viewport_size({"width": 1280, "height": 720})
     # ④ 单页 HTML
     open_at(page, (out / "paged" / "page-001.html").resolve().as_uri() + "?ui=0")

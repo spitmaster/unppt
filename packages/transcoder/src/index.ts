@@ -21,8 +21,10 @@ import { renderSlide } from './render/render';
 import type { FontEmbedder } from './text/types';
 import { toSource, type InputSource } from './io/source';
 import { outputForm } from './output/forms';
-import { Thumbnails } from './thumbs/thumbnail';
-import { resvgRasterizer } from './thumbs/raster';
+import { previewSize, SlideImages } from './preview/slide-images';
+import { resvgRasterizer } from './preview/raster';
+import { slideNotes } from './model/notes';
+import { propJson, type PropSlide } from './output/prop';
 import { ZipReader } from './io/zip';
 
 export type { InputSource, RandomAccessSource } from './io/source';
@@ -52,15 +54,13 @@ export interface ConvertOptions {
    * 注意：商业字体的分发需要相应授权。
    */
   embedFonts?: boolean;
-  /** 是否输出缩略图文件夹 thumbs/（见 thumbs/thumbnail.ts）；默认不输出（缩略图功能暂缓） */
-  thumbs?: boolean;
-  /** 缩略图宽度（像素），默认 320 */
-  thumbWidth?: number;
   /**
-   * 缩略图光栅化用的 resvg WASM 文件字节（发布包里的 dist/resvg.wasm；命令行自动读取）。
-   * 给了就输出 JPG 缩略图，不给（或加载失败）就输出自包含的 SVG 缩略图
+   * 是否输出整页图 pic/{n}.jpg 和缩略图 thum/{n}.jpg（见 preview/），默认输出。
+   * 不管出不出图，入口文件旁边都有 prop.json（页数、宽高、每页图片路径、备注、是否隐藏，SPEC F1）
    */
-  thumbWasm?: Uint8Array | Promise<Uint8Array | undefined>;
+  images?: boolean;
+  /** 出图用的 resvg WASM 文件字节（发布包里的 dist/resvg.wasm；命令行自动读取）。没给或加载失败时不出图并警告 */
+  rasterWasm?: Uint8Array | Promise<Uint8Array | undefined>;
   /** 每处理完一页回调一次 */
   onProgress?: (done: number, total: number) => void;
 }
@@ -98,17 +98,19 @@ export async function convert(input: InputSource, options: ConvertOptions): Prom
   // 不内联图片的形式：图片一律写成单独文件（不在内存里攒）
   const inlineLimit = form.inlineImages ? options.inlineLimit ?? 2 * 1024 * 1024 : -1;
   const media = new MediaStore(pres, pkg, options.write, inlineLimit);
-  // 缩略图用的字体：嵌入字体的别名找回原来的字体，其它按名字找
+  // 整页图、缩略图（SPEC F1）。出图用的字体：嵌入字体的别名找回原来的字体，其它按名字找
   const aliasFace = (name: string) => [...usage].find(([, u]) => u.alias === name)?.[0];
-  const wasm = (options.thumbs ?? form.thumbs) ? await Promise.resolve(options.thumbWasm).catch(() => undefined) : undefined;
-  if ((options.thumbs ?? form.thumbs) && options.thumbWasm && !wasm) pres.warn('缩略图光栅化用的 resvg.wasm 读不到，改用 SVG 缩略图');
+  const size = previewSize(pres.width, pres.height);
+  const wantImages = options.images !== false;
+  const wasm = wantImages ? await Promise.resolve(options.rasterWasm).catch(() => undefined) : undefined;
+  if (wantImages && !wasm) pres.warn('没有 resvg.wasm，不输出整页图和缩略图（prop.json 照常输出）');
   const raster = wasm
-    ? await resvgRasterizer(wasm, (n, b, i) => aliasFace(n) ?? fonts.find(n, b, i)).catch((e: Error) => { pres.warn(`缩略图光栅化加载失败，改用 SVG 缩略图：${e.message}`); return undefined; })
+    ? await resvgRasterizer(wasm, (n, b, i) => aliasFace(n) ?? fonts.find(n, b, i)).catch((e: Error) => { pres.warn(`resvg 加载失败，不输出整页图和缩略图：${e.message}`); return undefined; })
     : undefined;
-  const thumbs = options.thumbs ?? form.thumbs
-    ? new Thumbnails({ width: options.thumbWidth ?? 320, slideWidth: pres.width, slideHeight: pres.height }, (h) => media.bytes(h), options.write, raster, (m) => pres.warn(m))
-    : undefined;
-  media.keep = !!thumbs;
+  const images = raster ? new SlideImages(size, raster, (h) => media.bytes(h), options.write, (m) => pres.warn(m)) : undefined;
+  // 出图时页面引用的图片要能再读一次
+  media.keep = !!images;
+  const propSlides: PropSlide[] = [];
   // 字体嵌入：记录每个字体用到的字，每个字体一个唯一别名
   const usage = new Map<FontFace, { alias: string; cps: Set<number> }>();
   const entry = (face: FontFace) => {
@@ -166,14 +168,14 @@ export async function convert(input: InputSource, options: ConvertOptions): Prom
       count++;
       slideParts.push(ref.part);
       const advance = compileAdvance(r.transition);
-      await thumbs?.add(ref.index, r.svg, !!r.hidden);
+      await images?.add(ref.index + 1, r.svg);
+      propSlides.push({ note: await slideNotes(pkg, ref.part), hidden: !!r.hidden });
       yield {
         svg: r.svg, steps: anim.steps, auto: anim.auto, hidden: anim.hidden, transition: compileTransition(r.transition, sounds),
         ...(anim.triggers.length ? { triggers: anim.triggers } : {}), ...(anim.fullScreen.length ? { fullScreen: anim.fullScreen } : {}), ...(r.hidden ? { skip: true } : {}),
         ...(advance ? { advance } : {}),
       };
     }
-    await thumbs?.finish();
   }
 
   const meta = () => {
@@ -187,6 +189,7 @@ export async function convert(input: InputSource, options: ConvertOptions): Prom
   const takeAssets = () => { const a = media.pending; media.pending = []; return a; };
 
   await form.write({ slides, takeAssets, fontFiles, meta, title, player: __UNPPT_PLAYER__, write: options.write, fileName });
+  await options.write('prop.json', propJson({ width: pres.width * 0.75, height: pres.height * 0.75, thumbWidth: size.thumbWidth, thumbHeight: size.thumbHeight, slides: propSlides }));
   return { slides: count, width: pres.width, height: pres.height, report };
 }
 

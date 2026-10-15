@@ -22,6 +22,5 @@ async function* html(src: OutputSource): AsyncGenerator<Uint8Array> {
 export const singleForm: OutputForm = {
   name: 'single',
   inlineImages: true,
-  thumbs: false,
   write: (src) => src.write(src.fileName, html(src)),
 };

@@ -194,24 +194,25 @@ test('演示文稿里嵌入的字体（MicroType Express 压缩）能解出来�
   }
 });
 
-test('缩略图文件夹（--thumbs）：给了 resvg 的 wasm 出 JPG，没给出自包含的 SVG；默认不输出', async () => {
-  const input = new Uint8Array(await readFile(new URL('charts-basic.pptx', TC)));
+test('prop.json：页数、宽高、备注（纯文本）、隐藏页；整页图和缩略图默认输出，--no-images 只有 prop.json', async () => {
+  const input = new Uint8Array(await readFile(new URL('speaker-notes.pptx', TC)));
   const wasm = new Uint8Array(await readFile(new URL('../dist/resvg.wasm', import.meta.url)));
-  const jpg = memoryWriter();
-  await convert(input, { write: jpg.write, output: 'paged', thumbs: true, thumbWasm: wasm });
-  const idx = JSON.parse(jpg.files.get('thumbs/index.json').toString());
-  assert.equal(idx.pages.length, 4);
-  assert.equal(idx.width, 320);
-  for (const p of idx.pages) {
-    const b = jpg.files.get(`thumbs/${p.file}`);
-    assert.ok(p.file.endsWith('.jpg') && b[0] === 0xff && b[1] === 0xd8, p.file);
+  const w = memoryWriter();
+  await convert(input, { write: w.write, output: 'paged', rasterWasm: wasm });
+  const prop = JSON.parse(w.files.get('prop.json').toString());
+  assert.deepEqual({ count: prop.count, picw: prop.picw, pich: prop.pich, thumw: prop.thumw, thumh: prop.thumh }, { count: 3, picw: 960, pich: 540, thumw: 216, thumh: 122 });
+  assert.deepEqual(prop.slides.map((s) => s.index), [1, 2, 3]);
+  assert.equal(prop.slides[0].note, '第一段备注\n第二段：A < B & C\n段内换行');
+  assert.ok(!('note' in prop.slides[1]) && !('hidden' in prop.slides[1]));
+  assert.deepEqual(prop.slides[2], { index: 3, thum: 'thum/3.jpg', pic: 'pic/3.jpg', note: '隐藏页的备注', hidden: 1 });
+  for (const s of prop.slides) {
+    for (const f of [s.pic, s.thum]) {
+      const b = w.files.get(f);
+      assert.ok(b && b[0] === 0xff && b[1] === 0xd8, f);
+    }
   }
-  const svg = memoryWriter();
-  await convert(input, { write: svg.write, output: 'paged', thumbs: true });
-  const idx2 = JSON.parse(svg.files.get('thumbs/index.json').toString());
-  assert.ok(idx2.pages.every((p) => p.file.endsWith('.svg')));
-  assert.ok(!svg.files.get(`thumbs/${idx2.pages[0].file}`).toString().includes('href="media/'), 'SVG 缩略图不能引用外部图片');
-  const single = memoryWriter();
-  await convert(input, { write: single.write, output: 'paged' });
-  assert.ok(![...single.files.keys()].some((k) => k.startsWith('thumbs/')));
+  const none = memoryWriter();
+  await convert(input, { write: none.write, output: 'single', images: false, rasterWasm: wasm });
+  assert.equal(JSON.parse(none.files.get('prop.json').toString()).count, 3);
+  assert.ok(![...none.files.keys()].some((k) => k.startsWith('pic/') || k.startsWith('thum/')));
 });

@@ -2554,7 +2554,20 @@ def text_hanging_punct(app):
     return p
 
 
-CASES = [shapes_all, text_sizes, text_align, text_spacing, text_bullets, text_missing_font, shapes_basic, fills_lines, table_basic, group_rotate, anim_basic, anim_auto, charts_basic, pictures, smartart, text_effects, text_layout, table_merge, links, emf_images, anim_advanced, charts_labels, freeform_icons, media_audio, anim_trigger, wmf_images, anim_iterate, picture_transparent, charts_more, shape_effects, equations, anim_path, anim_emphasis, transitions, fills_patterns, text_decoration, anim_entrance, svg_images, charts_markers, hidden_slides, media_background, text_glow_reflection, text_tabs, text_picture_bullets, fills_texture, transition_morph, text_embedded_fonts, text_warp, anim_repeat, charts_sizes, slide_timings, lines_compound, table_diagonal, lines_gradient, fills_radial, fills_rect_gradient, shapes_3d, table_vertical, transitions_more, anim_sound, anim_build, anim_after, anim_text_emphasis, charts_bubble, media_video, charts_options, charts_negative, shapes_bevel, charts_legend, shapes_3d_rotation, smartart_3d, charts_ofpie, charts_3d, anim_group_emphasis, activex_controls, charts_extras, charts_axis_titles, charts_fills, charts_outlines, charts_labels_more, group_scale, group_flip, charts_3d_line, charts_legend_pos, charts_crowded_labels, charts_label_skip, charts_bar_long_names, charts_multilevel, picture_recolor, text_symbols, text_numbering, lines_arrows, table_styles, shapes_styles, charts_styles, placeholders_inherit, text_bold_light, ole_objects, text_hanging_punct]
+def speaker_notes(app):
+    """演讲者备注（prop.json 的 note）：第 1 页两段、第二段里有段内换行和 < & 这类字符；第 2 页没有备注；第 3 页隐藏且有备注"""
+    p = new_pres(app)
+    notes = ["第一段备注" + chr(13) + "第二段：A < B & C" + chr(11) + "段内换行", "", "隐藏页的备注"]
+    for k, n in enumerate(notes):
+        s = blank(p)
+        textbox(s, 80, 200, 800, 80, f"第 {k + 1} 页", size=40)
+        if n:
+            s.NotesPage.Shapes.Placeholders(2).TextFrame.TextRange.Text = n
+    p.Slides(3).SlideShowTransition.Hidden = -1
+    return p
+
+
+CASES = [shapes_all, text_sizes, text_align, text_spacing, text_bullets, text_missing_font, shapes_basic, fills_lines, table_basic, group_rotate, anim_basic, anim_auto, charts_basic, pictures, smartart, text_effects, text_layout, table_merge, links, emf_images, anim_advanced, charts_labels, freeform_icons, media_audio, anim_trigger, wmf_images, anim_iterate, picture_transparent, charts_more, shape_effects, equations, anim_path, anim_emphasis, transitions, fills_patterns, text_decoration, anim_entrance, svg_images, charts_markers, hidden_slides, media_background, text_glow_reflection, text_tabs, text_picture_bullets, fills_texture, transition_morph, text_embedded_fonts, text_warp, anim_repeat, charts_sizes, slide_timings, lines_compound, table_diagonal, lines_gradient, fills_radial, fills_rect_gradient, shapes_3d, table_vertical, transitions_more, anim_sound, anim_build, anim_after, anim_text_emphasis, charts_bubble, media_video, charts_options, charts_negative, shapes_bevel, charts_legend, shapes_3d_rotation, smartart_3d, charts_ofpie, charts_3d, anim_group_emphasis, activex_controls, charts_extras, charts_axis_titles, charts_fills, charts_outlines, charts_labels_more, group_scale, group_flip, charts_3d_line, charts_legend_pos, charts_crowded_labels, charts_label_skip, charts_bar_long_names, charts_multilevel, picture_recolor, text_symbols, text_numbering, lines_arrows, table_styles, shapes_styles, charts_styles, placeholders_inherit, text_bold_light, ole_objects, text_hanging_punct, speaker_notes]
 
 
 def main():

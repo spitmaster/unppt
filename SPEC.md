@@ -73,8 +73,15 @@
 - 动画附带的声音（`p:sndTgt`）和切换声音（`p:sndAc`，含循环到下一个声音、停止前一声音）写成 `media/` 下的文件，播放器在动作开始、翻页时播放，同一时间只有一个声音（新的停掉旧的），翻页不停；跳转和深链接打开时不出声；
 - 缺字体不报错，在 `report` 里列出缺失项；
 - 按需加载（paged / pages）的文件布局：`index.html`（播放器 + 目录：每页数据文件名、是否隐藏）、`pages/<页号>.<内容哈希>.js`（调用 `__unpptPage(页号, 数据)`）、`fonts/<别名>.<内容哈希>.js`（调用 `__unpptFont(别名, base64)`）、`media/`（图片、音视频）。页面数据文件名带内容哈希，同名就是同一份内容，可以长期缓存；
-- **缩略图文件夹**（用户 2026-10-15：缩略图不由播放器提供，而是产物里一个约定好的文件夹，使用方直接读取）：`thumbs/001.jpg`、`thumbs/002.jpg`……（页号从 1 开始，至少 3 位）和 `thumbs/index.json`（`{ "width", "height", "pages": [{ "file": "001.jpg", "hash": "内容哈希", "skip"?: true }] }`，以 index.json 里的文件名为准，hash 用来给地址加 `?v=` 防缓存串版本）。画的是这一页所有对象都显示的样子（和 PowerPoint 左侧缩略图一样），默认宽 320 像素（`--thumb-width` 可改），JPG 质量 85。光栅化用 resvg（WASM，SPEC D1/D6）：页面 SVG 里的图片先按显示大小缩小内嵌，嵌套的 SVG 图片展开，字体名换成这一页用到的字体文件的英文名并把字体交给 resvg；resvg 的 wasm 由调用方传入（`thumbWasm`，命令行自动读发布包里的 `dist/resvg.wasm`），没有或者某一页画失败时那一页退回自包含的 SVG 缩略图（`.svg`，`<img>` 也能显示）。不放音视频（视频显示封面帧）。**暂缓**（用户 2026-10-15：还不确定要缩略图，还是用即时渲染代替）：默认不输出，加 `--thumbs` 才输出；
-- 附带一个薄的命令行：`unppt convert in.pptx -o out.html [--fonts 目录] [--output single|paged|pages|data] [--thumbs|--no-thumbs] [--thumb-width 像素]`。
+- **页面信息 prop.json 和整页图、缩略图**（用户 2026-10-15：沿用直播服务对接微演示的约定，产物里同时有 `pic` 和 `thum` 两种图）：所有产物形式都在入口文件旁边输出 `prop.json`：
+  `{ "count": 页数, "picw": 宽, "pich": 高, "thumw": 216, "thumh": 缩略图高, "slides": [{ "index": 1, "pic": "pic/1.jpg", "thum": "thum/1.jpg", "note"?: "备注", "hidden"?: 1 }] }`。
+  - `picw` / `pich` 是幻灯片尺寸的磅值（16:9 是 960 × 540，可能带小数，保留两位）；`index` 从 1 开始，和图片文件名的页号一致（文件名是纯数字，直播服务靠它推页码）；路径相对 prop.json 所在目录；
+  - `note` 是演讲者备注（备注页正文占位符的文字），**纯文本**：段落之间、段内换行都写成 `\n`，不转义、不转 `<br>`（怎么显示是使用方的事，用户 2026-10-15）；没有备注时不写这个字段；隐藏的页写 `"hidden": 1`，不隐藏时不写；
+  - `pic/{n}.jpg` 整页图（宽高为 picw × pich 取整的像素），`thum/{n}.jpg` 缩略图（宽 216），JPG 质量 85。画的是这一页所有对象都显示的样子（和 PowerPoint 左侧缩略图一样），不放音视频（视频显示封面帧）。每页只光栅化一次（整页图），缩略图由整页图区域平均缩小得到；
+  - 光栅化用 resvg（WASM，SPEC D1/D6）：嵌套的 SVG 图片展开，字体名换成这一页用到的字体文件的英文名并把字体交给 resvg，页面引用的图片原样交给 resvg 解码；resvg 的 wasm 由调用方传入（`rasterWasm`，命令行自动读发布包里的 `dist/resvg.wasm`）；
+  - 出图默认开启，`images: false`（命令行 `--no-images`）关掉：prop.json 照样写 pic / thum 路径，图片由使用方自己处理；没有 wasm、wasm 加载失败或某一页画失败时，缺的图片不输出并在 report 里警告；
+  - **出图速度还不达标**（用户 2026-10-15：现在的速度不能接受，后面一定要做性能优化），见 docs/todo/dev.md；
+- 附带一个薄的命令行：`unppt convert in.pptx -o out.html [--fonts 目录] [--output single|paged|pages|data] [--no-images]`。
 - 老格式 `.ppt` 第一版不支持（开发工具会用 PowerPoint 把样本里的 `.ppt` 另存为 `.pptx` 再测）。
 
 ### F2 播放器

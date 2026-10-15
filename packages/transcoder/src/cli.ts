@@ -106,8 +106,7 @@ function usage(): never {
   --system-fonts          使用本机系统字体目录（另外 Office 自带的私有字体、云字体用到时嵌入产物）
   --embed-fonts           把用到的字做成字体子集嵌入（观看端无需安装字体；商业字体注意授权）
   --data                  只输出演示数据 deck.json（开发调试用）
-  --thumbs                输出缩略图文件夹 thumbs/（默认不输出；缩略图功能暂缓，见 docs/todo/dev.md）
-  --thumb-width <像素>    缩略图宽度，默认 320
+  --no-images             不输出整页图 pic/ 和缩略图 thum/（prop.json 照常输出，见 SPEC F1）
   --inline-limit <字节>   小于这个大小的图片内联进 HTML，默认 2097152
   --stats                 结束时显示用时和峰值内存
   -q, --quiet             不显示进度`);
@@ -122,8 +121,7 @@ async function main() {
   const fontDirs: string[] = [];
   const privateDirs: string[] = [];
   let form = 'single';
-  let thumbs: boolean | undefined;
-  let thumbWidth: number | undefined;
+  let images = true;
   let embedFonts = false;
   let inlineLimit: number | undefined;
   let quiet = false;
@@ -135,9 +133,7 @@ async function main() {
     else if (a === '--system-fonts') { fontDirs.push(...systemFontDirs()); privateDirs.push(...officeFontDirs()); }
     else if (a === '--data') form = 'data';
     else if (a === '--output') form = args[++i];
-    else if (a === '--thumbs') thumbs = true;
-    else if (a === '--no-thumbs') thumbs = false;
-    else if (a === '--thumb-width') thumbWidth = Number(args[++i]);
+    else if (a === '--no-images') images = false;
     else if (a === '--embed-fonts') embedFonts = true;
     else if (a === '--inline-limit') inlineLimit = Number(args[++i]);
     else if (a === '-q' || a === '--quiet') quiet = true;
@@ -164,9 +160,9 @@ async function main() {
     write: (rel, data) => writeTo(dirname(out), rel === 'index.html' || rel === 'deck.json' ? basename(out) : rel, data),
     fonts, privateFonts,
     output: form,
-    thumbs, thumbWidth,
-    // 缩略图光栅化用的 resvg：和 cli.js 放在一起的 resvg.wasm（读不到时缩略图退回 SVG）
-    thumbWasm: readFile(new URL('./resvg.wasm', import.meta.url)).then((b) => new Uint8Array(b), () => undefined),
+    images,
+    // 出图用的 resvg：和 cli.js 放在一起的 resvg.wasm（读不到时不出图，prop.json 照常输出）
+    rasterWasm: readFile(new URL('./resvg.wasm', import.meta.url)).then((b) => new Uint8Array(b), () => undefined),
     embedFonts,
     fileName: dataOnly ? 'deck.json' : 'index.html',
     inlineLimit,
