@@ -17,7 +17,7 @@ import { attr, child, children, numAttr, path, type XEl } from '../../io/xml';
 import { boxTransform, flipTransform, pc, placeBox, readXfrm, withUid } from '../box';
 import type { RenderContext } from '../context';
 import { projectedBounds, projectedPath, shapeProjection } from '../projection';
-import { snapBox } from '../pixel-snap';
+import { pixelRow, snapBox } from '../pixel-snap';
 
 export async function renderShape(r: RenderContext, el: XEl, ctx: SlideContext, groupFill?: Fill): Promise<string> {
   const { layoutPh, masterPh, ph } = r.inherited(el, ctx);
@@ -122,7 +122,7 @@ export async function renderShape(r: RenderContext, el: XEl, ctx: SlideContext, 
     rels: await r.env.pres.pkg.rels(ctx.part),
     images: r.images, part: ctx.part, slideNumber: ctx.slideNumber,
     // 外框对齐了整像素（没转动）、所在坐标系没缩放时，文字基线也对齐整像素
-    pixelTop: snap && !box.flipV && (ctx.toSlide === undefined || ctx.toSlide?.sy === 1) ? (ctx.toSlide?.y ?? 0) + box.y : undefined,
+    ...(snap && !box.flipV ? pixelRow(ctx.toSlide, box.y, r.env.pres.displayScale) : undefined),
   };
   // SmartArt 的文字框有单独的位置（dsp:txXfrm）：在绘图坐标里按自己的外框放，转角 = 形状的 + 文字框自己的
   // （转动的形状靠文字框反向转把文字转正，例如矩阵图：形状 270°、文字框 90°）

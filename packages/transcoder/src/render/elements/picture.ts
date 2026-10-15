@@ -52,7 +52,7 @@ export async function renderPicture(r: RenderContext, el: XEl, ctx: SlideContext
       let clip = '';
       // 水平翻转、整个在幻灯片里的图片，PowerPoint 画出的内容比镜像的位置往右多 1 像素（右边缘多出的裁掉，边框不动；
       // 垂直翻转、伸出幻灯片的没有，实测）
-      const flipShift = box.flipH && onSlide(box, ctx, r.env.pres) ? ' transform="translate(-1 0)"' : '';
+      const flipShift = box.flipH && onSlide(box, ctx, r.env.pres) ? ` transform="translate(${n2(-1 / r.env.pres.displayScale)} 0)"` : '';
       const needsClip = prst !== 'rect' || !!custEl || sr.l !== 0 || sr.t !== 0 || sr.r !== 0 || sr.b !== 0 || !!fr || !!flipShift;
       if (needsClip) {
         const id = r.doc.id('c');
@@ -127,10 +127,11 @@ export async function renderPicture(r: RenderContext, el: XEl, ctx: SlideContext
   return withUid(uid, placeBox(box, light ? `<g filter="url(#${light})">${lit}</g>` : lit, r.doc, cam, proj, clickable), el);
 }
 
-/** 图片整个在幻灯片范围里（坐标系换算不知道时按不在算） */
-function onSlide(box: { x: number; y: number; w: number; h: number }, ctx: SlideContext, pres: { width: number; height: number }): boolean {
+/** 图片整个在幻灯片范围里（坐标系换算不知道时按不在算；toSlide 换算到的是对齐像素） */
+function onSlide(box: { x: number; y: number; w: number; h: number }, ctx: SlideContext, pres: { width: number; height: number; displayScale: number }): boolean {
   const m = ctx.toSlide === undefined ? { x: 0, y: 0, sx: 1, sy: 1 } : ctx.toSlide;
   if (!m) return false;
   const x0 = m.x + m.sx * box.x, x1 = m.x + m.sx * (box.x + box.w), y0 = m.y + m.sy * box.y, y1 = m.y + m.sy * (box.y + box.h);
-  return Math.min(x0, x1) >= 0 && Math.min(y0, y1) >= 0 && Math.max(x0, x1) <= pres.width && Math.max(y0, y1) <= pres.height;
+  const W = pres.width * pres.displayScale, H = pres.height * pres.displayScale;
+  return Math.min(x0, x1) >= 0 && Math.min(y0, y1) >= 0 && Math.max(x0, x1) <= W && Math.max(y0, y1) <= H;
 }
