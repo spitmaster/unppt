@@ -12,7 +12,7 @@ import { BulletNumbering } from './bullets';
 import { emitParagraphs, placeLines } from './emit';
 import { makeMeasurer } from './measure';
 import { layoutParagraph } from './paragraph';
-import { fontRefLevels } from './style';
+import { fontRefLevels, styleFonts } from './style';
 import type { ParagraphLayout, StyleChain, TextBox, TextEnv } from './types';
 import { warpOf, warpText } from './warp';
 
@@ -61,8 +61,9 @@ export async function renderText(
   env.gradBox = { w: outer.w, h: outer.h };
   const measurer = makeMeasurer(env);
   const lstStyle = child(txBody, 'a:lstStyle');
-  // 形状样式（p:style/a:fontRef）指定的文字颜色：优先级高于默认文字样式，低于形状自己的列表样式和文字属性
-  const fontRefStyle = env.fontRefColor ? fontRefLevels(env.fontRefColor) : undefined;
+  // 形状样式（p:style/a:fontRef）指定的文字颜色和主题字体：优先级高于默认文字样式，低于形状自己的列表样式和文字属性
+  const refFonts = styleFonts(env.fontRef);
+  const fontRefStyle = env.fontRefColor || refFonts.length ? fontRefLevels(env.fontRefColor, refFonts) : undefined;
   const fullChain: StyleChain = [...chain, fontRefStyle, lstStyle];
 
   const layouts: ParagraphLayout[] = [];

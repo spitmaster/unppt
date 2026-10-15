@@ -103,11 +103,27 @@ export function kernOn(s: RunStyle): boolean {
   return s.kern !== undefined && s.size * 72 / 96 >= s.kern - 0.01;
 }
 
-/** 形状样式（p:style/a:fontRef）的文字颜色做成一个列表样式，插进样式链 */
-export function fontRefLevels(c: Rgba): XEl {
-  const hex = [c.r, c.g, c.b].map((v) => v.toString(16).padStart(2, '0')).join('');
-  const clr: XEl = { name: 'a:srgbClr', attrs: { val: hex }, text: '', children: c.a < 1 ? [{ name: 'a:alpha', attrs: { val: String(Math.round(c.a * 100000)) }, text: '', children: [] }] : [] };
-  const defRPr: XEl = { name: 'a:defRPr', attrs: {}, text: '', children: [{ name: 'a:solidFill', attrs: {}, text: '', children: [clr] }] };
+/**
+ * 形状样式、表格样式里 a:fontRef（idx="minor" / "major"）指定的主题字体 -> a:latin、a:ea、a:cs；表格样式也可以直接写 a:font。
+ * 实测（text-default-style）：它压过演示文稿默认样式里的字体
+ */
+export function styleFonts(el: XEl | undefined): XEl[] {
+  if (el?.name === 'a:font') return el.children.filter((c) => c.name === 'a:latin' || c.name === 'a:ea' || c.name === 'a:cs');
+  const idx = attr(el, 'idx');
+  if (idx !== 'minor' && idx !== 'major') return [];
+  const k = idx === 'minor' ? 'mn' : 'mj';
+  return ['latin', 'ea', 'cs'].map((s) => ({ name: `a:${s}`, attrs: { typeface: `+${k}-${s === 'latin' ? 'lt' : s}` }, text: '', children: [] }));
+}
+
+/** 形状样式（p:style/a:fontRef）的文字颜色和字体做成一个列表样式，插进样式链 */
+export function fontRefLevels(c: Rgba | undefined, fonts: XEl[]): XEl {
+  const fill: XEl[] = [];
+  if (c) {
+    const hex = [c.r, c.g, c.b].map((v) => v.toString(16).padStart(2, '0')).join('');
+    const clr: XEl = { name: 'a:srgbClr', attrs: { val: hex }, text: '', children: c.a < 1 ? [{ name: 'a:alpha', attrs: { val: String(Math.round(c.a * 100000)) }, text: '', children: [] }] : [] };
+    fill.push({ name: 'a:solidFill', attrs: {}, text: '', children: [clr] });
+  }
+  const defRPr: XEl = { name: 'a:defRPr', attrs: {}, text: '', children: [...fill, ...fonts] };
   const levels: XEl[] = [];
   for (let i = 1; i <= 9; i++) levels.push({ name: `a:lvl${i}pPr`, attrs: {}, text: '', children: [defRPr] });
   return { name: 'a:lstStyle', attrs: {}, text: '', children: levels };
