@@ -49,7 +49,7 @@ function scriptOfLang(lang: string | undefined): string | undefined {
 
 /**
  * 主题字体（+mn-lt、+mj-ea 等）-> 字体名。lang 是文字语言：实测主题的东亚字体为空时，PowerPoint 按语言选主题里对应脚本的字体
- * （zh-CN 用 Hans、ja-JP 用 Jpan、zh-TW 用 Hant、ko-KR 用 Hang），英文或没写语言时不用主题字体——返回空串，排版时按缺失的东亚字体替代（雅黑）
+ * （zh-CN 用 Hans、ja-JP 用 Jpan、zh-TW 用 Hant、ko-KR 用 Hang），英文或没写语言时不用主题字体——返回空串（runStyle 改用西文字体）
  */
 export function resolveTypeface(tf: string | undefined, theme: Theme, lang?: string): string | undefined {
   if (!tf) return undefined;
@@ -82,9 +82,9 @@ export function runStyle(r: XEl, env: TextEnv, scale: number): RunStyle {
   const lang = attr(r, 'lang');
   const eaTf = attr(child(r, 'a:ea'), 'typeface') ?? '+mn-ea';
   const byLang = resolveTypeface(eaTf, env.theme, lang);
-  // 英文或没写语言时主题东亚字体为空：中文字形用默认东亚字体（雅黑，eaGlyph 为空串），行高仍按简体中文的主题字体算（实测）
-  const ea = byLang || resolveTypeface(eaTf, env.theme, 'zh-CN') || (eaTf === '+mj-ea' ? env.theme.majorLatin : env.theme.minorLatin) || latin;
-  const eaGlyph = byLang === '' ? '' : undefined;
+  // 英文或没写语言时主题东亚字体为空：东亚字体就用西文字体——中文字形和行高都按它（楷体、宋体、Yu Gothic 等自带中文字形），
+  // 它没有的字用默认东亚字体补（雅黑，Arial 这类西文字体就全是雅黑，见 measure.ts）（实测）
+  const ea = byLang || latin;
   const fill = r.children.find((c) => c.name === 'a:solidFill' || c.name === 'a:gradFill' || c.name === 'a:noFill' || c.name === 'a:blipFill');
   let color: Rgba = env.fontRefColor ?? { r: 0, g: 0, b: 0, a: 1 };
   if (fill?.name === 'a:solidFill') color = colorIn(fill, env.colors) ?? color;
@@ -103,7 +103,7 @@ export function runStyle(r: XEl, env: TextEnv, scale: number): RunStyle {
   return {
     // 实测：自动缩小（normAutofit fontScale）后的字号四舍五入到整数磅（28 × 92.5% = 25.9 -> 26、14 × 90% = 12.6 -> 13，7 组行距全部吻合）
     size: (scale === 1 ? sz : Math.round(sz * scale)) * 96 / 72,
-    latin, ea, eaGlyph,
+    latin, ea,
     sym: resolveTypeface(attr(child(r, 'a:sym'), 'typeface'), env.theme),
     bold: attr(r, 'b') === '1' || attr(r, 'b') === 'true',
     italic: attr(r, 'i') === '1' || attr(r, 'i') === 'true',

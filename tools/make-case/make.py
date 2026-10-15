@@ -2846,6 +2846,48 @@ def _patch_theme_font_lang(path):
 text_theme_font_lang.patch = _patch_theme_font_lang
 
 
+THEME_FONT_LATINS = ['KaiTi', 'SimSun', 'Yu Gothic', 'Arial', 'Microsoft YaHei', 'KaiTi']
+
+
+def text_theme_font_latin(app):
+    """主题东亚字体为空、文字不写语言（或 en-US）时，中文用西文字体自己的字形（楷体、宋体、Yu Gothic、雅黑），
+    西文字体没有的字用雅黑补（Arial 全是雅黑，Yu Gothic 缺的简体字）；最后一行写 en-US。文字只写西文字体（保存后改 XML）"""
+    p = new_pres(app)
+    s = blank(p)
+    for k, f in enumerate(THEME_FONT_LATINS):
+        tb = s.Shapes.AddTextbox(1, 30, 10 + k * 80, 900, 70)
+        tb.Name = f"LATINFONT{k}"
+        tr = tb.TextFrame.TextRange
+        tr.Text = f"第{k + 1}行 虽然能够保证触发更新的组件 ABC"
+        tr.Font.Size = 28
+        tr.Font.Name = f
+    return p
+
+
+def _patch_theme_font_latin(path):
+    import re
+    import zipfile
+    tmp = path.with_suffix(".tmp")
+    with zipfile.ZipFile(path) as zin, zipfile.ZipFile(tmp, "w", zipfile.ZIP_DEFLATED) as zout:
+        for item in zin.infolist():
+            data = zin.read(item.filename)
+            if item.filename == "ppt/slides/slide1.xml":
+                xml = data.decode("utf8")
+
+                def fix(m):
+                    k = int(re.search(r'name="LATINFONT(\d+)"', m.group(0)).group(1))
+                    sp = re.sub(r'<a:(ea|cs) typeface="[^"]*"[^>]*/>', "", m.group(0))
+                    sp = re.sub(r' (lang|altLang)="[^"]*"', "", sp)
+                    return sp.replace("<a:rPr", '<a:rPr lang="en-US"') if k == len(THEME_FONT_LATINS) - 1 else sp
+                xml = re.sub(r"<p:sp>(?:(?!</p:sp>).)*name=\"LATINFONT.*?</p:sp>", fix, xml, flags=re.S)
+                data = xml.encode("utf8")
+            zout.writestr(item, data)
+    tmp.replace(path)
+
+
+text_theme_font_latin.patch = _patch_theme_font_latin
+
+
 CHARSET_SLIDES = ['-122', '', '', '-128', '']
 
 
@@ -3576,7 +3618,7 @@ def _patch_missing_jp(path):
 text_missing_font_jp.patch = _patch_missing_jp
 
 
-CASES = [shapes_all, text_sizes, text_align, text_spacing, text_bullets, text_missing_font, shapes_basic, fills_lines, table_basic, group_rotate, anim_basic, anim_auto, charts_basic, pictures, smartart, text_effects, text_layout, table_merge, links, emf_images, anim_advanced, charts_labels, freeform_icons, media_audio, anim_trigger, wmf_images, anim_iterate, picture_transparent, charts_more, shape_effects, equations, anim_path, anim_emphasis, transitions, fills_patterns, text_decoration, anim_entrance, svg_images, charts_markers, hidden_slides, media_background, text_glow_reflection, text_tabs, text_picture_bullets, fills_texture, transition_morph, text_embedded_fonts, text_warp, anim_repeat, charts_sizes, slide_timings, lines_compound, table_diagonal, lines_gradient, fills_radial, fills_rect_gradient, shapes_3d, table_vertical, transitions_more, anim_sound, anim_build, anim_after, anim_text_emphasis, charts_bubble, media_video, charts_options, charts_negative, shapes_bevel, charts_legend, shapes_3d_rotation, smartart_3d, charts_ofpie, charts_3d, anim_group_emphasis, activex_controls, charts_extras, charts_axis_titles, charts_fills, charts_outlines, charts_labels_more, group_scale, group_flip, charts_3d_line, charts_legend_pos, charts_crowded_labels, charts_label_skip, charts_bar_long_names, charts_multilevel, picture_recolor, text_symbols, text_numbering, lines_arrows, table_styles, shapes_styles, charts_styles, placeholders_inherit, text_bold_light, ole_objects, text_hanging_punct, speaker_notes, pictures_tiff, placeholders_picture, pictures_exif, text_picture_fill, pictures_mislabeled, emf_alphablend, placeholders_orphan, picture_fill_rect, slide_number_fields, table_builtin_styles, smartart_matrix, text_layout_unit, colors_gamma, text_latin_cjk_font, text_default_style, text_missing_font_jp, text_ea_line_break, text_ambiguous_punct, text_charset_slides, table_rowspan_tall, text_autofit_round, shapes_3d_contour, emf_clip_modes, placeholders_picture_geom, emf_gradient_fill, text_theme_font_lang, text_anchor_linespacing, table_linespacing, table_fontalgn]
+CASES = [shapes_all, text_sizes, text_align, text_spacing, text_bullets, text_missing_font, shapes_basic, fills_lines, table_basic, group_rotate, anim_basic, anim_auto, charts_basic, pictures, smartart, text_effects, text_layout, table_merge, links, emf_images, anim_advanced, charts_labels, freeform_icons, media_audio, anim_trigger, wmf_images, anim_iterate, picture_transparent, charts_more, shape_effects, equations, anim_path, anim_emphasis, transitions, fills_patterns, text_decoration, anim_entrance, svg_images, charts_markers, hidden_slides, media_background, text_glow_reflection, text_tabs, text_picture_bullets, fills_texture, transition_morph, text_embedded_fonts, text_warp, anim_repeat, charts_sizes, slide_timings, lines_compound, table_diagonal, lines_gradient, fills_radial, fills_rect_gradient, shapes_3d, table_vertical, transitions_more, anim_sound, anim_build, anim_after, anim_text_emphasis, charts_bubble, media_video, charts_options, charts_negative, shapes_bevel, charts_legend, shapes_3d_rotation, smartart_3d, charts_ofpie, charts_3d, anim_group_emphasis, activex_controls, charts_extras, charts_axis_titles, charts_fills, charts_outlines, charts_labels_more, group_scale, group_flip, charts_3d_line, charts_legend_pos, charts_crowded_labels, charts_label_skip, charts_bar_long_names, charts_multilevel, picture_recolor, text_symbols, text_numbering, lines_arrows, table_styles, shapes_styles, charts_styles, placeholders_inherit, text_bold_light, ole_objects, text_hanging_punct, speaker_notes, pictures_tiff, placeholders_picture, pictures_exif, text_picture_fill, pictures_mislabeled, emf_alphablend, placeholders_orphan, picture_fill_rect, slide_number_fields, table_builtin_styles, smartart_matrix, text_layout_unit, colors_gamma, text_latin_cjk_font, text_default_style, text_missing_font_jp, text_ea_line_break, text_ambiguous_punct, text_charset_slides, table_rowspan_tall, text_autofit_round, shapes_3d_contour, emf_clip_modes, placeholders_picture_geom, emf_gradient_fill, text_theme_font_lang, text_anchor_linespacing, table_linespacing, table_fontalgn, text_theme_font_latin]
 
 
 def main():

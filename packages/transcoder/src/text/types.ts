@@ -61,8 +61,6 @@ export interface RunStyle {
   size: number;           // 像素
   latin: string;
   ea: string;
-  /** 中文字形用的字体和 ea 不同时给（英文、没写语言时主题东亚字体为空：空串 = 默认东亚字体），ea 只管行高 */
-  eaGlyph?: string;
   /** 符号字体（a:sym）：私用区 U+F000~F0FF 的字符用它画（"插入符号"插的 Wingdings、Symbol 等） */
   sym?: string;
   bold: boolean;
