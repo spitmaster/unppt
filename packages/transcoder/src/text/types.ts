@@ -29,6 +29,8 @@ export interface TextEnv {
   sp3d?: XEl;
   /** 当前部件的关系，用来解析文字上的超链接 */
   rels?: Rel[];
+  /** 图片填充的文字：输出前解析好的图片地址（renderText 填） */
+  blipHrefs?: Map<XEl, string>;
   /** 图片项目符号要用：图片解析和当前部件 */
   images?: ImageResolver;
   part?: string;
@@ -77,6 +79,8 @@ export interface RunStyle {
   /** 文字效果（a:effectLst）：阴影、发光、内阴影、映像…… */
   effects?: XEl;
   grad?: XEl;
+  /** 文字用图片填充（a:blipFill）：图片按行铺满这一行的外框，和渐变文字一样（见 svg-text.ts 的 textPicture） */
+  blip?: XEl;
   /** 超链接属性（data-link / data-href） */
   link?: string;
 }

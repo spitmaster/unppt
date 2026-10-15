@@ -221,6 +221,7 @@
 
 | 规则 | 实测依据 |
 |---|---|
+| 图片填充的文字（rPr 里的 a:blipFill，拉伸）和渐变文字一样按行铺：图片拉伸到这一行的外框（横向从这一行文字的开头到结尾，竖向是行高），每一行各铺一遍；艺术字也一样 | text-picture-fill：四色象限图填充单行、两行、居中、艺术字 |
 | JPEG 的 EXIF 方向标记 PowerPoint 不用来转图：按原始像素画，插入图片时把旋转写到形状上（方向 6/3/8 → 形状 rot 90°/180°/270°）；浏览器默认会按标记再转一次，所以输出前把标记改成 1 | pictures-exif：方向 1/6/3/8 各一张 |
 | 没写形状（无 prstGeom / custGeom）的普通图片 PowerPoint 不画；图片占位符自己、版式、母版都没写形状时照常按矩形画 | placeholders-picture |
 | TIFF 图片 PowerPoint 保存时保留原格式（浏览器除 Safari 外不能显示），显示第一页 | pictures-tiff：LZW、Deflate 带透明、PackBits 灰度、无压缩 |

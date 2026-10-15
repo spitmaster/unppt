@@ -22,6 +22,20 @@ export type { FontEmbedder, StyleChain, TextBox, TextEnv } from './types';
  * 排版并输出 SVG。bodyPrs 从一般到具体（母版 -> 版式 -> 形状）。
  * 返回 SVG 片段；没有文字时返回空串。
  */
+/** 图片填充的文字（a:blipFill）：输出前把用到的图片解析成地址（输出文字是同步的） */
+async function pictureFills(layouts: ParagraphLayout[], env: TextEnv): Promise<Map<XEl, string> | undefined> {
+  const blips = new Set<XEl>();
+  for (const l of layouts) for (const line of l.lines) for (const a of line.atoms) if (a.style.blip) blips.add(a.style.blip);
+  if (!blips.size || !env.images || !env.part) return undefined;
+  const out = new Map<XEl, string>();
+  for (const b of blips) {
+    const rid = attr(child(b, 'a:blip'), 'r:embed');
+    const href = rid ? await env.images.image(env.part, rid) : undefined;
+    if (href) out.set(b, href);
+  }
+  return out;
+}
+
 export async function renderText(
   txBody: XEl | undefined,
   chain: StyleChain,
@@ -54,6 +68,7 @@ export async function renderText(
   const layouts: ParagraphLayout[] = [];
   const ctx = { fullChain, env, measurer, fontScale, lnReduce, contentW, wrap, numbering: new BulletNumbering() };
   for (let pi = 0; pi < paras.length; pi++) layouts.push(await layoutParagraph(paras[pi], pi, ctx));
+  env.blipHrefs = await pictureFills(layouts, env);
 
   // 艺术字变形：变不了（跟随路径类、缺字体文件）时按普通文字输出
   const warp = vertical ? undefined : warpOf([...bodyPrs, child(txBody, 'a:bodyPr')]);
