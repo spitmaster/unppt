@@ -15,7 +15,7 @@ const JPEG_QUALITY = 80;
 const MIME: [number[], string][] = [[[0x47, 0x49, 0x46], 'image/gif'], [[0x42, 0x4d], 'image/bmp'], [[0x52, 0x49, 0x46, 0x46], 'image/webp'], [[0x3c], 'image/svg+xml']];
 
 export async function shrinkImage(bytes: Uint8Array, max: number): Promise<string | undefined> {
-  const img = await decode(bytes);
+  const img = await decode(bytes, max);
   if (!img) {
     if (bytes.length > RAW_MAX) return undefined;
     const mime = MIME.find(([sig]) => sig.every((v, i) => bytes[i] === v))?.[1];
@@ -33,10 +33,11 @@ export async function shrinkImage(bytes: Uint8Array, max: number): Promise<strin
   return png ? `data:image/png;base64,${base64(png)}` : undefined;
 }
 
-async function decode(b: Uint8Array): Promise<RgbaImage | undefined> {
+async function decode(b: Uint8Array, max: number): Promise<RgbaImage | undefined> {
   if (b[0] === 0x89) return decodePng(b);
   if (b[0] !== 0xff || b[1] !== 0xd8) return undefined;
-  const j = decodeJpeg(b);
+  // 大照片按 1/8 解码就够缩略图用（快好几倍）：缩略图要的是 2 倍清晰度，1/8 解出来有它的一半（1 倍）就行
+  const j = decodeJpeg(b, Math.ceil(max / 2));
   if (!j) return undefined;
   const data = new Uint8Array(j.width * j.height * 4);
   for (let i = 0, k = 0; i < j.data.length; i += 3, k += 4) { data[k] = j.data[i]; data[k + 1] = j.data[i + 1]; data[k + 2] = j.data[i + 2]; data[k + 3] = 255; }

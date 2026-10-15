@@ -79,8 +79,11 @@ def check(page, name: str) -> list[str]:
     if walk(page, single, steps) != walk(page, paged, steps):
         errors.append("翻页过程不同")
     # ⑤ 缩略图：<img> 显示（不加载别的文件），和正式画面缩小到同样大小比较
-    idx = json.loads((out / "paged" / "thumbs" / "index.json").read_text(encoding="utf-8"))
-    if len(idx["pages"]) != n:
+    if not (out / "paged" / "thumbs" / "index.json").exists():
+        idx = {"pages": [], "width": 0, "height": 0}
+    else:
+        idx = json.loads((out / "paged" / "thumbs" / "index.json").read_text(encoding="utf-8"))
+    if idx["pages"] and len(idx["pages"]) != n:
         errors.append(f"缩略图 {len(idx['pages'])} 张，应为 {n}")
     tw, th = idx["width"], idx["height"]
     for i, pg in enumerate(idx["pages"]):

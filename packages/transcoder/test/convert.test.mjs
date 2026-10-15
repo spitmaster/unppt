@@ -194,11 +194,11 @@ test('演示文稿里嵌入的字体（MicroType Express 压缩）能解出来�
   }
 });
 
-test('缩略图文件夹：给了 resvg 的 wasm 出 JPG，没给出自包含的 SVG；paged 默认输出、single 默认不输出', async () => {
+test('缩略图文件夹（--thumbs）：给了 resvg 的 wasm 出 JPG，没给出自包含的 SVG；默认不输出', async () => {
   const input = new Uint8Array(await readFile(new URL('charts-basic.pptx', TC)));
   const wasm = new Uint8Array(await readFile(new URL('../dist/resvg.wasm', import.meta.url)));
   const jpg = memoryWriter();
-  await convert(input, { write: jpg.write, output: 'paged', thumbWasm: wasm });
+  await convert(input, { write: jpg.write, output: 'paged', thumbs: true, thumbWasm: wasm });
   const idx = JSON.parse(jpg.files.get('thumbs/index.json').toString());
   assert.equal(idx.pages.length, 4);
   assert.equal(idx.width, 320);
@@ -207,11 +207,11 @@ test('缩略图文件夹：给了 resvg 的 wasm 出 JPG，没给出自包含的
     assert.ok(p.file.endsWith('.jpg') && b[0] === 0xff && b[1] === 0xd8, p.file);
   }
   const svg = memoryWriter();
-  await convert(input, { write: svg.write, output: 'paged' });
+  await convert(input, { write: svg.write, output: 'paged', thumbs: true });
   const idx2 = JSON.parse(svg.files.get('thumbs/index.json').toString());
   assert.ok(idx2.pages.every((p) => p.file.endsWith('.svg')));
   assert.ok(!svg.files.get(`thumbs/${idx2.pages[0].file}`).toString().includes('href="media/'), 'SVG 缩略图不能引用外部图片');
   const single = memoryWriter();
-  await convert(input, { write: single.write });
+  await convert(input, { write: single.write, output: 'paged' });
   assert.ok(![...single.files.keys()].some((k) => k.startsWith('thumbs/')));
 });

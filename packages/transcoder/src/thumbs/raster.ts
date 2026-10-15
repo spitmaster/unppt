@@ -11,15 +11,19 @@ import type { RgbaImage } from '../media/png-decode';
 /** 按字体名（可能是嵌入字体的别名）和粗细斜找字体文件 */
 export type FontResolver = (family: string, bold: boolean, italic: boolean) => FontFace | undefined;
 
+/** 页面里图片地址 -> 原图字节 */
+export type ImageSource = (href: string) => Promise<Uint8Array | undefined>;
+
 export interface Rasterizer {
-  render(svg: string, width: number, height: number): Promise<RgbaImage | undefined>;
+  /** 原图由 resvg 自己解码、缩放（Rust 编译的 WASM，比我们的纯 JS 解码快得多） */
+  render(svg: string, width: number, images: ImageSource): Promise<RgbaImage | undefined>;
 }
 
 let ready: Promise<void> | undefined;
 
 /** wasm：resvg 的 .wasm 文件字节（命令行读 dist/resvg.wasm）；整个进程只初始化一次 */
-export async function resvgRasterizer(wasm: Uint8Array | Promise<Uint8Array>, fonts: FontResolver): Promise<Rasterizer> {
-  ready ??= Promise.resolve(wasm).then((w) => initWasm(w));
+export async function resvgRasterizer(wasm: Uint8Array, fonts: FontResolver): Promise<Rasterizer> {
+  ready ??= initWasm(wasm);
   await ready;
   const bytes = new Map<FontFace, Promise<Uint8Array | undefined>>();
   const fontBytes = (f: FontFace) => {
@@ -31,9 +35,17 @@ export async function resvgRasterizer(wasm: Uint8Array | Promise<Uint8Array>, fo
     return p;
   };
   return {
-    async render(svg, width) {
+    async render(svg, width, images) {
       const used = new Set<FontFace>();
-      const src = rewriteFonts(inlineSvgImages(svg), fonts, used);
+      // resvg 只把 http(s) 地址报成"待解析图片"：media/…、共享图片编号先换成占位地址，再按占位地址把原图交给它
+      const real = new Map<string, string>();
+      const src = rewriteFonts(await inlineSvgImages(svg, images), fonts, used)
+        .replace(/(<image\b[^>]*?\s(?:xlink:)?href=")([^"#][^"]*)"/g, (m, pre: string, h: string) => {
+          if (h.startsWith('data:')) return m;
+          const u = `https://unppt.local/${real.size}`;
+          real.set(u, h);
+          return `${pre}${u}"`;
+        });
       const buffers = (await Promise.all([...used].map(fontBytes))).filter((b): b is Uint8Array => !!b);
       const first = [...used][0];
       const r = new Resvg(src, {
@@ -42,6 +54,11 @@ export async function resvgRasterizer(wasm: Uint8Array | Promise<Uint8Array>, fo
         font: { fontBuffers: buffers, loadSystemFonts: false, ...(first ? { defaultFontFamily: first.displayFamily } : {}) },
       });
       try {
+        // 页面里引用的图片文件（media/…、共享图片编号）：把原图字节交给 resvg
+        for (const h of r.imagesToResolve() as string[]) {
+          const b = await images(real.get(h) ?? h);
+          if (b) r.resolveImage(h, b);
+        }
         const img = r.render();
         const out = { width: img.width, height: img.height, data: new Uint8Array(img.pixels) };
         img.free();
@@ -74,15 +91,25 @@ function rewriteFonts(svg: string, fonts: FontResolver, used: Set<FontFace>): st
   });
 }
 
-/** <image href="data:image/svg+xml;base64,…" x y width height …> 展开成 <g …><svg x y width height viewBox>内容</svg></g>，id 加前缀防冲突 */
-function inlineSvgImages(svg: string): string {
+/**
+ * 嵌套的 SVG 图片（data:image/svg+xml 或者写成文件的 .svg）展开成 <g …><svg x y width height viewBox>内容</svg></g>，id 加前缀防冲突
+ */
+async function inlineSvgImages(svg: string, images: ImageSource): Promise<string> {
+  const map = new Map<string, string>();
   let n = 0;
-  return svg.replace(/<image\b([^>]*?)\shref="data:image\/svg\+xml;base64,([^"]+)"([^>]*?)\/?>/g, (whole, a: string, b64: string, c: string) => {
-    let inner: string;
-    try { inner = decodeBase64(b64); } catch { return whole; }
-    const root = /^<svg\b([^>]*)>([\s\S]*)<\/svg>\s*$/.exec(inner.trim());
-    if (!root) return whole;
-    const attrs = `${a} ${c}`;
+  for (const [tag] of svg.matchAll(/<image\b[^>]*>/g)) {
+    if (map.has(tag)) continue;
+    const href = /\s(?:xlink:)?href="([^"]+)"/.exec(tag)?.[1];
+    if (!href) continue;
+    let inner: string | undefined;
+    if (href.startsWith('data:image/svg+xml;base64,')) inner = decodeBase64(href.slice(26));
+    else if (/\.svg$/i.test(href)) {
+      const b = await images(href);
+      inner = b ? new TextDecoder().decode(b) : undefined;
+    }
+    const root = inner ? /^(?:<\?xml[^>]*>\s*)?<svg\b([^>]*)>([\s\S]*)<\/svg>\s*$/.exec(inner.trim()) : null;
+    if (!root) continue;
+    const attrs = tag.replace(/^<image\b/, '').replace(/\/?>$/, '').replace(/\s(?:xlink:)?href="[^"]*"/, '');
     const get = (k: string) => new RegExp(`\\s${k}="([^"]*)"`).exec(attrs)?.[1];
     const viewBox = /\sviewBox="([^"]*)"/.exec(root[1])?.[1];
     const par = get('preserveAspectRatio') ?? /\spreserveAspectRatio="([^"]*)"/.exec(root[1])?.[1];
@@ -91,8 +118,9 @@ function inlineSvgImages(svg: string): string {
     const p = `ni${n++}_`;
     const body = root[2].replace(/\sid="([^"]+)"/g, ` id="${p}$1"`).replace(/url\(#([^)]+)\)/g, `url(#${p}$1)`).replace(/(\s(?:xlink:)?href=")#([^"]+)"/g, `$1#${p}$2"`);
     const box = ['x', 'y', 'width', 'height'].map((k) => (get(k) !== undefined ? ` ${k}="${get(k)}"` : '')).join('');
-    return `<g${rest ? ` ${rest}` : ''}><svg${box}${viewBox ? ` viewBox="${viewBox}"` : ''}${par ? ` preserveAspectRatio="${par}"` : ''}>${body}</svg></g>`;
-  });
+    map.set(tag, `<g${rest ? ` ${rest}` : ''}><svg${box}${viewBox ? ` viewBox="${viewBox}"` : ''}${par ? ` preserveAspectRatio="${par}"` : ''}>${body}</svg></g>`);
+  }
+  return map.size ? svg.replace(/<image\b[^>]*>/g, (t) => map.get(t) ?? t) : svg;
 }
 
 function decodeBase64(b64: string): string {
