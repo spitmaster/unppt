@@ -1,4 +1,4 @@
-# unppt
+# @unppt/unppt
 
 把 PowerPoint（.pptx）转成**自带播放器的网页**：浏览器打开就能播放，可以用 iframe 嵌入任意网页，也可以由外部 JS 控制翻页、播放动画（适合直播课：老师和学生看同一份课件，外部程序用信令同步进度）。目标是效果和 Microsoft PowerPoint 一致。
 
@@ -9,8 +9,8 @@
 ## 安装
 
 ```bash
-npm install unppt          # 在代码里调用
-npx unppt convert 课件.pptx  # 或者直接用命令行
+npm install @unppt/unppt                   # 在代码里调用
+npx -p @unppt/unppt unppt convert 课件.pptx  # 或者不安装，直接用命令行
 ```
 
 需要 Node.js 20.12 及以上。
@@ -35,7 +35,7 @@ unppt convert 课件.pptx -o out --output paged            # 按需加载：入�
 ## 在代码里调用
 
 ```js
-import { convert } from 'unppt';
+import { convert } from '@unppt/unppt';
 import { readFile } from 'node:fs/promises';
 
 const result = await convert(pptxBytes, {
@@ -45,7 +45,7 @@ const result = await convert(pptxBytes, {
   write: async (path, data) => { /* 写到磁盘、对象存储…… */ },
   fonts: [fontBytes],                                   // 可选：字体文件内容
   // 出整页图和缩略图要用 resvg 的 wasm（包里的 dist/resvg.wasm）；不给就只输出 prop.json
-  rasterWasm: readFile(new URL(import.meta.resolve('unppt/resvg.wasm'))),
+  rasterWasm: readFile(new URL(import.meta.resolve('@unppt/unppt/resvg.wasm'))),
 });
 console.log(result.slides, result.report.missingFonts, result.report.warnings);
 ```

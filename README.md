@@ -3,7 +3,7 @@
 把 PowerPoint（.pptx）转成**一个自包含的 HTML 播放页**：双击就能播放，可以用 iframe 嵌入任意网页，也可以被外部页面或原生 App 控制翻页、播放动画。
 
 - **转码器**：纯函数，不依赖外部程序和原生插件（整页图、缩略图用打包在内的 resvg WASM），字节进、文件出，可以直接放进云函数；1GB 级的大文件也能在小内存下转码。
-- **安装**：`npm install unppt`（发布说明见 [docs/release.md](docs/release.md)）。
+- **安装**：`npm install @unppt/unppt`（命令行命令名是 `unppt`）（发布说明见 [docs/release.md](docs/release.md)）。
 - **播放器**：零依赖，约 45KB（gzip 后约 16KB），内置在转码出来的 HTML 里；支持 Chrome、Firefox、移动端 WebView。
 - **目标**：效果和 Microsoft PowerPoint 一致。开发时用本机 PowerPoint 的输出做自动比对评测。
 
@@ -34,7 +34,7 @@ node packages/transcoder/dist/cli.js convert 演示文稿.pptx -o out/index.html
 ## 在代码里使用（云函数等）
 
 ```js
-import { convert } from 'unppt';
+import { convert } from '@unppt/unppt';
 
 const files = new Map();
 const result = await convert(pptxBytes, {
