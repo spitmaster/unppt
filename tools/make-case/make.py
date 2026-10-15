@@ -2885,7 +2885,38 @@ def slide_number_fields(app):
     return p
 
 
-CASES = [shapes_all, text_sizes, text_align, text_spacing, text_bullets, text_missing_font, shapes_basic, fills_lines, table_basic, group_rotate, anim_basic, anim_auto, charts_basic, pictures, smartart, text_effects, text_layout, table_merge, links, emf_images, anim_advanced, charts_labels, freeform_icons, media_audio, anim_trigger, wmf_images, anim_iterate, picture_transparent, charts_more, shape_effects, equations, anim_path, anim_emphasis, transitions, fills_patterns, text_decoration, anim_entrance, svg_images, charts_markers, hidden_slides, media_background, text_glow_reflection, text_tabs, text_picture_bullets, fills_texture, transition_morph, text_embedded_fonts, text_warp, anim_repeat, charts_sizes, slide_timings, lines_compound, table_diagonal, lines_gradient, fills_radial, fills_rect_gradient, shapes_3d, table_vertical, transitions_more, anim_sound, anim_build, anim_after, anim_text_emphasis, charts_bubble, media_video, charts_options, charts_negative, shapes_bevel, charts_legend, shapes_3d_rotation, smartart_3d, charts_ofpie, charts_3d, anim_group_emphasis, activex_controls, charts_extras, charts_axis_titles, charts_fills, charts_outlines, charts_labels_more, group_scale, group_flip, charts_3d_line, charts_legend_pos, charts_crowded_labels, charts_label_skip, charts_bar_long_names, charts_multilevel, picture_recolor, text_symbols, text_numbering, lines_arrows, table_styles, shapes_styles, charts_styles, placeholders_inherit, text_bold_light, ole_objects, text_hanging_punct, speaker_notes, pictures_tiff, placeholders_picture, pictures_exif, text_picture_fill, pictures_mislabeled, emf_alphablend, placeholders_orphan, picture_fill_rect, slide_number_fields]
+def table_builtin_styles(app):
+    """引用内置表格样式、但 tableStyles.xml 里没存定义的表格（保存后删掉定义）：PowerPoint 照样按内置样式显示。
+    中度 2-强调 1、浅色 1-强调 2、深色 1、主题 1-强调 5、中度 4-强调 6、浅色 3"""
+    p = new_pres(app)
+    s = blank(p)
+    for k, gid in enumerate(['{5C22544A-7EE6-4342-B048-85BDC9FD1C3A}', '{0E3FDE45-AF77-4B5C-9715-49D594BDF05E}', '{E8034E78-7F5D-4C2E-B375-FC64B27BC917}', '{35758FB7-9AC5-4552-8A53-C91805E547FA}', '{16D9F66E-5EB9-4882-86FB-DCBF35E3C3E4}', '{616DA210-FB5B-4158-B5E0-FEB733F419BA}']):
+        t = s.Shapes.AddTable(3, 3, 30 + (k % 3) * 310, 40 + (k // 3) * 250, 290, 150).Table
+        t.ApplyStyle(gid, False)
+        for r in range(1, 4):
+            for c in range(1, 4):
+                t.Cell(r, c).Shape.TextFrame.TextRange.Text = f"单元格{r}{c}"
+                t.Cell(r, c).Shape.TextFrame.TextRange.Font.Size = 14
+    return p
+
+
+def _patch_drop_table_styles(path):
+    import re
+    import zipfile
+    tmp = path.with_suffix(".tmp")
+    with zipfile.ZipFile(path) as zin, zipfile.ZipFile(tmp, "w", zipfile.ZIP_DEFLATED) as zout:
+        for item in zin.infolist():
+            data = zin.read(item.filename)
+            if item.filename == "ppt/tableStyles.xml":
+                data = re.sub(rb"<a:tblStyle .*?</a:tblStyle>", b"", data, flags=re.S)
+            zout.writestr(item, data)
+    tmp.replace(path)
+
+
+table_builtin_styles.patch = _patch_drop_table_styles
+
+
+CASES = [shapes_all, text_sizes, text_align, text_spacing, text_bullets, text_missing_font, shapes_basic, fills_lines, table_basic, group_rotate, anim_basic, anim_auto, charts_basic, pictures, smartart, text_effects, text_layout, table_merge, links, emf_images, anim_advanced, charts_labels, freeform_icons, media_audio, anim_trigger, wmf_images, anim_iterate, picture_transparent, charts_more, shape_effects, equations, anim_path, anim_emphasis, transitions, fills_patterns, text_decoration, anim_entrance, svg_images, charts_markers, hidden_slides, media_background, text_glow_reflection, text_tabs, text_picture_bullets, fills_texture, transition_morph, text_embedded_fonts, text_warp, anim_repeat, charts_sizes, slide_timings, lines_compound, table_diagonal, lines_gradient, fills_radial, fills_rect_gradient, shapes_3d, table_vertical, transitions_more, anim_sound, anim_build, anim_after, anim_text_emphasis, charts_bubble, media_video, charts_options, charts_negative, shapes_bevel, charts_legend, shapes_3d_rotation, smartart_3d, charts_ofpie, charts_3d, anim_group_emphasis, activex_controls, charts_extras, charts_axis_titles, charts_fills, charts_outlines, charts_labels_more, group_scale, group_flip, charts_3d_line, charts_legend_pos, charts_crowded_labels, charts_label_skip, charts_bar_long_names, charts_multilevel, picture_recolor, text_symbols, text_numbering, lines_arrows, table_styles, shapes_styles, charts_styles, placeholders_inherit, text_bold_light, ole_objects, text_hanging_punct, speaker_notes, pictures_tiff, placeholders_picture, pictures_exif, text_picture_fill, pictures_mislabeled, emf_alphablend, placeholders_orphan, picture_fill_rect, slide_number_fields, table_builtin_styles]
 
 
 def main():

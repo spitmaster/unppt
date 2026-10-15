@@ -9,10 +9,11 @@
  *     a:effectRef 引用主题的效果样式（阴影等），作用在整张表上。
  */
 import { colorIn, type ColorContext } from '../model/color';
+import { BUILTIN_TABLE_STYLES } from './builtin-table-styles';
 import { findFillEl, parseFill, styleRef, type Fill } from '../style/fill';
 import { parseLine, type Line } from '../style/line';
 import type { SlideContext } from '../model/model';
-import { attr, child, children, numAttr, type XEl } from '../io/xml';
+import { attr, child, children, numAttr, parseXml, type XEl } from '../io/xml';
 
 export interface CellStyle { fill?: Fill; borders: Record<string, Line | undefined>; bold?: boolean; color?: XEl }
 
@@ -135,7 +136,17 @@ export function tableBackground(style: XEl | undefined, colors: ColorContext, ct
   return { fill: styleFill(bg, colors, ctx), effect: lst?.children.length ? { lst, colors: ref.ctx } : undefined };
 }
 
-/** 读 ppt/tableStyles.xml 里的样式 */
+/** 读 ppt/tableStyles.xml 里的样式；文件里没存定义的内置样式用 PowerPoint 导出的定义（builtin-table-styles.ts） */
 export function findTableStyle(styles: XEl | undefined, styleId: string | undefined): XEl | undefined {
-  return styleId ? children(styles, 'a:tblStyle').find((s) => attr(s, 'styleId') === styleId) : undefined;
+  if (!styleId) return undefined;
+  return children(styles, 'a:tblStyle').find((s) => attr(s, 'styleId') === styleId) ?? builtinTableStyle(styleId);
+}
+
+const builtins = new Map<string, XEl | undefined>();
+function builtinTableStyle(id: string): XEl | undefined {
+  if (!builtins.has(id)) {
+    const xml = BUILTIN_TABLE_STYLES[id.toUpperCase()];
+    builtins.set(id, xml ? child(parseXml(`<a:tblStyleLst xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main">${xml}</a:tblStyleLst>`), 'a:tblStyle') : undefined);
+  }
+  return builtins.get(id);
 }
