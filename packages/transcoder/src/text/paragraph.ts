@@ -119,6 +119,7 @@ export async function layoutParagraph(p: XEl, pi: number, ctx: ParagraphContext)
     spcAft: toPx(spc(pPr.children.find((c) => c.name === 'a:spcAft')), refH),
     lineSpc: ls,
     algn,
+    fontAlgn: attr(pPr, 'fontAlgn'),
     bullet,
     uid: env.uid ? `${env.uid}p${pi}` : undefined,
   };
