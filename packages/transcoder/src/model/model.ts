@@ -10,8 +10,10 @@ import { scanFontCharsets } from './font-charsets';
 export const EMU_PER_PX = 9525;
 
 /**
- * 对齐像素用的显示宽度：PowerPoint 画形状、图片、图表、文字时对齐的是输出图的像素（实测），参考图和常见显示都是宽 1280；
- * 标准 16:9 幻灯片正好 1280 像素宽（1 像素 = 1 个显示像素），4:3（960 宽）等其它尺寸按比例换算
+ * 对齐像素用的显示宽度：PowerPoint 画形状、图片、图表、文字时对齐的是渲染时的像素（实测），参考图和常见显示都是宽 1280；
+ * 标准 16:9 幻灯片正好 1280 像素宽（1 像素 = 1 个显示像素），4:3（960 宽）等其它尺寸按比例换算。
+ * 实测（PowerPoint 导出 8 种宽度的幻灯片，量矩形边缘）：渲染分辨率取整数 DPI——round(96 × 1280 / 宽度)，在这个网格上对齐、
+ * 再缩放到输出尺寸（1281 宽按 96 DPI，和幻灯片像素一样对齐）；7 种非整倍宽度里 5 种这个模型误差最小
  */
 export const DISPLAY_WIDTH = 1280;
 
@@ -167,7 +169,7 @@ export class Presentation {
     const sz = child(pres, 'p:sldSz');
     this.width = Math.round((numAttr(sz, 'cx') ?? 9144000) / EMU_PER_PX);
     this.height = Math.round((numAttr(sz, 'cy') ?? 6858000) / EMU_PER_PX);
-    this.displayScale = this.width > 0 ? DISPLAY_WIDTH / this.width : 1;
+    this.displayScale = this.width > 0 ? Math.round(96 * DISPLAY_WIDTH / this.width) / 96 : 1;
     this.defaultTextStyle = child(pres, 'p:defaultTextStyle');
     this.firstSlideNum = numAttr(pres, 'firstSlideNum') ?? 1;
     const rels = await this.pkg.rels(this.presPart);
