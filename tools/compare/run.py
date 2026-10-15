@@ -15,6 +15,7 @@ from __future__ import annotations
 import argparse
 import html
 import json
+import os
 import subprocess
 import sys
 import time
@@ -26,8 +27,10 @@ from PIL import Image
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from common import CACHE, REF, ROOT, read_json, testcase_index, update_index, write_json  # noqa: E402
 
-OUT = CACHE / "out"
-REPORT = CACHE / "report"
+# 环境变量 UNPPT_REPORT 改报告目录、UNPPT_CLI 改转码器（用开发构建在另一个目录比对，不打扰正在跑的全量比对）
+OUT = Path(os.environ["UNPPT_REPORT"]) / "out" if os.environ.get("UNPPT_REPORT") else CACHE / "out"
+REPORT = Path(os.environ["UNPPT_REPORT"]) if os.environ.get("UNPPT_REPORT") else CACHE / "report"
+CLI = os.environ.get("UNPPT_CLI", "packages/transcoder/dist/cli.js")
 PASS_SSIM = 0.95          # 暂定的通过线（SPEC 待定事项）
 DAILY_SIZE = 100          # 日常集的文件数上限
 
@@ -168,7 +171,7 @@ def convert(src: Path, out: Path) -> dict:
     t0 = time.time()
     # 按需加载形式：截每一页只加载这一页的数据（单文件形式每次都要重新解析整个 HTML，大课件很慢；两种形式画面逐像素一致，见 tools/check-paged.py）。
     # 比对用不到整页图和缩略图，不出图
-    r = subprocess.run(["node", "packages/transcoder/dist/cli.js", "convert", str(src), "-o", str(out.parent), "--output", "paged", "--no-images", "--system-fonts", *EXTRA_ARGS],
+    r = subprocess.run(["node", CLI, "convert", str(src), "-o", str(out.parent), "--output", "paged", "--no-images", "--system-fonts", *EXTRA_ARGS],
                        cwd=ROOT, capture_output=True, text=True, encoding="utf-8", errors="replace")
     lines = [l.strip() for l in (r.stdout or "").splitlines()]
     return {
