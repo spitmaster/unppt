@@ -35,6 +35,8 @@ export async function renderPicture(r: RenderContext, el: XEl, ctx: SlideContext
   // 图片的外形（裁剪和边框都按它画）
   const prstEl = child(spPr, 'a:prstGeom');
   const custEl = child(spPr, 'a:custGeom');
+  // 实测（placeholders-picture）：没写形状的普通图片 PowerPoint 不画；图片占位符没写形状时照常按矩形画
+  if (!prstEl && !custEl && !ph) return '';
   const prst = attr(prstEl, 'prst') ?? 'rect';
   const gdef = (custEl ? parseGeomXml(custEl) : presetGeometry(prst)) ?? presetGeometry('rect')!;
   const av = new Map<string, string>();
