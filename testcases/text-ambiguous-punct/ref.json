@@ -1,0 +1,140 @@
+{
+ "version": 8,
+ "level": "full",
+ "slideWidthPt": 960.0,
+ "slideHeightPt": 540.0,
+ "imageWidth": 1280,
+ "imageHeight": 720,
+ "slides": [
+  {
+   "index": 0,
+   "hidden": false,
+   "shapes": [
+    {
+     "id": 2,
+     "name": "LANG0_zh-CN",
+     "type": 17,
+     "x": 30.0,
+     "y": 30.0,
+     "w": 900.0,
+     "h": 36.352,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 24,
+       "text": "他说“你好”‘是’——对的…·；AB“x”—y…",
+       "x": 37.2,
+       "y": 33.6,
+       "w": 520.005,
+       "h": 28.8
+      }
+     ]
+    },
+    {
+     "id": 3,
+     "name": "LANG1_en-US",
+     "type": 17,
+     "x": 30.0,
+     "y": 140.0,
+     "w": 900.0,
+     "h": 36.352,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 24,
+       "text": "他说“你好”‘是’——对的…·；AB“x”—y…",
+       "x": 37.2,
+       "y": 143.6,
+       "w": 418.755,
+       "h": 28.8
+      }
+     ]
+    },
+    {
+     "id": 4,
+     "name": "LANG2_zh-CN",
+     "type": 17,
+     "x": 30.0,
+     "y": 250.0,
+     "w": 205.0,
+     "h": 65.433,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 7,
+       "text": "就原谅了自己的",
+       "x": 37.2,
+       "y": 253.6,
+       "w": 168.0,
+       "h": 28.8
+      },
+      {
+       "start": 7,
+       "len": 7,
+       "text": "失败——失败者",
+       "x": 37.2,
+       "y": 282.4,
+       "w": 168.005,
+       "h": 28.8
+      }
+     ]
+    },
+    {
+     "id": 5,
+     "name": "LANG3_zh-CN",
+     "type": 17,
+     "x": 30.0,
+     "y": 360.0,
+     "w": 300.0,
+     "h": 94.514,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 11,
+       "text": "老师就去问总经理：“在",
+       "x": 37.2,
+       "y": 363.6,
+       "w": 264.0,
+       "h": 28.8
+      },
+      {
+       "start": 11,
+       "len": 11,
+       "text": "学校，他们的成绩都差不",
+       "x": 37.2,
+       "y": 392.4,
+       "w": 264.0,
+       "h": 28.8
+      },
+      {
+       "start": 22,
+       "len": 2,
+       "text": "多”",
+       "x": 37.2,
+       "y": 421.2,
+       "w": 48.005,
+       "h": 28.8
+      }
+     ]
+    }
+   ],
+   "effects": [],
+   "triggerHidden": [],
+   "steps": 0,
+   "keptSlideshow": false
+  }
+ ],
+ "ok": true
+}
