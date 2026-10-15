@@ -22,6 +22,10 @@ export interface Theme {
   colors: Record<string, string>;
   majorLatin: string; minorLatin: string;
   majorEa: string; minorEa: string;
+  /** 主题字体里按脚本写的东亚字体（a:font script="Hans" 等），东亚字体为空时按文字语言选（text/style.ts） */
+  majorScripts: Record<string, string>; minorScripts: Record<string, string>;
+  /** a:ea 本身写的东亚字体（可能为空） */
+  majorEaOwn: string; minorEaOwn: string;
   fillStyles: XEl[];
   lineStyles: XEl[];
   effectStyles: XEl[];
@@ -79,12 +83,16 @@ function readTheme(xml: XEl | undefined, part: string): Theme {
     }
     return tf;
   };
+  const scripts = (k: string) => Object.fromEntries(children(child(fonts, k), 'a:font').map((x) => [x.attrs.script ?? '', x.attrs.typeface ?? '']));
+  const own = (k: string) => attr(child(child(fonts, k), 'a:ea'), 'typeface') ?? '';
   const fmt = child(el, 'a:fmtScheme');
   return {
     part,
     colors,
     majorLatin: fontOf('a:majorFont', 'a:latin'), minorLatin: fontOf('a:minorFont', 'a:latin'),
     majorEa: fontOf('a:majorFont', 'a:ea'), minorEa: fontOf('a:minorFont', 'a:ea'),
+    majorScripts: scripts('a:majorFont'), minorScripts: scripts('a:minorFont'),
+    majorEaOwn: own('a:majorFont'), minorEaOwn: own('a:minorFont'),
     fillStyles: children(child(fmt, 'a:fillStyleLst')),
     lineStyles: children(child(fmt, 'a:lnStyleLst')),
     effectStyles: children(child(fmt, 'a:effectStyleLst')),
