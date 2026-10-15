@@ -221,6 +221,7 @@
 
 | 规则 | 实测依据 |
 |---|---|
+| SmartArt 绘图缓存里的文字框（dsp:txXfrm）在绘图坐标里按自己的外框放，转角 = 形状的转角 + 文字框自己的转角（矩阵图：形状 270°、文字框 90°，文字横排） | smartart-matrix；smartart 第 2 页颜色误差 1.47 → 0.62 |
 | 表格引用内置样式而 tableStyles.xml 里没存定义时，PowerPoint 照样按内置样式显示；内置样式的定义由 PowerPoint 导出（tools/make-case/gen_table_styles.py，目前 50 个） | table-builtin-styles：6 种内置样式、删掉文件里的定义 |
 | 页码字段（a:fld type="slidenum"）显示所在幻灯片的页码 = 页序 + 起始页码（p:presentation 的 firstSlideNum，默认 1）−1，母版、版式上普通文本框里的页码字段也一样（文件里存的是占位文字 ‹#›） | slide-number-fields：起始页码 5、母版文本框里的页码和页码占位符 |
 | 图片拉伸时先按 a:stretch/a:fillRect 的内边距（相对形状框，负数是伸出形状）得到目标矩形，再按 srcRect 裁剪铺满它；形状的图片填充和普通图片都一样 | picture-fill-rect：负、正、不对称的内边距 |

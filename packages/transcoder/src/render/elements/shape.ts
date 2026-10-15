@@ -14,7 +14,7 @@ import { buildGeometry, parseGeomXml, presetGeometry } from '../../geometry/geom
 import { colorIn, css } from '../../model/color';
 import { renderText, type TextEnv } from '../../text/text';
 import { attr, child, children, numAttr, path, type XEl } from '../../io/xml';
-import { flipTransform, pc, placeBox, readXfrm, withUid } from '../box';
+import { boxTransform, flipTransform, pc, placeBox, readXfrm, withUid } from '../box';
 import type { RenderContext } from '../context';
 import { projectedBounds, projectedPath, shapeProjection } from '../projection';
 import { snapBox } from '../pixel-snap';
@@ -124,17 +124,21 @@ export async function renderShape(r: RenderContext, el: XEl, ctx: SlideContext, 
     // 外框对齐了整像素（没转动）、所在坐标系没缩放时，文字基线也对齐整像素
     pixelTop: snap && !box.flipV && (ctx.toSlide === undefined || ctx.toSlide?.sy === 1) ? (ctx.toSlide?.y ?? 0) + box.y : undefined,
   };
-  // SmartArt 的文字框有单独的位置（dsp:txXfrm）
+  // SmartArt 的文字框有单独的位置（dsp:txXfrm）：在绘图坐标里按自己的外框放，转角 = 形状的 + 文字框自己的
+  // （转动的形状靠文字框反向转把文字转正，例如矩阵图：形状 270°、文字框 90°）
   const txXfrm = readXfrm(pc(el, 'txXfrm'));
-  const textBox = txXfrm ? { x: txXfrm.x - box.x, y: txXfrm.y - box.y, w: txXfrm.w, h: txXfrm.h } : snap ? buildGeometry(def, box.w, box.h, av).text : geo.text;
+  const ownText = !!txXfrm && !sp;
+  const textBox = txXfrm ? (ownText ? { x: 0, y: 0, w: txXfrm.w, h: txXfrm.h } : { x: txXfrm.x - box.x, y: txXfrm.y - box.y, w: txXfrm.w, h: txXfrm.h }) : snap ? buildGeometry(def, box.w, box.h, av).text : geo.text;
   const laid = await renderText(
     txBody, r.textChain(ctx, ph, layoutPh, masterPh),
     [path(masterPh, 'p:txBody', 'a:bodyPr'), path(layoutPh, 'p:txBody', 'a:bodyPr')],
     textBox, textEnv,
   );
   // 垂直翻转（包括同时水平翻转）的形状，文字绕形状中心转 180°；水平翻转时文字不变（实测）
-  const text = laid && box.flipV ? `<g transform="rotate(180 ${n2(box.w / 2)} ${n2(box.h / 2)})">${laid}</g>` : laid;
-  if (!geom && !text) return '';
+  const textAbs = ownText && laid ? `<g transform="${boxTransform({ ...txXfrm!, rot: box.rot + txXfrm!.rot, flipH: false, flipV: false })}">${laid}</g>` : '';
+  const inner = ownText ? '' : laid;
+  const text = inner && box.flipV ? `<g transform="rotate(180 ${n2(box.w / 2)} ${n2(box.h / 2)})">${inner}</g>` : inner;
+  if (!geom && !text && !textAbs) return '';
   const cam = cameraTransform(scene3d, box.w, box.h, r.env.pres.width);
   const light = cameraLightFilter(scene3d, r.doc);
   const lit = (s: string) => (light && s ? `<g filter="url(#${light})">${s}</g>` : s);
@@ -153,5 +157,5 @@ export async function renderShape(r: RenderContext, el: XEl, ctx: SlideContext, 
     : undefined;
   const sides = ext ? extrusionSides(plainGeom, ext, r.doc) : '';
   const shifted = snap && geom && (snap.dx || snap.dy) ? `<g transform="translate(${n2(snap.dx)} ${n2(snap.dy)})">${geom}</g>` : geom;
-  return withUid(uid, placeBox(box, lit(`${sides}${refl}${shifted}${text}`), r.doc, cam), el);
+  return withUid(uid, placeBox(box, lit(`${sides}${refl}${shifted}${text}`), r.doc, cam) + textAbs, el);
 }
