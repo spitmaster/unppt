@@ -48,10 +48,10 @@ function partStyle(part: XEl | undefined, colors: ColorContext, ctx: SlideContex
     const b = child(bdr, `a:${side}`);
     if (!b) continue;
     const ln = child(b, 'a:ln');
-    if (ln) s.borders[side] = parseLine([ln], [colors], ctx.part);
+    if (ln) s.borders[side] = parseLine([ln], [colors], ctx.part, ctx.pres.displayScale);
     else if (child(b, 'a:lnRef')) {
       const ref = styleRef(child(b, 'a:lnRef'), ctx.theme.lineStyles, colors);
-      s.borders[side] = parseLine([ref.el], [ref.ctx], ctx.part);
+      s.borders[side] = parseLine([ref.el], [ref.ctx], ctx.part, ctx.pres.displayScale);
     }
   }
   const tx = child(part, 'a:tcTxStyle');

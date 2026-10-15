@@ -55,7 +55,7 @@ export async function renderShape(r: RenderContext, el: XEl, ctx: SlideContext, 
   const lnStyle = styleRef(lnRef, ctx.theme.lineStyles, colors);
   const line = parseLine(
     [lnStyle.el, child(mSpPr, 'a:ln'), child(lSpPr, 'a:ln'), child(spPr, 'a:ln')],
-    [lnStyle.ctx, colors, colors, colors], ctx.part,
+    [lnStyle.ctx, colors, colors, colors], ctx.part, r.env.pres.displayScale,
   );
 
   // 几何

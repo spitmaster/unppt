@@ -26,7 +26,8 @@ const DASH: Record<string, number[]> = {
 };
 
 /** 合并线条定义（主题样式 -> 形状自己的 a:ln），返回最终线条；noFill 返回 undefined */
-export function parseLine(lns: (XEl | undefined)[], ctxs: ColorContext[], part: string): Line | undefined {
+/** pixel：当前坐标 -> 对齐像素的比例（线宽按对齐像素取整，见 model.ts 的 DISPLAY_WIDTH；图表不给） */
+export function parseLine(lns: (XEl | undefined)[], ctxs: ColorContext[], part: string, pixel = 1): Line | undefined {
   let width = 9525;
   let fill: Fill | undefined;
   let dash: string | undefined;
@@ -57,7 +58,7 @@ export function parseLine(lns: (XEl | undefined)[], ctxs: ColorContext[], part: 
   });
   if (!any || !fill || fill.kind === 'none') return undefined;
   // 不到 1 像素的细线（0.25、0.5 磅）PowerPoint 画成 1 像素宽、颜色不变淡（实测）
-  const px = width > 0 ? Math.max(1, Math.round(width / EMU_PER_PX)) : 0;
+  const px = width > 0 ? Math.max(1, Math.round(width / EMU_PER_PX * pixel)) / pixel : 0;
   const color = fill.kind === 'solid' ? fill.color : fill.kind === 'grad' ? fill.stops[0]?.color : undefined;
   return {
     color, fill, width: px,

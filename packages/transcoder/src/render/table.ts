@@ -113,7 +113,7 @@ export async function renderTable(tbl: XEl | undefined, origin: { x: number; y: 
     // 边框：单元格自己的 lnL/lnR/lnT/lnB 优先，否则用表格样式
     const side = (own: string, styleSide: Line | undefined) => {
       const ln = child(tcPr, own);
-      if (ln) return parseLine([ln], [colors], ctx.part);
+      if (ln) return parseLine([ln], [colors], ctx.part, ctx.pres.displayScale);
       return styleSide;
     };
     const sb = c.style.borders;

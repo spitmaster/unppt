@@ -94,7 +94,7 @@ export async function renderPicture(r: RenderContext, el: XEl, ctx: SlideContext
     }
   }
   const lnStyle = styleRef(child(style, 'a:lnRef'), ctx.theme.lineStyles, ctx.colors);
-  const line = parseLine([lnStyle.el, child(spPr, 'a:ln')], [lnStyle.ctx, ctx.colors], ctx.part);
+  const line = parseLine([lnStyle.el, child(spPr, 'a:ln')], [lnStyle.ctx, ctx.colors], ctx.part, r.env.pres.displayScale);
   if (line) {
     // 实测：图片的边框整个画在图片外侧（按线宽外扩半个线宽再描边），不压住图片
     const lw = line.width;
