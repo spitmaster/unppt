@@ -40,7 +40,7 @@ flowchart LR
 ```mermaid
 flowchart TB
   entry["入口 index.ts / cli.ts<br/>convert：逐页产出页面数据，交给产物形式写出"]
-  thumbs["thumbs/<br/>缩略图文件夹：thumbnail.ts 每页自包含的 SVG + index.json<br/>shrink.ts 图片按显示大小缩小，照片存 JPEG（media/jpeg-encode.ts）、带透明的存 PNG（media/png-decode.ts 解码）"]
+  thumbs["thumbs/<br/>缩略图文件夹：thumbnail.ts 每页 JPG（画不了时自包含的 SVG）+ index.json<br/>raster.ts 用 resvg（WASM）光栅化：字体换成用到的字体文件、展开嵌套的 SVG 图片<br/>shrink.ts 图片按显示大小缩小，照片存 JPEG（media/jpeg-encode.ts）、带透明的存 PNG（media/png-decode.ts 解码）"]
   output["output/<br/>← OutputForm 扩展点：single 自包含 HTML、paged 按需加载（目录 + 每页数据文件，pages 再加每页一个 HTML）、data 只出数据（调试）<br/>output.ts 接口和 HTML 公共部分；文件名带内容哈希（common/hash.ts）"]
   anim["anim/<br/>时间线编排 anim.ts、单个效果 effect.ts<br/>进入/退出的行为 behaviors.ts（关键帧、公式、时间变换原样带给播放器）<br/>时间设置和变换 timing-util.ts、动画和切换的声音 sound.ts<br/>音视频放映选项 media-opts.ts<br/>强调终态 emphasis.ts、运动路径 motion.ts、切换 transition.ts"]
   render["render/<br/>render.ts 分派、继承；context.ts 渲染能力接口<br/>elements/ 形状、图片、组合；table.ts 表格（table-style.ts 表格样式的叠加、边框、整表背景）；box.ts 位置框<br/>controls.ts ActiveX 控件预览图；projection.ts 透视相机下逐点投影、pixel-snap.ts 形状和图片外框对齐整像素、group-map.ts 组合缩放时子元素换算<br/>frames/ ← FrameHandler 扩展点"]

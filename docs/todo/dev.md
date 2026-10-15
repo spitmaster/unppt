@@ -96,6 +96,7 @@ node packages/transcoder/dist/cli.js convert 你的文件.pptx -o out/index.html
 ### 10/13 晚 ~ 10/14：继续补的功能（按完成时间倒序）
 
 - **数字标签的高度、条形图横轴的刻度疏密**：横排的数值标签（和不带中文的分类标签）整体高 1 像素，按 9/12/20/28 磅重新拟合后逐行吻合；条形图横向数值轴的刻度疏密按 47 张新探针重新标定（以前图宽 300~420 像素时刻度多一档，分类名很长时又少一档），标签个数全部吻合；
+- **缩略图改成 JPG**：依赖规则放开为允许纯 JS / WASM 类库（不允许原生插件和外部程序）后，用 resvg（WASM，MPL-2.0，见 packages/transcoder/THIRD-PARTY-NOTICES.md）把缩略图画成 JPG；wasm 随发布包放在 dist/resvg.wasm，没有时退回 SVG。每页光栅化 10~80 毫秒；
 - **缩略图文件夹**：产物里 `thumbs/001.svg…` + `thumbs/index.json`（宽高、每页文件名和内容哈希、是否隐藏），使用方直接读；每张是自包含的 SVG（图片按显示大小缩小后内嵌，照片 JPEG、带透明的 PNG），`<img>` 就能显示。paged、pages 默认输出，single 加 `--thumbs`。为此新写了完整的 PNG 解码和基线 JPEG 编码。`tools/check-paged.py` 对照 11 个用例：缩略图和所有对象都显示的画面缩小后平均差 ≤ 6；
 - **外部链接加固**：播放器再校验一次协议，新标签页 noopener + noreferrer；`?links=0` 不打开、只发 link 事件由宿主决定；
 - **两种播放模式**（直播课用）：演绎模式 `present`（默认，观看者自己操作）、观看模式 `watch`（`?mode=watch`：没有按钮，点击、键盘、触屏、链接、触发器都不响应，只听 JS 接口）；`sync({slide, step})` 指令让学生端跟上老师：正好下一步时播动画和切换，否则直接跳，重复消息不做事；触发器、黑屏/白屏、音视频播放/暂停/拖进度也放进状态一起同步，外部程序只要把老师端的 change 事件原样交给学生端 sync。演示页 `examples/live-class.html?src=课件 index.html`：左老师右学生，可模拟网络延迟、丢消息、学生重新进入。`tools/check-live.py` 模拟老师 + 两个学生（单文件、按需加载）逐步对照，Chrome、Firefox 都通过；

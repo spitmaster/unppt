@@ -4,7 +4,7 @@
  *
  * 这一层负责读写文件；转码本身（convert）不碰文件系统。
  */
-import { open, mkdir, readdir, stat } from 'node:fs/promises';
+import { open, mkdir, readdir, readFile, stat } from 'node:fs/promises';
 import { createWriteStream } from 'node:fs';
 import { basename, dirname, extname, join, resolve } from 'node:path';
 import { homedir, platform } from 'node:os';
@@ -165,6 +165,8 @@ async function main() {
     fonts, privateFonts,
     output: form,
     thumbs, thumbWidth,
+    // 缩略图光栅化用的 resvg：和 cli.js 放在一起的 resvg.wasm（读不到时缩略图退回 SVG）
+    thumbWasm: readFile(new URL('./resvg.wasm', import.meta.url)).then((b) => new Uint8Array(b)),
     embedFonts,
     fileName: dataOnly ? 'deck.json' : 'index.html',
     inlineLimit,

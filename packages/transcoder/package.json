@@ -1,13 +1,13 @@
 {
   "name": "unppt",
   "version": "0.0.1",
-  "description": "PPTX 转成可嵌入任意网页、可被外部控制的自包含 HTML 播放页（零依赖）",
+  "description": "PPTX 转成可嵌入任意网页、可被外部控制的 HTML 播放页（不依赖外部程序）",
   "license": "Apache-2.0",
   "type": "module",
   "main": "./dist/index.js",
   "exports": { ".": "./dist/index.js" },
   "bin": { "unppt": "./dist/cli.js" },
-  "files": ["dist"],
+  "files": ["dist", "THIRD-PARTY-NOTICES.md"],
   "engines": { "node": ">=20.12" },
   "repository": { "type": "git", "url": "git+https://github.com/spitmaster/unppt.git" }
 }
