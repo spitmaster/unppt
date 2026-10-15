@@ -2642,6 +2642,53 @@ def table_rowspan_tall(app):
     return p
 
 
+AUTOFIT_CASES = [(28, 92500, 0), (18, 92500, 0), (14, 90000, 0), (20, 77500, 20000)]
+
+
+def text_autofit_round(app):
+    """自动缩小（normAutofit fontScale / lnSpcReduction，保存后改 XML）：缩放后的字号四舍五入到整数磅
+    （28×92.5%→26、18×92.5%→17、14×90%→13、20×77.5%→16 且行距减 20%）"""
+    p = new_pres(app)
+    s = blank(p)
+    for k, (size, _fs, _lr) in enumerate(AUTOFIT_CASES):
+        tb = s.Shapes.AddTextbox(1, 20 + k * 235, 20, 225, 500)
+        tb.Name = f"AUTOFIT{k}"
+        tf = tb.TextFrame2
+        tf.WordWrap = -1
+        tf.AutoSize = 0
+        tr = tf.TextRange
+        tr.Text = "\r".join(f"第{i + 1}行文字" for i in range(10))
+        tr.Font.Size = size
+        tr.Font.Name = "Microsoft YaHei"
+        tr.Font.NameFarEast = "Microsoft YaHei"
+    return p
+
+
+def _patch_autofit(path):
+    import re
+    import zipfile
+    tmp = path.with_suffix(".tmp")
+    with zipfile.ZipFile(path) as zin, zipfile.ZipFile(tmp, "w", zipfile.ZIP_DEFLATED) as zout:
+        for item in zin.infolist():
+            data = zin.read(item.filename)
+            if item.filename == "ppt/slides/slide1.xml":
+                xml = data.decode("utf8")
+
+                def fix(m):
+                    k = int(re.search(r'name="AUTOFIT(\d+)"', m.group(0)).group(1))
+                    _size, fs, lr = AUTOFIT_CASES[k]
+                    fit = f'<a:normAutofit fontScale="{fs}"' + (f' lnSpcReduction="{lr}"' if lr else "") + "/>"
+                    sp = re.sub(r"<a:bodyPr([^>]*)/>", rf"<a:bodyPr\1>{fit}</a:bodyPr>", m.group(0), count=1)
+                    return re.sub(r"<a:bodyPr([^>]*)>(?:<a:spAutoFit/>|<a:noAutofit/>)?</a:bodyPr>", rf"<a:bodyPr\1>{fit}</a:bodyPr>", sp, count=1)
+                xml = re.sub(r"<p:sp>(?:(?!</p:sp>).)*name=\"AUTOFIT.*?</p:sp>", fix, xml, flags=re.S)
+                data = xml.encode("utf8")
+            zout.writestr(item, data)
+    tmp.replace(path)
+
+
+text_autofit_round.patch = _patch_autofit
+
+
 CHARSET_SLIDES = ['-122', '', '', '-128', '']
 
 
@@ -3284,7 +3331,7 @@ def _patch_missing_jp(path):
 text_missing_font_jp.patch = _patch_missing_jp
 
 
-CASES = [shapes_all, text_sizes, text_align, text_spacing, text_bullets, text_missing_font, shapes_basic, fills_lines, table_basic, group_rotate, anim_basic, anim_auto, charts_basic, pictures, smartart, text_effects, text_layout, table_merge, links, emf_images, anim_advanced, charts_labels, freeform_icons, media_audio, anim_trigger, wmf_images, anim_iterate, picture_transparent, charts_more, shape_effects, equations, anim_path, anim_emphasis, transitions, fills_patterns, text_decoration, anim_entrance, svg_images, charts_markers, hidden_slides, media_background, text_glow_reflection, text_tabs, text_picture_bullets, fills_texture, transition_morph, text_embedded_fonts, text_warp, anim_repeat, charts_sizes, slide_timings, lines_compound, table_diagonal, lines_gradient, fills_radial, fills_rect_gradient, shapes_3d, table_vertical, transitions_more, anim_sound, anim_build, anim_after, anim_text_emphasis, charts_bubble, media_video, charts_options, charts_negative, shapes_bevel, charts_legend, shapes_3d_rotation, smartart_3d, charts_ofpie, charts_3d, anim_group_emphasis, activex_controls, charts_extras, charts_axis_titles, charts_fills, charts_outlines, charts_labels_more, group_scale, group_flip, charts_3d_line, charts_legend_pos, charts_crowded_labels, charts_label_skip, charts_bar_long_names, charts_multilevel, picture_recolor, text_symbols, text_numbering, lines_arrows, table_styles, shapes_styles, charts_styles, placeholders_inherit, text_bold_light, ole_objects, text_hanging_punct, speaker_notes, pictures_tiff, placeholders_picture, pictures_exif, text_picture_fill, pictures_mislabeled, emf_alphablend, placeholders_orphan, picture_fill_rect, slide_number_fields, table_builtin_styles, smartart_matrix, text_layout_unit, colors_gamma, text_latin_cjk_font, text_default_style, text_missing_font_jp, text_ea_line_break, text_ambiguous_punct, text_charset_slides, table_rowspan_tall]
+CASES = [shapes_all, text_sizes, text_align, text_spacing, text_bullets, text_missing_font, shapes_basic, fills_lines, table_basic, group_rotate, anim_basic, anim_auto, charts_basic, pictures, smartart, text_effects, text_layout, table_merge, links, emf_images, anim_advanced, charts_labels, freeform_icons, media_audio, anim_trigger, wmf_images, anim_iterate, picture_transparent, charts_more, shape_effects, equations, anim_path, anim_emphasis, transitions, fills_patterns, text_decoration, anim_entrance, svg_images, charts_markers, hidden_slides, media_background, text_glow_reflection, text_tabs, text_picture_bullets, fills_texture, transition_morph, text_embedded_fonts, text_warp, anim_repeat, charts_sizes, slide_timings, lines_compound, table_diagonal, lines_gradient, fills_radial, fills_rect_gradient, shapes_3d, table_vertical, transitions_more, anim_sound, anim_build, anim_after, anim_text_emphasis, charts_bubble, media_video, charts_options, charts_negative, shapes_bevel, charts_legend, shapes_3d_rotation, smartart_3d, charts_ofpie, charts_3d, anim_group_emphasis, activex_controls, charts_extras, charts_axis_titles, charts_fills, charts_outlines, charts_labels_more, group_scale, group_flip, charts_3d_line, charts_legend_pos, charts_crowded_labels, charts_label_skip, charts_bar_long_names, charts_multilevel, picture_recolor, text_symbols, text_numbering, lines_arrows, table_styles, shapes_styles, charts_styles, placeholders_inherit, text_bold_light, ole_objects, text_hanging_punct, speaker_notes, pictures_tiff, placeholders_picture, pictures_exif, text_picture_fill, pictures_mislabeled, emf_alphablend, placeholders_orphan, picture_fill_rect, slide_number_fields, table_builtin_styles, smartart_matrix, text_layout_unit, colors_gamma, text_latin_cjk_font, text_default_style, text_missing_font_jp, text_ea_line_break, text_ambiguous_punct, text_charset_slides, table_rowspan_tall, text_autofit_round]
 
 
 def main():
