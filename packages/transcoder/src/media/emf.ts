@@ -118,6 +118,8 @@ function emfToSvgUnsafe(bytes: Uint8Array): string | undefined {
   const out: string[] = [];
   const defs: string[] = [];
   let idn = 0;
+  /** 由路径构成的裁剪：id -> 路径（求并等组合时要用） */
+  const clipD = new Map<string, string>();
   const objects = new Map<number, Pen | Brush | Font>();
   let st: State = {
     xf: [1, 0, 0, 1, 0, 0], winOrg: [0, 0], winExt: [1, 1], vpOrg: [0, 0], vpExt: [1, 1], mapMode: 1,
@@ -247,10 +249,17 @@ function emfToSvgUnsafe(bytes: Uint8Array): string | undefined {
         path = undefined;
         break;
       }
-      case 67: { // SELECTCLIPPATH：用当前路径做裁剪
+      case 67: { // SELECTCLIPPATH：用当前路径做裁剪，按区域模式和原来的裁剪组合
         if (path && path.length) {
-          const id = `c${idn++}`;
-          defs.push(`<clipPath id="${id}"><path d="${path.join('')}"/></clipPath>`);
+          const mode = u32(r), id = `c${idn++}`, d = path.join(''), prev = st.clip, prevD = prev ? clipD.get(prev) : undefined;
+          // 1 求交（嵌套在原来的裁剪里）；4 求差（原来的裁剪 ∩ 超大矩形挖掉路径）；2 求并、3 异或（原来的裁剪是路径时
+          // 合并成一条，异或按奇偶规则）；5 替换
+          if (mode === 1 && prev) defs.push(`<clipPath id="${id}" clip-path="url(#${prev})"><path d="${d}"/></clipPath>`);
+          else if (mode === 4) defs.push(`<clipPath id="${id}"${prev ? ` clip-path="url(#${prev})"` : ''}><path d="M-1e6 -1e6H1e6V1e6H-1e6Z${d}" clip-rule="evenodd"/></clipPath>`);
+          else if ((mode === 2 || mode === 3) && prevD) {
+            clipD.set(id, prevD + d);
+            defs.push(`<clipPath id="${id}"><path d="${prevD}${d}"${mode === 2 ? '' : ' clip-rule="evenodd"'}/></clipPath>`);
+          } else { clipD.set(id, d); defs.push(`<clipPath id="${id}"><path d="${d}"/></clipPath>`); }
           st.clip = id;
         }
         path = undefined;
