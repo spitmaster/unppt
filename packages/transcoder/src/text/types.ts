@@ -31,6 +31,8 @@ export interface TextEnv {
   rels?: Rel[];
   /** 图片填充的文字：输出前解析好的图片地址（renderText 填） */
   blipHrefs?: Map<XEl, string>;
+  /** 页码字段（a:fld type="slidenum"）显示的页码 */
+  slideNumber?: number;
   /** 图片项目符号要用：图片解析和当前部件 */
   images?: ImageResolver;
   part?: string;

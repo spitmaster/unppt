@@ -129,6 +129,8 @@ export class Presentation {
   height = 0;
   slides: SlideRef[] = [];
   embeddedFonts: EmbeddedFontRef[] = [];
+  /** 第一页的页码（p:presentation 的 firstSlideNum，默认 1） */
+  firstSlideNum = 1;
   /** 放映设置（presProps.xml 的 p:showPr）：循环放映、是否使用计时；都是默认值时为 undefined */
   show?: { loop?: boolean; useTimings?: boolean };
   defaultTextStyle?: XEl;
@@ -155,6 +157,7 @@ export class Presentation {
     this.width = Math.round((numAttr(sz, 'cx') ?? 9144000) / EMU_PER_PX);
     this.height = Math.round((numAttr(sz, 'cy') ?? 6858000) / EMU_PER_PX);
     this.defaultTextStyle = child(pres, 'p:defaultTextStyle');
+    this.firstSlideNum = numAttr(pres, 'firstSlideNum') ?? 1;
     const rels = await this.pkg.rels(this.presPart);
     let i = 0;
     for (const s of children(child(pres, 'p:sldIdLst'), 'p:sldId')) {
@@ -238,6 +241,8 @@ export interface SlideContext {
   master: Master;
   theme: Theme;
   colors: ColorContext;
+  /** 当前幻灯片的页码（页码字段 a:fld type="slidenum" 显示它；母版、版式上的页码字段也显示所在幻灯片的页码） */
+  slideNumber?: number;
   /** 当前元素是不是幻灯片本身的（版式、母版上的元素不参与动画） */
   ownSlide: boolean;
   /** 所在的三维场景（SmartArt 三维样式整张图共用的相机，w、h 是场景的大小）：拉伸的侧面按它的视角画 */
