@@ -40,8 +40,10 @@ export interface TextEnv {
   /** 图片项目符号要用：图片解析和当前部件 */
   images?: ImageResolver;
   part?: string;
-  /** 文字所在形状的外框上边在幻灯片上的位置（像素；形状没转动、没缩放时才给）：20 磅以下的行基线对齐整像素（text.ts） */
+  /** 文字所在形状的外框上边在对齐像素里的位置（形状没转动、没缩放时才给）：20 磅以下的行基线对齐整像素（text.ts） */
   pixelTop?: number;
+  /** 当前坐标 -> 对齐像素的比例（不是标准宽度的幻灯片不是 1，见 DISPLAY_WIDTH） */
+  pixelScale?: number;
   /** renderText 按 pixelTop 算好的基线对齐函数（文字框内的坐标） */
   snapY?: (y: number) => number;
 }

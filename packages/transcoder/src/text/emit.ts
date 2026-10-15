@@ -32,7 +32,7 @@ export interface PlacedLine {
 
 /** 行高、垂直对齐、分栏、基线、水平对齐（含两端对齐）：算出每一行、每个字的位置 */
 export function placeLines(
-  layouts: ParagraphLayout[], b: BodyProps, outer: { w: number; h: number }, contentW: number, out?: { height: number }, snapY?: (y: number) => number,
+  layouts: ParagraphLayout[], b: BodyProps, outer: { w: number; h: number }, contentW: number, out?: { height: number }, snapY?: (y: number) => number, pixelScale = 1,
 ): PlacedLine[] {
   const { tIns, bIns, lIns, numCol, spcCol, anchor, wrap, linesLeftToRight } = b;
   // 计算总高度
@@ -65,7 +65,7 @@ export function placeLines(
       // 列从左往右排的竖排：把行的位置翻过来（行内基线位置不变）
       if (linesLeftToRight) baseline = outer.h - y - lh + (baseline - y);
       // 横排文字的基线对齐整像素（TextEnv.pixelTop）：只对 20 磅以下的行（更大的字 PowerPoint 纵向按 1/4 像素抗锯齿，实测）
-      else if (snapY && line.size <= SNAP_MAX_SIZE) baseline = snapY(baseline);
+      else if (snapY && line.size * pixelScale <= SNAP_MAX_SIZE) baseline = snapY(baseline);
       let x = lIns + colX + line.x0;
       const free = line.avail - line.width;
       if (pl.algn === 'ctr') x += free / 2;
@@ -98,7 +98,7 @@ export function emitParagraphs(
   layouts: ParagraphLayout[], b: BodyProps, outer: { w: number; h: number }, contentW: number, env: TextEnv, out?: { height: number },
 ): string[] {
   const { lIns, uprightAll, uprightWide } = b;
-  const placed = placeLines(layouts, b, outer, contentW, out, env.snapY);
+  const placed = placeLines(layouts, b, outer, contentW, out, env.snapY, env.pixelScale);
   const parts: string[] = [];
   let k0 = 0;
   for (let i = 0; i < layouts.length; i++) {

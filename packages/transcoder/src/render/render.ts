@@ -161,7 +161,10 @@ export async function renderSlide(ref: SlideRef, env: RenderEnv): Promise<Render
   const ovr = path(xml, 'p:clrMapOvr', 'a:overrideClrMapping');
   const clrMap = ovr ? { ...layout.clrMap, ...ovr.attrs } : layout.clrMap;
   const colors = colorContext(theme, clrMap);
-  const mk = (part: string, own: boolean): SlideContext => ({ pres, part, layout, master, theme, colors, ownSlide: own, slideNumber: ref.index + pres.firstSlideNum });
+  // 不是标准宽度的幻灯片：顶层坐标到对齐像素有缩放（DISPLAY_WIDTH）
+  const s = pres.displayScale;
+  const toSlide = s === 1 ? undefined : { x: 0, y: 0, sx: s, sy: s };
+  const mk = (part: string, own: boolean): SlideContext => ({ pres, part, layout, master, theme, colors, ownSlide: own, slideNumber: ref.index + pres.firstSlideNum, toSlide });
   const r = new SlideRenderer(env, ref.index);
   const W = pres.width, H = pres.height;
 

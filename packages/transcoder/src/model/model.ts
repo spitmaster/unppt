@@ -9,6 +9,12 @@ import { scanFontCharsets } from './font-charsets';
 
 export const EMU_PER_PX = 9525;
 
+/**
+ * 对齐像素用的显示宽度：PowerPoint 画形状、图片、图表、文字时对齐的是输出图的像素（实测），参考图和常见显示都是宽 1280；
+ * 标准 16:9 幻灯片正好 1280 像素宽（1 像素 = 1 个显示像素），4:3（960 宽）等其它尺寸按比例换算
+ */
+export const DISPLAY_WIDTH = 1280;
+
 export interface Theme {
   part: string;
   colors: Record<string, string>;
@@ -135,6 +141,8 @@ export class Presentation {
   /** 放映设置（presProps.xml 的 p:showPr）：循环放映、是否使用计时；都是默认值时为 undefined */
   show?: { loop?: boolean; useTimings?: boolean };
   defaultTextStyle?: XEl;
+  /** 幻灯片像素 -> 对齐像素的比例（DISPLAY_WIDTH / 宽度；标准 16:9 是 1） */
+  displayScale = 1;
   /** 每个字体名在文档里的字符集（最后一次明确写的，见 font-charsets.ts），小写字体名 -> charset */
   fontCharsets = new Map<string, string>();
   presPart = '';
@@ -159,6 +167,7 @@ export class Presentation {
     const sz = child(pres, 'p:sldSz');
     this.width = Math.round((numAttr(sz, 'cx') ?? 9144000) / EMU_PER_PX);
     this.height = Math.round((numAttr(sz, 'cy') ?? 6858000) / EMU_PER_PX);
+    this.displayScale = this.width > 0 ? DISPLAY_WIDTH / this.width : 1;
     this.defaultTextStyle = child(pres, 'p:defaultTextStyle');
     this.firstSlideNum = numAttr(pres, 'firstSlideNum') ?? 1;
     const rels = await this.pkg.rels(this.presPart);
@@ -252,8 +261,8 @@ export interface SlideContext {
   /** 所在的三维场景（SmartArt 三维样式整张图共用的相机，w、h 是场景的大小）：拉伸的侧面按它的视角画 */
   scene?: { scene3d: XEl; w: number; h: number };
   /**
-   * 当前坐标系到幻灯片像素的换算（幻灯片 x = x + sx × 当前 x）：顶层不写（就是幻灯片坐标）；
-   * 在转动、翻转的组合里是 null（换算不是简单的平移缩放）。图表按它对齐整像素
+   * 当前坐标系到对齐像素（显示像素，见 DISPLAY_WIDTH）的换算（像素 x = x + sx × 当前 x）：标准尺寸的幻灯片顶层不写
+   * （就是幻灯片坐标）；在转动、翻转的组合里是 null（换算不是简单的平移缩放）。形状、图片、图表、文字按它对齐整像素
    */
   toSlide?: SlideMapping | null;
 }
