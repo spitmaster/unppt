@@ -164,6 +164,33 @@ def main():
         st.wait_for_timeout(300)
         sv = st.evaluate(sv_js)
         check(not sv[0] and abs(sv[1] - 2.5) < 0.2, f"视频暂停、拖进度同步：老师 {last.get('media')} 学生 {sv}")
+
+        # ---------------- 外部链接：新标签页打开，播放器页面不跳走；links=0 时只发事件
+        links = convert("links", "links")
+        ctx = b.new_context(viewport={"width": 960, "height": 540})
+        lp = ctx.new_page()
+        lp.goto(links + "?timings=0")
+        lp.wait_for_function(READY)
+        has = lp.evaluate("!!document.querySelector('[data-href]')")
+        if not has:
+            lp.evaluate("window.unppt.goto({slide: 1})")
+            lp.wait_for_function(READY)
+        box = lp.evaluate("(() => { const r = document.querySelector('[data-href]').getBoundingClientRect(); return [r.x + r.width / 2, r.y + r.height / 2]; })()")
+        before = lp.url
+        with ctx.expect_page() as popup:
+            lp.mouse.click(*box)
+        popup.value.close()
+        check(lp.url == before, "外部链接在新标签页打开，播放器页面没有跳走")
+        lp.goto(links + "?timings=0&links=0")
+        lp.wait_for_function(READY)
+        if not has:
+            lp.evaluate("window.unppt.goto({slide: 1})")
+            lp.wait_for_function(READY)
+        lp.evaluate("() => { window.__url = null; window.unppt.on('link', (s) => { window.__url = s.url; }); }")
+        lp.mouse.click(*box)
+        lp.wait_for_timeout(300)
+        check(len(ctx.pages) == 1 and bool(lp.evaluate("window.__url")), f"links=0 不打开、只发 link 事件：{lp.evaluate('window.__url')}")
+        ctx.close()
         b.close()
     print("\n全部通过" if not failed else f"\n{failed} 项失败")
     sys.exit(1 if failed else 0)
