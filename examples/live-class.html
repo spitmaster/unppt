@@ -20,15 +20,24 @@
 页面里的脚本扮演外部程序：把老师端的每个 change 事件原样转给学生端的 sync —— 真实场景里这一步走 IM。
 <label><input type="checkbox" id="delay"> 模拟 1 秒网络延迟</label>
 <label><input type="checkbox" id="drop"> 模拟丢一半消息</label></p>
-<div class="row">
+<p id="pick" style="display:none;background:#fff3cd;padding:10px">还没指定课件。请填写转码出来的课件入口（相对这个页面的路径或完整地址，例如 <code>../samples/某课件/index.html</code>），然后点"打开"：
+  <input id="srcInput" size="60"> <button id="open">打开</button></p>
+<div class="row" id="frames">
   <div class="col"><h4>老师端（?mode=present）</h4><div class="frame"><iframe id="teacher" allow="autoplay; fullscreen"></iframe></div></div>
   <div class="col"><h4>学生端（?mode=watch）<button id="late">模拟学生重新进入</button></h4><div class="frame"><iframe id="student" allow="autoplay; fullscreen"></iframe></div></div>
 </div>
 <div id="log"></div>
 <script>
-  // 课件地址：?src=转码出来的 index.html（默认同目录下的 index.html）
-  const src = new URLSearchParams(location.search).get('src') || 'index.html';
+  // 课件地址：?src=转码出来的 index.html；生成演示页时也可以把默认值写在 DEFAULT_SRC 里
+  const DEFAULT_SRC = '';
+  const src = new URLSearchParams(location.search).get('src') || DEFAULT_SRC;
   const $ = (id) => document.getElementById(id);
+  if (!src) {
+    $('frames').style.display = 'none';
+    $('pick').style.display = 'block';
+    $('open').onclick = () => { const v = $('srcInput').value.trim(); if (v) location.search = '?src=' + encodeURIComponent(v); };
+    throw new Error('没有指定课件');
+  }
   const log = (m) => { $('log').textContent += m + '\n'; $('log').scrollTop = 1e9; };
   const url = (mode) => { const u = new URL(src, location.href); u.searchParams.set('mode', mode); return u.toString(); };
   $('teacher').src = url('present');
