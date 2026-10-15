@@ -495,6 +495,12 @@ def run(items: dict, ref_dir_of, force: bool, static: bool = False, until: str |
             for pid in powerpoint_pids() - before:
                 subprocess.run(["taskkill", "/F", "/PID", str(pid)], capture_output=True)
             write_json(out / "error.json", {"error": "timeout"})
+        # PowerPoint 的字体表是整个进程共用的（实测：同一进程里先打开的文件会改变后打开文件里缺失字体的替代），
+        # 等这份的 PowerPoint 退出再导下一份，免得下一份连上还没退出的进程
+        for _ in range(60):
+            if not (powerpoint_pids() - before):
+                break
+            time.sleep(0.5)
         item["status"] = status
         print(f"[{n}/{len(todo)}] {key} {status} {time.time() - t0:.1f}s")
 
