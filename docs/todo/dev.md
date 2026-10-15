@@ -73,6 +73,13 @@ node packages/transcoder/dist/cli.js convert 你的文件.pptx -o out/index.html
 3. 每页一个独立的 HTML；
 4. 分段加载、带预加载（看第 3 页时自动加载第 4 页）。
 
+**10/15 夜待你决定**（不影响当晚工作，先记下）：
+1. 比对截图的抗锯齿：我们的截图文字是彩色边的子像素抗锯齿，PowerPoint 参考图是灰度。建议比对时浏览器改用灰度抗锯齿，测量更准；但所有分数的基准会整体变化，和之前各轮不可比，所以没擅自改；
+2. 今晚有 4 条已推送的提交信息带了语料构成数字（课件份数、某特征出现在多少份里），违反 SPEC 第 4 节第 7 条。改历史要强推，按规则没动；文档里的已删除，以后不再写；
+3. `.claude/worktrees` 下早先的 4 个工作分支（census、diag、batch、guard）还没合并，要不要清理；
+4. PowerPoint 导出参考图时会下载 Office 云字体（只发字体名，不含课件内容），要不要在 Office 里关掉"云字体"；
+5. 有 3 份课件 PowerPoint 导出时报"发生意外"，没有参考图（原因未查）。
+
 ## 五、还没做的
 
 - **出图速度（必须优化，你 10/15 明确不能接受现在的速度）**：开着整页图和缩略图时，35 页的课件 16.7 秒、74 页的 17.8 秒（不出图都是 0.8 秒），峰值内存 350~550 MB。剖析（35 页）：resvg 渲染约 11 秒（WASM 单线程；每页都要把用到的字体文件整个交给它重新解析），纯 JS 的 JPEG 编码约 3 秒（DCT 和熵编码）。可选方向：同一份字体只解析一次、多核并行（Worker）、更快的 DCT（AAN 算法）、出图和转码拆成两步、按需出图；
@@ -107,9 +114,23 @@ node packages/transcoder/dist/cli.js convert 你的文件.pptx -o out/index.html
 
 ## 变更日志（按时间倒序）
 
+### 10/15 夜：用第一批真实课件（200 多份）验证和优化
+
+每一项都先用 PowerPoint 生成中性探针或测试用例量出规则（写进 SPEC 第 7 节），再改代码；合成用例全部无回退。
+样本整体（只记总分）：第二轮 通过 63.7% / 平均 0.950 → 第三轮 64.7% / 0.952 → 第四轮 66.2% / 0.955（第五轮包含下面全部修复，结果见 scores/summary-all.json）。
+
+- **排版单位 1/8 磅**：PowerPoint 每个字的宽度四舍五入到 1/8 磅，摆位置和断行都用取整后的宽度；整行宽度向上取整后不超过可用宽度才放得下（字间距让行宽正好等于框宽时也要换行）。以前长西文行行尾差 1~2 磅。用例 text-layout-unit；
+- **缺失字体按字符集选替代字体**：同一个字体名整个文档只认最后一次明确写的 charset；标日文字符集的缺失字体（思源黑体类常见）PowerPoint 用 Yu Gothic，它没有的简体字用雅黑补——以前一律雅黑，字明显偏粗、断行不同。用例 text-missing-font-jp；
+- **文本框和形状只用演示文稿默认样式**（母版 otherStyle 只给表格用），形状样式和表格样式的 fontRef 主题字体生效。用例 text-default-style、text-latin-cjk-font；
+- **按中文习惯控制首尾字符（eaLnBrk）关掉时不做行首行尾禁则**（老模板的默认样式常见）。用例 text-ea-line-break；
+- **中文里的引号按全角**：文字语言是中日韩时引号用东亚字体、占一个字宽；破折号后面可以断行。用例 text-ambiguous-punct；
+- **颜色变换 gamma / invGamma**（老 .ppt 转换来的文件常见）：包在中间的 shade、tint 在 sRGB 上混合，以前颜色偏浅。用例 colors-gamma；
+- **对齐整像素按输出图的像素**：PowerPoint 对齐的是输出图的像素（参考宽 1280）。标准 16:9 幻灯片两者重合；4:3 和其它尺寸以前对齐的网格不对（形状、图片外框、图表网格线、文字基线、线宽）。改之前按幻灯片宽度分的通过率：1280 宽 74%、4:3 56%、其它尺寸 34%；
+- 已知遗留：同一字体名混着日文 / 中文字符集时，后半段西文 PowerPoint 更紧 1~4 像素（原因未明）；照片缩放后 PowerPoint 更柔和（缩放滤镜不同）；比对截图里我们的文字是彩色边的子像素抗锯齿，PowerPoint 是灰度（见「四」待定第 1 条）。
+
 ### 10/13 晚 ~ 10/14：继续补的功能（按完成时间倒序）
 
-- **第一批 200 多份真实课件的修复**（10/15 晚）：TIFF 图片转成 PNG（浏览器除 Safari 外不能显示 TIFF，以前整块空白）；JPEG 的 EXIF 方向标记去掉（PowerPoint 按原始像素画、把旋转写在形状上，浏览器会再转一次，竖拍照片以前转了两次）；没写形状的普通图片不画；文字用图片填充（这批四分之一的课件用到，以前画成黑字，盖住下面的内容）。图片格式按文件内容认（扩展名可能和内容不符）；EMF 里 AlphaBlend 贴的位图（截图类 EMF，以前整块空白）。老格式 .ppt 转出来的"没有编号"的占位符按类型继承母版形状；图片拉伸按 fillRect 内边距（图片伸出形状时以前显示的范围不对）。页码字段显示实际页码（以前母版上的页码显示成占位文字 ‹#›）。新合成用例 pictures-tiff、pictures-exif、placeholders-picture、text-picture-fill、pictures-mislabeled、emf-alphablend、placeholders-orphan、picture-fill-rect、slide-number-fields、table-builtin-styles、smartart-matrix；SmartArt 里转动的形状上文字按文字框自己的转角（以前文字跟着形状转歪）；表格引用的内置样式文件里没存定义时，用 PowerPoint 导出的 50 个内置样式定义（以前表格没有颜色）。
+- **第一批 200 多份真实课件的修复**（10/15 晚）：TIFF 图片转成 PNG（浏览器除 Safari 外不能显示 TIFF，以前整块空白）；JPEG 的 EXIF 方向标记去掉（PowerPoint 按原始像素画、把旋转写在形状上，浏览器会再转一次，竖拍照片以前转了两次）；没写形状的普通图片不画；文字用图片填充（以前画成黑字，盖住下面的内容）。图片格式按文件内容认（扩展名可能和内容不符）；EMF 里 AlphaBlend 贴的位图（截图类 EMF，以前整块空白）。老格式 .ppt 转出来的"没有编号"的占位符按类型继承母版形状；图片拉伸按 fillRect 内边距（图片伸出形状时以前显示的范围不对）。页码字段显示实际页码（以前母版上的页码显示成占位文字 ‹#›）。新合成用例 pictures-tiff、pictures-exif、placeholders-picture、text-picture-fill、pictures-mislabeled、emf-alphablend、placeholders-orphan、picture-fill-rect、slide-number-fields、table-builtin-styles、smartart-matrix；SmartArt 里转动的形状上文字按文字框自己的转角（以前文字跟着形状转歪）；表格引用的内置样式文件里没存定义时，用 PowerPoint 导出的 50 个内置样式定义（以前表格没有颜色）。
 - **换成成熟开源类库**（10/15 晚，你要求的）：XML 解析 → saxes、zip 读取 → zip.js、字体子集化 → HarfBuzz、TIFF 解码 → utif2；每个都用全部测试用例和样本做了新旧逐字节对比。评估后不换：JPEG 解码（jpeg-js 对普通照片误差大十几倍）、JPEG 编码（jpeg-js 浏览器里不能用；候选 mozjpeg 的 WASM 版，顺带能加快出图）、PNG（自研只改透明色块、保留原像素）、嵌入字体解压（MicroType Express 没有成熟 JS 库）、EMF/WMF（同上）、字体测量（和排版校准深度绑定，换的风险大，以后单独评估）。
 - **prop.json、整页图和缩略图**（10/15）：沿用直播服务对接微演示的约定，所有产物形式都在入口文件旁边输出 prop.json（count、picw/pich 磅值、thumw/thumh、每页 index / pic / thum，有备注才写 note、隐藏页写 hidden: 1），默认同时输出 pic/{n}.jpg（960 宽）和 thum/{n}.jpg（216 宽），`--no-images` 关掉。备注是纯文本，换行保留 `\n`，转 `<br>` 由使用方做。原来暂缓的 thumbs/ 缩略图文件夹由它取代（模块改名 preview/，缩略图从整页图缩小，不再单独画；不再退回 SVG，PNG 解码器随之删除）。顺带修了 resvg 不画 pattern 里的图片（背景图、图片 / 纹理填充以前是空白）。新用例 speaker-notes；`tools/check-paged.py` 改成对照 prop.json 页数和整页图；
 - **两份样本对照后修的几类问题**（10/15）：标点溢出边界（中文版默认开启，句末标点挂在行外，不再把前一个字挤到下一行）；版式里定义的图片项目符号按版式的关系表找图（以前退回圆点）；旧版写法的嵌入对象（OLE）用 Fallback 里的预览图，动画也能作用到它；选择窗格里隐藏的图片、组合、表格图表等不再画出来（以前只有普通形状会跳过）；版式里没有对应项的占位符、没写形状的文本框不画填充和边框；没有粗体字形的字体（微软雅黑 Light、等线 Light、黑体等）加粗改成描一圈细边，不再被浏览器换成同族的真粗体或合成得太粗。新合成用例：text-hanging-punct、placeholders-inherit、text-bold-light、ole-objects。已知遗留：Segoe UI Semilight 常规体浏览器选错字形（偏粗）；SmartArt（竖向曲形列表）里顶端对齐的文字 PowerPoint 显示得更靠下，原因未明；
