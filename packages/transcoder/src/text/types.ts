@@ -14,6 +14,8 @@ export interface TextEnv {
   missingFonts: Set<string>;
   /** p:style/a:fontRef 指定的文字颜色 */
   fontRefColor?: Rgba;
+  /** p:style/a:fontRef 本身（idx 指定主题字体） */
+  fontRef?: XEl;
   /** 动画用的元素编号前缀（形状的 uid），段落会追加 p0、p1… */
   uid?: string;
   /** 字体嵌入：记录每个字体用到的字，并给字体起唯一别名 */

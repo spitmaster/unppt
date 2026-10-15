@@ -1,0 +1,79 @@
+{
+ "version": 8,
+ "level": "full",
+ "slideWidthPt": 960.0,
+ "slideHeightPt": 540.0,
+ "imageWidth": 1280,
+ "imageHeight": 720,
+ "slides": [
+  {
+   "index": 0,
+   "hidden": false,
+   "shapes": [
+    {
+     "id": 2,
+     "name": "TextBox 1",
+     "type": 17,
+     "x": 40.0,
+     "y": 40.0,
+     "w": 860.0,
+     "h": 29.081,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 12,
+       "text": "文本框 Text Box",
+       "x": 47.2,
+       "y": 43.6,
+       "w": 168.005,
+       "h": 24.0
+      }
+     ]
+    },
+    {
+     "id": 3,
+     "name": "Rectangle 2",
+     "type": 1,
+     "x": 40.0,
+     "y": 160.0,
+     "w": 420.0,
+     "h": 140.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 8,
+       "text": "形状 Shape",
+       "x": 200.75,
+       "y": 218.0,
+       "w": 98.505,
+       "h": 24.0
+      }
+     ]
+    },
+    {
+     "id": 4,
+     "name": "Table 3",
+     "type": 19,
+     "x": 40.0,
+     "y": 340.0,
+     "w": 600.0,
+     "h": 120.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": -2
+    }
+   ],
+   "effects": [],
+   "triggerHidden": [],
+   "steps": 0,
+   "keptSlideshow": false
+  }
+ ],
+ "ok": true
+}

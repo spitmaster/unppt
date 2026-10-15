@@ -54,7 +54,8 @@ class SlideRenderer implements RenderContext {
   }
 
   textChain(ctx: SlideContext, ph: { type: string } | undefined, layoutPh?: XEl, masterPh?: XEl): StyleChain {
-    if (!ph) return [this.env.pres.defaultTextStyle, ctx.master.txStyles.other];
+    // 实测（text-default-style）：不是占位符的文字（文本框、形状）只用演示文稿默认样式，母版 otherStyle 不参与（表格才用它，见 table.ts）
+    if (!ph) return [this.env.pres.defaultTextStyle];
     const t = ph.type;
     const base = t === 'title' || t === 'ctrTitle' ? ctx.master.txStyles.title
       : ['dt', 'ftr', 'sldNum', 'hdr'].includes(t) ? ctx.master.txStyles.other

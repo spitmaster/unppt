@@ -7,6 +7,7 @@ import { parseLine, strokeAttrs, type Line } from '../style/line';
 import { EMU_PER_PX, type SlideContext } from '../model/model';
 import { n2 } from '../common/svg';
 import { renderText, type TextEnv } from '../text/text';
+import { styleFonts } from '../text/style';
 import { attr, child, children, numAttr, type XEl } from '../io/xml';
 import { effectFilter } from '../effects/effect-filter';
 import { findTableStyle, tableBackground, tableFlags, tableStyleOf, type CellStyle } from './table-style';
@@ -52,7 +53,9 @@ export async function renderTable(tbl: XEl | undefined, origin: { x: number; y: 
     const tx = c.style.color?.children ?? [];
     const clr = tx.find((k) => k.name.endsWith('Clr')) ?? tx.find((k) => k.name === 'a:fontRef')?.children[0];
     const colorEls: XEl[] = clr ? [{ name: 'a:solidFill', attrs: {}, text: '', children: [clr] }] : [];
-    const defaults: XEl = { name: 'x', attrs: {}, text: '', children: [{ name: 'a:lvl1pPr', attrs: {}, text: '', children: [{ name: 'a:defRPr', attrs: c.style.bold ? { b: '1' } : {}, text: '', children: colorEls }] }] };
+    // 字体：表格样式的 fontRef（主题字体）或直接写的 a:font
+    const fontEls = styleFonts(tx.find((k) => k.name === 'a:fontRef' || k.name === 'a:font'));
+    const defaults: XEl = { name: 'x', attrs: {}, text: '', children: [{ name: 'a:lvl1pPr', attrs: {}, text: '', children: [{ name: 'a:defRPr', attrs: c.style.bold ? { b: '1' } : {}, text: '', children: [...colorEls, ...fontEls] }] }] };
     const bodyPr: XEl = {
       name: 'a:bodyPr', text: '', children: [],
       attrs: {
@@ -63,7 +66,8 @@ export async function renderTable(tbl: XEl | undefined, origin: { x: number; y: 
         ...(attr(tcPr, 'vert') ? { vert: attr(tcPr, 'vert')! } : {}),
       },
     };
-    return renderText(child(c.tc, 'a:txBody'), [r.env.pres.defaultTextStyle, defaults], [bodyPr], box, env, out);
+    // 实测（text-default-style）：表格文字在演示文稿默认样式之上还用母版 otherStyle（文本框、形状不用）
+    return renderText(child(c.tc, 'a:txBody'), [r.env.pres.defaultTextStyle, ctx.master.txStyles.other, defaults], [bodyPr], box, env, out);
   };
   const cells: Cell[] = [];
   const rowH = rows.map((tr) => px(numAttr(tr, 'h')));

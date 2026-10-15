@@ -1,0 +1,159 @@
+{
+ "version": 8,
+ "level": "full",
+ "slideWidthPt": 960.0,
+ "slideHeightPt": 540.0,
+ "imageWidth": 1280,
+ "imageHeight": 720,
+ "slides": [
+  {
+   "index": 0,
+   "hidden": false,
+   "shapes": [
+    {
+     "id": 2,
+     "name": "TextBox 1",
+     "type": 17,
+     "x": 40.0,
+     "y": 20.0,
+     "w": 880.0,
+     "h": 46.045,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 19,
+       "text": "汉字排版测试 Font ABC 123",
+       "x": 47.2,
+       "y": 23.6,
+       "w": 400.005,
+       "h": 38.4
+      }
+     ]
+    },
+    {
+     "id": 3,
+     "name": "TextBox 2",
+     "type": 17,
+     "x": 40.0,
+     "y": 105.0,
+     "w": 880.0,
+     "h": 46.045,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 19,
+       "text": "汉字排版测试 Font ABC 123",
+       "x": 47.2,
+       "y": 108.6,
+       "w": 420.13,
+       "h": 38.4
+      }
+     ]
+    },
+    {
+     "id": 4,
+     "name": "TextBox 3",
+     "type": 17,
+     "x": 40.0,
+     "y": 190.0,
+     "w": 880.0,
+     "h": 46.045,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 19,
+       "text": "汉字排版测试 Font ABC 123",
+       "x": 47.2,
+       "y": 193.6,
+       "w": 400.005,
+       "h": 38.4
+      }
+     ]
+    },
+    {
+     "id": 5,
+     "name": "TextBox 4",
+     "type": 17,
+     "x": 40.0,
+     "y": 275.0,
+     "w": 880.0,
+     "h": 46.045,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 19,
+       "text": "汉字排版测试 Font ABC 123",
+       "x": 47.2,
+       "y": 278.6,
+       "w": 399.865,
+       "h": 38.4
+      }
+     ]
+    },
+    {
+     "id": 6,
+     "name": "TextBox 5",
+     "type": 17,
+     "x": 40.0,
+     "y": 360.0,
+     "w": 880.0,
+     "h": 46.045,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 19,
+       "text": "汉字排版测试 Font ABC 123",
+       "x": 47.2,
+       "y": 363.6,
+       "w": 400.005,
+       "h": 38.4
+      }
+     ]
+    },
+    {
+     "id": 7,
+     "name": "TextBox 6",
+     "type": 17,
+     "x": 40.0,
+     "y": 445.0,
+     "w": 880.0,
+     "h": 46.045,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 19,
+       "text": "汉字排版测试 Font ABC 123",
+       "x": 47.2,
+       "y": 448.6,
+       "w": 409.755,
+       "h": 38.4
+      }
+     ]
+    }
+   ],
+   "effects": [],
+   "triggerHidden": [],
+   "steps": 0,
+   "keptSlideshow": false
+  }
+ ],
+ "ok": true
+}
