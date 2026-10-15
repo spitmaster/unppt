@@ -83,7 +83,7 @@ export async function layoutParagraph(p: XEl, pi: number, ctx: ParagraphContext)
   // 制表符宽度：自定义制表位，超出后按默认制表位
   layoutTabs(atoms, tabStops(pPr), defTab, firstX);
 
-  const rows = breakLines(atoms, (first) => (first ? availFirst : availRest), wrap, attr(pPr, 'hangingPunct') === '1');
+  const rows = breakLines(atoms, (first) => (first ? availFirst : availRest), wrap, attr(pPr, 'hangingPunct') === '1', attr(pPr, 'eaLnBrk') !== '0');
   const lines: Line[] = rows.map((row, i) => {
     const vis = row.filter((a) => a.text !== '\n');
     return {

@@ -2554,6 +2554,31 @@ def text_hanging_punct(app):
     return p
 
 
+def text_ea_line_break(app):
+    """按中文习惯控制首尾字符（a:pPr eaLnBrk，COM FarEastLineBreakControl）× 允许标点溢出边界（hangingPunct）：
+    正好放下 10 个汉字的框，第 11 个字是行首禁则标点，第 3 列第 10 个字是行尾禁则的左括号"""
+    p = new_pres(app)
+    s = blank(p)
+    texts = ["一二三四五六七八九十，后续", "一二三四五六七八九十。后续", "一二三四五六七八九（十后续"]
+    for k, (ea, hang) in enumerate([(-1, 0), (0, 0), (-1, -1), (0, -1)]):
+        for j, t in enumerate(texts):
+            tb = s.Shapes.AddTextbox(1, 20 + j * 310, 20 + k * 120, 240.5, 100)
+            tf = tb.TextFrame
+            tf.MarginLeft = tf.MarginRight = tf.MarginTop = tf.MarginBottom = 0
+            tf.WordWrap = -1
+            tf.AutoSize = 0
+            tr = tf.TextRange
+            tr.Text = t
+            tr.Font.Name = "Microsoft YaHei"
+            tr.Font.NameFarEast = "Microsoft YaHei"
+            tr.Font.Size = 24
+            tr.ParagraphFormat.FarEastLineBreakControl = ea
+            tr.ParagraphFormat.HangingPunctuation = hang
+            tb.Line.Visible = -1
+            tb.Line.ForeColor.RGB = RGB(200, 200, 200)
+    return p
+
+
 def speaker_notes(app):
     """演讲者备注（prop.json 的 note）：第 1 页两段、第二段里有段内换行和 < & 这类字符；第 2 页没有备注；第 3 页隐藏且有备注"""
     p = new_pres(app)
@@ -3156,7 +3181,7 @@ def _patch_missing_jp(path):
 text_missing_font_jp.patch = _patch_missing_jp
 
 
-CASES = [shapes_all, text_sizes, text_align, text_spacing, text_bullets, text_missing_font, shapes_basic, fills_lines, table_basic, group_rotate, anim_basic, anim_auto, charts_basic, pictures, smartart, text_effects, text_layout, table_merge, links, emf_images, anim_advanced, charts_labels, freeform_icons, media_audio, anim_trigger, wmf_images, anim_iterate, picture_transparent, charts_more, shape_effects, equations, anim_path, anim_emphasis, transitions, fills_patterns, text_decoration, anim_entrance, svg_images, charts_markers, hidden_slides, media_background, text_glow_reflection, text_tabs, text_picture_bullets, fills_texture, transition_morph, text_embedded_fonts, text_warp, anim_repeat, charts_sizes, slide_timings, lines_compound, table_diagonal, lines_gradient, fills_radial, fills_rect_gradient, shapes_3d, table_vertical, transitions_more, anim_sound, anim_build, anim_after, anim_text_emphasis, charts_bubble, media_video, charts_options, charts_negative, shapes_bevel, charts_legend, shapes_3d_rotation, smartart_3d, charts_ofpie, charts_3d, anim_group_emphasis, activex_controls, charts_extras, charts_axis_titles, charts_fills, charts_outlines, charts_labels_more, group_scale, group_flip, charts_3d_line, charts_legend_pos, charts_crowded_labels, charts_label_skip, charts_bar_long_names, charts_multilevel, picture_recolor, text_symbols, text_numbering, lines_arrows, table_styles, shapes_styles, charts_styles, placeholders_inherit, text_bold_light, ole_objects, text_hanging_punct, speaker_notes, pictures_tiff, placeholders_picture, pictures_exif, text_picture_fill, pictures_mislabeled, emf_alphablend, placeholders_orphan, picture_fill_rect, slide_number_fields, table_builtin_styles, smartart_matrix, text_layout_unit, colors_gamma, text_latin_cjk_font, text_default_style, text_missing_font_jp]
+CASES = [shapes_all, text_sizes, text_align, text_spacing, text_bullets, text_missing_font, shapes_basic, fills_lines, table_basic, group_rotate, anim_basic, anim_auto, charts_basic, pictures, smartart, text_effects, text_layout, table_merge, links, emf_images, anim_advanced, charts_labels, freeform_icons, media_audio, anim_trigger, wmf_images, anim_iterate, picture_transparent, charts_more, shape_effects, equations, anim_path, anim_emphasis, transitions, fills_patterns, text_decoration, anim_entrance, svg_images, charts_markers, hidden_slides, media_background, text_glow_reflection, text_tabs, text_picture_bullets, fills_texture, transition_morph, text_embedded_fonts, text_warp, anim_repeat, charts_sizes, slide_timings, lines_compound, table_diagonal, lines_gradient, fills_radial, fills_rect_gradient, shapes_3d, table_vertical, transitions_more, anim_sound, anim_build, anim_after, anim_text_emphasis, charts_bubble, media_video, charts_options, charts_negative, shapes_bevel, charts_legend, shapes_3d_rotation, smartart_3d, charts_ofpie, charts_3d, anim_group_emphasis, activex_controls, charts_extras, charts_axis_titles, charts_fills, charts_outlines, charts_labels_more, group_scale, group_flip, charts_3d_line, charts_legend_pos, charts_crowded_labels, charts_label_skip, charts_bar_long_names, charts_multilevel, picture_recolor, text_symbols, text_numbering, lines_arrows, table_styles, shapes_styles, charts_styles, placeholders_inherit, text_bold_light, ole_objects, text_hanging_punct, speaker_notes, pictures_tiff, placeholders_picture, pictures_exif, text_picture_fill, pictures_mislabeled, emf_alphablend, placeholders_orphan, picture_fill_rect, slide_number_fields, table_builtin_styles, smartart_matrix, text_layout_unit, colors_gamma, text_latin_cjk_font, text_default_style, text_missing_font_jp, text_ea_line_break]
 
 
 def main():
