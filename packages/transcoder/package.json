@@ -5,9 +5,35 @@
   "license": "Apache-2.0",
   "type": "module",
   "main": "./dist/index.js",
-  "exports": { ".": "./dist/index.js" },
-  "bin": { "unppt": "./dist/cli.js" },
-  "files": ["dist", "THIRD-PARTY-NOTICES.md"],
-  "engines": { "node": ">=20.12" },
-  "repository": { "type": "git", "url": "git+https://github.com/spitmaster/unppt.git" }
+  "exports": {
+    ".": "./dist/index.js",
+    "./resvg.wasm": "./dist/resvg.wasm"
+  },
+  "bin": {
+    "unppt": "./dist/cli.js"
+  },
+  "files": [
+    "dist",
+    "THIRD-PARTY-NOTICES.md"
+  ],
+  "engines": {
+    "node": ">=20.12"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/spitmaster/unppt.git"
+  },
+  "keywords": [
+    "pptx",
+    "powerpoint",
+    "html",
+    "slides",
+    "converter",
+    "player"
+  ],
+  "homepage": "https://github.com/spitmaster/unppt",
+  "publishConfig": {
+    "registry": "https://registry.npmjs.org/",
+    "access": "public"
+  }
 }
