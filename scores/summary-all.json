@@ -1,12 +1,12 @@
 {
- "date": "2026-10-15 23:42",
+ "date": "2026-10-16 01:08",
  "set": "all",
- "files": 219,
+ "files": 221,
  "failedToConvert": 0,
- "pages": 7051,
- "passed": 5094,
- "passRate": 0.7225,
- "meanSsim": 0.9607,
+ "pages": 7198,
+ "passed": 5301,
+ "passRate": 0.7365,
+ "meanSsim": 0.9622,
  "passLine": 0.95,
  "issues": {
   "图片无法显示": 1
