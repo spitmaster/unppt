@@ -77,6 +77,12 @@ def main():
         t.wait_for_function(READY)
         check(t.evaluate(STATE) != s0, "演绎模式按键翻页")
         t.close()
+        t = open_page(b, hidden + "?mode=present&ui=0")
+        s0 = t.evaluate(STATE)
+        t.mouse.click(480, 270)
+        t.wait_for_function(READY)
+        check(t.evaluate("!document.querySelector('.unppt-ui')") and t.evaluate(STATE) != s0, "演绎模式 ui=0：没有按钮，点击照常翻页")
+        t.close()
 
         # ---------------- 同步：老师端一路按键，外部程序把老师的状态用 sync 发给学生（单文件和按需加载两种学生端）
         for case in ("anim-entrance", "transitions"):
