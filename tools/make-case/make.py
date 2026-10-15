@@ -2715,7 +2715,82 @@ def text_picture_fill(app):
     return p
 
 
-CASES = [shapes_all, text_sizes, text_align, text_spacing, text_bullets, text_missing_font, shapes_basic, fills_lines, table_basic, group_rotate, anim_basic, anim_auto, charts_basic, pictures, smartart, text_effects, text_layout, table_merge, links, emf_images, anim_advanced, charts_labels, freeform_icons, media_audio, anim_trigger, wmf_images, anim_iterate, picture_transparent, charts_more, shape_effects, equations, anim_path, anim_emphasis, transitions, fills_patterns, text_decoration, anim_entrance, svg_images, charts_markers, hidden_slides, media_background, text_glow_reflection, text_tabs, text_picture_bullets, fills_texture, transition_morph, text_embedded_fonts, text_warp, anim_repeat, charts_sizes, slide_timings, lines_compound, table_diagonal, lines_gradient, fills_radial, fills_rect_gradient, shapes_3d, table_vertical, transitions_more, anim_sound, anim_build, anim_after, anim_text_emphasis, charts_bubble, media_video, charts_options, charts_negative, shapes_bevel, charts_legend, shapes_3d_rotation, smartart_3d, charts_ofpie, charts_3d, anim_group_emphasis, activex_controls, charts_extras, charts_axis_titles, charts_fills, charts_outlines, charts_labels_more, group_scale, group_flip, charts_3d_line, charts_legend_pos, charts_crowded_labels, charts_label_skip, charts_bar_long_names, charts_multilevel, picture_recolor, text_symbols, text_numbering, lines_arrows, table_styles, shapes_styles, charts_styles, placeholders_inherit, text_bold_light, ole_objects, text_hanging_punct, speaker_notes, pictures_tiff, placeholders_picture, pictures_exif, text_picture_fill]
+def pictures_mislabeled(app):
+    """图片的扩展名和内容不符（保存后改名）：内容是 TIFF 叫 .png、内容是 PNG 叫 .emf、内容是 JPEG 叫 .png。
+    PowerPoint 按内容显示；还有一张扩展名正确的 PNG 对照"""
+    from PIL import Image, ImageDraw
+    d = (CACHE / "make-case").resolve()
+    d.mkdir(parents=True, exist_ok=True)
+    paths = []
+    for k, (fmt, col) in enumerate([("tif", (200, 60, 60)), ("png", (60, 140, 200)), ("jpg", (60, 170, 90)), ("png", (230, 180, 40))]):
+        im = Image.new("RGB", (240, 160), col)
+        dr = ImageDraw.Draw(im)
+        dr.rectangle((20, 20, 120, 140), fill=(250, 250, 250))
+        dr.ellipse((140, 50, 220, 130), fill=(30, 30, 30))
+        p = d / f"mislabel-{k}.{fmt}"
+        im.save(p, quality=92) if fmt == "jpg" else im.save(p)
+        paths.append(p)
+    p = new_pres(app)
+    s = blank(p)
+    for k, path in enumerate(paths):
+        sh = s.Shapes.AddPicture(str(path), 0, -1, 40 + (k % 2) * 460, 30 + (k // 2) * 250, 360, 240)
+        sh.Name = f"Pic{k}"
+    return p
+
+
+def _patch_mislabeled(path):
+    import re
+    import zipfile
+    with zipfile.ZipFile(path) as z:
+        files = {i.filename: z.read(i.filename) for i in z.infolist()}
+        infos = z.infolist()
+    rels_name = "ppt/slides/_rels/slide1.xml.rels"
+    rels = files[rels_name].decode("utf8")
+    want = {"tif": "png", "tiff": "png", "png": "emf", "jpeg": "png", "jpg": "png"}
+    renames = {}
+    slide = files["ppt/slides/slide1.xml"].decode("utf8")
+    # 按图片顺序取关系：第 0、1、2 张改名，第 3 张（对照）不动
+    for k in range(3):
+        pic = next(m.group(0) for m in re.finditer(r"<p:pic>.*?</p:pic>", slide, re.S) if f'name="Pic{k}"' in m.group(0))
+        rid = re.search(r'r:embed="([^"]+)"', pic).group(1)
+        target = re.search(rf'Id="{rid}"[^>]*Target="([^"]+)"', rels) or re.search(rf'Target="([^"]+)"[^>]*Id="{rid}"', rels)
+        old = target.group(1)
+        ext = old.rsplit(".", 1)[-1].lower()
+        new = old.rsplit(".", 1)[0] + "-x." + want[ext]
+        renames["ppt/media/" + old.split("/")[-1]] = "ppt/media/" + new.split("/")[-1]
+        rels = rels.replace(f'Target="{old}"', f'Target="{new}"')
+    files[rels_name] = rels.encode("utf8")
+    ct = files["[Content_Types].xml"].decode("utf8")
+    for e, mime in (("png", "image/png"), ("emf", "image/x-emf")):
+        if f'Extension="{e}"' not in ct:
+            ct = ct.replace("<Default ", f'<Default Extension="{e}" ContentType="{mime}"/><Default ', 1)
+    files["[Content_Types].xml"] = ct.encode("utf8")
+    tmp = path.with_suffix(".tmp")
+    with zipfile.ZipFile(tmp, "w", zipfile.ZIP_DEFLATED) as zout:
+        for item in infos:
+            data = files[item.filename]
+            name = renames.get(item.filename, item.filename)
+            zout.writestr(name, data)
+    tmp.replace(path)
+
+
+pictures_mislabeled.patch = _patch_mislabeled
+
+
+def emf_alphablend(app):
+    """EMF 里用 AlphaBlend 贴的位图（114 号记录，截图类 EMF 常见）：逐像素透明的红色圆点（圆内透明度从左到右渐变）、
+    整体 50% 透明的绿色方块，底下是浅蓝色矩形"""
+    import subprocess
+    emf = (CACHE / "make-case" / "alpha-test.emf").resolve()
+    emf.parent.mkdir(parents=True, exist_ok=True)
+    subprocess.run([sys.executable, str(Path(__file__).with_name("emf_alpha.py")), str(emf)], check=True)
+    p = new_pres(app)
+    s = blank(p)
+    s.Shapes.AddPicture(str(emf), 0, -1, 80, 80, 800, 400)
+    return p
+
+
+CASES = [shapes_all, text_sizes, text_align, text_spacing, text_bullets, text_missing_font, shapes_basic, fills_lines, table_basic, group_rotate, anim_basic, anim_auto, charts_basic, pictures, smartart, text_effects, text_layout, table_merge, links, emf_images, anim_advanced, charts_labels, freeform_icons, media_audio, anim_trigger, wmf_images, anim_iterate, picture_transparent, charts_more, shape_effects, equations, anim_path, anim_emphasis, transitions, fills_patterns, text_decoration, anim_entrance, svg_images, charts_markers, hidden_slides, media_background, text_glow_reflection, text_tabs, text_picture_bullets, fills_texture, transition_morph, text_embedded_fonts, text_warp, anim_repeat, charts_sizes, slide_timings, lines_compound, table_diagonal, lines_gradient, fills_radial, fills_rect_gradient, shapes_3d, table_vertical, transitions_more, anim_sound, anim_build, anim_after, anim_text_emphasis, charts_bubble, media_video, charts_options, charts_negative, shapes_bevel, charts_legend, shapes_3d_rotation, smartart_3d, charts_ofpie, charts_3d, anim_group_emphasis, activex_controls, charts_extras, charts_axis_titles, charts_fills, charts_outlines, charts_labels_more, group_scale, group_flip, charts_3d_line, charts_legend_pos, charts_crowded_labels, charts_label_skip, charts_bar_long_names, charts_multilevel, picture_recolor, text_symbols, text_numbering, lines_arrows, table_styles, shapes_styles, charts_styles, placeholders_inherit, text_bold_light, ole_objects, text_hanging_punct, speaker_notes, pictures_tiff, placeholders_picture, pictures_exif, text_picture_fill, pictures_mislabeled, emf_alphablend]
 
 
 def main():

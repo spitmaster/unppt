@@ -1,0 +1,33 @@
+{
+ "version": 8,
+ "level": "full",
+ "slideWidthPt": 960.0,
+ "slideHeightPt": 540.0,
+ "imageWidth": 1280,
+ "imageHeight": 720,
+ "slides": [
+  {
+   "index": 0,
+   "hidden": false,
+   "shapes": [
+    {
+     "id": 3,
+     "name": "Picture 2",
+     "type": 13,
+     "x": 80.0,
+     "y": 80.0,
+     "w": 800.0,
+     "h": 400.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1
+    }
+   ],
+   "effects": [],
+   "triggerHidden": [],
+   "steps": 0,
+   "keptSlideshow": false
+  }
+ ],
+ "ok": true
+}
