@@ -249,6 +249,9 @@ def run(set_name: str, only: str | None, do_build: bool):
                 page.goto(url)
                 page.wait_for_function("window.unppt !== undefined", timeout=20000)
                 page.evaluate("document.fonts.ready")
+                if ref.get("level") == "static":
+                    # 静态导出的参考图上所有对象都显示（不管动画），我们这边也把动画藏起来的对象全部显示
+                    page.evaluate("document.querySelectorAll('.unppt-hide').forEach((e) => e.classList.remove('unppt-hide'))")
                 page.wait_for_timeout(50)
                 stem = f"{it['key']}-{slide:03d}-{step:02d}"
                 ours_png = shots / f"{stem}-ours.png"
