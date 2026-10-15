@@ -120,6 +120,8 @@ function emfToSvgUnsafe(bytes: Uint8Array): string | undefined {
   let idn = 0;
   /** 由路径构成的裁剪：id -> 路径（求并等组合时要用） */
   const clipD = new Map<string, string>();
+  /** GRADIENTFILL 的线性渐变：方向 + 两端颜色 -> id（同样的只定义一次） */
+  const grads = new Map<string, string>();
   const objects = new Map<number, Pen | Brush | Font>();
   let st: State = {
     xf: [1, 0, 0, 1, 0, 0], winOrg: [0, 0], winExt: [1, 1], vpOrg: [0, 0], vpExt: [1, 1], mapMode: 1,
@@ -377,6 +379,57 @@ function emfToSvgUnsafe(bytes: Uint8Array): string | undefined {
       }
       // ---------------- 位图
       // 114 是 ALPHABLEND：和 STRETCHBLT 的布局一样，只是光栅操作字段换成了混合方式
+      case 118: { // GRADIENTFILL：矩形水平 / 垂直渐变；三角形（顶点着色）按三个顶点的平均色近似
+        const nVer = u32(r + 16), nTri = u32(r + 20), mode = u32(r + 24), v0 = r + 28;
+        if (nVer > 1e5 || nTri > 1e5 || v0 + nVer * 16 + nTri * (mode === 2 ? 12 : 8) > p + size) break;
+        const vx = (k: number) => i32(v0 + k * 16), vy = (k: number) => i32(v0 + k * 16 + 4);
+        const vc = (k: number) => [0, 2, 4].map((o) => d.getUint16(v0 + k * 16 + 8 + o, true) >> 8);
+        const hex = (c: number[]) => `#${c.map((v) => v.toString(16).padStart(2, '0')).join('')}`;
+        const ix = v0 + nVer * 16;
+        for (let t = 0; t < nTri; t++) {
+          if (mode === 2) {
+            const ks = [0, 1, 2].map((j) => u32(ix + t * 12 + j * 4)).filter((k) => k < nVer);
+            if (ks.length < 3) continue;
+            // 顶点着色：按大小细分成 n² 个小三角形，每块取重心处插值的颜色（导出工具拼出的小三角形 n = 1，就是平均色）
+            const P = ks.map((k) => tp(vx(k), vy(k))), C = ks.map(vc);
+            const edge = Math.max(...[0, 1, 2].map((j) => Math.hypot(P[j][0] - P[(j + 1) % 3][0], P[j][1] - P[(j + 1) % 3][1])));
+            const n = Math.min(10, Math.max(1, Math.ceil(edge / Math.max(vb[2], vb[3]) * 40)));
+            const at = (a: number, b: number) => [P[0][0] + (P[1][0] - P[0][0]) * a / n + (P[2][0] - P[0][0]) * b / n, P[0][1] + (P[1][1] - P[0][1]) * a / n + (P[2][1] - P[0][1]) * b / n];
+            const tri = (q: number[][]) => {
+              const u = (q.reduce((s2, v) => s2 + v[0], 0) / 3) / n, w = (q.reduce((s2, v) => s2 + v[1], 0) / 3) / n;
+              const c = [0, 1, 2].map((ch) => Math.round(C[0][ch] * (1 - u - w) + C[1][ch] * u + C[2][ch] * w));
+              emit(`<path d="M${q.map(([a, b]) => at(a, b).map(f2).join(' ')).join('L')}Z" fill="${hex(c)}" shape-rendering="crispEdges"${clipAttr()}/>`);
+            };
+            for (let a = 0; a < n; a++) {
+              for (let b = 0; a + b < n; b++) {
+                tri([[a, b], [a + 1, b], [a, b + 1]]);
+                if (a + b < n - 1) tri([[a + 1, b], [a + 1, b + 1], [a, b + 1]]);
+              }
+            }
+            continue;
+          }
+          const a = u32(ix + t * 8), b = u32(ix + t * 8 + 4);
+          if (a >= nVer || b >= nVer) continue;
+          const [x0, y0] = tp(vx(a), vy(a)), [x1, y1] = tp(vx(b), vy(b));
+          // 渐变从左上顶点的颜色到右下顶点的颜色；坐标换算翻转了方向时颜色对调
+          const flip = mode === 0 ? x0 > x1 : y0 > y1;
+          const ca = hex(vc(flip ? b : a)), cb = hex(vc(flip ? a : b));
+          let fill = ca;
+          if (ca !== cb) {
+            const key = `${mode}${ca}${cb}`;
+            let id = grads.get(key);
+            if (!id) {
+              id = `g${idn++}`;
+              grads.set(key, id);
+              defs.push(`<linearGradient id="${id}" x2="${mode === 0 ? 1 : 0}" y2="${mode === 0 ? 0 : 1}"><stop offset="0" stop-color="${ca}"/><stop offset="1" stop-color="${cb}"/></linearGradient>`);
+            }
+            fill = `url(#${id})`;
+          }
+          // GDI 画渐变不抗锯齿；不抗锯齿也让导出工具拼出的竖条之间没有细缝
+          emit(`<rect x="${f2(Math.min(x0, x1))}" y="${f2(Math.min(y0, y1))}" width="${f2(Math.abs(x1 - x0))}" height="${f2(Math.abs(y1 - y0))}" fill="${fill}" shape-rendering="crispEdges"${clipAttr()}/>`);
+        }
+        break;
+      }
       case 76: case 77: case 81: case 114: {
         let x: number, y: number, w: number, h: number, offBmi: number, cbBmi: number, offBits: number, cbBits: number;
         if (type === 81) {
