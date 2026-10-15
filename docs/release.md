@@ -13,14 +13,14 @@ npm login --registry https://registry.npmjs.org/
 npm whoami --registry https://registry.npmjs.org/
 ```
 
-账号开了双重验证（2FA）时，发布会再要一次验证码。
+npm 要求发布包的账号**必须开启双重验证（2FA）**，否则发布报 403：到 npmjs.com 右上角头像 → Account → Two-Factor Authentication 开启（用手机验证器 App 扫码）。之后发布时带上验证器里的 6 位数字：`npm publish --otp=123456`。
 
 ## 每次发布
 
 1. 改版本号：`packages/transcoder/package.json` 的 `version`（同时改仓库根目录 `package.json` 和 `packages/format/src/index.ts` 里的 `UNPPT_VERSION`，三处保持一致）；
 2. 构建和测试：`npm run build`、`npm test`；
 3. 看包里有什么：在 `packages/transcoder` 里执行 `npm pack --dry-run`，应该只有 `dist/`（`cli.js`、`index.js`、`resvg.wasm`）、`README.md`、`LICENSE`、`THIRD-PARTY-NOTICES.md`、`package.json`；
-4. 发布：在 `packages/transcoder` 里执行 `npm publish`；
+4. 发布：在 `packages/transcoder` 里执行 `npm publish --otp=<验证器里的 6 位数字>`；输出里不能有 `warn publish ... auto-corrected`（npm 会悄悄删掉它认为写错的字段，例如 `bin` 路径写成 `./dist/cli.js` 就会被删，命令行装好后用不了）；
 5. 打标签：`git tag v<版本>`，再 `git push origin v<版本>`。
 
 命令在 Windows 的 PowerShell 里同样能用（PowerShell 5.1 不支持 `&&`，上面的命令都是一条一条执行的）。

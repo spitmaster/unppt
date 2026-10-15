@@ -10,7 +10,7 @@
     "./resvg.wasm": "./dist/resvg.wasm"
   },
   "bin": {
-    "unppt": "./dist/cli.js"
+    "unppt": "dist/cli.js"
   },
   "files": [
     "dist",
