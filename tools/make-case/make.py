@@ -2854,6 +2854,70 @@ def _patch_picture_placeholder(path):
 placeholders_picture.patch = _patch_picture_placeholder
 
 
+def placeholders_picture_geom(app):
+    """图片占位符的形状沿继承链找（保存后改 XML）：第 1 页版式占位符是 V 形自定义形状，图片按它裁剪；
+    第 2 页挂在版式里另一个编号对不上母版、也没写形状的图片占位符上，母版正文占位符也去掉形状，PowerPoint 不画"""
+    png = (CACHE / "make-case" / "ph-picture.png").resolve()
+    if not png.exists():
+        placeholders_picture(app).Close()
+    p = new_pres(app)
+    lay = None
+    for i in range(1, p.SlideMaster.CustomLayouts.Count + 1):
+        cl = p.SlideMaster.CustomLayouts(i)
+        if any(cl.Shapes(k).Type == 14 and cl.Shapes(k).PlaceholderFormat.Type == 18 for k in range(1, cl.Shapes.Count + 1)):
+            lay = cl
+            break
+    for k in range(2):
+        s = p.Slides.AddSlide(k + 1, lay)
+        s.Shapes.Placeholders(1).TextFrame.TextRange.Text = ["V 形图片占位符", "没有形状的图片占位符"][k]
+        s.Shapes.AddPicture(str(png), 0, -1, 100, 100, 320, 200).Name = f"PhPic{k}"
+    return p
+
+
+_CHEVRON = ('<a:custGeom><a:avLst/><a:gdLst/><a:ahLst/><a:cxnLst/><a:rect l="0" t="0" r="r" b="b"/><a:pathLst><a:path w="100" h="100">'
+            '<a:moveTo><a:pt x="0" y="0"/></a:moveTo><a:lnTo><a:pt x="100" y="0"/></a:lnTo><a:lnTo><a:pt x="100" y="60"/></a:lnTo>'
+            '<a:lnTo><a:pt x="50" y="100"/></a:lnTo><a:lnTo><a:pt x="0" y="60"/></a:lnTo><a:close/></a:path></a:pathLst></a:custGeom>')
+
+
+def _patch_picture_geom(path):
+    import re
+    import zipfile
+    with zipfile.ZipFile(path) as z:
+        files = {i.filename: z.read(i.filename) for i in z.infolist()}
+        infos = z.infolist()
+    rels = files["ppt/slides/_rels/slide1.xml.rels"].decode("utf8")
+    layout = "ppt/slideLayouts/" + re.search(r"slideLayouts/([^\"]+)", rels).group(1)
+    lx = files[layout].decode("utf8")
+    sp = next(m.group(0) for m in re.finditer(r"<p:sp>.*?</p:sp>", lx, re.S) if 'type="pic"' in m.group(0))
+    idx = re.search(r'type="pic"[^>]*idx="(\d+)"', sp).group(1)
+    sp1 = re.sub(r"<a:prstGeom .*?</a:prstGeom>", "", sp, flags=re.S).replace("</a:xfrm>", "</a:xfrm>" + _CHEVRON, 1)
+    sp2 = re.sub(r"<a:prstGeom .*?</a:prstGeom>", "", sp, flags=re.S).replace(f'idx="{idx}"', 'idx="77"', 1)
+    sp2 = re.sub(r'<p:cNvPr id="\d+"', '<p:cNvPr id="977"', sp2, count=1)
+    files[layout] = lx.replace(sp, sp1 + sp2).encode("utf8")
+    # 母版正文占位符也去掉形状：第 2 页的图片在继承链上哪里都没有形状
+    mx = files["ppt/slideMasters/slideMaster1.xml"].decode("utf8")
+    body = next(m.group(0) for m in re.finditer(r"<p:sp>.*?</p:sp>", mx, re.S) if 'type="body"' in m.group(0))
+    files["ppt/slideMasters/slideMaster1.xml"] = mx.replace(body, re.sub(r"<a:prstGeom .*?</a:prstGeom>", "", body, flags=re.S)).encode("utf8")
+    for k, ix in enumerate((idx, "77")):
+        name = f"ppt/slides/slide{k + 1}.xml"
+        sx = files[name].decode("utf8")
+        sx = re.sub(r'<p:sp>(?:(?!</p:sp>).)*?type="pic".*?</p:sp>', "", sx, flags=re.S)
+        pic = next(m.group(0) for m in re.finditer(r"<p:pic>.*?</p:pic>", sx, re.S) if f'name="PhPic{k}"' in m.group(0))
+        new = re.sub(r"<p:ph [^>]*/>", "", pic)
+        ph = f'<p:ph type="pic" idx="{ix}"/>'
+        new = new.replace("<p:nvPr/>", f"<p:nvPr>{ph}</p:nvPr>", 1) if "<p:nvPr/>" in new else new.replace("<p:nvPr>", f"<p:nvPr>{ph}", 1)
+        new = re.sub(r"<p:spPr>.*?</p:spPr>", "<p:spPr/>", new, flags=re.S)
+        files[name] = sx.replace(pic, new).encode("utf8")
+    tmp = path.with_suffix(".tmp")
+    with zipfile.ZipFile(tmp, "w", zipfile.ZIP_DEFLATED) as zout:
+        for item in infos:
+            zout.writestr(item, files[item.filename])
+    tmp.replace(path)
+
+
+placeholders_picture_geom.patch = _patch_picture_geom
+
+
 def pictures_exif(app):
     """JPEG 带 EXIF 方向标记（相机竖拍）：PowerPoint 按原始像素画、给形状加旋转，浏览器默认会按标记再转一次。
     方向 6（顺时针 90°）、3（180°）、8（逆时针 90°）和 1（不转）各一张"""
@@ -3366,7 +3430,7 @@ def _patch_missing_jp(path):
 text_missing_font_jp.patch = _patch_missing_jp
 
 
-CASES = [shapes_all, text_sizes, text_align, text_spacing, text_bullets, text_missing_font, shapes_basic, fills_lines, table_basic, group_rotate, anim_basic, anim_auto, charts_basic, pictures, smartart, text_effects, text_layout, table_merge, links, emf_images, anim_advanced, charts_labels, freeform_icons, media_audio, anim_trigger, wmf_images, anim_iterate, picture_transparent, charts_more, shape_effects, equations, anim_path, anim_emphasis, transitions, fills_patterns, text_decoration, anim_entrance, svg_images, charts_markers, hidden_slides, media_background, text_glow_reflection, text_tabs, text_picture_bullets, fills_texture, transition_morph, text_embedded_fonts, text_warp, anim_repeat, charts_sizes, slide_timings, lines_compound, table_diagonal, lines_gradient, fills_radial, fills_rect_gradient, shapes_3d, table_vertical, transitions_more, anim_sound, anim_build, anim_after, anim_text_emphasis, charts_bubble, media_video, charts_options, charts_negative, shapes_bevel, charts_legend, shapes_3d_rotation, smartart_3d, charts_ofpie, charts_3d, anim_group_emphasis, activex_controls, charts_extras, charts_axis_titles, charts_fills, charts_outlines, charts_labels_more, group_scale, group_flip, charts_3d_line, charts_legend_pos, charts_crowded_labels, charts_label_skip, charts_bar_long_names, charts_multilevel, picture_recolor, text_symbols, text_numbering, lines_arrows, table_styles, shapes_styles, charts_styles, placeholders_inherit, text_bold_light, ole_objects, text_hanging_punct, speaker_notes, pictures_tiff, placeholders_picture, pictures_exif, text_picture_fill, pictures_mislabeled, emf_alphablend, placeholders_orphan, picture_fill_rect, slide_number_fields, table_builtin_styles, smartart_matrix, text_layout_unit, colors_gamma, text_latin_cjk_font, text_default_style, text_missing_font_jp, text_ea_line_break, text_ambiguous_punct, text_charset_slides, table_rowspan_tall, text_autofit_round, shapes_3d_contour, emf_clip_modes]
+CASES = [shapes_all, text_sizes, text_align, text_spacing, text_bullets, text_missing_font, shapes_basic, fills_lines, table_basic, group_rotate, anim_basic, anim_auto, charts_basic, pictures, smartart, text_effects, text_layout, table_merge, links, emf_images, anim_advanced, charts_labels, freeform_icons, media_audio, anim_trigger, wmf_images, anim_iterate, picture_transparent, charts_more, shape_effects, equations, anim_path, anim_emphasis, transitions, fills_patterns, text_decoration, anim_entrance, svg_images, charts_markers, hidden_slides, media_background, text_glow_reflection, text_tabs, text_picture_bullets, fills_texture, transition_morph, text_embedded_fonts, text_warp, anim_repeat, charts_sizes, slide_timings, lines_compound, table_diagonal, lines_gradient, fills_radial, fills_rect_gradient, shapes_3d, table_vertical, transitions_more, anim_sound, anim_build, anim_after, anim_text_emphasis, charts_bubble, media_video, charts_options, charts_negative, shapes_bevel, charts_legend, shapes_3d_rotation, smartart_3d, charts_ofpie, charts_3d, anim_group_emphasis, activex_controls, charts_extras, charts_axis_titles, charts_fills, charts_outlines, charts_labels_more, group_scale, group_flip, charts_3d_line, charts_legend_pos, charts_crowded_labels, charts_label_skip, charts_bar_long_names, charts_multilevel, picture_recolor, text_symbols, text_numbering, lines_arrows, table_styles, shapes_styles, charts_styles, placeholders_inherit, text_bold_light, ole_objects, text_hanging_punct, speaker_notes, pictures_tiff, placeholders_picture, pictures_exif, text_picture_fill, pictures_mislabeled, emf_alphablend, placeholders_orphan, picture_fill_rect, slide_number_fields, table_builtin_styles, smartart_matrix, text_layout_unit, colors_gamma, text_latin_cjk_font, text_default_style, text_missing_font_jp, text_ea_line_break, text_ambiguous_punct, text_charset_slides, table_rowspan_tall, text_autofit_round, shapes_3d_contour, emf_clip_modes, placeholders_picture_geom]
 
 
 def main():

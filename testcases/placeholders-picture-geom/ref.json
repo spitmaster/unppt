@@ -1,0 +1,134 @@
+{
+ "version": 8,
+ "level": "full",
+ "slideWidthPt": 960.0,
+ "slideHeightPt": 540.0,
+ "imageWidth": 1280,
+ "imageHeight": 720,
+ "slides": [
+  {
+   "index": 0,
+   "hidden": false,
+   "shapes": [
+    {
+     "id": 2,
+     "name": "Title 1",
+     "type": 14,
+     "x": 66.125,
+     "y": 36.0,
+     "w": 309.625,
+     "h": 126.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 138,
+     "lines": [
+      {
+       "start": 0,
+       "len": 8,
+       "text": "V 形图片占位符",
+       "x": 73.325,
+       "y": 123.84,
+       "w": 220.13,
+       "h": 34.56
+      }
+     ]
+    },
+    {
+     "id": 6,
+     "name": "PhPic0",
+     "type": 14,
+     "x": 408.125,
+     "y": 77.75,
+     "w": 486.0,
+     "h": 383.75,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 138
+    },
+    {
+     "id": 4,
+     "name": "Text Placeholder 3",
+     "type": 14,
+     "x": 66.125,
+     "y": 162.0,
+     "w": 309.625,
+     "h": 300.125,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 138
+    }
+   ],
+   "effects": [],
+   "triggerHidden": [],
+   "steps": 0,
+   "keptSlideshow": false
+  },
+  {
+   "index": 1,
+   "hidden": false,
+   "shapes": [
+    {
+     "id": 2,
+     "name": "Title 1",
+     "type": 14,
+     "x": 66.125,
+     "y": 36.0,
+     "w": 309.625,
+     "h": 126.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 138,
+     "lines": [
+      {
+       "start": 0,
+       "len": 9,
+       "text": "没有形状的图片占位",
+       "x": 73.325,
+       "y": 89.28,
+       "w": 288.0,
+       "h": 34.56
+      },
+      {
+       "start": 9,
+       "len": 1,
+       "text": "符",
+       "x": 73.325,
+       "y": 123.84,
+       "w": 32.005,
+       "h": 34.56
+      }
+     ]
+    },
+    {
+     "id": 6,
+     "name": "PhPic1",
+     "type": 14,
+     "x": 408.125,
+     "y": 77.75,
+     "w": 486.0,
+     "h": 383.75,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 138
+    },
+    {
+     "id": 4,
+     "name": "Text Placeholder 3",
+     "type": 14,
+     "x": 66.125,
+     "y": 162.0,
+     "w": 309.625,
+     "h": 300.125,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 138
+    }
+   ],
+   "effects": [],
+   "triggerHidden": [],
+   "steps": 0,
+   "keptSlideshow": false
+  }
+ ],
+ "ok": true
+}

@@ -32,11 +32,13 @@ export async function renderPicture(r: RenderContext, el: XEl, ctx: SlideContext
   const parts: string[] = [];
   const mediaParts: string[] = [];
   let poster: string | undefined;
-  // 图片的外形（裁剪和边框都按它画）
-  const prstEl = child(spPr, 'a:prstGeom');
-  const custEl = child(spPr, 'a:custGeom');
-  // 实测（placeholders-picture）：没写形状的普通图片 PowerPoint 不画；图片占位符没写形状时照常按矩形画
-  if (!prstEl && !custEl && !ph) return '';
+  // 图片的外形（裁剪和边框都按它画）：自己没写时按版式、母版里对应占位符的
+  // 实测（placeholders-picture、placeholders-picture-geom）：继承链上哪里都没写形状的图片 PowerPoint 不画
+  // （占位符继承到母版正文占位符的矩形时照常画；版式占位符是自定义形状时按它裁剪）
+  const geomSp = [spPr, pc(layoutPh, 'spPr'), pc(masterPh, 'spPr')].find((s) => child(s, 'a:prstGeom') || child(s, 'a:custGeom'));
+  const prstEl = child(geomSp, 'a:prstGeom');
+  const custEl = child(geomSp, 'a:custGeom');
+  if (!prstEl && !custEl) return '';
   const prst = attr(prstEl, 'prst') ?? 'rect';
   const gdef = (custEl ? parseGeomXml(custEl) : presetGeometry(prst)) ?? presetGeometry('rect')!;
   const av = new Map<string, string>();
