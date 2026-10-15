@@ -66,6 +66,8 @@ export async function layoutParagraph(p: XEl, pi: number, ctx: ParagraphContext)
   const defTab = (numAttr(pPr, 'defTabSz') ?? 914400) / EMU_PER_PX;
 
   const marL = (numAttr(pPr, 'marL') ?? 0) / EMU_PER_PX;
+  // 右缩进：换行和对齐都在扣掉它的宽度里（实测；PowerPoint 界面里没有，PDF 转换来的课件常见）
+  const marR = (numAttr(pPr, 'marR') ?? 0) / EMU_PER_PX;
   const indent = (numAttr(pPr, 'indent') ?? 0) / EMU_PER_PX;
   const algn = attr(pPr, 'algn') ?? 'l';
 
@@ -77,8 +79,8 @@ export async function layoutParagraph(p: XEl, pi: number, ctx: ParagraphContext)
   let firstX = marL + (indent >= 0 ? indent : 0);
   if (bullet && bullet.x + bullet.width > firstX) firstX = bullet.x + bullet.width + (indent >= 0 ? 0 : 0);
   if (!bullet && indent < 0) firstX = marL + indent;
-  const availFirst = contentW - firstX;
-  const availRest = contentW - marL;
+  const availFirst = contentW - firstX - marR;
+  const availRest = contentW - marL - marR;
 
   // 制表符宽度：自定义制表位，超出后按默认制表位
   layoutTabs(atoms, tabStops(pPr), defTab, firstX);

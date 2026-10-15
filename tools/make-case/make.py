@@ -2846,6 +2846,50 @@ def _patch_theme_font_lang(path):
 text_theme_font_lang.patch = _patch_theme_font_lang
 
 
+MARGIN_RIGHT = [('l', 914400), ('ctr', 914400), ('r', 914400), ('just', 457200), ('l', 0)]
+
+
+def text_margin_right(app):
+    """段落右缩进（a:pPr marR）：左、居中、右、两端对齐都在扣掉右缩进后的宽度里换行和对齐；最后一个不缩进作对照。
+    PowerPoint 界面里没有右缩进，PDF 转换来的课件常见（保存后改 XML）"""
+    p = new_pres(app)
+    s = blank(p)
+    for k, (algn, mar) in enumerate(MARGIN_RIGHT):
+        tb = s.Shapes.AddTextbox(1, 40, 10 + k * 105, 600, 90)
+        tb.Name = f"MARR{k}"
+        tb.TextFrame.WordWrap = True
+        tr = tb.TextFrame.TextRange
+        tr.Text = f"第{k + 1}段 虽然能够保证触发更新的组件按时完成渲染，但还需要考虑更多情况 ABC def"
+        tr.Font.Size = 20
+        tr.Font.Name = "Microsoft YaHei"
+        tb.Line.Visible = True
+    return p
+
+
+def _patch_margin_right(path):
+    import re
+    import zipfile
+    tmp = path.with_suffix(".tmp")
+    with zipfile.ZipFile(path) as zin, zipfile.ZipFile(tmp, "w", zipfile.ZIP_DEFLATED) as zout:
+        for item in zin.infolist():
+            data = zin.read(item.filename)
+            if item.filename == "ppt/slides/slide1.xml":
+                xml = data.decode("utf8")
+
+                def fix(m):
+                    k = int(re.search(r'name="MARR(\d+)"', m.group(0)).group(1))
+                    algn, mar = MARGIN_RIGHT[k]
+                    sp = re.sub(r"<a:pPr[^>]*/>|<a:pPr[^>]*>.*?</a:pPr>", "", m.group(0), flags=re.S)
+                    return sp.replace("<a:p><a:r>", f'<a:p><a:pPr marR="{mar}" algn="{algn}"/><a:r>')
+                xml = re.sub(r"<p:sp>(?:(?!</p:sp>).)*name=\"MARR.*?</p:sp>", fix, xml, flags=re.S)
+                data = xml.encode("utf8")
+            zout.writestr(item, data)
+    tmp.replace(path)
+
+
+text_margin_right.patch = _patch_margin_right
+
+
 THEME_FONT_LATINS = ['KaiTi', 'SimSun', 'Yu Gothic', 'Arial', 'Microsoft YaHei', 'KaiTi']
 
 
@@ -3618,7 +3662,7 @@ def _patch_missing_jp(path):
 text_missing_font_jp.patch = _patch_missing_jp
 
 
-CASES = [shapes_all, text_sizes, text_align, text_spacing, text_bullets, text_missing_font, shapes_basic, fills_lines, table_basic, group_rotate, anim_basic, anim_auto, charts_basic, pictures, smartart, text_effects, text_layout, table_merge, links, emf_images, anim_advanced, charts_labels, freeform_icons, media_audio, anim_trigger, wmf_images, anim_iterate, picture_transparent, charts_more, shape_effects, equations, anim_path, anim_emphasis, transitions, fills_patterns, text_decoration, anim_entrance, svg_images, charts_markers, hidden_slides, media_background, text_glow_reflection, text_tabs, text_picture_bullets, fills_texture, transition_morph, text_embedded_fonts, text_warp, anim_repeat, charts_sizes, slide_timings, lines_compound, table_diagonal, lines_gradient, fills_radial, fills_rect_gradient, shapes_3d, table_vertical, transitions_more, anim_sound, anim_build, anim_after, anim_text_emphasis, charts_bubble, media_video, charts_options, charts_negative, shapes_bevel, charts_legend, shapes_3d_rotation, smartart_3d, charts_ofpie, charts_3d, anim_group_emphasis, activex_controls, charts_extras, charts_axis_titles, charts_fills, charts_outlines, charts_labels_more, group_scale, group_flip, charts_3d_line, charts_legend_pos, charts_crowded_labels, charts_label_skip, charts_bar_long_names, charts_multilevel, picture_recolor, text_symbols, text_numbering, lines_arrows, table_styles, shapes_styles, charts_styles, placeholders_inherit, text_bold_light, ole_objects, text_hanging_punct, speaker_notes, pictures_tiff, placeholders_picture, pictures_exif, text_picture_fill, pictures_mislabeled, emf_alphablend, placeholders_orphan, picture_fill_rect, slide_number_fields, table_builtin_styles, smartart_matrix, text_layout_unit, colors_gamma, text_latin_cjk_font, text_default_style, text_missing_font_jp, text_ea_line_break, text_ambiguous_punct, text_charset_slides, table_rowspan_tall, text_autofit_round, shapes_3d_contour, emf_clip_modes, placeholders_picture_geom, emf_gradient_fill, text_theme_font_lang, text_anchor_linespacing, table_linespacing, table_fontalgn, text_theme_font_latin]
+CASES = [shapes_all, text_sizes, text_align, text_spacing, text_bullets, text_missing_font, shapes_basic, fills_lines, table_basic, group_rotate, anim_basic, anim_auto, charts_basic, pictures, smartart, text_effects, text_layout, table_merge, links, emf_images, anim_advanced, charts_labels, freeform_icons, media_audio, anim_trigger, wmf_images, anim_iterate, picture_transparent, charts_more, shape_effects, equations, anim_path, anim_emphasis, transitions, fills_patterns, text_decoration, anim_entrance, svg_images, charts_markers, hidden_slides, media_background, text_glow_reflection, text_tabs, text_picture_bullets, fills_texture, transition_morph, text_embedded_fonts, text_warp, anim_repeat, charts_sizes, slide_timings, lines_compound, table_diagonal, lines_gradient, fills_radial, fills_rect_gradient, shapes_3d, table_vertical, transitions_more, anim_sound, anim_build, anim_after, anim_text_emphasis, charts_bubble, media_video, charts_options, charts_negative, shapes_bevel, charts_legend, shapes_3d_rotation, smartart_3d, charts_ofpie, charts_3d, anim_group_emphasis, activex_controls, charts_extras, charts_axis_titles, charts_fills, charts_outlines, charts_labels_more, group_scale, group_flip, charts_3d_line, charts_legend_pos, charts_crowded_labels, charts_label_skip, charts_bar_long_names, charts_multilevel, picture_recolor, text_symbols, text_numbering, lines_arrows, table_styles, shapes_styles, charts_styles, placeholders_inherit, text_bold_light, ole_objects, text_hanging_punct, speaker_notes, pictures_tiff, placeholders_picture, pictures_exif, text_picture_fill, pictures_mislabeled, emf_alphablend, placeholders_orphan, picture_fill_rect, slide_number_fields, table_builtin_styles, smartart_matrix, text_layout_unit, colors_gamma, text_latin_cjk_font, text_default_style, text_missing_font_jp, text_ea_line_break, text_ambiguous_punct, text_charset_slides, table_rowspan_tall, text_autofit_round, shapes_3d_contour, emf_clip_modes, placeholders_picture_geom, emf_gradient_fill, text_theme_font_lang, text_anchor_linespacing, table_linespacing, table_fontalgn, text_theme_font_latin, text_margin_right]
 
 
 def main():
