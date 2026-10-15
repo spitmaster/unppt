@@ -20,5 +20,6 @@ async function* json(src: OutputSource): AsyncGenerator<Uint8Array> {
 export const dataForm: OutputForm = {
   name: 'data',
   inlineImages: false,
+  thumbs: false,
   write: (src) => src.write(src.fileName, json(src)),
 };

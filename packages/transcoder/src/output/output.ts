@@ -30,6 +30,8 @@ export interface OutputForm {
   name: string;
   /** 小图片是否内联进主文件（否则一律写成 media/ 下的文件） */
   inlineImages: boolean;
+  /** 默认是否输出缩略图文件夹 thumbs/ */
+  thumbs: boolean;
   write(src: OutputSource): Promise<void>;
 }
 

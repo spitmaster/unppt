@@ -32,6 +32,7 @@ const RULES = {
   [`${T}render`]: [`${T}io`, `${T}common`, `${T}model`, `${T}geometry`, `${T}font`, `${T}style`, `${T}effects`, `${T}text`, `${T}media`, `${T}chart`],
   [`${T}anim`]: [`${T}io`, `${T}common`, `${T}model`, 'format/src'],
   [`${T}output`]: [`${T}io`, `${T}common`, `${T}media`, 'format/src'],
+  [`${T}thumbs`]: [`${T}io`, `${T}common`, `${T}media`],
   'transcoder/src': ['*'],
 };
 
