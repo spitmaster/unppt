@@ -21,6 +21,8 @@ npm whoami --registry https://registry.npmjs.org/
 2. 构建和测试：`npm run build`、`npm test`；
 3. 看包里有什么：在 `packages/transcoder` 里执行 `npm pack --dry-run`，应该只有 `dist/`（`cli.js`、`index.js`、`resvg.wasm`）、`README.md`、`LICENSE`、`THIRD-PARTY-NOTICES.md`、`package.json`；
 4. 发布：在 `packages/transcoder` 里执行 `npm publish`；
-5. 打标签：`git tag v<版本> && git push origin v<版本>`。
+5. 打标签：`git tag v<版本>`，再 `git push origin v<版本>`。
+
+命令在 Windows 的 PowerShell 里同样能用（PowerShell 5.1 不支持 `&&`，上面的命令都是一条一条执行的）。
 
 同一个版本号只能发布一次（撤回后也不能重用），发错了就把版本号加一重新发。
