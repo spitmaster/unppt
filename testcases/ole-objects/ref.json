@@ -1,0 +1,67 @@
+{
+ "version": 8,
+ "slideWidthPt": 960.0,
+ "slideHeightPt": 540.0,
+ "imageWidth": 1280,
+ "imageHeight": 720,
+ "slides": [
+  {
+   "index": 0,
+   "hidden": false,
+   "shapes": [
+    {
+     "id": 2,
+     "name": "Object 1",
+     "type": 7,
+     "x": 80.0,
+     "y": 80.0,
+     "w": 62.25,
+     "h": 42.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": -2
+    },
+    {
+     "id": 3,
+     "name": "Object 2",
+     "type": 7,
+     "x": 444.0,
+     "y": 237.25,
+     "w": 72.0,
+     "h": 65.25,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": -2
+    },
+    {
+     "id": 4,
+     "name": "TextBox 3",
+     "type": 17,
+     "x": 80.0,
+     "y": 400.0,
+     "w": 800.0,
+     "h": 60.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 20,
+       "text": "嵌入对象：左边按内容显示，右边显示成图标",
+       "x": 87.2,
+       "y": 403.6,
+       "w": 360.005,
+       "h": 21.6
+      }
+     ]
+    }
+   ],
+   "effects": [],
+   "triggerHidden": [],
+   "steps": 0,
+   "keptSlideshow": false
+  }
+ ],
+ "ok": true
+}

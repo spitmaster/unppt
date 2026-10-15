@@ -14,7 +14,7 @@ import { buildGeometry, parseGeomXml, presetGeometry } from '../../geometry/geom
 import { colorIn, css } from '../../model/color';
 import { renderText, type TextEnv } from '../../text/text';
 import { attr, child, children, numAttr, path, type XEl } from '../../io/xml';
-import { flipTransform, nvProps, pc, placeBox, readXfrm, withUid } from '../box';
+import { flipTransform, pc, placeBox, readXfrm, withUid } from '../box';
 import type { RenderContext } from '../context';
 import { projectedBounds, projectedPath, shapeProjection } from '../projection';
 import { snapBox } from '../pixel-snap';
@@ -23,7 +23,6 @@ export async function renderShape(r: RenderContext, el: XEl, ctx: SlideContext, 
   const { layoutPh, masterPh, ph } = r.inherited(el, ctx);
   // 母版、版式上的占位符本身不显示（只提供继承属性），日期/页脚/页码除外由幻灯片自己放
   if (ph && !ctx.ownSlide) return '';
-  if (attr(nvProps(el), 'hidden') === '1') return '';
   const spPr = pc(el, 'spPr');
   const lSpPr = pc(layoutPh, 'spPr');
   const mSpPr = pc(masterPh, 'spPr');
@@ -61,7 +60,8 @@ export async function renderShape(r: RenderContext, el: XEl, ctx: SlideContext, 
 
   // 几何
   const geomParts: string[] = [];
-  const prst = child(spPr, 'a:prstGeom') ?? child(lSpPr, 'a:prstGeom') ?? child(mSpPr, 'a:prstGeom');
+  // 实测（placeholders-inherit）：版式里没有对应项的占位符不继承母版的形状；自己、版式、母版都没写形状时不画填充和边框，只排文字
+  const prst = child(spPr, 'a:prstGeom') ?? child(lSpPr, 'a:prstGeom') ?? (ph && !layoutPh ? undefined : child(mSpPr, 'a:prstGeom'));
   const cust = child(spPr, 'a:custGeom');
   let def = cust ? parseGeomXml(cust) : prst ? presetGeometry(attr(prst, 'prst') ?? 'rect') : presetGeometry('rect');
   if (!def) {
@@ -76,7 +76,7 @@ export async function renderShape(r: RenderContext, el: XEl, ctx: SlideContext, 
   const snap = sp || hasCamera(scene3d) || ctx.scene ? undefined : snapBox(box, ctx.toSlide, line?.width ?? 0);
   const gb = snap ? { ...box, x: box.x + snap.dx, y: box.y + snap.dy, w: snap.w, h: snap.h } : box;
   const geo = buildGeometry(def, gb.w, gb.h, av);
-  const paths = geo.paths;
+  const paths = prst || cust ? geo.paths : [];
   const projected = sp ? buildGeometry(def, box.w, box.h, av, sp.map).paths : undefined;
   // 效果：形状自己写的 > 版式 > 主题样式（effectRef）
   const effRef = styleRef(child(style, 'a:effectRef'), ctx.theme.effectStyles, colors);

@@ -1,0 +1,173 @@
+{
+ "version": 8,
+ "slideWidthPt": 960.0,
+ "slideHeightPt": 540.0,
+ "imageWidth": 1280,
+ "imageHeight": 720,
+ "slides": [
+  {
+   "index": 0,
+   "hidden": false,
+   "shapes": [
+    {
+     "id": 101,
+     "name": "NoGeom 101",
+     "type": 14,
+     "x": 47.244,
+     "y": 47.244,
+     "w": 283.465,
+     "h": 188.976,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 138,
+     "lines": [
+      {
+       "start": 0,
+       "len": 9,
+       "text": "版式里没有的占位符",
+       "x": 72.444,
+       "y": 50.844,
+       "w": 216.005,
+       "h": 25.92
+      }
+     ]
+    },
+    {
+     "id": 102,
+     "name": "NoGeom 102",
+     "type": 17,
+     "x": 377.953,
+     "y": 47.244,
+     "w": 283.465,
+     "h": 188.976,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 138,
+     "lines": [
+      {
+       "start": 0,
+       "len": 8,
+       "text": "没写形状的文本框",
+       "x": 385.153,
+       "y": 50.844,
+       "w": 192.005,
+       "h": 28.8
+      }
+     ]
+    }
+   ],
+   "effects": [],
+   "triggerHidden": [],
+   "steps": 0,
+   "keptSlideshow": false
+  },
+  {
+   "index": 1,
+   "hidden": false,
+   "shapes": [
+    {
+     "id": 2,
+     "name": "Title 1",
+     "type": 14,
+     "x": 66.0,
+     "y": 28.75,
+     "w": 828.0,
+     "h": 104.375,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 138,
+     "lines": [
+      {
+       "start": 0,
+       "len": 9,
+       "text": "标题占位符只设填充",
+       "x": 73.2,
+       "y": 57.178,
+       "w": 396.005,
+       "h": 47.52
+      }
+     ]
+    }
+   ],
+   "effects": [],
+   "triggerHidden": [],
+   "steps": 0,
+   "keptSlideshow": false
+  },
+  {
+   "index": 2,
+   "hidden": false,
+   "shapes": [
+    {
+     "id": 2,
+     "name": "Title 1",
+     "type": 14,
+     "x": 66.0,
+     "y": 28.75,
+     "w": 828.0,
+     "h": 104.375,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 138,
+     "lines": [
+      {
+       "start": 0,
+       "len": 10,
+       "text": "版式里的图片项目符号",
+       "x": 73.2,
+       "y": 57.178,
+       "w": 440.005,
+       "h": 47.52
+      }
+     ]
+    },
+    {
+     "id": 3,
+     "name": "Text Placeholder 2",
+     "type": 14,
+     "x": 66.0,
+     "y": 143.75,
+     "w": 828.0,
+     "h": 342.625,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 138,
+     "lines": [
+      {
+       "start": 0,
+       "len": 6,
+       "text": "第一条要点\r",
+       "x": 91.2,
+       "y": 147.35,
+       "w": 147.625,
+       "h": 30.24
+      },
+      {
+       "start": 6,
+       "len": 18,
+       "text": "第二条要点 Second item\r",
+       "x": 91.2,
+       "y": 177.59,
+       "w": 304.75,
+       "h": 40.24
+      },
+      {
+       "start": 24,
+       "len": 5,
+       "text": "第三条要点",
+       "x": 91.2,
+       "y": 217.83,
+       "w": 140.005,
+       "h": 40.24
+      }
+     ]
+    }
+   ],
+   "effects": [],
+   "triggerHidden": [],
+   "steps": 0,
+   "keptSlideshow": false
+  }
+ ],
+ "ok": true
+}

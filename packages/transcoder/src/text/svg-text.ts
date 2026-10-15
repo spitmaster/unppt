@@ -35,6 +35,8 @@ export function textEl(txt: string, x: number | number[], y: number, s: RunStyle
   if (!kernOn(s)) css2.push('font-kerning:none');
   if (css2.length) a += ` style="${css2.join(';')}"`;
   if (s.outline) a += ` stroke="${css(s.outline.color)}" stroke-width="${n2(s.outline.width)}"${s.outline.color.a < 0.999 ? ` stroke-opacity="${n2(s.outline.color.a)}"` : ''}`;
+  // 人工加粗：描边宽度是字号的 1/56（实测 text-bold-light：按加粗前后笔画浓度的增量对齐）
+  else if (s.fakeBold) a += ` stroke="${css(s.color)}" stroke-width="${n2(s.size / 56)}" stroke-linejoin="round"${s.color.a < 0.999 ? ` stroke-opacity="${n2(s.color.a)}"` : ''}`;
   if (env?.doc && s.grad) a = a.replace(/ fill="[^"]*"( fill-opacity="[^"]*")?/, ` fill="${textGradient(s.grad, env)}"`);
   const fid = env ? textFilter(s, env) : '';
   if (fid) a += ` filter="url(#${fid})"`;
