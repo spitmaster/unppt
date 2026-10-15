@@ -2,7 +2,7 @@
 
 用法：
   python tools/powerpoint/export.py scan                 # 登记 samples/ 里的样本，报告新增/重复/删除
-  python tools/powerpoint/export.py run [--set all|testcases] [--force] [--only 哈希]
+  python tools/powerpoint/export.py run [--set all|testcases] [--force] [--only 哈希] [--static] [--until HH:MM]
   python tools/powerpoint/export.py one <pptx> <输出目录>  # 内部用：处理单个文件（子进程）
 
 每个样本的输出（.cache/ref/<哈希>/，测试用例则在 testcases/<名字>/）：
@@ -14,6 +14,10 @@
 静态图先导出 BMP 再无损转成 PNG：PowerPoint 直接导出的 PNG 是调色板图（灰度只剩 16 级、带抖动），
 浅色底纹会变成网点，和放映时看到的不一样。
 环境变量 UNPPT_KEEP_SLIDESHOW=1：已有放映截图的步骤图原样保留、不重新放映（重导参考图时不弹放映窗口）。
+
+--static：只导每页静态图、页尺寸和隐藏页（不读形状和文字行、不做动画步骤，快很多），大批量样本用。
+--until HH:MM：到点把当前这份导完就停，下次运行接着导（下班放一批，第二天上班前自己停）。
+打开文件一律只读、强制禁用宏；不更新链接，不填密码。
 
 注意：PowerPoint 只有一个实例。运行前如果你自己开着 PowerPoint，脚本会拒绝运行（避免动到你的文档）。
 """
@@ -34,6 +38,7 @@ from common import REF, ROOT, read_json, testcase_index, update_index, write_jso
 
 EXPORT_WIDTH = 1280
 TIMEOUT_SEC = 600
+STATIC_TIMEOUT_SEC = 300
 VERSION = 8  # 输出格式变化时加 1，会触发重新导出（5：只有段落/强调/路径动画才用放映截图；8：静态图先导 BMP 再转 PNG）
 
 # PowerPoint / Office 常量
@@ -303,7 +308,7 @@ def _export_png(slide, path: Path, width: int, height: int) -> None:
     bmp.unlink()
 
 
-def export_one(src: Path, out: Path) -> dict:
+def export_one(src: Path, out: Path, static: bool = False) -> dict:
     import pythoncom
     import win32com.client
 
@@ -314,8 +319,12 @@ def export_one(src: Path, out: Path) -> dict:
         app.DisplayAlerts = 1  # ppAlertsNone
     except Exception:
         pass
+    try:
+        app.AutomationSecurity = 3  # msoAutomationSecurityForceDisable：强制禁用宏
+    except Exception:
+        pass
     pres = app.Presentations.Open(str(src.resolve()), True, False, False)  # ReadOnly, Untitled=False, WithWindow=False
-    result = {"version": VERSION}
+    result = {"version": VERSION, "level": "static" if static else "full"}
     keep_shows = os.environ.get("UNPPT_KEEP_SLIDESHOW") == "1"
     try:
         if src.suffix.lower() != ".pptx":
@@ -332,6 +341,9 @@ def export_one(src: Path, out: Path) -> dict:
             slide = pres.Slides(idx)
             name = f"slide-{idx:03d}"
             _export_png(slide, out / f"{name}.png", width, height)
+            if static:
+                result["slides"].append({"index": idx - 1, "hidden": slide.SlideShowTransition.Hidden == MSO_TRUE, "shapes": [], "steps": 0})
+                continue
             info = {"index": idx - 1, "hidden": slide.SlideShowTransition.Hidden == MSO_TRUE,
                     "shapes": [_shape_info(s) for s in slide.Shapes]}
             effects = _timeline(slide)
@@ -366,7 +378,7 @@ def export_one(src: Path, out: Path) -> dict:
                         shp.Visible = v
             result["slides"].append(info)
         # 有动画的页：用放映截图覆盖上面"显示/隐藏"模拟出来的步骤图（更准确）
-        if any(needs_slideshow(si["effects"]) and not si["keptSlideshow"] for si in result["slides"]) and os.environ.get("UNPPT_NO_SLIDESHOW") != "1":
+        if not static and any(needs_slideshow(si["effects"]) and not si["keptSlideshow"] for si in result["slides"]) and os.environ.get("UNPPT_NO_SLIDESHOW") != "1":
             try:
                 capture_steps(pres, result["slides"], out, width, height)
             except Exception as e:  # 放映截图失败时保留模拟的步骤图
@@ -412,7 +424,16 @@ def powerpoint_pids() -> set[int]:
     return pids
 
 
-def run(items: dict, ref_dir_of, force: bool) -> None:
+def _past(until: str | None) -> bool:
+    """到了 --until 的时间没有：当前时间在 HH:MM 之后的两小时内（夜里启动、早上到点停）"""
+    if not until:
+        return False
+    now = time.localtime()
+    h, m = (int(x) for x in until.split(":"))
+    return (now.tm_hour, now.tm_min) >= (h, m) and (now.tm_hour, now.tm_min) < (h + 2, m)
+
+
+def run(items: dict, ref_dir_of, force: bool, static: bool = False, until: str | None = None) -> None:
     before = powerpoint_pids()
     if before:
         print("PowerPoint 正在运行。为避免动到你打开的文档，请先关闭 PowerPoint 再运行。")
@@ -421,19 +442,23 @@ def run(items: dict, ref_dir_of, force: bool) -> None:
     for key, item in items.items():
         out = ref_dir_of(key)
         ref = read_json(out / "ref.json")
-        if not force and ref and ref.get("version") == VERSION and ref.get("ok"):
+        # 已有完整导出、或者这次只要静态图而已有静态图，就跳过
+        if not force and ref and ref.get("version") == VERSION and ref.get("ok") and (static or ref.get("level", "full") == "full"):
             continue
         todo.append((key, item, out))
     print(f"需要导出 {len(todo)} 个（共 {len(items)} 个）")
     for n, (key, item, out) in enumerate(todo, 1):
+        if _past(until):
+            print(f"到了 {until}，停止（还剩 {len(todo) - n + 1} 个，下次运行接着导）")
+            break
         src = ROOT / item["paths"][0]
         t0 = time.time()
         if out.exists() and out.parent == REF:
             shutil.rmtree(out)
-        cmd = [sys.executable, __file__, "one", str(src), str(out)]
+        cmd = [sys.executable, __file__, "one", str(src), str(out)] + (["--static"] if static else [])
         status = "ok"
         try:
-            r = subprocess.run(cmd, capture_output=True, text=True, timeout=TIMEOUT_SEC,
+            r = subprocess.run(cmd, capture_output=True, text=True, timeout=STATIC_TIMEOUT_SEC if static else TIMEOUT_SEC,
                                encoding="utf-8", errors="replace")
             if r.returncode != 0:
                 status = "error"
@@ -455,12 +480,14 @@ def main():
     ap.add_argument("--set", default="all", choices=["all", "testcases"])
     ap.add_argument("--force", action="store_true")
     ap.add_argument("--only", default=None)
+    ap.add_argument("--static", action="store_true", help="只导每页静态图（大批量样本用）")
+    ap.add_argument("--until", default=None, help="HH:MM，到点导完当前这份就停")
     a = ap.parse_args()
 
     if a.cmd == "one":
         src, out = Path(a.args[0]), Path(a.args[1])
         try:
-            r = export_one(src, out)
+            r = export_one(src, out, a.static)
             print(json.dumps({"slides": len(r["slides"])}))
         except Exception:
             traceback.print_exc()
@@ -475,7 +502,7 @@ def main():
         items = {h: v for h, v in index.items() if v.get("present")}
         if a.only:
             items = {h: v for h, v in items.items() if h.startswith(a.only)}
-        run(items, lambda h: REF / h, a.force)
+        run(items, lambda h: REF / h, a.force, a.static, a.until)
         for h, v in items.items():
             ref = read_json(REF / h / "ref.json")
             v["status"] = "ok" if ref and ref.get("ok") else (read_json(REF / h / "error.json", {}) or {}).get("error", "error")
@@ -487,7 +514,7 @@ def main():
         items = testcase_index()
         if a.only:
             items = {k: v for k, v in items.items() if k == a.only}
-        run(items, lambda k: ROOT / items[k]["ref"], a.force)
+        run(items, lambda k: ROOT / items[k]["ref"], a.force, a.static, a.until)
 
 
 if __name__ == "__main__":
