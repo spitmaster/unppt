@@ -5,8 +5,15 @@ import { linkAttr } from '../common/links';
 import { attr, child, numAttr, type XEl } from '../io/xml';
 import type { RunStyle, StyleChain, TextEnv } from './types';
 
-/** 东亚字符集：GB2312、Big5、Shift-JIS、韩文（XML 里是有符号数） */
-const EA_CHARSETS = new Set(['-122', '-120', '-128', '-127', '134', '136', '128', '129']);
+/** 东亚字符集：GB2312、Big5、韩文；Shift-JIS 单列（XML 里是有符号数） */
+const EA_CHARSETS = new Set(['-122', '-120', '-127', '134', '136', '129']);
+const JP_CHARSETS = new Set(['-128', '128']);
+
+/** 字体的字符集类别：同一个字体名以整个文档里最后一次明确写的为准（font-charsets.ts），文档里没有时用这里写的 */
+function scriptOf(el: XEl | undefined, typeface: string, env: TextEnv): 'jp' | 'ea' | undefined {
+  const cs = env.fontCharsets?.get(typeface.toLowerCase()) ?? attr(el, 'charset') ?? '';
+  return JP_CHARSETS.has(cs) ? 'jp' : EA_CHARSETS.has(cs) ? 'ea' : undefined;
+}
 
 export const GROUP: Record<string, string> = {
   'a:noFill': 'fill', 'a:solidFill': 'fill', 'a:gradFill': 'fill', 'a:blipFill': 'fill', 'a:pattFill': 'fill', 'a:grpFill': 'fill',
@@ -89,7 +96,8 @@ export function runStyle(r: XEl, env: TextEnv, scale: number): RunStyle {
     spc: ((numAttr(r, 'spc') ?? 0) / 100) * scale * 96 / 72,
     kern: numAttr(r, 'kern') !== undefined ? numAttr(r, 'kern')! / 100 : undefined,
     caps: (attr(r, 'cap') as RunStyle['caps']) ?? 'none',
-    latinEaCharset: EA_CHARSETS.has(attr(child(r, 'a:latin'), 'charset') ?? ''),
+    latinScript: scriptOf(child(r, 'a:latin'), latin, env),
+    eaScript: scriptOf(child(r, 'a:ea'), ea, env),
     outline: textOutline(child(r, 'a:ln'), env),
     effects: child(r, 'a:effectLst')?.children.length ? child(r, 'a:effectLst') : undefined,
     grad: fill?.name === 'a:gradFill' ? fill : undefined,

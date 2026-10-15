@@ -5,6 +5,7 @@
 import type { ColorContext } from './color';
 import { OpcPackage } from '../io/package';
 import { attr, child, children, expandAlternate, numAttr, path, type XEl } from '../io/xml';
+import { scanFontCharsets } from './font-charsets';
 
 export const EMU_PER_PX = 9525;
 
@@ -134,6 +135,8 @@ export class Presentation {
   /** 放映设置（presProps.xml 的 p:showPr）：循环放映、是否使用计时；都是默认值时为 undefined */
   show?: { loop?: boolean; useTimings?: boolean };
   defaultTextStyle?: XEl;
+  /** 每个字体名在文档里的字符集（最后一次明确写的，见 font-charsets.ts），小写字体名 -> charset */
+  fontCharsets = new Map<string, string>();
   presPart = '';
   private masters = new Map<string, Master>();
   private layouts = new Map<string, Layout>();
@@ -165,6 +168,7 @@ export class Presentation {
       if (!rel) continue;
       this.slides.push({ part: rel.target, index: i++, hidden: false });
     }
+    this.fontCharsets = await scanFontCharsets(this.pkg, this.presPart, this.slides.map((s) => s.part));
     const propsRel = rels.find((r) => r.type === 'presProps');
     const showPr = child(propsRel ? await this.pkg.xml(propsRel.target) : undefined, 'p:showPr');
     const on = (k: string) => { const v = attr(showPr, k); return v === undefined ? undefined : v === '1' || v === 'true'; };

@@ -118,7 +118,7 @@ export async function renderShape(r: RenderContext, el: XEl, ctx: SlideContext, 
   const fontRef = child(style, 'a:fontRef');
   const textEnv: TextEnv = {
     colors, theme: ctx.theme, fonts: r.env.fonts, missingFonts: r.env.missingFonts,
-    fontRefColor: colorIn(fontRef, colors), fontRef, uid, embed: r.env.embed, doc: r.doc,
+    fontRefColor: colorIn(fontRef, colors), fontRef, fontCharsets: r.env.pres.fontCharsets, uid, embed: r.env.embed, doc: r.doc,
     rels: await r.env.pres.pkg.rels(ctx.part),
     images: r.images, part: ctx.part, slideNumber: ctx.slideNumber,
     // 外框对齐了整像素（没转动）、所在坐标系没缩放时，文字基线也对齐整像素

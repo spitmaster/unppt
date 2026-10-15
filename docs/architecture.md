@@ -51,7 +51,7 @@ flowchart TB
   style["style/<br/>fill 填充、pattern 图案（实测点阵）<br/>line 线条（含复合线型、渐变线）、arrowheads 线端箭头（实测几何，线在箭头处截短）、gradient-stops 渐变色标（实测插值规律）、blip 图片调整<br/>lighting 三维正面提亮、camera 三维旋转投影（灯光常量在 model/light-rig.ts、正面颜色实测表 model/face-light-data.ts）、perspective 图片的网格透视"]
   font["font/<br/>TrueType 解析、cmap.ts 码点→字形（含符号字体）、字距、字形轮廓 glyf.ts、子集化 subset.ts（HarfBuzz 的 hb-subset WASM，打进 JS）<br/>嵌入字体还原 eot.ts → lzcomp.ts → ctf.ts，sfnt.ts 读写公共部分"]
   geometry["geometry/<br/>公式引擎、187 种预设形状、40 种文字变形<br/>路径遍历 walkGeometry（输出 SVG 或按点采样）"]
-  model["model/<br/>演示文稿 / 主题 / 母版 / 版式、颜色、notes 演讲者备注"]
+  model["model/<br/>演示文稿 / 主题 / 母版 / 版式、颜色、notes 演讲者备注<br/>font-charsets 字体名的字符集（缺失字体选替代字体用）"]
   common["common/<br/>SVG 输出工具、超链接"]
   io["io/<br/>数据源、ZIP（zip.js）、XML（saxes）、OPC 包"]
   entry --> anim & render & media & font & output & preview
