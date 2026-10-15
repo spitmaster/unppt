@@ -134,4 +134,4 @@ export interface TextBox {
 export interface Bullet { text: string; style: RunStyle; x: number; width: number; family: string; face?: FontFace; image?: string }
 
 /** 排好的一段 */
-export interface ParagraphLayout { lines: Line[]; spcBef: number; spcAft: number; lineSpc: { pct?: number; pts?: number }; algn: string; bullet?: Bullet; uid?: string; }
+export interface ParagraphLayout { lines: Line[]; spcBef: number; spcAft: number; lineSpc: { pct?: number; pts?: number }; algn: string; bullet?: Bullet; uid?: string; fontAlgn?: string; }

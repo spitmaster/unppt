@@ -2756,6 +2756,54 @@ def table_linespacing(app):
     return p
 
 
+TABLE_FONT_ALGNS = [None, "ctr", "base", "t"]
+
+
+def table_fontalgn(app):
+    """表格行高由 1.5 倍行距文字撑开时，段落的字体对齐（fontAlgn）决定最后一行下方的空白算不算：
+    默认 / base 不算，ctr、t 按完整行高（保存后改 XML）"""
+    p = new_pres(app)
+    s = blank(p)
+    for k in range(len(TABLE_FONT_ALGNS)):
+        sh = s.Shapes.AddTable(2, 1, 40 + k * 220, 60, 160, 20)
+        sh.Name = f"FA{k}"
+        t = sh.Table
+        for r in (1, 2):
+            t.Rows(r).Height = 10
+            tf = t.Cell(r, 1).Shape.TextFrame
+            tf.MarginTop = tf.MarginBottom = 0
+            tf.TextRange.Text = "一二三四五六七八九十一二三四"
+            tf.TextRange.Font.Size = 14
+            tf.TextRange.Font.Name = "Microsoft YaHei"
+            tf.TextRange.Font.NameFarEast = "Microsoft YaHei"
+            pf = t.Cell(r, 1).Shape.TextFrame2.TextRange.ParagraphFormat
+            pf.LineRuleWithin = -1
+            pf.SpaceWithin = 1.5
+    return p
+
+
+def _patch_fontalgn(path):
+    import re
+    import zipfile
+    tmp = path.with_suffix(".tmp")
+    with zipfile.ZipFile(path) as zin, zipfile.ZipFile(tmp, "w", zipfile.ZIP_DEFLATED) as zout:
+        for item in zin.infolist():
+            data = zin.read(item.filename)
+            if item.filename == "ppt/slides/slide1.xml":
+                xml = data.decode("utf8")
+                for k, al in enumerate(TABLE_FONT_ALGNS):
+                    if not al:
+                        continue
+                    g = re.search(rf'<p:graphicFrame>(?:(?!</p:graphicFrame>).)*name="FA{k}".*?</p:graphicFrame>', xml, re.S).group(0)
+                    xml = xml.replace(g, re.sub(r"<a:pPr([^>]*)>", rf'<a:pPr\1 fontAlgn="{al}">', g))
+                data = xml.encode("utf8")
+            zout.writestr(item, data)
+    tmp.replace(path)
+
+
+table_fontalgn.patch = _patch_fontalgn
+
+
 THEME_FONT_LANGS = ['zh-CN', 'ja-JP', 'zh-TW', 'ko-KR', 'en-US', None]
 
 
@@ -3528,7 +3576,7 @@ def _patch_missing_jp(path):
 text_missing_font_jp.patch = _patch_missing_jp
 
 
-CASES = [shapes_all, text_sizes, text_align, text_spacing, text_bullets, text_missing_font, shapes_basic, fills_lines, table_basic, group_rotate, anim_basic, anim_auto, charts_basic, pictures, smartart, text_effects, text_layout, table_merge, links, emf_images, anim_advanced, charts_labels, freeform_icons, media_audio, anim_trigger, wmf_images, anim_iterate, picture_transparent, charts_more, shape_effects, equations, anim_path, anim_emphasis, transitions, fills_patterns, text_decoration, anim_entrance, svg_images, charts_markers, hidden_slides, media_background, text_glow_reflection, text_tabs, text_picture_bullets, fills_texture, transition_morph, text_embedded_fonts, text_warp, anim_repeat, charts_sizes, slide_timings, lines_compound, table_diagonal, lines_gradient, fills_radial, fills_rect_gradient, shapes_3d, table_vertical, transitions_more, anim_sound, anim_build, anim_after, anim_text_emphasis, charts_bubble, media_video, charts_options, charts_negative, shapes_bevel, charts_legend, shapes_3d_rotation, smartart_3d, charts_ofpie, charts_3d, anim_group_emphasis, activex_controls, charts_extras, charts_axis_titles, charts_fills, charts_outlines, charts_labels_more, group_scale, group_flip, charts_3d_line, charts_legend_pos, charts_crowded_labels, charts_label_skip, charts_bar_long_names, charts_multilevel, picture_recolor, text_symbols, text_numbering, lines_arrows, table_styles, shapes_styles, charts_styles, placeholders_inherit, text_bold_light, ole_objects, text_hanging_punct, speaker_notes, pictures_tiff, placeholders_picture, pictures_exif, text_picture_fill, pictures_mislabeled, emf_alphablend, placeholders_orphan, picture_fill_rect, slide_number_fields, table_builtin_styles, smartart_matrix, text_layout_unit, colors_gamma, text_latin_cjk_font, text_default_style, text_missing_font_jp, text_ea_line_break, text_ambiguous_punct, text_charset_slides, table_rowspan_tall, text_autofit_round, shapes_3d_contour, emf_clip_modes, placeholders_picture_geom, emf_gradient_fill, text_theme_font_lang, text_anchor_linespacing, table_linespacing]
+CASES = [shapes_all, text_sizes, text_align, text_spacing, text_bullets, text_missing_font, shapes_basic, fills_lines, table_basic, group_rotate, anim_basic, anim_auto, charts_basic, pictures, smartart, text_effects, text_layout, table_merge, links, emf_images, anim_advanced, charts_labels, freeform_icons, media_audio, anim_trigger, wmf_images, anim_iterate, picture_transparent, charts_more, shape_effects, equations, anim_path, anim_emphasis, transitions, fills_patterns, text_decoration, anim_entrance, svg_images, charts_markers, hidden_slides, media_background, text_glow_reflection, text_tabs, text_picture_bullets, fills_texture, transition_morph, text_embedded_fonts, text_warp, anim_repeat, charts_sizes, slide_timings, lines_compound, table_diagonal, lines_gradient, fills_radial, fills_rect_gradient, shapes_3d, table_vertical, transitions_more, anim_sound, anim_build, anim_after, anim_text_emphasis, charts_bubble, media_video, charts_options, charts_negative, shapes_bevel, charts_legend, shapes_3d_rotation, smartart_3d, charts_ofpie, charts_3d, anim_group_emphasis, activex_controls, charts_extras, charts_axis_titles, charts_fills, charts_outlines, charts_labels_more, group_scale, group_flip, charts_3d_line, charts_legend_pos, charts_crowded_labels, charts_label_skip, charts_bar_long_names, charts_multilevel, picture_recolor, text_symbols, text_numbering, lines_arrows, table_styles, shapes_styles, charts_styles, placeholders_inherit, text_bold_light, ole_objects, text_hanging_punct, speaker_notes, pictures_tiff, placeholders_picture, pictures_exif, text_picture_fill, pictures_mislabeled, emf_alphablend, placeholders_orphan, picture_fill_rect, slide_number_fields, table_builtin_styles, smartart_matrix, text_layout_unit, colors_gamma, text_latin_cjk_font, text_default_style, text_missing_font_jp, text_ea_line_break, text_ambiguous_punct, text_charset_slides, table_rowspan_tall, text_autofit_round, shapes_3d_contour, emf_clip_modes, placeholders_picture_geom, emf_gradient_fill, text_theme_font_lang, text_anchor_linespacing, table_linespacing, table_fontalgn]
 
 
 def main():

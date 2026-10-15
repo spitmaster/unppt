@@ -45,10 +45,12 @@ export function placeLines(
     if (i < layouts.length - 1) total += pl.spcAft;
   });
   // 实测（COM 量顶端 / 居中对齐的行位置；表格行高）：文字块的高度里，多倍行距的最后一行只算到基线加单倍行框里的下伸，
-  // 下面多出的空白不计入——居中、底端对齐和撑高表格行都按这个高度（1.5 倍、2 倍行距都吻合到 0.01 磅）
+  // 下面多出的空白不计入——居中、底端对齐和撑高表格行都按这个高度（1.5 倍、2 倍行距都吻合到 0.01 磅）。
+  // 段落的字体对齐（fontAlgn）是 ctr、t 时按完整行高（实测表格行高）
   const lastP = layouts[layouts.length - 1], last = lastP?.lines[lastP.lines.length - 1];
   const lastLh = last ? lineHeight(last, lastP.lineSpc) : 0, lastBox = last ? last.size * 1.2 : 0;
-  const trim = last && lastLh > lastBox + 0.01 ? lastLh * (1 - TALL_BASELINE) - lastBox * last.descent / (last.ascent + last.descent || 1) : 0;
+  const full = lastP?.fontAlgn === 'ctr' || lastP?.fontAlgn === 't';
+  const trim = last && !full && lastLh > lastBox + 0.01 ? lastLh * (1 - TALL_BASELINE) - lastBox * last.descent / (last.ascent + last.descent || 1) : 0;
   const availH = outer.h - tIns - bIns, shown = total - Math.max(0, trim);
   if (out) out.height = shown + tIns + bIns;
   let y = tIns + (numCol > 1 ? 0 : anchor === 'ctr' ? (availH - shown) / 2 : anchor === 'b' ? availH - shown : 0);
