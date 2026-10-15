@@ -2982,7 +2982,136 @@ def text_layout_unit(app):
     return p
 
 
-CASES = [shapes_all, text_sizes, text_align, text_spacing, text_bullets, text_missing_font, shapes_basic, fills_lines, table_basic, group_rotate, anim_basic, anim_auto, charts_basic, pictures, smartart, text_effects, text_layout, table_merge, links, emf_images, anim_advanced, charts_labels, freeform_icons, media_audio, anim_trigger, wmf_images, anim_iterate, picture_transparent, charts_more, shape_effects, equations, anim_path, anim_emphasis, transitions, fills_patterns, text_decoration, anim_entrance, svg_images, charts_markers, hidden_slides, media_background, text_glow_reflection, text_tabs, text_picture_bullets, fills_texture, transition_morph, text_embedded_fonts, text_warp, anim_repeat, charts_sizes, slide_timings, lines_compound, table_diagonal, lines_gradient, fills_radial, fills_rect_gradient, shapes_3d, table_vertical, transitions_more, anim_sound, anim_build, anim_after, anim_text_emphasis, charts_bubble, media_video, charts_options, charts_negative, shapes_bevel, charts_legend, shapes_3d_rotation, smartart_3d, charts_ofpie, charts_3d, anim_group_emphasis, activex_controls, charts_extras, charts_axis_titles, charts_fills, charts_outlines, charts_labels_more, group_scale, group_flip, charts_3d_line, charts_legend_pos, charts_crowded_labels, charts_label_skip, charts_bar_long_names, charts_multilevel, picture_recolor, text_symbols, text_numbering, lines_arrows, table_styles, shapes_styles, charts_styles, placeholders_inherit, text_bold_light, ole_objects, text_hanging_punct, speaker_notes, pictures_tiff, placeholders_picture, pictures_exif, text_picture_fill, pictures_mislabeled, emf_alphablend, placeholders_orphan, picture_fill_rect, slide_number_fields, table_builtin_styles, smartart_matrix, text_layout_unit]
+GAMMA_COLORS = [
+    '<a:srgbClr val="FEEC94"><a:shade val="46275"/></a:srgbClr>',
+    '<a:srgbClr val="FEEC94"><a:gamma/><a:shade val="46275"/><a:invGamma/></a:srgbClr>',
+    '<a:srgbClr val="FEEC94"><a:tint val="40000"/></a:srgbClr>',
+    '<a:srgbClr val="FEEC94"><a:gamma/><a:tint val="40000"/><a:invGamma/></a:srgbClr>',
+    '<a:srgbClr val="4472C4"><a:shade val="50000"/></a:srgbClr>',
+    '<a:srgbClr val="4472C4"><a:gamma/><a:shade val="50000"/><a:invGamma/></a:srgbClr>',
+    '<a:srgbClr val="4472C4"><a:gamma/><a:lumMod val="50000"/><a:invGamma/></a:srgbClr>',
+    '<a:srgbClr val="4472C4"><a:gamma/><a:invGamma/></a:srgbClr>',
+]
+
+
+def colors_gamma(app):
+    """颜色变换里的 gamma / invGamma（老 .ppt 转换来的文件常见）：同一个颜色的 shade、tint、lumMod 带和不带 gamma 包裹对照
+    （保存后改 XML，每个矩形先填一个记号颜色）"""
+    p = new_pres(app)
+    s = blank(p)
+    for k in range(len(GAMMA_COLORS)):
+        sh = s.Shapes.AddShape(1, 40 + (k % 4) * 225, 60 + (k // 4) * 240, 200, 200)
+        sh.Fill.ForeColor.RGB = RGB(10, 11, k + 1)
+        sh.Line.Visible = 0
+    return p
+
+
+def _patch_gamma(path):
+    import zipfile
+    tmp = path.with_suffix(".tmp")
+    with zipfile.ZipFile(path) as zin, zipfile.ZipFile(tmp, "w", zipfile.ZIP_DEFLATED) as zout:
+        for item in zin.infolist():
+            data = zin.read(item.filename)
+            if item.filename == "ppt/slides/slide1.xml":
+                xml = data.decode("utf8")
+                for k, c in enumerate(GAMMA_COLORS):
+                    xml = xml.replace(f'<a:srgbClr val="0A0B{k + 1:02X}"/>', c)
+                data = xml.encode("utf8")
+            zout.writestr(item, data)
+    tmp.replace(path)
+
+
+colors_gamma.patch = _patch_gamma
+
+
+LATIN_CJK_FONTS = [
+    '<a:latin typeface="楷体" pitchFamily="49" charset="-122"/>',
+    '<a:latin typeface="楷体_GB2312" pitchFamily="49" charset="-122"/>',
+    '<a:latin typeface="楷体"/>',
+    '<a:latin typeface="Arial"/>',
+    '<a:latin typeface="黑体" pitchFamily="49" charset="-122"/><a:ea typeface="楷体" pitchFamily="49" charset="-122"/>',
+    '<a:latin typeface="楷体_GB2312" pitchFamily="49" charset="-122"/><a:ea typeface="宋体" pitchFamily="2" charset="-122"/>',
+]
+
+
+def text_latin_cjk_font(app):
+    """只写了西文字体、没写中文字体的文字（老 .ppt 转换来的文件常见）：西文字体标了中文字符集 / 没标 / 缺失，
+    中文字用哪个字体；对照组写了中文字体（保存后改 XML，先用记号字体名）"""
+    p = new_pres(app)
+    s = blank(p)
+    for k in range(len(LATIN_CJK_FONTS)):
+        tb = s.Shapes.AddTextbox(1, 40, 20 + k * 85, 880, 70)
+        tr = tb.TextFrame.TextRange
+        tr.Text = "汉字排版测试 Font ABC 123"
+        tr.Font.Size = 32
+        tr.Font.Bold = -1 if k == 1 else 0
+        tr.Font.Name = f"MarkerFont{k}"
+    return p
+
+
+def _patch_latin_cjk(path):
+    import re
+    import zipfile
+    tmp = path.with_suffix(".tmp")
+    with zipfile.ZipFile(path) as zin, zipfile.ZipFile(tmp, "w", zipfile.ZIP_DEFLATED) as zout:
+        for item in zin.infolist():
+            data = zin.read(item.filename)
+            if item.filename == "ppt/slides/slide1.xml":
+                xml = data.decode("utf8")
+                for k, f in enumerate(LATIN_CJK_FONTS):
+                    xml = re.sub(rf'<a:latin typeface="MarkerFont{k}"[^>]*/>', f, xml)
+                    xml = re.sub(rf'<a:(ea|cs) typeface="MarkerFont{k}"[^>]*/>', "", xml)
+                data = xml.encode("utf8")
+            zout.writestr(item, data)
+    tmp.replace(path)
+
+
+text_latin_cjk_font.patch = _patch_latin_cjk
+
+
+def text_default_style(app):
+    """非占位符文字的默认样式：演示文稿默认样式（presentation.xml 的 defaultTextStyle）和母版 otherStyle 写成不同的
+    字号、颜色、字体（保存后改 XML），看文本框、形状、表格里没写格式的文字跟哪个"""
+    p = new_pres(app)
+    s = blank(p)
+    tb = s.Shapes.AddTextbox(1, 40, 40, 860, 80)
+    tb.TextFrame.TextRange.Text = "文本框 Text Box"
+    sh = s.Shapes.AddShape(1, 40, 160, 420, 140)
+    sh.TextFrame.TextRange.Text = "形状 Shape"
+    t = s.Shapes.AddTable(2, 2, 40, 340, 600, 120).Table
+    for r in range(1, 3):
+        for c in range(1, 3):
+            t.Cell(r, c).Shape.TextFrame.TextRange.Text = f"表格 Cell{r}{c}"
+    return p
+
+
+def _patch_default_style(path):
+    import re
+    import zipfile
+    tmp = path.with_suffix(".tmp")
+
+    def lvl1(xml, block, attrs, body):
+        m = re.search(rf"<{block}>.*?</{block}>", xml, re.S)
+        part = m.group(0)
+        new = re.sub(r"(<a:lvl1pPr[^>]*>.*?)<a:defRPr[^>]*?(/>|>.*?</a:defRPr>)", lambda mm: mm.group(1) + f"<a:defRPr {attrs}>{body}</a:defRPr>", part, count=1, flags=re.S)
+        return xml.replace(part, new)
+    with zipfile.ZipFile(path) as zin, zipfile.ZipFile(tmp, "w", zipfile.ZIP_DEFLATED) as zout:
+        for item in zin.infolist():
+            data = zin.read(item.filename)
+            if item.filename == "ppt/presentation.xml":
+                data = lvl1(data.decode("utf8"), "p:defaultTextStyle", 'sz="2000" kern="1200"',
+                            '<a:solidFill><a:srgbClr val="C00000"/></a:solidFill><a:latin typeface="Courier New"/><a:ea typeface="楷体"/><a:cs typeface="+mn-cs"/>').encode("utf8")
+            elif item.filename == "ppt/slideMasters/slideMaster1.xml":
+                data = lvl1(data.decode("utf8"), "p:otherStyle", 'sz="4000" kern="1200"',
+                            '<a:solidFill><a:srgbClr val="0070C0"/></a:solidFill><a:latin typeface="Arial Black"/><a:ea typeface="黑体"/><a:cs typeface="+mn-cs"/>').encode("utf8")
+            zout.writestr(item, data)
+    tmp.replace(path)
+
+
+text_default_style.patch = _patch_default_style
+
+
+CASES = [shapes_all, text_sizes, text_align, text_spacing, text_bullets, text_missing_font, shapes_basic, fills_lines, table_basic, group_rotate, anim_basic, anim_auto, charts_basic, pictures, smartart, text_effects, text_layout, table_merge, links, emf_images, anim_advanced, charts_labels, freeform_icons, media_audio, anim_trigger, wmf_images, anim_iterate, picture_transparent, charts_more, shape_effects, equations, anim_path, anim_emphasis, transitions, fills_patterns, text_decoration, anim_entrance, svg_images, charts_markers, hidden_slides, media_background, text_glow_reflection, text_tabs, text_picture_bullets, fills_texture, transition_morph, text_embedded_fonts, text_warp, anim_repeat, charts_sizes, slide_timings, lines_compound, table_diagonal, lines_gradient, fills_radial, fills_rect_gradient, shapes_3d, table_vertical, transitions_more, anim_sound, anim_build, anim_after, anim_text_emphasis, charts_bubble, media_video, charts_options, charts_negative, shapes_bevel, charts_legend, shapes_3d_rotation, smartart_3d, charts_ofpie, charts_3d, anim_group_emphasis, activex_controls, charts_extras, charts_axis_titles, charts_fills, charts_outlines, charts_labels_more, group_scale, group_flip, charts_3d_line, charts_legend_pos, charts_crowded_labels, charts_label_skip, charts_bar_long_names, charts_multilevel, picture_recolor, text_symbols, text_numbering, lines_arrows, table_styles, shapes_styles, charts_styles, placeholders_inherit, text_bold_light, ole_objects, text_hanging_punct, speaker_notes, pictures_tiff, placeholders_picture, pictures_exif, text_picture_fill, pictures_mislabeled, emf_alphablend, placeholders_orphan, picture_fill_rect, slide_number_fields, table_builtin_styles, smartart_matrix, text_layout_unit, colors_gamma, text_latin_cjk_font, text_default_style]
 
 
 def main():
