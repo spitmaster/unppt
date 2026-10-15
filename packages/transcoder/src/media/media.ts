@@ -5,6 +5,7 @@
 import type { OpcPackage } from '../io/package';
 import type { Presentation } from '../model/model';
 import { IMAGE_DECODERS } from './decoders';
+import { clearOrientation } from './exif-orientation';
 import type { ImageDecoder } from './image-decoder';
 import { imageInfo, type ImageInfo } from './image-info';
 import { colorKey } from './color-key';
@@ -168,9 +169,9 @@ export class MediaStore {
     const ext = extOf(target);
     const decoder = isImage ? this.decoders.get(ext) : undefined;
     if (decoder) {
-      // 浏览器不能直接显示的格式（EMF / WMF 等）：转换后存一份（同一张只转一次）
+      // 浏览器不能直接显示的格式（EMF / WMF / TIFF 等）：转换后存一份（同一张只转一次）
       const bytes = await this.pkg.zip.read(target);
-      const img = bytes ? decoder.decode(bytes) : undefined;
+      const img = bytes ? await decoder.decode(bytes) : undefined;
       if (!img) { this.pres.warn(`${ext.toUpperCase()} 图片无法解析`); return undefined; }
       if (this.inlineLimit >= 0) return this.asset(`data:${img.mime};base64,${base64(img.data)}`);
       const name = mediaName(target, entry.crc, img.mime === 'image/svg+xml' ? 'svg' : img.mime.slice(6));
@@ -182,6 +183,17 @@ export class MediaStore {
       return undefined;
     }
     const mime = MIME[ext] ?? 'application/octet-stream';
+    if (isImage && (ext === 'jpg' || ext === 'jpeg' || ext === 'jfif')) {
+      // JPEG：去掉 EXIF 方向标记（PowerPoint 按原始像素画，浏览器默认会按标记再转一次，见 exif-orientation.ts）
+      const raw = await this.pkg.zip.read(target);
+      if (!raw) return undefined;
+      const fixed = clearOrientation(raw);
+      const bytes = fixed ?? raw;
+      if (bytes.length <= this.inlineLimit) return this.asset(`data:${mime};base64,${base64(bytes)}`);
+      const name = mediaName(target, entry.crc, ext);
+      await this.file(name, bytes, async () => { const b = await this.pkg.zip.read(target); return b && (clearOrientation(b) ?? b); });
+      return name;
+    }
     if (isImage && entry.size <= this.inlineLimit) {
       // 同一张图片只存一份（母版上的 logo、背景每页都会用到）
       const bytes = await this.pkg.zip.read(target);
