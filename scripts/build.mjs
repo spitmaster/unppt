@@ -34,6 +34,8 @@ await build({
   platform: 'neutral',
   // 第三方类库（saxes 等）只写了 main 字段，通用平台默认不读，要显式指定
   mainFields: ['module', 'main'],
+  // 字体子集化用的 harfbuzz-subset.wasm 直接打进 JS
+  loader: { '.wasm': 'binary' },
   target: ['es2020'],
   define,
 });
@@ -43,6 +45,7 @@ await build({
   bundle: true,
   format: 'esm',
   platform: 'node',
+  loader: { '.wasm': 'binary' },
   target: ['node20'],
   define,
 });

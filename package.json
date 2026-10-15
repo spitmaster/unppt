@@ -16,8 +16,11 @@
   "devDependencies": {
     "@resvg/resvg-wasm": "2.6.2",
     "@types/node": "^26.6.5",
+    "@zip.js/zip.js": "2.23.0",
     "esbuild": "^0.28.2",
+    "harfbuzzjs": "1.6.3",
     "saxes": "6.0.0",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "utif2": "4.1.0"
   }
 }

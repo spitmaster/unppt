@@ -128,7 +128,7 @@ export async function convert(input: InputSource, options: ConvertOptions): Prom
   async function* fontFiles(): AsyncGenerator<{ font: DeckFont; data: Uint8Array }> {
     for (const [face, u] of usage) {
       const data = await subsetFont(face.source, face.offset, u.cps, u.alias);
-      if (!data) { pres.warn(`字体暂不能嵌入（不是 TrueType 轮廓）：${face.displayFamily}`); continue; }
+      if (!data) { pres.warn(`字体子集化失败，没有嵌入：${face.displayFamily}`); continue; }
       const font: DeckFont = { family: u.alias, source: face.displayFamily, weight: face.bold ? 'bold' : 'normal', style: face.italic ? 'italic' : 'normal', format: 'woff' };
       deckFonts.push(font);
       yield { font, data };

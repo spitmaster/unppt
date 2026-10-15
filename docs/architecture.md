@@ -45,15 +45,15 @@ flowchart TB
   anim["anim/<br/>时间线编排 anim.ts、单个效果 effect.ts<br/>进入/退出的行为 behaviors.ts（关键帧、公式、时间变换原样带给播放器）<br/>时间设置和变换 timing-util.ts、动画和切换的声音 sound.ts<br/>音视频放映选项 media-opts.ts<br/>强调终态 emphasis.ts、运动路径 motion.ts、切换 transition.ts"]
   render["render/<br/>render.ts 分派、继承；context.ts 渲染能力接口<br/>elements/ 形状、图片、组合；table.ts 表格（table-style.ts 表格样式的叠加、边框、整表背景）；box.ts 位置框<br/>controls.ts ActiveX 控件预览图；projection.ts 透视相机下逐点投影、pixel-snap.ts 形状和图片外框对齐整像素、group-map.ts 组合缩放时子元素换算<br/>frames/ ← FrameHandler 扩展点"]
   chart["chart/<br/>图表：chart.ts 标题和编排、legend.ts 图例<br/>cat-chart.ts 分类轴图、cat3d.ts 三维簇状/堆积柱形图、cat3d-depth.ts 系列沿深度排的三维柱形图、box3d.ts 立方体和墙网格线、cat3d-persp.ts 透视的三维折线/面积图（camera3d.ts 相机和光照、persp-layout.ts 箱体比例和摆放、solids3d.ts 带子和厚片的面）、sides.ts 坐标轴在哪一侧和刻度线、cat-labels.ts 分类标签放不下时折行或转斜、多级分类的外层标签、pixel-grid.ts 整像素对齐<br/>axis.ts 刻度（对数、逆序、显示单位）、xy.ts 数值×数值坐标<br/>trendline.ts 趋势线、error-bars.ts 误差线、data-table.ts 数据表、axis-title.ts 坐标轴标题、area-fill.ts 图表区和绘图区背景<br/>layout.ts 实测间距规律、types/ ← ChartType 扩展点"]
-  media["media/<br/>图片、音视频、共享资源<br/>decoders ← ImageDecoder 扩展点<br/>color-key.ts 在原图上抠透明色（png-key.ts、jpeg.ts 自研 JPEG 解码、png.ts 编码）"]
+  media["media/<br/>图片、音视频、共享资源<br/>decoders ← ImageDecoder 扩展点（emf、wmf、tiff 用 utif2）<br/>exif-orientation.ts 去掉 JPEG 的方向标记<br/>color-key.ts 在原图上抠透明色（png-key.ts、jpeg.ts 自研 JPEG 解码、png.ts 编码）"]
   text["text/<br/>文本框属性 → 逐段排版（测量、断行、项目符号）→ 排位置 placeLines → 输出 SVG<br/>艺术字变形 warp.ts（字形轮廓弯进包络 / 沿路径排）"]
   effects["effects/<br/>← ShapeEffect 扩展点（形状、文字共用）、映像"]
   style["style/<br/>fill 填充、pattern 图案（实测点阵）<br/>line 线条（含复合线型、渐变线）、arrowheads 线端箭头（实测几何，线在箭头处截短）、gradient-stops 渐变色标（实测插值规律）、blip 图片调整<br/>lighting 三维正面提亮、camera 三维旋转投影（灯光常量在 model/light-rig.ts、正面颜色实测表 model/face-light-data.ts）、perspective 图片的网格透视"]
-  font["font/<br/>TrueType 解析、cmap.ts 码点→字形（含符号字体）、字距、字形轮廓 glyf.ts、子集化 subset.ts<br/>嵌入字体还原 eot.ts → lzcomp.ts → ctf.ts，sfnt.ts 读写公共部分"]
+  font["font/<br/>TrueType 解析、cmap.ts 码点→字形（含符号字体）、字距、字形轮廓 glyf.ts、子集化 subset.ts（HarfBuzz 的 hb-subset WASM，打进 JS）<br/>嵌入字体还原 eot.ts → lzcomp.ts → ctf.ts，sfnt.ts 读写公共部分"]
   geometry["geometry/<br/>公式引擎、187 种预设形状、40 种文字变形<br/>路径遍历 walkGeometry（输出 SVG 或按点采样）"]
   model["model/<br/>演示文稿 / 主题 / 母版 / 版式、颜色、notes 演讲者备注"]
   common["common/<br/>SVG 输出工具、超链接"]
-  io["io/<br/>数据源、ZIP、XML、OPC 包"]
+  io["io/<br/>数据源、ZIP（zip.js）、XML（saxes）、OPC 包"]
   entry --> anim & render & media & font & output & preview
   preview --> media
   output --> media
@@ -112,7 +112,7 @@ flowchart TB
 ```mermaid
 flowchart TB
   subgraph ext[扩展点（接口 + 注册表）]
-    dec[ImageDecoder<br/>emf / wmf / …]
+    dec[ImageDecoder<br/>emf / wmf / tiff / …]
     of[OutputForm<br/>single / data / …]
     eff[ShapeEffect<br/>外阴影 / 发光 / 柔化边缘 / 内阴影 / …]
     frame[FrameHandler<br/>表格 / 图表 / SmartArt / OLE]
@@ -125,7 +125,7 @@ flowchart TB
 | 扩展点 | 接口 | 怎么加一个新的 |
 |---|---|---|
 | 产物形式 | `OutputForm`（`output/output.ts`） | 新建 `output/xxx.ts` 导出一个 `OutputForm`（名字、小图片要不要内联、怎么把 `OutputSource` 给的逐页数据 / 字体 / 元数据写成文件），在 `output/forms.ts` 加一行。例：`single.ts`、`paged.ts`（paged、pages 两种）、`data.ts`。播放器只认两种入口：`#unppt-meta`（数据都在页面里）和 `#unppt-index`（按需加载），新形式复用其中一种 |
-| 图片格式 | `ImageDecoder`（`media/image-decoder.ts`） | 新建 `media/xxx.ts` 导出一个 `ImageDecoder`，在 `media/decoders.ts` 加一行。例：`emf.ts`、`wmf.ts` |
+| 图片格式 | `ImageDecoder`（`media/image-decoder.ts`） | 新建 `media/xxx.ts` 导出一个 `ImageDecoder`，在 `media/decoders.ts` 加一行。例：`emf.ts`、`wmf.ts`、`tiff.ts`（解码交给 utif2，编码用 png.ts） |
 | 形状效果 | `ShapeEffect`（`effects/shape-effect.ts`） | 新建 `effects/xxx.ts` 导出一个 `ShapeEffect`（返回一层滤镜：画在形状下面 / 替换形状 / 盖在上面），在 `effects/effects.ts` 按叠放顺序加一行。例：`glow.ts`、`soft-edge.ts`、`outer-shadow.ts`、`inner-shadow.ts`。不在 `a:effectLst` 里的层（三维棱台 `bevel.ts`，来自 `a:sp3d`）通过 `effectFilter` 的 `extra` 参数加入 |
 | graphicFrame 内容 | `FrameHandler`（`render/frames/frame-handler.ts`） | 新建 `render/frames/xxx-frame.ts` 导出一个 `FrameHandler`（按 `a:graphicData` 的 uri 结尾匹配），在 `render/frames/frames.ts` 加一行。handler 只依赖窄接口 `FrameRenderer`；需要内部单独做动画的部分时用传进来的框编号拼子编号（拼法统一在 `common/uid.ts`，例：SmartArt 的每个形状）。例：表格、图表、SmartArt、OLE |
 | 图表类型 | `ChartType`（`chart/chart-type.ts`） | 新建 `chart/types/xxx.ts` 导出一个 `ChartType`：声明对应的 XML 元素名、读系列的规则、图例样式；占满绘图区的图实现 `render`，画在共享分类轴上（可组合）的图实现 `renderOnAxes`，坐标一律用 `CategoryFrame` 的 `catPx` / `catSpan` / `valPx` 换算（坐标轴逆序等由 `cat-chart.ts` 处理，类型不用管）。趋势线由公共部分画（`extras.ts`），误差线由类型在数据点上调用 `error-bars.ts` 画；部件编号见 `common/uid.ts`。横轴、纵轴都是数值轴的类型（散点、气泡）共用 `xy.ts` 的坐标框架，只实现自己的标记。数据点、整条线、数据标签用 `draw.ts` 的 `cpart` 包起来（"按系列/按类别"动画的目标，系列序号用 `Series.index`）。在 `chart/chart-types.ts` 加一行。例：`bar.ts`、`line-area.ts`、`pie.ts`、`of-pie.ts`（复合饼图）、`scatter.ts`、`bubble.ts`、`radar.ts`、`stock.ts`（股价图） |
