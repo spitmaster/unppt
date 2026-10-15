@@ -12,7 +12,11 @@ function canBreakBetween(a: Atom, b: Atom): boolean {
   return false;
 }
 
-export function breakLines(atoms: Atom[], avail: (first: boolean) => number, wrap: boolean): Atom[][] {
+/**
+ * hang：允许标点溢出边界（a:pPr hangingPunct="1"，中文版 PowerPoint 的默认）——放不下的行首禁则标点不把前一个字带到下一行，
+ * 而是挂在这一行的边界外面，每行最多挂一个
+ */
+export function breakLines(atoms: Atom[], avail: (first: boolean) => number, wrap: boolean, hang = false): Atom[][] {
   const lines: Atom[][] = [];
   let start = 0;
   while (start < atoms.length) {
@@ -21,13 +25,15 @@ export function breakLines(atoms: Atom[], avail: (first: boolean) => number, wra
     let lastBreak = -1;
     let i = start;
     let forced = -1;
+    let hung = false;
     for (; i < atoms.length; i++) {
       const a = atoms[i];
       if (a.text === '\n') { forced = i; break; }
       if (i > start && canBreakBetween(atoms[i - 1], a)) lastBreak = i;
       const w = width + a.width;
       if (wrap && w > max + 0.01 && i > start && !a.space) {
-        break;
+        if (!hang || hung || !NO_START.has(a.text)) break;
+        hung = true;
       }
       width = w;
     }

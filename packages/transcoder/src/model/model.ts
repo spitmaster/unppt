@@ -189,7 +189,7 @@ export class Presentation {
   async master(part: string): Promise<Master> {
     let m = this.masters.get(part);
     if (m) return m;
-    const xml = (await this.pkg.xml(part))!;
+    const xml = tagBlipBullets((await this.pkg.xml(part))!, part);
     const themeRel = await this.pkg.relByType(part, 'theme');
     const tx = child(xml, 'p:txStyles');
     m = {
@@ -206,7 +206,7 @@ export class Presentation {
   async layout(part: string): Promise<Layout> {
     let l = this.layouts.get(part);
     if (l) return l;
-    const xml = (await this.pkg.xml(part))!;
+    const xml = tagBlipBullets((await this.pkg.xml(part))!, part);
     const masterRel = await this.pkg.relByType(part, 'slideMaster');
     const master = await this.master(masterRel?.target ?? '');
     const ovr = path(xml, 'p:clrMapOvr', 'a:overrideClrMapping');
@@ -218,6 +218,16 @@ export class Presentation {
     this.layouts.set(part, l);
     return l;
   }
+}
+
+/** 母版、版式里的图片符号（a:buBlip）记下所在部件：幻灯片继承它时，r:embed 要按母版、版式自己的关系表找 */
+export const BLIP_PART = 'unppt:part';
+function tagBlipBullets(el: XEl, part: string): XEl {
+  for (const c of el.children) {
+    if (c.name === 'a:buBlip') c.attrs[BLIP_PART] ??= part;
+    else tagBlipBullets(c, part);
+  }
+  return el;
 }
 
 /** 渲染一页时用到的上下文 */
