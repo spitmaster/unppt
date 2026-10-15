@@ -2624,6 +2624,46 @@ def _patch_lang(path):
 text_ambiguous_punct.patch = _patch_lang
 
 
+CHARSET_SLIDES = ['-122', '', '', '-128', '']
+
+
+def text_charset_slides(app):
+    """缺失字体的字符集跨页：同一个字体名第 1 页标中文、第 4 页标日文、其余页不写；PowerPoint 按页加载，
+    第 1~3 页用雅黑、第 4~5 页用 Yu Gothic（保存后改 XML）"""
+    p = new_pres(app)
+    for k in range(len(CHARSET_SLIDES)):
+        s = blank(p)
+        tb = s.Shapes.AddTextbox(1, 30, 30, 900, 80)
+        tr = tb.TextFrame.TextRange
+        tr.Text = f"第 {k + 1} 页 客户提供数字化企业大学解决方案的建设和运营服务"
+        tr.Font.Size = 28
+        tr.Font.Name = f"MarkerFont{k}"
+    return p
+
+
+def _patch_charset_slides(path):
+    import re
+    import zipfile
+    tmp = path.with_suffix(".tmp")
+    with zipfile.ZipFile(path) as zin, zipfile.ZipFile(tmp, "w", zipfile.ZIP_DEFLATED) as zout:
+        for item in zin.infolist():
+            data = zin.read(item.filename)
+            m = re.match(r"ppt/slides/slide(\d+)\.xml$", item.filename)
+            if m:
+                k = int(m.group(1)) - 1
+                cs = CHARSET_SLIDES[k]
+                a = f' pitchFamily="34" charset="{cs}"' if cs else ""
+                xml = data.decode("utf8")
+                xml = re.sub(rf'<a:latin typeface="MarkerFont{k}"[^>]*/>', f'<a:latin typeface="Unppt Missing Paged"{a}/><a:ea typeface="Unppt Missing Paged"{a}/>', xml)
+                xml = re.sub(rf'<a:(ea|cs) typeface="MarkerFont{k}"[^>]*/>', "", xml)
+                data = xml.encode("utf8")
+            zout.writestr(item, data)
+    tmp.replace(path)
+
+
+text_charset_slides.patch = _patch_charset_slides
+
+
 def speaker_notes(app):
     """演讲者备注（prop.json 的 note）：第 1 页两段、第二段里有段内换行和 < & 这类字符；第 2 页没有备注；第 3 页隐藏且有备注"""
     p = new_pres(app)
@@ -3226,7 +3266,7 @@ def _patch_missing_jp(path):
 text_missing_font_jp.patch = _patch_missing_jp
 
 
-CASES = [shapes_all, text_sizes, text_align, text_spacing, text_bullets, text_missing_font, shapes_basic, fills_lines, table_basic, group_rotate, anim_basic, anim_auto, charts_basic, pictures, smartart, text_effects, text_layout, table_merge, links, emf_images, anim_advanced, charts_labels, freeform_icons, media_audio, anim_trigger, wmf_images, anim_iterate, picture_transparent, charts_more, shape_effects, equations, anim_path, anim_emphasis, transitions, fills_patterns, text_decoration, anim_entrance, svg_images, charts_markers, hidden_slides, media_background, text_glow_reflection, text_tabs, text_picture_bullets, fills_texture, transition_morph, text_embedded_fonts, text_warp, anim_repeat, charts_sizes, slide_timings, lines_compound, table_diagonal, lines_gradient, fills_radial, fills_rect_gradient, shapes_3d, table_vertical, transitions_more, anim_sound, anim_build, anim_after, anim_text_emphasis, charts_bubble, media_video, charts_options, charts_negative, shapes_bevel, charts_legend, shapes_3d_rotation, smartart_3d, charts_ofpie, charts_3d, anim_group_emphasis, activex_controls, charts_extras, charts_axis_titles, charts_fills, charts_outlines, charts_labels_more, group_scale, group_flip, charts_3d_line, charts_legend_pos, charts_crowded_labels, charts_label_skip, charts_bar_long_names, charts_multilevel, picture_recolor, text_symbols, text_numbering, lines_arrows, table_styles, shapes_styles, charts_styles, placeholders_inherit, text_bold_light, ole_objects, text_hanging_punct, speaker_notes, pictures_tiff, placeholders_picture, pictures_exif, text_picture_fill, pictures_mislabeled, emf_alphablend, placeholders_orphan, picture_fill_rect, slide_number_fields, table_builtin_styles, smartart_matrix, text_layout_unit, colors_gamma, text_latin_cjk_font, text_default_style, text_missing_font_jp, text_ea_line_break, text_ambiguous_punct]
+CASES = [shapes_all, text_sizes, text_align, text_spacing, text_bullets, text_missing_font, shapes_basic, fills_lines, table_basic, group_rotate, anim_basic, anim_auto, charts_basic, pictures, smartart, text_effects, text_layout, table_merge, links, emf_images, anim_advanced, charts_labels, freeform_icons, media_audio, anim_trigger, wmf_images, anim_iterate, picture_transparent, charts_more, shape_effects, equations, anim_path, anim_emphasis, transitions, fills_patterns, text_decoration, anim_entrance, svg_images, charts_markers, hidden_slides, media_background, text_glow_reflection, text_tabs, text_picture_bullets, fills_texture, transition_morph, text_embedded_fonts, text_warp, anim_repeat, charts_sizes, slide_timings, lines_compound, table_diagonal, lines_gradient, fills_radial, fills_rect_gradient, shapes_3d, table_vertical, transitions_more, anim_sound, anim_build, anim_after, anim_text_emphasis, charts_bubble, media_video, charts_options, charts_negative, shapes_bevel, charts_legend, shapes_3d_rotation, smartart_3d, charts_ofpie, charts_3d, anim_group_emphasis, activex_controls, charts_extras, charts_axis_titles, charts_fills, charts_outlines, charts_labels_more, group_scale, group_flip, charts_3d_line, charts_legend_pos, charts_crowded_labels, charts_label_skip, charts_bar_long_names, charts_multilevel, picture_recolor, text_symbols, text_numbering, lines_arrows, table_styles, shapes_styles, charts_styles, placeholders_inherit, text_bold_light, ole_objects, text_hanging_punct, speaker_notes, pictures_tiff, placeholders_picture, pictures_exif, text_picture_fill, pictures_mislabeled, emf_alphablend, placeholders_orphan, picture_fill_rect, slide_number_fields, table_builtin_styles, smartart_matrix, text_layout_unit, colors_gamma, text_latin_cjk_font, text_default_style, text_missing_font_jp, text_ea_line_break, text_ambiguous_punct, text_charset_slides]
 
 
 def main():

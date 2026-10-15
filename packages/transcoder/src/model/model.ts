@@ -143,8 +143,8 @@ export class Presentation {
   defaultTextStyle?: XEl;
   /** 幻灯片像素 -> 对齐像素的比例（DISPLAY_WIDTH / 宽度；标准 16:9 是 1） */
   displayScale = 1;
-  /** 每个字体名在文档里的字符集（最后一次明确写的，见 font-charsets.ts），小写字体名 -> charset */
-  fontCharsets = new Map<string, string>();
+  /** 每页渲染时各字体名的字符集（见 font-charsets.ts），按页序：小写字体名 -> charset */
+  fontCharsets: Map<string, string>[] = [];
   presPart = '';
   private masters = new Map<string, Master>();
   private layouts = new Map<string, Layout>();
@@ -265,6 +265,8 @@ export interface SlideContext {
    * （就是幻灯片坐标）；在转动、翻转的组合里是 null（换算不是简单的平移缩放）。形状、图片、图表、文字按它对齐整像素
    */
   toSlide?: SlideMapping | null;
+  /** 这一页渲染时各字体名的字符集（Presentation.fontCharsets） */
+  fontCharsets?: Map<string, string>;
 }
 
 export interface SlideMapping { x: number; y: number; sx: number; sy: number }

@@ -9,7 +9,7 @@ import type { RunStyle, StyleChain, TextEnv } from './types';
 const EA_CHARSETS = new Set(['-122', '-120', '-127', '134', '136', '129']);
 const JP_CHARSETS = new Set(['-128', '128']);
 
-/** 字体的字符集类别：同一个字体名以整个文档里最后一次明确写的为准（font-charsets.ts），文档里没有时用这里写的 */
+/** 字体的字符集类别：同一个字体名以加载到这一页为止最后一次明确写的为准（font-charsets.ts），没有时用这里写的 */
 function scriptOf(el: XEl | undefined, typeface: string, env: TextEnv): 'jp' | 'ea' | undefined {
   const cs = env.fontCharsets?.get(typeface.toLowerCase()) ?? attr(el, 'charset') ?? '';
   return JP_CHARSETS.has(cs) ? 'jp' : EA_CHARSETS.has(cs) ? 'ea' : undefined;
