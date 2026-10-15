@@ -1,0 +1,176 @@
+{
+ "version": 8,
+ "level": "full",
+ "slideWidthPt": 960.0,
+ "slideHeightPt": 540.0,
+ "imageWidth": 1280,
+ "imageHeight": 720,
+ "slides": [
+  {
+   "index": 0,
+   "hidden": false,
+   "shapes": [
+    {
+     "id": 2,
+     "name": "TextBox 1",
+     "type": 17,
+     "x": 30.0,
+     "y": 30.0,
+     "w": 900.0,
+     "h": 41.198,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 29,
+       "text": "第 1 页 客户提供数字化企业大学解决方案的建设和运营服务",
+       "x": 37.2,
+       "y": 33.6,
+       "w": 741.13,
+       "h": 33.6
+      }
+     ]
+    }
+   ],
+   "effects": [],
+   "triggerHidden": [],
+   "steps": 0,
+   "keptSlideshow": false
+  },
+  {
+   "index": 1,
+   "hidden": false,
+   "shapes": [
+    {
+     "id": 2,
+     "name": "TextBox 1",
+     "type": 17,
+     "x": 30.0,
+     "y": 30.0,
+     "w": 900.0,
+     "h": 41.198,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 29,
+       "text": "第 2 页 客户提供数字化企业大学解决方案的建设和运营服务",
+       "x": 37.2,
+       "y": 33.6,
+       "w": 741.13,
+       "h": 33.6
+      }
+     ]
+    }
+   ],
+   "effects": [],
+   "triggerHidden": [],
+   "steps": 0,
+   "keptSlideshow": false
+  },
+  {
+   "index": 2,
+   "hidden": false,
+   "shapes": [
+    {
+     "id": 2,
+     "name": "TextBox 1",
+     "type": 17,
+     "x": 30.0,
+     "y": 30.0,
+     "w": 900.0,
+     "h": 41.198,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 29,
+       "text": "第 3 页 客户提供数字化企业大学解决方案的建设和运营服务",
+       "x": 37.2,
+       "y": 33.6,
+       "w": 741.13,
+       "h": 33.6
+      }
+     ]
+    }
+   ],
+   "effects": [],
+   "triggerHidden": [],
+   "steps": 0,
+   "keptSlideshow": false
+  },
+  {
+   "index": 3,
+   "hidden": false,
+   "shapes": [
+    {
+     "id": 2,
+     "name": "TextBox 1",
+     "type": 17,
+     "x": 30.0,
+     "y": 30.0,
+     "w": 900.0,
+     "h": 41.198,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 29,
+       "text": "第 4 页 客户提供数字化企业大学解决方案的建设和运营服务",
+       "x": 37.2,
+       "y": 33.6,
+       "w": 739.63,
+       "h": 33.6
+      }
+     ]
+    }
+   ],
+   "effects": [],
+   "triggerHidden": [],
+   "steps": 0,
+   "keptSlideshow": false
+  },
+  {
+   "index": 4,
+   "hidden": false,
+   "shapes": [
+    {
+     "id": 2,
+     "name": "TextBox 1",
+     "type": 17,
+     "x": 30.0,
+     "y": 30.0,
+     "w": 900.0,
+     "h": 41.198,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 29,
+       "text": "第 5 页 客户提供数字化企业大学解决方案的建设和运营服务",
+       "x": 37.2,
+       "y": 33.6,
+       "w": 739.63,
+       "h": 33.6
+      }
+     ]
+    }
+   ],
+   "effects": [],
+   "triggerHidden": [],
+   "steps": 0,
+   "keptSlideshow": false
+  }
+ ],
+ "ok": true
+}

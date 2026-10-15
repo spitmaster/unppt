@@ -16,7 +16,7 @@ export interface TextEnv {
   fontRefColor?: Rgba;
   /** p:style/a:fontRef 本身（idx 指定主题字体） */
   fontRef?: XEl;
-  /** 每个字体名在文档里的字符集（Presentation.fontCharsets） */
+  /** 这一页渲染时各字体名的字符集（Presentation.fontCharsets） */
   fontCharsets?: Map<string, string>;
   /** 动画用的元素编号前缀（形状的 uid），段落会追加 p0、p1… */
   uid?: string;
