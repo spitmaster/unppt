@@ -135,7 +135,11 @@ export function emitParagraphs(
         const s = seg[0].style;
         const txt = seg.map((q) => (q.tab ? ' ' : q.text)).join('');
         const shift = s.baseline ? -s.baseline / 100 * s.size : 0;
-        const st = s.baseline ? { ...s, size: s.size * 0.67 } : s;
+        const sized = s.baseline ? { ...s, size: s.size * 0.67 } : s;
+        // 实测（text-bold-light）：字体没有粗体字形时 PowerPoint 在原字形上人工加粗、字宽不变。照常写 bold 的话，
+        // 细体（微软雅黑 Light、等线 Light 等）会被浏览器换成同族的真粗体，黑体等由浏览器合成的粗体也比 PowerPoint 粗将近一倍
+        const thin = s.bold && seg[0].face && !seg[0].face.bold;
+        const st = thin ? { ...sized, bold: false, fakeBold: true } : sized;
         const alias = seg[0].face && env.embed ? env.embed.alias(seg[0].face) : undefined;
         if (seg.length === 1 && upright(seg[0])) {
           // 竖排里正立的字：以字的中心为轴转回来

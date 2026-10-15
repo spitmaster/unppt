@@ -54,6 +54,8 @@ export interface RunStyle {
   /** 符号字体（a:sym）：私用区 U+F000~F0FF 的字符用它画（"插入符号"插的 Wingdings、Symbol 等） */
   sym?: string;
   bold: boolean;
+  /** 人工加粗：标了粗体但字体只有细体字形（见 emit.ts），输出时描一圈同色的边，不让浏览器换成同族的粗体 */
+  fakeBold?: boolean;
   italic: boolean;
   color: Rgba;
   underline: boolean;

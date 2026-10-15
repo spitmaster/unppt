@@ -1,0 +1,388 @@
+{
+ "version": 8,
+ "slideWidthPt": 960.0,
+ "slideHeightPt": 540.0,
+ "imageWidth": 1280,
+ "imageHeight": 720,
+ "slides": [
+  {
+   "index": 0,
+   "hidden": false,
+   "shapes": [
+    {
+     "id": 2,
+     "name": "TextBox 1",
+     "type": 17,
+     "x": 30.0,
+     "y": 20.0,
+     "w": 272.283,
+     "h": 36.352,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 19,
+       "text": "细体加粗 Light Bold 123",
+       "x": 37.2,
+       "y": 23.6,
+       "w": 255.255,
+       "h": 28.8
+      }
+     ]
+    },
+    {
+     "id": 3,
+     "name": "TextBox 2",
+     "type": 17,
+     "x": 490.0,
+     "y": 20.0,
+     "w": 272.283,
+     "h": 36.352,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 19,
+       "text": "细体加粗 Light Bold 123",
+       "x": 497.2,
+       "y": 23.6,
+       "w": 255.255,
+       "h": 28.8
+      }
+     ]
+    },
+    {
+     "id": 4,
+     "name": "TextBox 3",
+     "type": 17,
+     "x": 30.0,
+     "y": 84.0,
+     "w": 264.205,
+     "h": 36.352,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 19,
+       "text": "细体加粗 Light Bold 123",
+       "x": 37.2,
+       "y": 87.6,
+       "w": 247.255,
+       "h": 28.8
+      }
+     ]
+    },
+    {
+     "id": 5,
+     "name": "TextBox 4",
+     "type": 17,
+     "x": 490.0,
+     "y": 84.0,
+     "w": 264.205,
+     "h": 36.352,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 19,
+       "text": "细体加粗 Light Bold 123",
+       "x": 497.2,
+       "y": 87.6,
+       "w": 247.38,
+       "h": 28.8
+      }
+     ]
+    },
+    {
+     "id": 6,
+     "name": "TextBox 5",
+     "type": 17,
+     "x": 30.0,
+     "y": 148.0,
+     "w": 255.132,
+     "h": 36.352,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 19,
+       "text": "细体加粗 Light Bold 123",
+       "x": 37.2,
+       "y": 151.6,
+       "w": 238.27,
+       "h": 28.8
+      }
+     ]
+    },
+    {
+     "id": 7,
+     "name": "TextBox 6",
+     "type": 17,
+     "x": 490.0,
+     "y": 148.0,
+     "w": 255.132,
+     "h": 36.352,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 19,
+       "text": "细体加粗 Light Bold 123",
+       "x": 497.2,
+       "y": 151.6,
+       "w": 236.395,
+       "h": 28.8
+      }
+     ]
+    },
+    {
+     "id": 8,
+     "name": "TextBox 7",
+     "type": 17,
+     "x": 30.0,
+     "y": 212.0,
+     "w": 260.292,
+     "h": 36.352,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 19,
+       "text": "细体加粗 Light Bold 123",
+       "x": 37.2,
+       "y": 215.6,
+       "w": 243.38,
+       "h": 28.8
+      }
+     ]
+    },
+    {
+     "id": 9,
+     "name": "TextBox 8",
+     "type": 17,
+     "x": 490.0,
+     "y": 212.0,
+     "w": 260.292,
+     "h": 36.352,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 19,
+       "text": "细体加粗 Light Bold 123",
+       "x": 497.2,
+       "y": 215.6,
+       "w": 243.63,
+       "h": 28.8
+      }
+     ]
+    },
+    {
+     "id": 10,
+     "name": "TextBox 9",
+     "type": 17,
+     "x": 30.0,
+     "y": 276.0,
+     "w": 264.458,
+     "h": 36.352,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 19,
+       "text": "细体加粗 Light Bold 123",
+       "x": 37.2,
+       "y": 279.6,
+       "w": 247.505,
+       "h": 28.8
+      }
+     ]
+    },
+    {
+     "id": 11,
+     "name": "TextBox 10",
+     "type": 17,
+     "x": 490.0,
+     "y": 276.0,
+     "w": 264.458,
+     "h": 36.352,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 19,
+       "text": "细体加粗 Light Bold 123",
+       "x": 497.2,
+       "y": 279.6,
+       "w": 247.505,
+       "h": 28.8
+      }
+     ]
+    },
+    {
+     "id": 12,
+     "name": "TextBox 11",
+     "type": 17,
+     "x": 30.0,
+     "y": 340.0,
+     "w": 293.236,
+     "h": 36.352,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 19,
+       "text": "细体加粗 Light Bold 123",
+       "x": 37.2,
+       "y": 343.6,
+       "w": 276.005,
+       "h": 28.8
+      }
+     ]
+    },
+    {
+     "id": 13,
+     "name": "TextBox 12",
+     "type": 17,
+     "x": 490.0,
+     "y": 340.0,
+     "w": 293.236,
+     "h": 36.352,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 19,
+       "text": "细体加粗 Light Bold 123",
+       "x": 497.2,
+       "y": 343.6,
+       "w": 278.38,
+       "h": 28.8
+      }
+     ]
+    },
+    {
+     "id": 14,
+     "name": "TextBox 13",
+     "type": 17,
+     "x": 30.0,
+     "y": 404.0,
+     "w": 293.236,
+     "h": 36.352,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 19,
+       "text": "细体加粗 Light Bold 123",
+       "x": 37.2,
+       "y": 407.6,
+       "w": 276.005,
+       "h": 28.8
+      }
+     ]
+    },
+    {
+     "id": 15,
+     "name": "TextBox 14",
+     "type": 17,
+     "x": 490.0,
+     "y": 404.0,
+     "w": 293.236,
+     "h": 36.352,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 19,
+       "text": "细体加粗 Light Bold 123",
+       "x": 497.2,
+       "y": 407.6,
+       "w": 278.38,
+       "h": 28.8
+      }
+     ]
+    },
+    {
+     "id": 16,
+     "name": "TextBox 15",
+     "type": 17,
+     "x": 30.0,
+     "y": 468.0,
+     "w": 286.799,
+     "h": 36.352,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 19,
+       "text": "细体加粗 Light Bold 123",
+       "x": 37.2,
+       "y": 471.6,
+       "w": 269.63,
+       "h": 28.8
+      }
+     ]
+    },
+    {
+     "id": 17,
+     "name": "TextBox 16",
+     "type": 17,
+     "x": 490.0,
+     "y": 468.0,
+     "w": 295.887,
+     "h": 36.352,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 19,
+       "text": "细体加粗 Light Bold 123",
+       "x": 497.2,
+       "y": 471.6,
+       "w": 278.63,
+       "h": 28.8
+      }
+     ]
+    }
+   ],
+   "effects": [],
+   "triggerHidden": [],
+   "steps": 0,
+   "keptSlideshow": false
+  }
+ ],
+ "ok": true
+}

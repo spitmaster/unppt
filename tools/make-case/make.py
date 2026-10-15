@@ -2441,7 +2441,120 @@ def charts_styles(app):
     return p
 
 
-CASES = [shapes_all, text_sizes, text_align, text_spacing, text_bullets, text_missing_font, shapes_basic, fills_lines, table_basic, group_rotate, anim_basic, anim_auto, charts_basic, pictures, smartart, text_effects, text_layout, table_merge, links, emf_images, anim_advanced, charts_labels, freeform_icons, media_audio, anim_trigger, wmf_images, anim_iterate, picture_transparent, charts_more, shape_effects, equations, anim_path, anim_emphasis, transitions, fills_patterns, text_decoration, anim_entrance, svg_images, charts_markers, hidden_slides, media_background, text_glow_reflection, text_tabs, text_picture_bullets, fills_texture, transition_morph, text_embedded_fonts, text_warp, anim_repeat, charts_sizes, slide_timings, lines_compound, table_diagonal, lines_gradient, fills_radial, fills_rect_gradient, shapes_3d, table_vertical, transitions_more, anim_sound, anim_build, anim_after, anim_text_emphasis, charts_bubble, media_video, charts_options, charts_negative, shapes_bevel, charts_legend, shapes_3d_rotation, smartart_3d, charts_ofpie, charts_3d, anim_group_emphasis, activex_controls, charts_extras, charts_axis_titles, charts_fills, charts_outlines, charts_labels_more, group_scale, group_flip, charts_3d_line, charts_legend_pos, charts_crowded_labels, charts_label_skip, charts_bar_long_names, charts_multilevel, picture_recolor, text_symbols, text_numbering, lines_arrows, table_styles, shapes_styles, charts_styles]
+def placeholders_inherit(app):
+    """占位符继承的两种边界：
+    第 1 页：没写形状（无 prstGeom / custGeom）、版式里也没有对应占位符的占位符，和没写形状的普通文本框，都带填充和边框（保存后改 XML）；
+    第 2 页：只设了填充的标题占位符（形状从版式、母版继承）；
+    第 3 页：版式的正文占位符用图片项目符号，幻灯片只写文字（图片在版式的关系表里）"""
+    from PIL import Image, ImageDraw
+    png = (CACHE / "make-case" / "bullet-square.png").resolve()
+    png.parent.mkdir(parents=True, exist_ok=True)
+    im = Image.new("RGBA", (64, 64), (0, 0, 0, 0))
+    d = ImageDraw.Draw(im)
+    d.rectangle((6, 6, 58, 58), fill=(0, 112, 192, 255))
+    d.rectangle((22, 22, 42, 42), fill=(255, 255, 255, 255))
+    im.save(png)
+    p = new_pres(app)
+    blank(p)
+    s2 = p.Slides.Add(2, 11)                     # ppLayoutTitleOnly
+    t = s2.Shapes.Placeholders(1)
+    t.TextFrame.TextRange.Text = "标题占位符只设填充"
+    t.Fill.Visible = -1
+    t.Fill.Solid()
+    t.Fill.ForeColor.RGB = RGB(255, 230, 153)
+    s3 = p.Slides.Add(3, LAYOUT_TITLE_CONTENT)
+    lay = s3.CustomLayout
+    for i in range(1, lay.Shapes.Placeholders.Count + 1):
+        ph = lay.Shapes.Placeholders(i)
+        if ph.PlaceholderFormat.Type == 7:        # ppPlaceholderObject（正文）
+            pf = ph.TextFrame.TextRange.Paragraphs(1).ParagraphFormat
+            pf.Bullet.Visible = -1
+            pf.Bullet.Picture(str(png))
+    s3.Shapes.Placeholders(1).TextFrame.TextRange.Text = "版式里的图片项目符号"
+    s3.Shapes.Placeholders(2).TextFrame.TextRange.Text = chr(13).join(["第一条要点", "第二条要点 Second item", "第三条要点"])
+    return p
+
+
+def _patch_no_geometry(path):
+    import zipfile
+    def sp(i, x, y, nv, text):
+        off = f'<a:xfrm><a:off x="{x}" y="{y}"/><a:ext cx="3600000" cy="2400000"/></a:xfrm>'
+        fill = '<a:solidFill><a:srgbClr val="D9D9D9"/></a:solidFill><a:ln w="38100"><a:solidFill><a:srgbClr val="C00000"/></a:solidFill></a:ln>'
+        return (f'<p:sp><p:nvSpPr><p:cNvPr id="{i}" name="NoGeom {i}"/>{nv}</p:nvSpPr><p:spPr>{off}{fill}</p:spPr>'
+                f'<p:txBody><a:bodyPr/><a:lstStyle/><a:p><a:r><a:rPr lang="zh-CN" altLang="en-US" sz="2400"/><a:t>{text}</a:t></a:r></a:p></p:txBody></p:sp>')
+    extra = (sp(101, 600000, 600000, '<p:cNvSpPr><a:spLocks noGrp="1"/></p:cNvSpPr><p:nvPr><p:ph idx="77"/></p:nvPr>', "版式里没有的占位符")
+             + sp(102, 4800000, 600000, '<p:cNvSpPr txBox="1"/><p:nvPr/>', "没写形状的文本框")).encode()
+    tmp = path.with_suffix(".tmp")
+    with zipfile.ZipFile(path) as zin, zipfile.ZipFile(tmp, "w", zipfile.ZIP_DEFLATED) as zout:
+        for item in zin.infolist():
+            data = zin.read(item.filename)
+            if item.filename == "ppt/slides/slide1.xml":
+                data = data.replace(b"</p:spTree>", extra + b"</p:spTree>")
+            zout.writestr(item, data)
+    tmp.replace(path)
+
+
+placeholders_inherit.patch = _patch_no_geometry
+
+
+def text_bold_light(app):
+    """细体字体标粗体：微软雅黑 Light、等线 Light、Calibri Light、Segoe UI Light / Semilight 的常规和粗体；
+    对照：没有粗体字形的黑体、宋体（会不会人工加粗）、有粗体字形的微软雅黑"""
+    p = new_pres(app)
+    s = blank(p)
+    fonts = ["微软雅黑 Light", "等线 Light", "Calibri Light", "Segoe UI Light", "Segoe UI Semilight", "黑体", "宋体", "微软雅黑"]
+    for k, font in enumerate(fonts):
+        for b in (0, 1):
+            tb = s.Shapes.AddTextbox(1, 30 + b * 460, 20 + k * 64, 440, 60)
+            tf = tb.TextFrame
+            tf.WordWrap = 0
+            tr = tf.TextRange
+            tr.Text = "细体加粗 Light Bold 123"
+            tr.Font.Name = font
+            tr.Font.NameFarEast = font
+            tr.Font.Size = 24
+            tr.Font.Bold = b
+    return p
+
+
+def ole_objects(app):
+    """嵌入对象（OLE）：嵌入一个文件显示成图标（PowerPoint 存 Choice 里的 p:embed 和 Fallback 里的预览图），旁边写说明"""
+    txt = (CACHE / "make-case" / "ole-note.txt").resolve()
+    txt.parent.mkdir(parents=True, exist_ok=True)
+    txt.write_text("neutral ole sample", encoding="utf8")
+    p = new_pres(app)
+    s = blank(p)
+    s.Shapes.AddOLEObject(80, 80, -1, -1, "", str(txt), 0, "", 0, "", 0)
+    s.Shapes.AddOLEObject(400, 80, -1, -1, "", str(txt), -1, "", 0, "", 0)
+    textbox(s, 80, 400, 800, 60, "嵌入对象：左边按内容显示，右边显示成图标")
+    return p
+
+
+def text_hanging_punct(app):
+    """标点悬挂：文本框正好放下 10 个汉字，第 11 个字是各种标点；左两列开"允许标点溢出边界"，右列关掉对照"""
+    p = new_pres(app)
+    s = blank(p)
+    puncts = "，。、；：！？）」』”’》】,.;:!?)"
+    items = [(c, True) for c in puncts] + [(c, False) for c in "，。）！：、"]
+    for k, (c, hang) in enumerate(items):
+        col, row = k // 9, k % 9
+        tb = s.Shapes.AddTextbox(1, 20 + col * 310, 10 + row * 58, 240.5, 56)
+        tf = tb.TextFrame
+        tf.MarginLeft = tf.MarginRight = tf.MarginTop = tf.MarginBottom = 0
+        tf.WordWrap = -1
+        tf.AutoSize = 0
+        tr = tf.TextRange
+        tr.Text = "一二三四五六七八九十" + c + "后续文字"
+        tr.Font.Name = "Microsoft YaHei"
+        tr.Font.NameFarEast = "Microsoft YaHei"
+        tr.Font.Size = 24
+        tr.ParagraphFormat.HangingPunctuation = -1 if hang else 0
+        tb.Line.Visible = -1
+        tb.Line.ForeColor.RGB = RGB(200, 200, 200)
+    return p
+
+
+CASES = [shapes_all, text_sizes, text_align, text_spacing, text_bullets, text_missing_font, shapes_basic, fills_lines, table_basic, group_rotate, anim_basic, anim_auto, charts_basic, pictures, smartart, text_effects, text_layout, table_merge, links, emf_images, anim_advanced, charts_labels, freeform_icons, media_audio, anim_trigger, wmf_images, anim_iterate, picture_transparent, charts_more, shape_effects, equations, anim_path, anim_emphasis, transitions, fills_patterns, text_decoration, anim_entrance, svg_images, charts_markers, hidden_slides, media_background, text_glow_reflection, text_tabs, text_picture_bullets, fills_texture, transition_morph, text_embedded_fonts, text_warp, anim_repeat, charts_sizes, slide_timings, lines_compound, table_diagonal, lines_gradient, fills_radial, fills_rect_gradient, shapes_3d, table_vertical, transitions_more, anim_sound, anim_build, anim_after, anim_text_emphasis, charts_bubble, media_video, charts_options, charts_negative, shapes_bevel, charts_legend, shapes_3d_rotation, smartart_3d, charts_ofpie, charts_3d, anim_group_emphasis, activex_controls, charts_extras, charts_axis_titles, charts_fills, charts_outlines, charts_labels_more, group_scale, group_flip, charts_3d_line, charts_legend_pos, charts_crowded_labels, charts_label_skip, charts_bar_long_names, charts_multilevel, picture_recolor, text_symbols, text_numbering, lines_arrows, table_styles, shapes_styles, charts_styles, placeholders_inherit, text_bold_light, ole_objects, text_hanging_punct]
 
 
 def main():

@@ -75,6 +75,8 @@ class SlideRenderer implements RenderContext {
   }
 
   async element(el: XEl, ctx: SlideContext, groupFill?: Fill): Promise<string> {
+    // 选择窗格里隐藏的对象不画
+    if (attr(nvProps(el), 'hidden') === '1') return '';
     const local = el.name.slice(el.name.indexOf(':') + 1);
     let out = '';
     switch (local) {
