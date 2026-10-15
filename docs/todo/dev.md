@@ -78,7 +78,7 @@ node packages/transcoder/dist/cli.js convert 你的文件.pptx -o out/index.html
 2. 今晚有 4 条已推送的提交信息带了语料构成数字（课件份数、某特征出现在多少份里），违反 SPEC 第 4 节第 7 条。改历史要强推，按规则没动；文档里的已删除，以后不再写；
 3. `.claude/worktrees` 下早先的 4 个工作分支（census、diag、batch、guard）还没合并，要不要清理；
 4. PowerPoint 导出参考图时会下载 Office 云字体（只发字体名，不含课件内容），要不要在 Office 里关掉"云字体"；
-5. 有 3 份课件 PowerPoint 导出时报"发生意外"，没有参考图（原因未查）。
+5. ~~有 3 份课件导出报"发生意外"~~ 已查：PowerPoint 认为文件需要修复（自动化下不弹修复对话框，直接报错）。导出工具改成失败时用"打开并修复"重试（仍只读、禁用宏，ref.json 记 repaired），其中 2 份有了参考图；1 份文件写的页面尺寸超出 PowerPoint 允许的最大值，修复时高度被改小、内容被裁掉，不作参考。
 
 ## 五、还没做的
 

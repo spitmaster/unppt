@@ -60,6 +60,18 @@ def _num(v):
         return None
 
 
+def _file_slide_size(src: Path) -> tuple[float, float] | tuple[None, None]:
+    """pptx 文件里写的页面尺寸（磅）；读不到时 (None, None)"""
+    import re
+    import zipfile
+    try:
+        with zipfile.ZipFile(src) as z:
+            m = re.search(rb'<p:sldSz cx="(\d+)" cy="(\d+)"', z.read("ppt/presentation.xml"))
+        return (int(m.group(1)) / 12700, int(m.group(2)) / 12700) if m else (None, None)
+    except Exception:
+        return None, None
+
+
 def _text_lines(shape):
     """读出文本框里每一行：起止字符、文字、外框（单位：磅）。"""
     lines = []
@@ -323,8 +335,17 @@ def export_one(src: Path, out: Path, static: bool = False) -> dict:
         app.AutomationSecurity = 3  # msoAutomationSecurityForceDisable：强制禁用宏
     except Exception:
         pass
-    pres = app.Presentations.Open(str(src.resolve()), True, False, False)  # ReadOnly, Untitled=False, WithWindow=False
+    repaired = False
+    try:
+        pres = app.Presentations.Open(str(src.resolve()), True, False, False)  # ReadOnly, Untitled=False, WithWindow=False
+    except Exception:
+        # PowerPoint 认为文件需要修复（交互打开时会问要不要修复，自动化下直接报"发生意外"）：按"打开并修复"重试，
+        # 仍是只读、禁用宏；参考图是修复后的样子，ref.json 里记 repaired
+        pres = app.Presentations.Open2007(str(src.resolve()), True, False, False, True)  # ..., OpenAndRepair
+        repaired = True
     result = {"version": VERSION, "level": "static" if static else "full"}
+    if repaired:
+        result["repaired"] = True
     keep_shows = os.environ.get("UNPPT_KEEP_SLIDESHOW") == "1"
     try:
         if src.suffix.lower() != ".pptx":
@@ -333,6 +354,11 @@ def export_one(src: Path, out: Path, static: bool = False) -> dict:
             result["converted"] = conv.name
         w_pt = pres.PageSetup.SlideWidth
         h_pt = pres.PageSetup.SlideHeight
+        if repaired:
+            # 修复改了页面尺寸（文件写的超出 PowerPoint 允许的范围，修复时被改小、内容被裁掉）：修复后的样子不作参考
+            fw, fh = _file_slide_size(src)
+            if fw and (abs(fw - w_pt) > 1 or abs(fh - h_pt) > 1):
+                raise RuntimeError(f"修复后页面尺寸 {w_pt:.0f}×{h_pt:.0f} 磅和文件里的 {fw:.0f}×{fh:.0f} 磅不一致，不作参考")
         width = EXPORT_WIDTH
         height = round(EXPORT_WIDTH * h_pt / w_pt)
         result.update({"slideWidthPt": _num(w_pt), "slideHeightPt": _num(h_pt),
