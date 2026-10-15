@@ -44,22 +44,31 @@ const snapAdvance = (w: number) => Math.round(w / LAYOUT_UNIT) * LAYOUT_UNIT;
 const LATIN_SUBS = ['Calibri', 'Arial', 'Liberation Sans', 'Helvetica'];
 // 实测：字体标了中文字符集且本机缺失时，PowerPoint 用微软雅黑替代（样本换行 40/40 一致）
 const EA_SUBS = ['Microsoft YaHei', '微软雅黑', 'DengXian', '等线', 'PingFang SC', 'Noto Sans CJK SC', 'Source Han Sans SC'];
+// 实测（text-missing-font-jp）：标了日文字符集的缺失字体用 Yu Gothic（Regular，和 PANOSE 字重无关），它没有的字（简体字）再用雅黑
+const JP_SUBS = ['Yu Gothic', '游ゴシック', ...EA_SUBS];
+const subsFor = (script: 'jp' | 'ea' | undefined, latin: boolean) => (script === 'jp' ? JP_SUBS : script === 'ea' || !latin ? EA_SUBS : LATIN_SUBS);
 
 export async function makeAtoms(text: string, style: RunStyle, m: Measurer): Promise<Atom[]> {
   const out: Atom[] = [];
-  // 缺字体时按 PowerPoint 的做法替代：西文用 Calibri（字体标了东亚字符集时也用雅黑），中文用雅黑
-  const pick = async (family: string, subs: string[]): Promise<[Measured | undefined, string]> => {
-    const mm = await m.metrics(family, style.bold, style.italic);
-    if (mm) return [mm, family];
-    // 替代字体：字重跟着文字自己的加粗设置（原字体名或 PANOSE 是粗体也不加粗，实测）
+  // 缺字体时按 PowerPoint 的做法替代：西文用 Calibri（字体标了东亚字符集时也用雅黑，日文字符集用 Yu Gothic），中文用雅黑
+  // 替代字体：字重跟着文字自己的加粗设置（原字体名或 PANOSE 是粗体也不加粗，实测）
+  const substitute = async (subs: string[]): Promise<[Measured | undefined, string]> => {
     for (const sub of subs) {
       const sm = await m.metrics(sub, style.bold, style.italic, true);
       if (sm) return [sm, sub];
     }
-    return [undefined, family];
+    return [undefined, ''];
   };
-  const [latinM, latinFam] = await pick(style.latin, style.latinEaCharset ? EA_SUBS : LATIN_SUBS);
-  const [eaM, eaFam] = style.ea === style.latin ? [latinM, latinFam] : await pick(style.ea, EA_SUBS);
+  const pick = async (family: string, subs: string[]): Promise<[Measured | undefined, string]> => {
+    const mm = await m.metrics(family, style.bold, style.italic);
+    if (mm) return [mm, family];
+    const [sm, sub] = await substitute(subs);
+    return sm ? [sm, sub] : [undefined, family];
+  };
+  const [latinM, latinFam] = await pick(style.latin, subsFor(style.latinScript, true));
+  const [eaM, eaFam] = style.ea === style.latin ? [latinM, latinFam] : await pick(style.ea, subsFor(style.eaScript, false));
+  // 两种字体里都没有的中日韩字：用雅黑补（实测：Yu Gothic 里没有的简体字 PowerPoint 用雅黑 Regular 画）
+  let cjk: Promise<[Measured | undefined, string]> | undefined;
   const [symM, symFam] = style.sym ? await pick(style.sym, []) : [undefined, ''];
   let src = text;
   if (style.caps === 'all') src = src.toUpperCase();
@@ -82,6 +91,11 @@ export async function makeAtoms(text: string, style: RunStyle, m: Measurer): Pro
     if (adv === undefined && secondary) {
       adv = secondary.metrics.advance(cp);
       if (adv !== undefined) { usedM = secondary; family = wide ? latinFam : eaFam; }
+    }
+    if (adv === undefined && wide) {
+      const [cm, cf] = await (cjk ??= substitute(EA_SUBS));
+      adv = cm?.metrics.advance(cp);
+      if (adv !== undefined) { usedM = cm; family = cf; }
     }
     const used = usedM?.metrics;
     if (usedM && adv !== undefined && m.embed && cp > 0x20) m.embed.use(usedM.face, cp);

@@ -16,6 +16,8 @@ export interface TextEnv {
   fontRefColor?: Rgba;
   /** p:style/a:fontRef 本身（idx 指定主题字体） */
   fontRef?: XEl;
+  /** 每个字体名在文档里的字符集（Presentation.fontCharsets） */
+  fontCharsets?: Map<string, string>;
   /** 动画用的元素编号前缀（形状的 uid），段落会追加 p0、p1… */
   uid?: string;
   /** 字体嵌入：记录每个字体用到的字，并给字体起唯一别名 */
@@ -77,8 +79,9 @@ export interface RunStyle {
   /** 字距调整（kerning）从多大字号开始（磅）；没写就不调整 */
   kern?: number;
   caps: 'none' | 'all' | 'small';
-  /** 西文字体标记的是东亚字符集（如 GB2312）：缺字体时西文也用东亚字体替代 */
-  latinEaCharset: boolean;
+  /** 西文、东亚字体的字符集类别（缺字体时按它选替代字体，见 measure.ts）：jp 日文，ea 其它东亚字符集（如 GB2312） */
+  latinScript?: 'jp' | 'ea';
+  eaScript?: 'jp' | 'ea';
   outline?: { color: Rgba; width: number };
   /** 文字效果（a:effectLst）：阴影、发光、内阴影、映像…… */
   effects?: XEl;

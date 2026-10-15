@@ -3111,7 +3111,52 @@ def _patch_default_style(path):
 text_default_style.patch = _patch_default_style
 
 
-CASES = [shapes_all, text_sizes, text_align, text_spacing, text_bullets, text_missing_font, shapes_basic, fills_lines, table_basic, group_rotate, anim_basic, anim_auto, charts_basic, pictures, smartart, text_effects, text_layout, table_merge, links, emf_images, anim_advanced, charts_labels, freeform_icons, media_audio, anim_trigger, wmf_images, anim_iterate, picture_transparent, charts_more, shape_effects, equations, anim_path, anim_emphasis, transitions, fills_patterns, text_decoration, anim_entrance, svg_images, charts_markers, hidden_slides, media_background, text_glow_reflection, text_tabs, text_picture_bullets, fills_texture, transition_morph, text_embedded_fonts, text_warp, anim_repeat, charts_sizes, slide_timings, lines_compound, table_diagonal, lines_gradient, fills_radial, fills_rect_gradient, shapes_3d, table_vertical, transitions_more, anim_sound, anim_build, anim_after, anim_text_emphasis, charts_bubble, media_video, charts_options, charts_negative, shapes_bevel, charts_legend, shapes_3d_rotation, smartart_3d, charts_ofpie, charts_3d, anim_group_emphasis, activex_controls, charts_extras, charts_axis_titles, charts_fills, charts_outlines, charts_labels_more, group_scale, group_flip, charts_3d_line, charts_legend_pos, charts_crowded_labels, charts_label_skip, charts_bar_long_names, charts_multilevel, picture_recolor, text_symbols, text_numbering, lines_arrows, table_styles, shapes_styles, charts_styles, placeholders_inherit, text_bold_light, ole_objects, text_hanging_punct, speaker_notes, pictures_tiff, placeholders_picture, pictures_exif, text_picture_fill, pictures_mislabeled, emf_alphablend, placeholders_orphan, picture_fill_rect, slide_number_fields, table_builtin_styles, smartart_matrix, text_layout_unit, colors_gamma, text_latin_cjk_font, text_default_style]
+MISSING_JP_FONTS = [
+    '<a:latin typeface="Unppt Missing JP" panose="020B0500000000000000" pitchFamily="34" charset="-128"/><a:ea typeface="Unppt Missing JP" panose="020B0500000000000000" pitchFamily="34" charset="-128"/>',
+    '<a:latin typeface="Unppt Missing JP Light" panose="020B0300000000000000" pitchFamily="34" charset="-128"/><a:ea typeface="Unppt Missing JP Light" panose="020B0300000000000000" pitchFamily="34" charset="-128"/>',
+    '<a:latin typeface="Unppt Missing Mixed" pitchFamily="34" charset="-128"/><a:ea typeface="Unppt Missing Mixed" pitchFamily="34" charset="-128"/>',
+    '<a:latin typeface="Unppt Missing Mixed" pitchFamily="34" charset="-122"/><a:ea typeface="Unppt Missing Mixed" pitchFamily="34" charset="-122"/>',
+    '<a:latin typeface="Yu Gothic"/><a:ea typeface="Yu Gothic"/>',
+    '<a:latin typeface="Yu Gothic Light"/><a:ea typeface="Yu Gothic Light"/>',
+    '<a:latin typeface="Microsoft YaHei"/><a:ea typeface="Microsoft YaHei"/>',
+]
+
+
+def text_missing_font_jp(app):
+    """缺失字体标了日文字符集（charset=-128）：PowerPoint 用 Yu Gothic 替代（和 PANOSE 字重无关），它没有的简体字用雅黑补；
+    同一个字体名先标日文、后标中文时整个文档按最后一次（中文，用雅黑）；后 3 行是对照字体（保存后改 XML）"""
+    p = new_pres(app)
+    s = blank(p)
+    for k in range(len(MISSING_JP_FONTS)):
+        tb = s.Shapes.AddTextbox(1, 30, 15 + k * 74, 900, 60)
+        tr = tb.TextFrame.TextRange
+        tr.Text = "客户提供数字化企业大学解决方案的建设和运营服务 SAAS 123 ひらがな"
+        tr.Font.Size = 24
+        tr.Font.Name = f"MarkerFont{k}"
+    return p
+
+
+def _patch_missing_jp(path):
+    import re
+    import zipfile
+    tmp = path.with_suffix(".tmp")
+    with zipfile.ZipFile(path) as zin, zipfile.ZipFile(tmp, "w", zipfile.ZIP_DEFLATED) as zout:
+        for item in zin.infolist():
+            data = zin.read(item.filename)
+            if item.filename == "ppt/slides/slide1.xml":
+                xml = data.decode("utf8")
+                for k, f in enumerate(MISSING_JP_FONTS):
+                    xml = re.sub(rf'<a:latin typeface="MarkerFont{k}"[^>]*/>', f, xml)
+                    xml = re.sub(rf'<a:(ea|cs) typeface="MarkerFont{k}"[^>]*/>', "", xml)
+                data = xml.encode("utf8")
+            zout.writestr(item, data)
+    tmp.replace(path)
+
+
+text_missing_font_jp.patch = _patch_missing_jp
+
+
+CASES = [shapes_all, text_sizes, text_align, text_spacing, text_bullets, text_missing_font, shapes_basic, fills_lines, table_basic, group_rotate, anim_basic, anim_auto, charts_basic, pictures, smartart, text_effects, text_layout, table_merge, links, emf_images, anim_advanced, charts_labels, freeform_icons, media_audio, anim_trigger, wmf_images, anim_iterate, picture_transparent, charts_more, shape_effects, equations, anim_path, anim_emphasis, transitions, fills_patterns, text_decoration, anim_entrance, svg_images, charts_markers, hidden_slides, media_background, text_glow_reflection, text_tabs, text_picture_bullets, fills_texture, transition_morph, text_embedded_fonts, text_warp, anim_repeat, charts_sizes, slide_timings, lines_compound, table_diagonal, lines_gradient, fills_radial, fills_rect_gradient, shapes_3d, table_vertical, transitions_more, anim_sound, anim_build, anim_after, anim_text_emphasis, charts_bubble, media_video, charts_options, charts_negative, shapes_bevel, charts_legend, shapes_3d_rotation, smartart_3d, charts_ofpie, charts_3d, anim_group_emphasis, activex_controls, charts_extras, charts_axis_titles, charts_fills, charts_outlines, charts_labels_more, group_scale, group_flip, charts_3d_line, charts_legend_pos, charts_crowded_labels, charts_label_skip, charts_bar_long_names, charts_multilevel, picture_recolor, text_symbols, text_numbering, lines_arrows, table_styles, shapes_styles, charts_styles, placeholders_inherit, text_bold_light, ole_objects, text_hanging_punct, speaker_notes, pictures_tiff, placeholders_picture, pictures_exif, text_picture_fill, pictures_mislabeled, emf_alphablend, placeholders_orphan, picture_fill_rect, slide_number_fields, table_builtin_styles, smartart_matrix, text_layout_unit, colors_gamma, text_latin_cjk_font, text_default_style, text_missing_font_jp]
 
 
 def main():
