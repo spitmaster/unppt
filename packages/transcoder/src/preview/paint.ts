@@ -62,6 +62,8 @@ export interface Painter {
 }
 
 const JPEG_QUALITY = 85;
+/** 每个线程缓存的 <pattern> 图片 data URI 总长度上限（字符数，约等于字节数） */
+const URI_CACHE = 64_000_000;
 
 let ready: Promise<void> | undefined;
 
@@ -74,6 +76,27 @@ export async function createPainter(wasm: Uint8Array | WebAssembly.Module): Prom
   let layers = new TemplateCache();
   /** 单独画成位图的 SVG 图片（PNG），这次转换里共用 */
   let rasters = new Map<string, Promise<Uint8Array | undefined>>();
+  /** <pattern> 里图片的 data URI（每页都用同一张背景图时不必每页重新编码），按长度只留最近的 URI_CACHE 个字符 */
+  let uris = new Map<string, string>();
+  let urisLength = 0;
+
+  async function dataUri(href: string, res: PaintResources, warnings: string[]): Promise<string | undefined> {
+    const hit = uris.get(href);
+    if (hit) return hit;
+    const b = await imageBytes(href, res, warnings);
+    if (!b) return undefined;
+    const uri = `data:${mimeOf(b)};base64,${base64(b)}`;
+    if (uri.length <= URI_CACHE) {
+      for (const [k, v] of uris) {
+        if (urisLength + uri.length <= URI_CACHE) break;
+        uris.delete(k);
+        urisLength -= v.length;
+      }
+      uris.set(href, uri);
+      urisLength += uri.length;
+    }
+    return uri;
+  }
 
   /** 页面里图片地址 -> 图片字节；单独画成位图的 SVG 图片在这里画（画一次） */
   function imageBytes(href: string, res: PaintResources, warnings: string[]): Promise<Uint8Array | undefined> {
@@ -95,15 +118,7 @@ export async function createPainter(wasm: Uint8Array | WebAssembly.Module): Prom
   /** 画一张 SVG；background 不给时画在透明画布上（像素是预乘透明度的）；take 从画好的图里取要的东西 */
   async function draw<T>(p: PaintSvg, width: number, res: PaintResources, warnings: string[], background: string | undefined,
     take: (img: { width: number; height: number; pixels: Uint8Array; asPng(): Uint8Array }) => T): Promise<T> {
-    // resvg 只把 http(s) 地址报成"待解析图片"：media/…、共享图片编号先换成占位地址，再按占位地址把原图交给它
-    const real = new Map<string, string>();
-    const src = (await inlinePatternImages(p.svg, (h) => imageBytes(h, res, warnings)))
-      .replace(/(<image\b[^>]*?\s(?:xlink:)?href=")([^"#][^"]*)"/g, (m, pre: string, h: string) => {
-        if (h.startsWith('data:')) return m;
-        const u = `https://unppt.local/${real.size}`;
-        real.set(u, h);
-        return `${pre}${u}"`;
-      });
+    const { svg: src, real } = await imageHrefs(p.svg, (h) => dataUri(h, res, warnings));
     const buffers: Uint8Array[] = [];
     for (const id of p.fonts) {
       let b = fonts.get(id);
@@ -179,6 +194,8 @@ export async function createPainter(wasm: Uint8Array | WebAssembly.Module): Prom
         fonts = new Map();
         layers = new TemplateCache();
         rasters = new Map();
+        uris = new Map();
+        urisLength = 0;
       }
       const warnings: string[] = [], layerWarnings: string[] = [];
       const layer = () => (layerWarnings.length ? { layerWarnings } : {});
@@ -211,22 +228,30 @@ export async function createPainter(wasm: Uint8Array | WebAssembly.Module): Prom
   };
 }
 
-/** resvg 不把 <pattern> 里的图片报成待解析（实测：图片填充、背景图都画成空白），这些图片直接内联成 data URI */
-async function inlinePatternImages(svg: string, image: (href: string) => Promise<Uint8Array | undefined>): Promise<string> {
-  const out: string[] = [];
+/**
+ * 换掉页面里的图片地址：resvg 只把 http(s) 地址报成"待解析图片"，media/…、共享图片编号换成占位地址（real：占位地址 -> 原地址），
+ * 再按占位地址把原图交给它；<pattern> 里的图片 resvg 不报（实测：图片填充、背景图都画成空白），直接内联成 data URI。
+ * 一遍拼出来：大图（几十 MB 的 data URI）只复制一次
+ */
+async function imageHrefs(svg: string, dataUri: (href: string) => Promise<string | undefined>): Promise<{ svg: string; real: Map<string, string> }> {
+  const real = new Map<string, string>();
+  const patterns = [...svg.matchAll(/<pattern\b[\s\S]*?<\/pattern>/g)].map((m) => [m.index!, m.index! + m[0].length]);
+  const parts: string[] = [];
   let last = 0;
-  for (const m of svg.matchAll(/<pattern\b[\s\S]*?<\/pattern>/g)) {
-    let body = m[0];
-    for (const [tag, pre, href] of body.matchAll(/(<image\b[^>]*?\s(?:xlink:)?href=")([^"#][^"]*)"/g)) {
-      if (href.startsWith('data:')) continue;
-      const b = await image(href);
-      if (b) body = body.replace(tag, () => `${pre}data:${mimeOf(b)};base64,${base64(b)}"`);
+  for (const m of svg.matchAll(/(<image\b[^>]*?\s(?:xlink:)?href=")([^"#][^"]*)"/g)) {
+    const href = m[2];
+    if (href.startsWith('data:')) continue;
+    const at = m.index! + m[1].length;
+    let to = patterns.some(([s, e]) => m.index! > s && at < e) ? await dataUri(href) : undefined;
+    if (!to) {
+      to = `https://unppt.local/${real.size}`;
+      real.set(to, href);
     }
-    out.push(svg.slice(last, m.index), body);
-    last = m.index! + m[0].length;
+    parts.push(svg.slice(last, at), to);
+    last = at + href.length;
   }
-  out.push(svg.slice(last));
-  return out.join('');
+  parts.push(svg.slice(last));
+  return { svg: parts.join(''), real };
 }
 
 function mimeOf(b: Uint8Array): string {
