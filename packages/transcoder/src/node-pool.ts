@@ -1,7 +1,7 @@
 /**
  * Node 的并行出图执行器（RasterPool，见 preview/slide-images.ts）：工作线程池，每个线程一份 resvg、libjpeg-turbo，
- * 用 preview/paint.ts 画（和本线程画逐字节一致）。线程数默认按 CPU 和可用内存自动定（autoWorkers），创建时全部启动，
- * 出错退出的按需换新的；空闲的线程不拦着进程退出。工作线程画一页时要的字体、图片、背景层 SVG 向主线程要（主线程的 PaintResources 回答），
+ * 用 preview/paint.ts 画（和本线程画逐字节一致）。线程数默认按 CPU 和可用内存自动定（autoWorkers），创建时先启动两个，
+ * 排队的页多了再补到上限，出错退出的也按需补；空闲的线程不拦着进程退出。工作线程画一页时要的字体、图片、背景层 SVG 向主线程要（主线程的 PaintResources 回答），
  * 画完的 JPEG 转移回主线程。只在 Node 用（命令行、云函数）：转码器本身（index.ts）不创建线程。
  */
 import { readFileSync } from 'node:fs';
@@ -91,7 +91,7 @@ export async function createRasterPool(wasm: Uint8Array, workers = autoWorkers()
     pump();
   }
 
-  /** 排队的页交给空闲线程；线程退出过、不够数时补上（算上正在启动的）；连续启动失败 3 次后剩下的页都不画 */
+  /** 排队的页交给空闲线程；还有排队的就再启动线程（算上正在启动的，不超过上限）；连续启动失败 3 次后剩下的页都不画 */
   function pump() {
     for (const slot of slots) {
       if (!queue.length) return;
@@ -110,8 +110,8 @@ export async function createRasterPool(wasm: Uint8Array, workers = autoWorkers()
     for (let n = Math.min(queue.length - starting, workers - slots.length); n > 0; n--) spawn();
   }
 
-  // 一开始就启动所有线程：启动（加载脚本、实例化 resvg）和主线程转码第一页同时进行
-  for (let i = 0; i < workers; i++) spawn();
+  // 先启动两个（加载脚本、实例化 resvg 和主线程转码第一页同时进行），排队的页多了再补：只有一两页的课件不必启动一大堆
+  for (let i = 0; i < Math.min(workers, 2); i++) spawn();
   return {
     size: workers,
     paint(job, res) {
