@@ -1,0 +1,113 @@
+{
+ "version": 8,
+ "level": "full",
+ "slideWidthPt": 960.0,
+ "slideHeightPt": 540.0,
+ "imageWidth": 1280,
+ "imageHeight": 720,
+ "slides": [
+  {
+   "index": 0,
+   "hidden": false,
+   "shapes": [
+    {
+     "id": 2,
+     "name": "TextBox 1",
+     "type": 17,
+     "x": 30.0,
+     "y": 30.0,
+     "w": 900.0,
+     "h": 41.198,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 27,
+       "text": "捐赠“爱心图书室”，每年“六一”‘带领’——学生…开展",
+       "x": 37.2,
+       "y": 33.6,
+       "w": 756.005,
+       "h": 33.6
+      }
+     ]
+    },
+    {
+     "id": 3,
+     "name": "TextBox 2",
+     "type": 17,
+     "x": 30.0,
+     "y": 150.0,
+     "w": 900.0,
+     "h": 41.198,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 27,
+       "text": "捐赠“爱心图书室”，每年“六一”‘带领’——学生…开展",
+       "x": 37.2,
+       "y": 153.6,
+       "w": 649.005,
+       "h": 33.6
+      }
+     ]
+    },
+    {
+     "id": 4,
+     "name": "TextBox 3",
+     "type": 17,
+     "x": 30.0,
+     "y": 270.0,
+     "w": 900.0,
+     "h": 41.198,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 27,
+       "text": "捐赠“爱心图书室”，每年“六一”‘带领’——学生…开展",
+       "x": 37.2,
+       "y": 273.6,
+       "w": 756.005,
+       "h": 33.6
+      }
+     ]
+    },
+    {
+     "id": 5,
+     "name": "TextBox 4",
+     "type": 17,
+     "x": 30.0,
+     "y": 390.0,
+     "w": 900.0,
+     "h": 41.198,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 27,
+       "text": "捐赠“爱心图书室”，每年“六一”‘带领’——学生…开展",
+       "x": 37.2,
+       "y": 393.6,
+       "w": 756.005,
+       "h": 33.6
+      }
+     ]
+    }
+   ],
+   "effects": [],
+   "triggerHidden": [],
+   "steps": 0,
+   "keptSlideshow": false
+  }
+ ],
+ "ok": true
+}
