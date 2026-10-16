@@ -4,7 +4,7 @@
 
 | 组件 | 版本 | 许可证 | 源码 | 用途 |
 |---|---|---|---|---|
-| resvg-js（@resvg/resvg-wasm，resvg 的 WebAssembly 版） | 2.6.2 | MPL-2.0 | https://github.com/yisibl/resvg-js | 把页面画成整页图和缩略图（`dist/resvg.wasm` 和打进 `dist/index.js`、`dist/cli.js` 的 JS 部分） |
+| resvg-js（@resvg/resvg-wasm，resvg 的 WebAssembly 版） | 2.7.0-alpha.2（预发布版，用户 2026-10-16 同意：渲染核心和 2.6.2 相同，新编译器构建，出图逐字节一致、快 19%~35%） | MPL-2.0 | https://github.com/yisibl/resvg-js | 把页面画成整页图和缩略图（`dist/resvg.wasm` 和打进 `dist/index.js`、`dist/cli.js` 的 JS 部分） |
 | saxes | 6.0.0 | ISC | https://github.com/lddubeau/saxes | XML 解析（打进 `dist/index.js`、`dist/cli.js`） |
 | xmlchars（saxes 的依赖） | 2.2.0 | MIT | https://github.com/lddubeau/xmlchars | XML 字符判定（同上） |
 | harfbuzzjs（HarfBuzz 的 WebAssembly 版，用其中的 harfbuzz-subset.wasm） | 1.6.3 | MIT | https://github.com/harfbuzz/harfbuzzjs | 字体子集化（WASM 打进 `dist/index.js`、`dist/cli.js`） |
