@@ -1,0 +1,166 @@
+{
+ "version": 8,
+ "level": "full",
+ "slideWidthPt": 960.0,
+ "slideHeightPt": 540.0,
+ "imageWidth": 1280,
+ "imageHeight": 720,
+ "slides": [
+  {
+   "index": 0,
+   "hidden": false,
+   "shapes": [
+    {
+     "id": 2,
+     "name": "Title 1",
+     "type": 14,
+     "x": 66.0,
+     "y": 28.75,
+     "w": 828.0,
+     "h": 104.375,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 138,
+     "lines": [
+      {
+       "start": 0,
+       "len": 13,
+       "text": "没有编号的标题 Title",
+       "x": 73.2,
+       "y": 57.178,
+       "w": 395.88,
+       "h": 47.52
+      }
+     ]
+    },
+    {
+     "id": 3,
+     "name": "Subtitle 2",
+     "type": 14,
+     "x": 120.0,
+     "y": 283.625,
+     "w": 720.0,
+     "h": 130.375,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 138
+    }
+   ],
+   "effects": [],
+   "triggerHidden": [],
+   "steps": 0,
+   "keptSlideshow": false
+  },
+  {
+   "index": 1,
+   "hidden": false,
+   "shapes": [
+    {
+     "id": 2,
+     "name": "Title 1",
+     "type": 14,
+     "x": 66.0,
+     "y": 28.75,
+     "w": 828.0,
+     "h": 104.375,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 138,
+     "lines": [
+      {
+       "start": 0,
+       "len": 7,
+       "text": "没有编号的正文",
+       "x": 73.2,
+       "y": 57.178,
+       "w": 308.005,
+       "h": 47.52
+      }
+     ]
+    },
+    {
+     "id": 3,
+     "name": "Content Placeholder 2",
+     "type": 14,
+     "x": 66.0,
+     "y": 143.75,
+     "w": 828.0,
+     "h": 342.625,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 138,
+     "lines": [
+      {
+       "start": 0,
+       "len": 8,
+       "text": "没有编号的正文\r",
+       "x": 91.2,
+       "y": 147.35,
+       "w": 203.625,
+       "h": 30.24
+      },
+      {
+       "start": 8,
+       "len": 10,
+       "text": "第二段 Second",
+       "x": 91.2,
+       "y": 177.59,
+       "w": 180.505,
+       "h": 40.24
+      }
+     ]
+    }
+   ],
+   "effects": [],
+   "triggerHidden": [],
+   "steps": 0,
+   "keptSlideshow": false
+  },
+  {
+   "index": 2,
+   "hidden": false,
+   "shapes": [
+    {
+     "id": 2,
+     "name": "Title 1",
+     "type": 14,
+     "x": 120.0,
+     "y": 88.375,
+     "w": 720.0,
+     "h": 188.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 138,
+     "lines": [
+      {
+       "start": 0,
+       "len": 12,
+       "text": "对照标题 Control",
+       "x": 258.562,
+       "y": 207.975,
+       "w": 442.88,
+       "h": 64.8
+      }
+     ]
+    },
+    {
+     "id": 3,
+     "name": "Subtitle 2",
+     "type": 14,
+     "x": 120.0,
+     "y": 283.625,
+     "w": 720.0,
+     "h": 130.375,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 138
+    }
+   ],
+   "effects": [],
+   "triggerHidden": [],
+   "steps": 0,
+   "keptSlideshow": false
+  }
+ ],
+ "ok": true
+}
