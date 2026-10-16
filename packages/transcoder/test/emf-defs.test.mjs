@@ -45,3 +45,15 @@ test('同一页里重复很多次的大 SVG 图片画成位图；小图标重复
   assert.equal(calls.length, 1);
   assert.equal((outSmall.match(/<svg x=/g) ?? []).length, 3, '小图标照常展开');
 });
+
+test('连续用同一个裁剪的元素收进一个 g；单个的、中间隔开的保持原样', async () => {
+  const r2 = await build({ stdin: { contents: `export { groupClips } from './packages/transcoder/src/media/emf-defs.ts';`, resolveDir: process.cwd(), loader: 'ts' }, bundle: true, write: false, format: 'esm', platform: 'neutral', logLevel: 'silent' });
+  const { groupClips } = await import('data:text/javascript;base64,' + Buffer.from(r2.outputFiles[0].text).toString('base64'));
+  const p = (d, c) => `<path d="${d}"${c ? ` clip-path="url(#${c})"` : ''}/>`;
+  const t = '<text x="1" y="2" clip-path="url(#c1)">A</text>';
+  assert.equal(groupClips([p('M1', 'c1'), p('M2', 'c1'), t, p('M3', 'c2'), p('M4'), p('M5', 'c1')]),
+    `<g clip-path="url(#c1)">${p('M1')}${p('M2')}<text x="1" y="2">A</text></g>${p('M3', 'c2')}${p('M4')}${p('M5', 'c1')}`);
+  // 子元素里的裁剪不算（只看元素自己的开始标签）
+  const g = '<g fill="red"><path d="M0" clip-path="url(#c1)"/></g>';
+  assert.equal(groupClips([g, g]), g + g);
+});

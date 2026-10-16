@@ -2,6 +2,7 @@
  * WMF（Windows 图元文件，比 EMF 更老的 16 位格式）-> SVG。零依赖，按 [MS-WMF] 规范解析常用记录。
  * 注意：WMF 记录的参数多数是"倒序"存放的（例如矩形是 下、右、上、左）。
  */
+import { groupClips } from './emf-defs';
 import { svgImage, type ImageDecoder } from './image-decoder';
 
 interface Pen { color: string; width: number; none: boolean }
@@ -225,5 +226,5 @@ function wmfToSvgUnsafe(bytes: Uint8Array): string | undefined {
   }
   // 有窗口原点/范围时以它为准
   if (st.winExt) vb = [st.winOrg[0], st.winOrg[1], st.winExt[0], st.winExt[1]];
-  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${vb.map(f2).join(' ')}" preserveAspectRatio="none">${defs.length ? `<defs>${defs.join('')}</defs>` : ''}${out.join('')}</svg>`;
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${vb.map(f2).join(' ')}" preserveAspectRatio="none">${defs.length ? `<defs>${defs.join('')}</defs>` : ''}${groupClips(out)}</svg>`;
 }
