@@ -1,0 +1,143 @@
+{
+ "version": 8,
+ "level": "full",
+ "slideWidthPt": 960.0,
+ "slideHeightPt": 540.0,
+ "imageWidth": 1280,
+ "imageHeight": 720,
+ "slides": [
+  {
+   "index": 0,
+   "hidden": false,
+   "shapes": [
+    {
+     "id": 2,
+     "name": "Rectangle 1",
+     "type": 1,
+     "x": 60.0,
+     "y": 120.0,
+     "w": 180.0,
+     "h": 300.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1
+    },
+    {
+     "id": 3,
+     "name": "Rectangle 2",
+     "type": 1,
+     "x": 280.0,
+     "y": 120.0,
+     "w": 180.0,
+     "h": 300.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1
+    },
+    {
+     "id": 4,
+     "name": "Rectangle 3",
+     "type": 1,
+     "x": 500.0,
+     "y": 120.0,
+     "w": 180.0,
+     "h": 300.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1
+    },
+    {
+     "id": 5,
+     "name": "Rectangle 4",
+     "type": 1,
+     "x": 720.0,
+     "y": 120.0,
+     "w": 180.0,
+     "h": 300.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1
+    },
+    {
+     "id": 6,
+     "name": "Rectangle 5",
+     "type": 1,
+     "x": 30.0,
+     "y": 200.0,
+     "w": 300.0,
+     "h": 120.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1
+    },
+    {
+     "id": 7,
+     "name": "Oval 6",
+     "type": 1,
+     "x": 330.0,
+     "y": 160.0,
+     "w": 200.0,
+     "h": 200.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 9
+    },
+    {
+     "id": 8,
+     "name": "Rectangle 7",
+     "type": 1,
+     "x": 560.0,
+     "y": 220.0,
+     "w": 200.0,
+     "h": 100.0,
+     "rot": 30.0,
+     "visible": true,
+     "autoShapeType": 1
+    },
+    {
+     "id": 11,
+     "name": "Group 10",
+     "type": 6,
+     "x": 780.0,
+     "y": 150.0,
+     "w": 90.0,
+     "h": 184.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "children": [
+      {
+       "id": 9,
+       "name": "Rectangle 8",
+       "type": 1,
+       "x": 780.0,
+       "y": 150.0,
+       "w": 90.0,
+       "h": 96.0,
+       "rot": 0.0,
+       "visible": true,
+       "autoShapeType": 1
+      },
+      {
+       "id": 10,
+       "name": "Rectangle 9",
+       "type": 1,
+       "x": 780.0,
+       "y": 270.0,
+       "w": 90.0,
+       "h": 64.0,
+       "rot": 0.0,
+       "visible": true,
+       "autoShapeType": 1
+      }
+     ]
+    }
+   ],
+   "effects": [],
+   "triggerHidden": [],
+   "steps": 0,
+   "keptSlideshow": false
+  }
+ ],
+ "ok": true
+}

@@ -19,6 +19,7 @@ import { boxTransform, flipTransform, pc, placeBox, readXfrm, withUid } from '..
 import type { RenderContext } from '../context';
 import { projectedBounds, projectedPath, shapeProjection } from '../projection';
 import { pixelRow, snapBox } from '../pixel-snap';
+import { backgroundFill } from './bg-fill';
 
 export async function renderShape(r: RenderContext, el: XEl, ctx: SlideContext, groupFill?: Fill): Promise<string> {
   const { layoutPh, masterPh, ph } = r.inherited(el, ctx);
@@ -85,6 +86,12 @@ export async function renderShape(r: RenderContext, el: XEl, ctx: SlideContext, 
   const effRef = styleRef(child(style, 'a:effectRef'), ctx.theme.effectStyles, colors);
   const effect = child(spPr, 'a:effectLst') ?? child(lSpPr, 'a:effectLst') ?? child(effRef.el, 'a:effectLst');
   const filter = effectFilter(effect, effect === child(effRef.el, 'a:effectLst') ? effRef.ctx : colors, r.doc, gb.w, gb.h, undefined, [has3d(sp3d) ? bevelLayer(sp3d) : undefined], sp && projectedBounds(sp.map, box.w, box.h));
+  // 用幻灯片背景填充（useBgFill）：按轮廓裁出整页背景垫在下面，形状本身不填充（透视、三维旋转的不管）
+  const bgUse = attr(el, 'useBgFill');
+  const bgLayer = (bgUse === '1' || bgUse === 'true') && r.bgSvg && !sp && !hasCamera(scene3d)
+    ? backgroundFill(r.bgSvg, paths.filter((p) => p.d && p.fill !== 'none').map((p) => p.d).join(''), gb, ctx, r.env.pres.displayScale, r.doc)
+    : undefined;
+  if (bgLayer) fill = undefined;
   for (const [i, p] of paths.entries()) {
     if (!p.d) continue;
     const fa = p.fill !== 'none' ? await fillAttrs(fill, r.doc, gb.w, gb.h, p.fill, r.images, gb, cust ? undefined : attr(prst, 'prst') ?? 'rect') : ' fill="none"';
@@ -141,7 +148,7 @@ export async function renderShape(r: RenderContext, el: XEl, ctx: SlideContext, 
   const textAbs = ownText && laid ? `<g transform="${boxTransform({ ...txXfrm!, rot: box.rot + txXfrm!.rot, flipH: false, flipV: false })}">${laid}</g>` : '';
   const inner = ownText ? '' : laid;
   const text = inner && box.flipV ? `<g transform="rotate(180 ${n2(box.w / 2)} ${n2(box.h / 2)})">${inner}</g>` : inner;
-  if (!geom && !text && !textAbs) return '';
+  if (!geom && !text && !textAbs && !bgLayer) return '';
   const cam = cameraTransform(scene3d, box.w, box.h, r.env.pres.width);
   const light = cameraLightFilter(scene3d, r.doc);
   const lit = (s: string) => (light && s ? `<g filter="url(#${light})">${s}</g>` : s);
@@ -160,5 +167,5 @@ export async function renderShape(r: RenderContext, el: XEl, ctx: SlideContext, 
     : undefined;
   const sides = ext ? extrusionSides(plainGeom, ext, r.doc) : '';
   const shifted = snap && geom && (snap.dx || snap.dy) ? `<g transform="translate(${n2(snap.dx)} ${n2(snap.dy)})">${geom}</g>` : geom;
-  return withUid(uid, placeBox(box, lit(`${sides}${refl}${shifted}${text}`), r.doc, cam) + textAbs, el);
+  return withUid(uid, (bgLayer ?? '') + placeBox(box, lit(`${sides}${refl}${shifted}${text}`), r.doc, cam) + textAbs, el);
 }

@@ -15,4 +15,6 @@ export interface RenderContext extends FrameRenderer {
   /** 动画目标编号（只有幻灯片自己的元素才有） */
   uidOf(el: XEl, ctx: SlideContext): string | undefined;
   shapes(list: XEl[], ctx: SlideContext, groupFill?: Fill): Promise<string>;
+  /** 这一页的背景（铺满整页的元素；用幻灯片背景填充的形状要用，elements/bg-fill.ts） */
+  bgSvg?: string;
 }
