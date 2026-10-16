@@ -166,12 +166,38 @@ export function emitParagraphs(
         if (mirrored) under.push(`<g transform="translate(0 ${n2(bottom - height)})">${mirrored}</g>`);
       }
     }
-    const all = [...under, ...pParts, ...over];
+    const all = [...under, ...groupFilters(pParts), ...over];
     if (all.length) parts.push(pl.uid ? `<g data-uid="${pl.uid}">${all.join('')}</g>` : all.join(''));
   }
   env.lineBox = undefined;
   return parts;
 }
+
+/**
+ * 相邻、用同一个文字效果滤镜（阴影、发光、棱台……）的 <text> 收进一组，滤镜放在组上，和整段没拆开的文字一样（一段 <text> 的
+ * 阴影整体在文字下面）。两端对齐、分散对齐时中文每个字单独一段，每个字各做一遍滤镜，滤镜范围又是整个文本框：
+ * 样本里一页 132 个带阴影的字，整页图要画 30 秒
+ */
+export function groupFilters(parts: string[]): string[] {
+  const out: string[] = [];
+  let run: string[] = [];
+  let id = '';
+  const flush = () => {
+    if (run.length > 1) out.push(`<g filter="url(#${id})">${run.map((t) => t.replace(FILTERED, '$1$3')).join('')}</g>`);
+    else out.push(...run);
+    run = [];
+  };
+  for (const part of parts) {
+    const fid = FILTERED.exec(part)?.[2];
+    if (!fid || fid !== id) flush();
+    if (fid) { run.push(part); id = fid; } else { out.push(part); id = ''; }
+  }
+  flush();
+  return out;
+}
+
+/** textEl 输出的带滤镜的 <text>：滤镜是开始标签里最后一个属性 */
+const FILTERED = /^(<text [^>]*?) filter="url\(#([^)"]+)\)"( xml:space="preserve">)/;
 
 /**
  * 能不能逐字定位（每个字给一个 x）：一个字一个位置只对不需要字形组合的文字成立——基本平面里、
