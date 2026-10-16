@@ -41,13 +41,20 @@ export async function shrinkHugeJpeg(b: Uint8Array, limit = HUGE_PIXELS): Promis
 
 /** 包一层图片来源：超大 JPEG 换成缩小后的版本（cache 跨页共用，每份转换一张图只缩一次） */
 export function withHugeImagesShrunk(source: ImageSource, cache: Map<string, Promise<Uint8Array | undefined>>, limit = HUGE_PIXELS): ImageSource {
-  return async (href) => {
-    const hit = cache.get(href);
+  // 正在读的：多个出图线程同时要同一张图时只读、只缩一次（读完不是超大图的不留，免得把所有图片都存在内存里）
+  const reading = new Map<string, Promise<Uint8Array | undefined>>();
+  return (href) => {
+    const hit = cache.get(href) ?? reading.get(href);
     if (hit) return hit;
-    const b = await source(href);
-    if (!b || !hugeJpeg(b, limit)) return b;
-    const p = shrinkHugeJpeg(b, limit).then((s) => s ?? b);
-    cache.set(href, p);
+    const p = (async () => {
+      const b = await source(href);
+      if (!b || !hugeJpeg(b, limit)) return b;
+      const s = shrinkHugeJpeg(b, limit).then((x) => x ?? b);
+      cache.set(href, s);
+      return s;
+    })();
+    reading.set(href, p);
+    void p.finally(() => reading.delete(href)).catch(() => {});
     return p;
   };
 }
