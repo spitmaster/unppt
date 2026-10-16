@@ -3730,7 +3730,335 @@ def _patch_missing_jp(path):
 text_missing_font_jp.patch = _patch_missing_jp
 
 
-CASES = [shapes_all, text_sizes, text_align, text_spacing, text_bullets, text_missing_font, shapes_basic, fills_lines, table_basic, group_rotate, anim_basic, anim_auto, charts_basic, pictures, smartart, text_effects, text_layout, table_merge, links, emf_images, anim_advanced, charts_labels, freeform_icons, media_audio, anim_trigger, wmf_images, anim_iterate, picture_transparent, charts_more, shape_effects, equations, anim_path, anim_emphasis, transitions, fills_patterns, text_decoration, anim_entrance, svg_images, charts_markers, hidden_slides, media_background, text_glow_reflection, text_tabs, text_picture_bullets, fills_texture, transition_morph, text_embedded_fonts, text_warp, anim_repeat, charts_sizes, slide_timings, lines_compound, table_diagonal, lines_gradient, fills_radial, fills_rect_gradient, shapes_3d, table_vertical, transitions_more, anim_sound, anim_build, anim_after, anim_text_emphasis, charts_bubble, media_video, charts_options, charts_negative, shapes_bevel, charts_legend, shapes_3d_rotation, smartart_3d, charts_ofpie, charts_3d, anim_group_emphasis, activex_controls, charts_extras, charts_axis_titles, charts_fills, charts_outlines, charts_labels_more, group_scale, group_flip, charts_3d_line, charts_legend_pos, charts_crowded_labels, charts_label_skip, charts_bar_long_names, charts_multilevel, picture_recolor, text_symbols, text_numbering, lines_arrows, table_styles, shapes_styles, charts_styles, placeholders_inherit, text_bold_light, ole_objects, text_hanging_punct, speaker_notes, pictures_tiff, placeholders_picture, pictures_exif, text_picture_fill, pictures_mislabeled, emf_alphablend, placeholders_orphan, picture_fill_rect, slide_number_fields, table_builtin_styles, smartart_matrix, text_layout_unit, colors_gamma, text_latin_cjk_font, text_default_style, text_missing_font_jp, text_ea_line_break, text_ambiguous_punct, text_charset_slides, table_rowspan_tall, text_autofit_round, shapes_3d_contour, emf_clip_modes, placeholders_picture_geom, emf_gradient_fill, text_theme_font_lang, text_anchor_linespacing, table_linespacing, table_fontalgn, text_theme_font_latin, text_margin_right, text_charset_gap, slide_size_repair]
+
+def fills_shape_gradient(app):
+    """按形状的路径渐变（path="shape"，焦点在正中）：椭圆、四角星、圆角矩形、矩形、等腰三角形、心形；第 1 行白到深蓝，
+    第 2 行从半透明白到全透明、叠在深蓝底上（样本里常见的高光用法）。COM 设不了，保存后改 XML（同 fills-radial）"""
+    p = new_pres(app)
+    s = blank(p)
+    for i, k in enumerate([9, 91, 5, 1, 7, 21]):
+        x = 30 + i * 155
+        a = s.Shapes.AddShape(k, x, 40, 140, 200)
+        a.Line.Visible = 0
+        a.Fill.ForeColor.RGB = RGB(0x21, 0x21, 0x21)
+        bg = s.Shapes.AddShape(1, x - 5, 290, 150, 210)
+        bg.Line.Visible = 0
+        bg.Fill.ForeColor.RGB = RGB(31, 56, 100)
+        b = s.Shapes.AddShape(k, x, 295, 140, 200)
+        b.Line.Visible = 0
+        b.Fill.ForeColor.RGB = RGB(0x22, 0x22, 0x22)
+    return p
+
+
+def _patch_shape_gradient(path):
+    import zipfile
+    def g(c0, c1):
+        return (f'<a:gradFill rotWithShape="1"><a:gsLst><a:gs pos="0">{c0}</a:gs><a:gs pos="100000">{c1}</a:gs></a:gsLst>'
+                '<a:path path="shape"><a:fillToRect l="50000" t="50000" r="50000" b="50000"/></a:path></a:gradFill>').encode()
+    reps = {
+        "212121": g('<a:srgbClr val="FFFFFF"/>', '<a:srgbClr val="1F3864"/>'),
+        "222222": g('<a:srgbClr val="FFFFFF"><a:alpha val="60000"/></a:srgbClr>', '<a:srgbClr val="FFFFFF"><a:alpha val="0"/></a:srgbClr>'),
+    }
+    tmp = path.with_suffix(".tmp")
+    with zipfile.ZipFile(path) as zin, zipfile.ZipFile(tmp, "w", zipfile.ZIP_DEFLATED) as zout:
+        for item in zin.infolist():
+            data = zin.read(item.filename)
+            if item.filename.startswith("ppt/slides/slide"):
+                for k, v in reps.items():
+                    data = data.replace(b'<a:solidFill><a:srgbClr val="' + k.encode() + b'"/></a:solidFill>', v)
+            zout.writestr(item, data)
+    tmp.replace(path)
+
+
+fills_shape_gradient.patch = _patch_shape_gradient
+
+
+def text_shadow_runs(app):
+    """文字阴影跨字的叠放：阴影往左偏、不模糊（后一个字的阴影伸到前一个字上），看阴影是整体在所有字下面还是逐字叠。
+    两端对齐的中文段落（第一行每个字之间加了间距）、分散对齐的一行、每个字一个 run 交替两种颜色的一行、普通左对齐（对照）"""
+    p = new_pres(app)
+    s = blank(p)
+    specs = [("阴影叠放测试文字两端对齐阴影叠放测试文字两端对齐阴影叠放", 4, False, 30, 170),
+             ("分散对齐阴影叠放", 5, False, 210, 80), ("逐字交替颜色阴影叠放", 1, True, 310, 80), ("普通左对齐阴影叠放", 1, False, 410, 80)]
+    for text, algn, alternate, y, h in specs:
+        t = s.Shapes.AddTextbox(1, 40, y, 880, h)
+        tr = t.TextFrame.TextRange
+        tr.Text = text
+        tr.Font.Size = 54
+        tr.Font.Name = "Microsoft YaHei"
+        tr.Font.Color.RGB = RGB(30, 30, 30)
+        tr.ParagraphFormat.Alignment = algn
+        if alternate:
+            for i in range(len(text)):
+                tr.Characters(i + 1, 1).Font.Color.RGB = RGB(30, 30, 30) if i % 2 == 0 else RGB(40, 90, 200)
+        sh = t.TextFrame2.TextRange.Font.Shadow
+        sh.Visible = -1
+        sh.OffsetX = -14
+        sh.OffsetY = 4
+        sh.Blur = 0
+        sh.Transparency = 0
+        sh.ForeColor.RGB = RGB(230, 60, 60)
+    return p
+
+
+def text_shadow_dist(app):
+    """文字阴影的距离：外部阴影不模糊、红色，距离 4/8/16/32 磅，方向向右（第 1 行）和向下（第 2 行）；
+    第 3 行同样距离的矩形（对照：形状阴影）"""
+    p = new_pres(app)
+    s = blank(p)
+    for i, d in enumerate([4, 8, 16, 32]):
+        for row, (ox, oy) in enumerate([(d, 0), (0, d)]):
+            t = s.Shapes.AddTextbox(1, 30 + i * 230, 20 + row * 150, 200, 110)
+            tr = t.TextFrame.TextRange
+            tr.Text = "工H"
+            tr.Font.Size = 60
+            tr.Font.Name = "Microsoft YaHei"
+            tr.Font.Color.RGB = RGB(20, 20, 20)
+            sh = t.TextFrame2.TextRange.Font.Shadow
+            sh.Visible = -1
+            sh.OffsetX, sh.OffsetY = ox, oy
+            sh.Blur = 0
+            sh.Transparency = 0
+            sh.ForeColor.RGB = RGB(230, 60, 60)
+        r = s.Shapes.AddShape(1, 40 + i * 230, 340, 120, 120)
+        r.Fill.ForeColor.RGB = RGB(20, 20, 20)
+        r.Line.Visible = 0
+        sd = r.Shadow
+        sd.Visible = -1
+        sd.OffsetX, sd.OffsetY = d, d
+        sd.Blur = 0
+        sd.Transparency = 0
+        sd.ForeColor.RGB = RGB(230, 60, 60)
+    return p
+
+
+def text_shadow_size(app):
+    """文字阴影的距离和字号的关系：距离都是 16 磅向右、不模糊，字号 12/24/48/96 磅（第 1 行文本框，第 2 行矩形里的文字）"""
+    p = new_pres(app)
+    s = blank(p)
+    for i, size in enumerate([12, 24, 48, 96]):
+        for row in range(2):
+            if row == 0:
+                t = s.Shapes.AddTextbox(1, 20 + i * 235, 30, 220, 200)
+            else:
+                t = s.Shapes.AddShape(1, 20 + i * 235, 290, 220, 200)
+                t.Fill.Visible = 0
+                t.Line.Visible = 0
+            tr = t.TextFrame.TextRange
+            tr.Text = "工H"
+            tr.Font.Size = size
+            tr.Font.Name = "Microsoft YaHei"
+            tr.Font.Color.RGB = RGB(20, 20, 20)
+            sh = t.TextFrame2.TextRange.Font.Shadow
+            sh.Visible = -1
+            sh.OffsetX, sh.OffsetY = 16, 0
+            sh.Blur = 0
+            sh.Transparency = 0
+            sh.ForeColor.RGB = RGB(230, 60, 60)
+    return p
+
+
+def text_shadow_scale(app):
+    """文字阴影随字号缩放的规律：第 1 页距离 8 磅（上行）、32 磅（下行）向右、不模糊，字号 8/16/32/64/128 磅；
+    第 2 页 200 磅、距离 16 磅；第 3 页模糊 10 磅、距离 0（看模糊是否也随字号变），字号 16/64/128 磅"""
+    p = new_pres(app)
+
+    def box(s, x, y, w, h, size, ox, blur):
+        t = s.Shapes.AddTextbox(1, x, y, w, h)
+        t.TextFrame.WordWrap = 0
+        tr = t.TextFrame.TextRange
+        tr.Text = "H"
+        tr.Font.Size = size
+        tr.Font.Name = "Arial"
+        tr.Font.Color.RGB = RGB(20, 20, 20)
+        sh = t.TextFrame2.TextRange.Font.Shadow
+        sh.Visible = -1
+        sh.OffsetX, sh.OffsetY = ox, 0
+        sh.Blur = blur
+        sh.Transparency = 0
+        sh.ForeColor.RGB = RGB(230, 60, 60)
+
+    s = blank(p)
+    xs = [20, 80, 160, 300, 560]
+    for row, d in enumerate([8, 32]):
+        for x, size in zip(xs, [8, 16, 32, 64, 128]):
+            box(s, x, 20 + row * 260, 300, 200, size, d, 0)
+    s2 = blank(p)
+    box(s2, 100, 60, 800, 400, 200, 16, 0)
+    s3 = blank(p)
+    for x, size in zip([40, 240, 520], [16, 64, 128]):
+        box(s3, x, 150, 400, 300, size, 0, 10)
+    return p
+
+
+def text_shadow_blur(app):
+    """文字阴影的模糊随字号怎么变：距离 0、红色。第 1 页模糊 20 磅，字号 16/32/64/128 磅，右边同样模糊的矩形（对照）；
+    第 2 页 64 磅的字模糊 5/10/20/40 磅，下面同样模糊的矩形"""
+    p = new_pres(app)
+
+    def text(s, x, y, size, blur):
+        t = s.Shapes.AddTextbox(1, x, y, 300, 200)
+        t.TextFrame.WordWrap = 0
+        tr = t.TextFrame.TextRange
+        tr.Text = "H"
+        tr.Font.Size = size
+        tr.Font.Name = "Arial"
+        tr.Font.Color.RGB = RGB(20, 20, 20)
+        sh = t.TextFrame2.TextRange.Font.Shadow
+        sh.Visible = -1
+        sh.OffsetX, sh.OffsetY = 0, 0
+        sh.Blur = blur
+        sh.Transparency = 0
+        sh.ForeColor.RGB = RGB(230, 60, 60)
+
+    def rect(s, x, y, blur):
+        r = s.Shapes.AddShape(1, x, y, 40, 120)
+        r.Fill.ForeColor.RGB = RGB(20, 20, 20)
+        r.Line.Visible = 0
+        sd = r.Shadow
+        sd.Visible = -1
+        sd.OffsetX, sd.OffsetY = 0, 0
+        sd.Blur = blur
+        sd.Transparency = 0
+        sd.ForeColor.RGB = RGB(230, 60, 60)
+
+    s = blank(p)
+    for x, size in zip([30, 130, 260, 470], [16, 32, 64, 128]):
+        text(s, x, 150, size, 20)
+    rect(s, 820, 150, 20)
+    s2 = blank(p)
+    for i, b in enumerate([5, 10, 20, 40]):
+        text(s2, 40 + i * 230, 40, 64, b)
+        rect(s2, 60 + i * 230, 300, b)
+    return p
+
+
+def text_glow_scale(app):
+    """文字发光、映像随字号怎么变：第 1 页发光 10 磅红色，字号 16/32/64/128 磅；第 2 页映像（距离 10 磅、全映像），
+    字号 32/96 磅"""
+    p = new_pres(app)
+    s = blank(p)
+    for x, size in zip([30, 130, 260, 470], [16, 32, 64, 128]):
+        t = s.Shapes.AddTextbox(1, x, 150, 300, 200)
+        t.TextFrame.WordWrap = 0
+        tr = t.TextFrame.TextRange
+        tr.Text = "H"
+        tr.Font.Size = size
+        tr.Font.Name = "Arial"
+        tr.Font.Color.RGB = RGB(20, 20, 20)
+        g = t.TextFrame2.TextRange.Font.Glow
+        g.Radius = 10
+        g.Color.RGB = RGB(230, 60, 60)
+        g.Transparency = 0
+    s2 = blank(p)
+    for x, size in zip([60, 400], [32, 96]):
+        t = s2.Shapes.AddTextbox(1, x, 60, 300, 200)
+        t.TextFrame.WordWrap = 0
+        tr = t.TextFrame.TextRange
+        tr.Text = "H"
+        tr.Font.Size = size
+        tr.Font.Name = "Arial"
+        tr.Font.Color.RGB = RGB(20, 20, 20)
+        rf = t.TextFrame2.TextRange.Font.Reflection
+        rf.Type = 9            # msoReflectionType9：全映像、紧贴（后面改距离）
+        rf.Offset = 10
+        rf.Size = 100
+        rf.Transparency = 0
+        rf.Blur = 0
+    return p
+
+
+def picture_3d_shadow(app):
+    """透视旋转的图片带效果：外部阴影（大模糊）、调亮度、两者都有、都没有（对照）；看阴影是投影前画（跟着图片一起变形）
+    还是投影后画（平铺在页面上）"""
+    p = new_pres(app)
+    s = blank(p)
+    img = str((TESTCASES / "shapes-basic" / "slide-001.png").resolve())
+    for i in range(4):
+        x, y = 60 + (i % 2) * 450, 40 + (i // 2) * 250
+        sh = s.Shapes.AddPicture(img, 0, -1, x, y, 340, 191)
+        sh.ThreeD.SetPresetCamera(51)
+        if i in (0, 2):
+            sd = sh.Shadow
+            sd.Visible = -1
+            sd.OffsetX = 12
+            sd.OffsetY = 12
+            sd.Blur = 20
+            sd.Transparency = 0.4
+            sd.ForeColor.RGB = RGB(0, 0, 0)
+        if i in (1, 2):
+            sh.PictureFormat.Brightness = 0.7
+    return p
+
+
+def charts_axis_ea_vert(app):
+    """图表坐标轴文字东亚竖排（bodyPr vert="eaVert"，COM 设不了，保存后改 XML）：柱形图分类标签两字、四字、六字，
+    条形图数值轴也竖排（对照：第 2 张图横排）"""
+    p = new_pres(app, window=True)
+    s = blank(p)
+    rows = [['', '系列 1'], ['一月', 3], ['第二季度', 5], ['六个字的分类', 4], ['四', 2]]
+    for k in range(2):
+        ch = s.Shapes.AddChart2(-1, 51, 20 + k * 470, 40, 450, 440)
+        _chart_values(ch, rows)
+        _close_data(ch)
+    return p
+
+
+def _patch_axis_ea_vert(path):
+    import re
+    import zipfile
+    tmp = path.with_suffix(".tmp")
+    with zipfile.ZipFile(path) as zin, zipfile.ZipFile(tmp, "w", zipfile.ZIP_DEFLATED) as zout:
+        charts = sorted(n for n in zin.namelist() if re.match(r"ppt/charts/chart\d+\.xml$", n))
+        for item in zin.infolist():
+            data = zin.read(item.filename)
+            # 只改第一张图的分类轴和数值轴
+            if charts and item.filename == charts[0]:
+                x = data.decode("utf-8")
+                def vert(m):
+                    ax = m.group(0)
+                    if "<c:txPr>" in ax:
+                        return re.sub(r"<a:bodyPr\b([^>]*?)(/?)>", lambda b: "<a:bodyPr" + re.sub(r'\s(rot|vert)="[^"]*"', "", b.group(1)) + ' rot="0" vert="eaVert"' + b.group(2) + ">", ax, count=1)
+                    return ax.replace("<c:crossAx", '<c:txPr><a:bodyPr rot="0" vert="eaVert"/><a:lstStyle/><a:p><a:pPr><a:defRPr/></a:pPr><a:endParaRPr lang="zh-CN"/></a:p></c:txPr><c:crossAx', 1)
+                x = re.sub(r"<c:(catAx|valAx)>.*?</c:>", vert, x, flags=re.S)
+                data = x.encode("utf-8")
+            zout.writestr(item, data)
+    tmp.replace(path)
+
+
+charts_axis_ea_vert.patch = _patch_axis_ea_vert
+
+
+def fills_tile_resample(app):
+    """平铺图片填充缩放时怎么取样：31×31 的细斜纹（1 像素宽的线，白线和很暗的线两种），图片 DPI 分别是 150、96、72、48
+    （缩到 0.64 倍、原大、放大 1.33 倍、2 倍）；第 2 页很暗的那种当背景（样本里深色纹理背景常见）"""
+    from PIL import Image as PImage
+    out = CACHE / "make-case"
+    out.mkdir(parents=True, exist_ok=True)
+
+    def tile(dpi, fg):
+        im = PImage.new("RGB", (31, 31), (0, 0, 0))
+        for y in range(31):
+            for x in range(31):
+                if (x + y) % 8 == 0 or (x - y) % 8 == 0:
+                    im.putpixel((x, y), fg)
+        f = out / f"tile-{dpi}-{fg[0]}.png"
+        im.save(f, dpi=(dpi, dpi))
+        return str(f.resolve())
+
+    p = new_pres(app)
+    s = blank(p)
+    for i, dpi in enumerate([150, 96, 72, 48]):
+        for j, fg in enumerate([(255, 255, 255), (17, 17, 17)]):
+            sh = s.Shapes.AddShape(1, 30 + i * 230, 40 + j * 250, 210, 220)
+            sh.Line.Visible = 0
+            sh.Fill.UserTextured(tile(dpi, fg))
+    s2 = blank(p)
+    s2.FollowMasterBackground = 0
+    s2.Background.Fill.UserTextured(tile(150, (17, 17, 17)))
+    return p
+
+CASES = [shapes_all, text_sizes, text_align, text_spacing, text_bullets, text_missing_font, shapes_basic, fills_lines, table_basic, group_rotate, anim_basic, anim_auto, charts_basic, pictures, smartart, text_effects, text_layout, table_merge, links, emf_images, anim_advanced, charts_labels, freeform_icons, media_audio, anim_trigger, wmf_images, anim_iterate, picture_transparent, charts_more, shape_effects, equations, anim_path, anim_emphasis, transitions, fills_patterns, text_decoration, anim_entrance, svg_images, charts_markers, hidden_slides, media_background, text_glow_reflection, text_tabs, text_picture_bullets, fills_texture, transition_morph, text_embedded_fonts, text_warp, anim_repeat, charts_sizes, slide_timings, lines_compound, table_diagonal, lines_gradient, fills_radial, fills_rect_gradient, shapes_3d, table_vertical, transitions_more, anim_sound, anim_build, anim_after, anim_text_emphasis, charts_bubble, media_video, charts_options, charts_negative, shapes_bevel, charts_legend, shapes_3d_rotation, smartart_3d, charts_ofpie, charts_3d, anim_group_emphasis, activex_controls, charts_extras, charts_axis_titles, charts_fills, charts_outlines, charts_labels_more, group_scale, group_flip, charts_3d_line, charts_legend_pos, charts_crowded_labels, charts_label_skip, charts_bar_long_names, charts_multilevel, picture_recolor, text_symbols, text_numbering, lines_arrows, table_styles, shapes_styles, charts_styles, placeholders_inherit, text_bold_light, ole_objects, text_hanging_punct, speaker_notes, pictures_tiff, placeholders_picture, pictures_exif, text_picture_fill, pictures_mislabeled, emf_alphablend, placeholders_orphan, picture_fill_rect, slide_number_fields, table_builtin_styles, smartart_matrix, text_layout_unit, colors_gamma, text_latin_cjk_font, text_default_style, text_missing_font_jp, text_ea_line_break, text_ambiguous_punct, text_charset_slides, table_rowspan_tall, text_autofit_round, shapes_3d_contour, emf_clip_modes, placeholders_picture_geom, emf_gradient_fill, text_theme_font_lang, text_anchor_linespacing, table_linespacing, table_fontalgn, text_theme_font_latin, text_margin_right, text_charset_gap, slide_size_repair, fills_shape_gradient, text_shadow_runs, picture_3d_shadow, charts_axis_ea_vert, fills_tile_resample, text_shadow_dist, text_shadow_size, text_shadow_scale, text_shadow_blur, text_glow_scale]
 
 
 def main():

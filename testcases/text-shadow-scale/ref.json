@@ -1,0 +1,363 @@
+{
+ "version": 8,
+ "level": "full",
+ "slideWidthPt": 960.0,
+ "slideHeightPt": 540.0,
+ "imageWidth": 1280,
+ "imageHeight": 720,
+ "slides": [
+  {
+   "index": 0,
+   "hidden": false,
+   "shapes": [
+    {
+     "id": 2,
+     "name": "TextBox 1",
+     "type": 17,
+     "x": 20.0,
+     "y": 20.0,
+     "w": 20.347,
+     "h": 16.964,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 1,
+       "text": "H",
+       "x": 27.2,
+       "y": 23.6,
+       "w": 5.755,
+       "h": 9.6
+      }
+     ]
+    },
+    {
+     "id": 3,
+     "name": "TextBox 2",
+     "type": 17,
+     "x": 80.0,
+     "y": 20.0,
+     "w": 26.153,
+     "h": 26.658,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 1,
+       "text": "H",
+       "x": 87.2,
+       "y": 23.6,
+       "w": 11.505,
+       "h": 19.2
+      }
+     ]
+    },
+    {
+     "id": 4,
+     "name": "TextBox 3",
+     "type": 17,
+     "x": 160.0,
+     "y": 20.0,
+     "w": 37.891,
+     "h": 46.045,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 1,
+       "text": "H",
+       "x": 167.2,
+       "y": 23.6,
+       "w": 23.13,
+       "h": 38.4
+      }
+     ]
+    },
+    {
+     "id": 5,
+     "name": "TextBox 4",
+     "type": 17,
+     "x": 300.0,
+     "y": 20.0,
+     "w": 61.242,
+     "h": 84.82,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 1,
+       "text": "H",
+       "x": 307.2,
+       "y": 23.6,
+       "w": 46.255,
+       "h": 76.8
+      }
+     ]
+    },
+    {
+     "id": 6,
+     "name": "TextBox 5",
+     "type": 17,
+     "x": 560.0,
+     "y": 20.0,
+     "w": 107.944,
+     "h": 162.37,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 1,
+       "text": "H",
+       "x": 567.2,
+       "y": 23.6,
+       "w": 92.505,
+       "h": 153.6
+      }
+     ]
+    },
+    {
+     "id": 7,
+     "name": "TextBox 6",
+     "type": 17,
+     "x": 20.0,
+     "y": 280.0,
+     "w": 20.347,
+     "h": 16.964,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 1,
+       "text": "H",
+       "x": 27.2,
+       "y": 283.6,
+       "w": 5.755,
+       "h": 9.6
+      }
+     ]
+    },
+    {
+     "id": 8,
+     "name": "TextBox 7",
+     "type": 17,
+     "x": 80.0,
+     "y": 280.0,
+     "w": 26.153,
+     "h": 26.658,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 1,
+       "text": "H",
+       "x": 87.2,
+       "y": 283.6,
+       "w": 11.505,
+       "h": 19.2
+      }
+     ]
+    },
+    {
+     "id": 9,
+     "name": "TextBox 8",
+     "type": 17,
+     "x": 160.0,
+     "y": 280.0,
+     "w": 37.891,
+     "h": 46.045,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 1,
+       "text": "H",
+       "x": 167.2,
+       "y": 283.6,
+       "w": 23.13,
+       "h": 38.4
+      }
+     ]
+    },
+    {
+     "id": 10,
+     "name": "TextBox 9",
+     "type": 17,
+     "x": 300.0,
+     "y": 280.0,
+     "w": 61.242,
+     "h": 84.82,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 1,
+       "text": "H",
+       "x": 307.2,
+       "y": 283.6,
+       "w": 46.255,
+       "h": 76.8
+      }
+     ]
+    },
+    {
+     "id": 11,
+     "name": "TextBox 10",
+     "type": 17,
+     "x": 560.0,
+     "y": 280.0,
+     "w": 107.944,
+     "h": 162.37,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 1,
+       "text": "H",
+       "x": 567.2,
+       "y": 283.6,
+       "w": 92.505,
+       "h": 153.6
+      }
+     ]
+    }
+   ],
+   "effects": [],
+   "triggerHidden": [],
+   "steps": 0,
+   "keptSlideshow": false
+  },
+  {
+   "index": 1,
+   "hidden": false,
+   "shapes": [
+    {
+     "id": 2,
+     "name": "TextBox 1",
+     "type": 17,
+     "x": 100.0,
+     "y": 60.0,
+     "w": 160.326,
+     "h": 249.614,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 1,
+       "text": "H",
+       "x": 107.2,
+       "y": 63.6,
+       "w": 144.38,
+       "h": 240.0
+      }
+     ]
+    }
+   ],
+   "effects": [],
+   "triggerHidden": [],
+   "steps": 0,
+   "keptSlideshow": false
+  },
+  {
+   "index": 2,
+   "hidden": false,
+   "shapes": [
+    {
+     "id": 2,
+     "name": "TextBox 1",
+     "type": 17,
+     "x": 40.0,
+     "y": 150.0,
+     "w": 26.153,
+     "h": 26.658,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 1,
+       "text": "H",
+       "x": 47.2,
+       "y": 153.6,
+       "w": 11.505,
+       "h": 19.2
+      }
+     ]
+    },
+    {
+     "id": 3,
+     "name": "TextBox 2",
+     "type": 17,
+     "x": 240.0,
+     "y": 150.0,
+     "w": 61.242,
+     "h": 84.82,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 1,
+       "text": "H",
+       "x": 247.2,
+       "y": 153.6,
+       "w": 46.255,
+       "h": 76.8
+      }
+     ]
+    },
+    {
+     "id": 4,
+     "name": "TextBox 3",
+     "type": 17,
+     "x": 520.0,
+     "y": 150.0,
+     "w": 107.944,
+     "h": 162.37,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 1,
+       "text": "H",
+       "x": 527.2,
+       "y": 153.6,
+       "w": 92.505,
+       "h": 153.6
+      }
+     ]
+    }
+   ],
+   "effects": [],
+   "triggerHidden": [],
+   "steps": 0,
+   "keptSlideshow": false
+  }
+ ],
+ "ok": true
+}

@@ -1,0 +1,122 @@
+{
+ "version": 8,
+ "level": "full",
+ "slideWidthPt": 960.0,
+ "slideHeightPt": 540.0,
+ "imageWidth": 1280,
+ "imageHeight": 720,
+ "slides": [
+  {
+   "index": 0,
+   "hidden": false,
+   "shapes": [
+    {
+     "id": 2,
+     "name": "TextBox 1",
+     "type": 17,
+     "x": 40.0,
+     "y": 30.0,
+     "w": 880.0,
+     "h": 138.136,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 16,
+       "text": "阴影叠放测试文字两端对齐阴影叠放",
+       "x": 47.2,
+       "y": 33.6,
+       "w": 865.5,
+       "h": 64.8
+      },
+      {
+       "start": 16,
+       "len": 12,
+       "text": "测试文字两端对齐阴影叠放",
+       "x": 47.2,
+       "y": 98.4,
+       "w": 648.005,
+       "h": 64.8
+      }
+     ]
+    },
+    {
+     "id": 3,
+     "name": "TextBox 2",
+     "type": 17,
+     "x": 40.0,
+     "y": 210.0,
+     "w": 880.0,
+     "h": 72.703,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 8,
+       "text": "分散对齐阴影叠放",
+       "x": 47.2,
+       "y": 213.6,
+       "w": 865.505,
+       "h": 64.8
+      }
+     ]
+    },
+    {
+     "id": 4,
+     "name": "TextBox 3",
+     "type": 17,
+     "x": 40.0,
+     "y": 310.0,
+     "w": 880.0,
+     "h": 72.703,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 10,
+       "text": "逐字交替颜色阴影叠放",
+       "x": 47.2,
+       "y": 313.6,
+       "w": 540.005,
+       "h": 64.8
+      }
+     ]
+    },
+    {
+     "id": 5,
+     "name": "TextBox 4",
+     "type": 17,
+     "x": 40.0,
+     "y": 410.0,
+     "w": 880.0,
+     "h": 72.703,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 9,
+       "text": "普通左对齐阴影叠放",
+       "x": 47.2,
+       "y": 413.6,
+       "w": 486.005,
+       "h": 64.8
+      }
+     ]
+    }
+   ],
+   "effects": [],
+   "triggerHidden": [],
+   "steps": 0,
+   "keptSlideshow": false
+  }
+ ],
+ "ok": true
+}

@@ -1,0 +1,275 @@
+{
+ "version": 8,
+ "level": "full",
+ "slideWidthPt": 960.0,
+ "slideHeightPt": 540.0,
+ "imageWidth": 1280,
+ "imageHeight": 720,
+ "slides": [
+  {
+   "index": 0,
+   "hidden": false,
+   "shapes": [
+    {
+     "id": 2,
+     "name": "TextBox 1",
+     "type": 17,
+     "x": 30.0,
+     "y": 150.0,
+     "w": 26.153,
+     "h": 26.658,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 1,
+       "text": "H",
+       "x": 37.2,
+       "y": 153.6,
+       "w": 11.505,
+       "h": 19.2
+      }
+     ]
+    },
+    {
+     "id": 3,
+     "name": "TextBox 2",
+     "type": 17,
+     "x": 130.0,
+     "y": 150.0,
+     "w": 37.891,
+     "h": 46.045,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 1,
+       "text": "H",
+       "x": 137.2,
+       "y": 153.6,
+       "w": 23.13,
+       "h": 38.4
+      }
+     ]
+    },
+    {
+     "id": 4,
+     "name": "TextBox 3",
+     "type": 17,
+     "x": 260.0,
+     "y": 150.0,
+     "w": 61.242,
+     "h": 84.82,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 1,
+       "text": "H",
+       "x": 267.2,
+       "y": 153.6,
+       "w": 46.255,
+       "h": 76.8
+      }
+     ]
+    },
+    {
+     "id": 5,
+     "name": "TextBox 4",
+     "type": 17,
+     "x": 470.0,
+     "y": 150.0,
+     "w": 107.944,
+     "h": 162.37,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 1,
+       "text": "H",
+       "x": 477.2,
+       "y": 153.6,
+       "w": 92.505,
+       "h": 153.6
+      }
+     ]
+    },
+    {
+     "id": 6,
+     "name": "Rectangle 5",
+     "type": 1,
+     "x": 820.0,
+     "y": 150.0,
+     "w": 40.0,
+     "h": 120.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1
+    }
+   ],
+   "effects": [],
+   "triggerHidden": [],
+   "steps": 0,
+   "keptSlideshow": false
+  },
+  {
+   "index": 1,
+   "hidden": false,
+   "shapes": [
+    {
+     "id": 2,
+     "name": "TextBox 1",
+     "type": 17,
+     "x": 40.0,
+     "y": 40.0,
+     "w": 61.242,
+     "h": 84.82,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 1,
+       "text": "H",
+       "x": 47.2,
+       "y": 43.6,
+       "w": 46.255,
+       "h": 76.8
+      }
+     ]
+    },
+    {
+     "id": 3,
+     "name": "Rectangle 2",
+     "type": 1,
+     "x": 60.0,
+     "y": 300.0,
+     "w": 40.0,
+     "h": 120.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1
+    },
+    {
+     "id": 4,
+     "name": "TextBox 3",
+     "type": 17,
+     "x": 270.0,
+     "y": 40.0,
+     "w": 61.242,
+     "h": 84.82,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 1,
+       "text": "H",
+       "x": 277.2,
+       "y": 43.6,
+       "w": 46.255,
+       "h": 76.8
+      }
+     ]
+    },
+    {
+     "id": 5,
+     "name": "Rectangle 4",
+     "type": 1,
+     "x": 290.0,
+     "y": 300.0,
+     "w": 40.0,
+     "h": 120.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1
+    },
+    {
+     "id": 6,
+     "name": "TextBox 5",
+     "type": 17,
+     "x": 500.0,
+     "y": 40.0,
+     "w": 61.242,
+     "h": 84.82,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 1,
+       "text": "H",
+       "x": 507.2,
+       "y": 43.6,
+       "w": 46.255,
+       "h": 76.8
+      }
+     ]
+    },
+    {
+     "id": 7,
+     "name": "Rectangle 6",
+     "type": 1,
+     "x": 520.0,
+     "y": 300.0,
+     "w": 40.0,
+     "h": 120.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1
+    },
+    {
+     "id": 8,
+     "name": "TextBox 7",
+     "type": 17,
+     "x": 730.0,
+     "y": 40.0,
+     "w": 61.242,
+     "h": 84.82,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 1,
+       "text": "H",
+       "x": 737.2,
+       "y": 43.6,
+       "w": 46.255,
+       "h": 76.8
+      }
+     ]
+    },
+    {
+     "id": 9,
+     "name": "Rectangle 8",
+     "type": 1,
+     "x": 750.0,
+     "y": 300.0,
+     "w": 40.0,
+     "h": 120.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1
+    }
+   ],
+   "effects": [],
+   "triggerHidden": [],
+   "steps": 0,
+   "keptSlideshow": false
+  }
+ ],
+ "ok": true
+}
