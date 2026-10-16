@@ -95,13 +95,30 @@ export function textFilter(s: RunStyle, env: TextEnv): string {
   const bevel = bevelLayer(env.sp3d);
   if (!doc || (!s.effects && !bevel)) return '';
   const gb = env.gradBox ?? { w: 1, h: 1 };
-  const key = `${JSON.stringify(s.effects)}|${bevel?.primitives ?? ''}|${n2(gb.w)}|${n2(gb.h)}`;
+  const k = effectScale(s.size);
+  const key = `${JSON.stringify(s.effects)}|${bevel?.primitives ?? ''}|${n2(gb.w)}|${n2(gb.h)}|${n2(k)}`;
   let byDoc = textFilters.get(doc);
   if (!byDoc) { byDoc = new Map(); textFilters.set(doc, byDoc); }
   let fid = byDoc.get(key);
   if (fid === undefined) {
-    fid = effectFilter(s.effects, env.colors, doc, gb.w, gb.h, TEXT_EFFECTS, [bevel]) ?? '';
+    fid = effectFilter(s.effects && scaleEffects(s.effects, k), env.colors, doc, gb.w, gb.h, TEXT_EFFECTS, [bevel]) ?? '';
     byDoc.set(key, fid);
   }
   return fid;
+}
+
+/**
+ * 文字的外阴影随字号缩放：距离和模糊都乘 (字号 / 72 磅)^(2/3)（size 是像素）。实测（text-shadow-scale、text-shadow-size、
+ * text-shadow-dist：Arial 8~200 磅、雅黑 12~96 磅，距离 4~32 磅，向右、向下）：PowerPoint 画的偏移和这个比例吻合到
+ * 1~3 像素（8 磅 0.23 倍、72 磅原样、200 磅约 2 倍），和距离成正比；形状的阴影不缩放
+ */
+function effectScale(size: number): number {
+  return Math.pow((size * 0.75) / 72, 2 / 3);
+}
+
+/** 效果定义里外阴影的距离、模糊和发光的半径乘 k（其它效果原样） */
+function scaleEffects(effects: XEl, k: number): XEl {
+  if (Math.abs(k - 1) < 1e-3) return effects;
+  const scaled = (el: XEl, names: string[]): XEl => ({ ...el, attrs: { ...el.attrs, ...Object.fromEntries(names.filter((n) => el.attrs[n] !== undefined).map((n) => [n, String(Math.round(Number(el.attrs[n]) * k))])) } });
+  return { ...effects, children: effects.children.map((c) => (c.name === 'a:outerShdw' ? scaled(c, ['dist', 'blurRad']) : c.name === 'a:glow' ? scaled(c, ['rad']) : c)) };
 }
