@@ -91,7 +91,7 @@ export async function convert(input: InputSource, options: ConvertOptions): Prom
   const docFaces = new Set<FontFace>();
   for (const ef of pres.embeddedFonts) {
     // 用到才解压
-    const face = lazyEmbeddedFont(() => pkg.zip.read(ef.part), ef.typeface, ef.bold, ef.italic, () => pres.warn(`嵌入的字体读不出来：${ef.typeface}`));
+    const face = lazyEmbeddedFont(() => pkg.zip.read(ef.part), ef.typeface, ef.bold, ef.italic, (reason) => pres.warn(`${reason ?? '嵌入的字体读不出来'}：${ef.typeface}`));
     docFaces.add(face);
     fonts.add([face]);
   }

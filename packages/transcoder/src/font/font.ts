@@ -19,6 +19,8 @@ export interface FontFace {
   source: RandomAccessSource;
   offset: number;
   load(): Promise<FontMetrics>;
+  /** 嵌入字体读出来以后发现用不了（读不出、CFF 轮廓，见 eot.ts）：按缺字体处理，字体库不再返回它 */
+  unusable?: boolean;
 }
 
 export interface FontMetrics {
@@ -222,8 +224,8 @@ export class FontLibrary {
   }
 
   find(family: string, bold: boolean, italic: boolean): FontFace | undefined {
-    const list = this.byFamily.get(family.toLowerCase().trim());
-    if (!list) return undefined;
+    const list = this.byFamily.get(family.toLowerCase().trim())?.filter((f) => !f.unusable);
+    if (!list?.length) return undefined;
     let best = list[0], bestScore = -1;
     for (const f of list) {
       const score = (f.bold === bold ? 2 : 0) + (f.italic === italic ? 1 : 0) + (f.weight === 400 ? 0.1 : 0);
@@ -233,7 +235,7 @@ export class FontLibrary {
   }
 
   has(family: string): boolean {
-    return this.byFamily.has(family.toLowerCase().trim());
+    return !!this.byFamily.get(family.toLowerCase().trim())?.some((f) => !f.unusable);
   }
 }
 

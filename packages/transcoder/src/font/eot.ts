@@ -54,6 +54,25 @@ export async function loadEmbeddedFont(bytes: Uint8Array, typeface: string, bold
   return faces;
 }
 
+/** PowerPoint 不用的嵌入字体（见 lazyEmbeddedFont）：返回原因；能用（或者看不出来）时返回 undefined */
+function unusableReason(bytes: Uint8Array): string | undefined {
+  let f: Uint8Array;
+  try {
+    f = eotToTtf(bytes) ?? bytes;
+  } catch {
+    return undefined;
+  }
+  if (f.length < 12) return undefined;
+  if (f[0] === 0x4f && f[1] === 0x54 && f[2] === 0x54 && f[3] === 0x4f) return '嵌入的字体是 CFF 轮廓（.otf），PowerPoint 不用它，按缺字体处理';
+  if (f[0] === 0x74 && f[1] === 0x74 && f[2] === 0x63 && f[3] === 0x66) return undefined;
+  const n = (f[4] << 8) | f[5];
+  const tag = (i: number) => String.fromCharCode(f[12 + i * 16], f[13 + i * 16], f[14 + i * 16], f[15 + i * 16]);
+  for (let i = 1; i < n && 16 + i * 16 <= f.length; i++) {
+    if (tag(i - 1) > tag(i)) return '嵌入的字体表目录没排序，PowerPoint 不用它，按缺字体处理';
+  }
+  return undefined;
+}
+
 /** 读不出来的字体：一个字都没有，排版时自然退回替代字体 */
 const EMPTY: FontMetrics = {
   unitsPerEm: 1000, ascent: 0.92, descent: 0.24, lineGap: 0,
@@ -62,9 +81,14 @@ const EMPTY: FontMetrics = {
 
 /**
  * 嵌入字体的占位：先按演示文稿里登记的名字注册，第一次用到（量字宽）时才读出来解压。
- * 没用到的嵌入字体（比如整套主题字体）不花时间和内存。读不出来时调用 onFail，排版退回替代字体。
+ * 没用到的嵌入字体（比如整套主题字体）不花时间和内存。读不出来、或者是 PowerPoint 不用的字体时调用 onFail（带原因），
+ * 标成 unusable，排版按缺字体处理。
+ * PowerPoint 不用的：CFF 轮廓（.otf，文件头 OTTO；Office 只能嵌入 TrueType 轮廓，这种是别的工具嵌进去的）、表目录没按标签
+ * 升序排的（OpenType 规范要求升序）。实测（样本）：87 个这样的嵌入字体（85 个目录倒序的 CFF 思源黑体等、2 个目录倒序的
+ * TrueType 微软雅黑），参考图上 PowerPoint 都按缺字体替代；把目录重排后用上它们，和参考图反而差得更远。手工拼的 EOT 连
+ * 目录正常的 TrueType 对照组 PowerPoint 都不认，没能用中性用例分开验证这两条。
  */
-export function lazyEmbeddedFont(read: () => Promise<Uint8Array | undefined>, typeface: string, bold: boolean, italic: boolean, onFail: () => void): FontFace {
+export function lazyEmbeddedFont(read: () => Promise<Uint8Array | undefined>, typeface: string, bold: boolean, italic: boolean, onFail: (reason?: string) => void): FontFace {
   let loaded: Promise<FontMetrics> | undefined;
   const face: FontFace = {
     families: [typeface.toLowerCase().trim()], displayFamily: typeface, bold, italic, weight: bold ? 700 : 400,
@@ -72,8 +96,10 @@ export function lazyEmbeddedFont(read: () => Promise<Uint8Array | undefined>, ty
     load() {
       loaded ??= (async () => {
         const bytes = await read();
+        const reason = bytes ? unusableReason(bytes) : undefined;
+        if (reason) { face.unusable = true; onFail(reason); return EMPTY; }
         const real = bytes ? (await loadEmbeddedFont(bytes, typeface, bold, italic))[0] : undefined;
-        if (!real) { onFail(); return EMPTY; }
+        if (!real) { face.unusable = true; onFail(); return EMPTY; }
         // 子集化要用真正的字体数据
         face.source = real.source;
         face.offset = real.offset;

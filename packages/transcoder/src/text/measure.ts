@@ -20,7 +20,12 @@ export function makeMeasurer(env: TextEnv): Measurer {
       if (!p) {
         const face = env.fonts.find(family, bold, italic);
         if (!face && !quiet) env.missingFonts.add(family);
-        p = face ? face.load().then((metrics) => ({ metrics, face })) : Promise.resolve(undefined);
+        // 嵌入字体第一次用到时才读出来，读出来发现用不了（unusable）的按缺字体处理
+        p = face ? face.load().then((metrics) => {
+          if (!face.unusable) return { metrics, face };
+          if (!quiet) env.missingFonts.add(family);
+          return undefined;
+        }) : Promise.resolve(undefined);
         cache.set(key, p);
       }
       return p;
