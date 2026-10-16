@@ -11,6 +11,7 @@ import { attr, child, type XEl } from '../io/xml';
 import type { Line } from '../style/line';
 import type { AxisInfo, Rect } from './model';
 import type { PixelGrid } from './pixel-grid';
+import { dashAttr } from './trendline';
 
 export type Side = 'l' | 'r' | 't' | 'b';
 const OPP: Record<Side, Side> = { l: 'r', r: 'l', t: 'b', b: 't' };
@@ -73,11 +74,17 @@ export function axisLine(dir: 'h' | 'v', at: number, b: Rect, line: Line, g: Pix
   if (dir === 'h') {
     const y = n2(g.line('y', at, line.width));
     const [x1, x2] = g.span('x', b.left, b.right, line.width);
-    return `<line x1="${n2(x1)}" y1="${y}" x2="${n2(x2)}" y2="${y}" stroke="${css(line.color!)}" stroke-width="${n2(line.width)}"/>`;
+    return `<line x1="${n2(x1)}" y1="${y}" x2="${n2(x2)}" y2="${y}"${stroke(line)}/>`;
   }
   const x = n2(g.line('x', at, line.width));
   const [y1, y2] = g.span('y', b.top, b.bottom, line.width);
-  return `<line x1="${x}" y1="${n2(y1)}" x2="${x}" y2="${n2(y2)}" stroke="${css(line.color!)}" stroke-width="${n2(line.width)}"/>`;
+  return `<line x1="${x}" y1="${n2(y1)}" x2="${x}" y2="${n2(y2)}"${stroke(line)}/>`;
+}
+
+/** 线的颜色、宽度、透明度、虚线（网格线、坐标轴线常见半透明的虚线） */
+function stroke(line: Line): string {
+  const c = line.color!;
+  return ` stroke="${css(c)}" stroke-width="${n2(line.width)}"${c.a < 0.999 ? ` stroke-opacity="${n2(c.a)}"` : ''}${dashAttr(line)}`;
 }
 
 /** 坐标轴朝外的方向（+1 是往右 / 往下） */
