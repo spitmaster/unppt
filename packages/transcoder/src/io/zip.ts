@@ -109,10 +109,14 @@ export class ZipReader {
     if (!e) throw new Error(`zip 条目不存在: ${entry.name}`);
     const ts = new TransformStream<Uint8Array, Uint8Array>();
     const done = e.raw.getData(ts.writable, OPTIONS);
+    // 条目坏了（例如本地文件头找不到）时 zip.js 直接失败、不关闭数据流：读的一方要同时等它，把错误交给调用方，
+    // 不然一直等下去，没人处理的失败还会让 Node 结束进程（样本里有这种文件，PowerPoint 能打开）
+    const failed = done.then(() => new Promise<never>(() => {}));
+    failed.catch(() => {});
     const reader = ts.readable.getReader();
     try {
       for (;;) {
-        const { done: end, value } = await reader.read();
+        const { done: end, value } = await Promise.race([reader.read(), failed]);
         if (end) break;
         yield value;
       }
