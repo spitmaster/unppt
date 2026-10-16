@@ -68,3 +68,24 @@ test('close() 时还没画完的页都结束（记警告），之后再来的页
   const late = await pool.paint(job(11), res);
   assert.ok(late.warnings.some((w) => w.includes('已关闭')));
 });
+
+test('resvg 在一个线程里出错很多次后换新线程：之后的页照常画，不卡住、不丢页', async () => {
+  const wasm = new Uint8Array(await readFile(new URL('../dist/resvg.wasm', import.meta.url)));
+  const pool = await createRasterPool(wasm, 1);
+  try {
+    const f = '<filter id="f" filterUnits="userSpaceOnUse" x="-30" y="-30" width="300" height="200"><feGaussianBlur in="SourceAlpha" stdDeviation="5"/></filter>';
+    // 60 个画布外很远、带阴影的元素（每个单独都会让 resvg 崩溃）：一页找的时候出错约 7 次，20 页超过换线程的次数
+    const far = Array.from({ length: 60 }, (_, k) => `<g transform="translate(${2100 + k * 10} 30)"><g filter="url(#f)"><rect width="20" height="20"/></g></g>`).join('');
+    const crashy = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 540" width="720" height="405"><defs>${f}</defs>${far}</svg>`;
+    const plain = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 540" width="720" height="405"><rect width="100" height="100" fill="red"/></svg>';
+    const res = { font: async () => undefined, image: async () => undefined, template: async () => undefined, raster: async () => undefined };
+    const job = (page, svg) => ({ conv: 'retire', page, main: { svg, fonts: [] }, picWidth: 1280, thumbWidth: 216, thumbHeight: 122 });
+    const results = await Promise.all(Array.from({ length: 20 }, (_, i) => pool.paint(job(i + 1, crashy), res)).concat([pool.paint(job(21, plain), res)]));
+    for (const r of results) assert.ok(r.pic, r.warnings.join('\n'));
+    const again = await pool.paint(job(22, plain), res);
+    assert.ok(again.pic);
+    assert.deepEqual(again.warnings, []);
+  } finally {
+    await pool.close();
+  }
+});

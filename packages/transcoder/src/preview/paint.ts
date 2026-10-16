@@ -8,6 +8,7 @@ import { initWasm, Resvg } from '@resvg/resvg-wasm';
 import { base64 } from '../media/media';
 import { jpegEncoder, type JpegEncode } from '../media/jpeg-encode';
 import { composite, TemplateCache } from './layers';
+import { dropCrashingFilters, lightingFilters } from './crash-filters';
 
 export interface RgbaImage { width: number; height: number; data: Uint8Array }
 
@@ -66,6 +67,13 @@ const JPEG_QUALITY = 85;
 const URI_CACHE = 64_000_000;
 
 let ready: Promise<void> | undefined;
+/** 这个线程里 resvg 出错（Rust panic）的次数：每次会漏掉一点 WASM 栈，实测 800 次以内画别的页结果不变、2000 次后内存越界 */
+let crashes = 0;
+
+/** 这个线程里 resvg 出错的次数（出图线程超过一定次数就换新线程，见 raster-worker.ts） */
+export function resvgCrashes(): number {
+  return crashes;
+}
 
 /** wasm：resvg 的 .wasm 字节（或编译好的模块）；整个线程只初始化一次 */
 export async function createPainter(wasm: Uint8Array | WebAssembly.Module): Promise<Painter> {
@@ -154,20 +162,26 @@ export async function createPainter(wasm: Uint8Array | WebAssembly.Module): Prom
     }
   }
 
-  /**
-   * 画一张 SVG；resvg 内部出错时，如果用了光照滤镜（棱台效果的 feDiffuseLighting / feSpecularLighting），去掉这些元素的
-   * 滤镜再画一次（棱台不画，形状按原色），记警告。实测 resvg 的光照滤镜在某些形状、某些位置会越界崩溃（样本里 1 页）
-   */
+  /** 画一张 SVG；resvg 内部出错时找出是哪几处滤镜引起的（crash-filters.ts），这几处按没有效果画，记警告 */
   async function renderSafe(p: PaintSvg, width: number, res: PaintResources, warnings: string[], background?: string): Promise<RgbaImage> {
     try {
       return await render(p, width, res, warnings, background);
     } catch (e) {
-      const lit = [...p.svg.matchAll(/<filter\b[^>]*\sid="([^"]+)"[^>]*>(?:(?!<\/filter>)[\s\S])*?<fe(?:Diffuse|Specular)Lighting\b/g)].map((m) => m[1]);
-      if (!lit.length) throw e;
-      const ids = new Set(lit);
-      const svg = p.svg.replace(/\sfilter="url\(#([^)"]+)\)"/g, (m, id: string) => (ids.has(id) ? '' : m));
-      warnings.push(`整页图里有棱台效果画不出来，按没有棱台画：${(e as Error).message}`);
-      return render({ ...p, svg }, width, res, warnings, background);
+      crashes++;
+      const found = await dropCrashingFilters(p.svg, async (svg) => {
+        const w: string[] = [];
+        try {
+          return { img: await render({ ...p, svg }, width, res, w, background), w };
+        } catch {
+          crashes++;
+          return undefined;
+        }
+      });
+      if (!found) throw e;
+      const lit = lightingFilters(p.svg);
+      const what = found.dropped.some((id) => lit.has(id)) ? '棱台效果' : '效果（阴影、发光等）';
+      warnings.push(...found.result.w, `整页图里有 ${found.dropped.length} 处${what}画不出来，这几处按没有效果画：${(e as Error).message}`);
+      return found.result.img;
     }
   }
 
