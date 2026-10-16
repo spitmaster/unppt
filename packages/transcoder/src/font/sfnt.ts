@@ -49,26 +49,6 @@ export function readSfnt(b: Uint8Array): Map<string, Uint8Array> {
   return out;
 }
 
-/**
- * 表目录没按标签升序排的字体，把目录项重排（表数据不动）；已经有序、或者是字体集合（.ttc）时原样返回。
- * OpenType 规范要求升序，HarfBuzz 和 resvg 的字体解析都按二分查找找表：实测 PowerPoint 嵌入的一些 CFF 字体（.otf）目录是倒序的，
- * 子集化直接失败（嵌入不了）、整页图上这个字体的字一个也画不出来；fontTools 能读（它重新排序）。
- */
-export function sortTableDirectory(b: Uint8Array): Uint8Array {
-  if (b.length < 12 || be32(b, 0) === 0x74746366) return b;
-  const n = be16(b, 4);
-  if (12 + n * 16 > b.length) return b;
-  const recs = Array.from({ length: n }, (_, i) => b.subarray(12 + i * 16, 28 + i * 16));
-  if (recs.every((r, i) => i === 0 || tagOf(recs[i - 1], 0) <= tagOf(r, 0))) return b;
-  const sorted = recs.map((r) => r.slice()).sort((x, y) => (tagOf(x, 0) < tagOf(y, 0) ? -1 : tagOf(x, 0) > tagOf(y, 0) ? 1 : 0));
-  const out = b.slice();
-  sorted.forEach((r, i) => out.set(r, 12 + i * 16));
-  let es = 0; while ((1 << (es + 1)) <= n) es++;
-  const sr = 16 << es, v = new DataView(out.buffer, out.byteOffset, out.byteLength);
-  v.setUint16(6, sr); v.setUint16(8, es); v.setUint16(10, n * 16 - sr);
-  return out;
-}
-
 function directory(tables: SfntTables): Uint8Array {
   const w = new Writer();
   let es = 0; while ((1 << (es + 1)) <= tables.length) es++;
