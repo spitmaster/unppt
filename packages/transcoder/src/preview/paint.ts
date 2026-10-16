@@ -9,6 +9,8 @@ import { base64 } from '../media/media';
 import { jpegEncoder, type JpegEncode } from '../media/jpeg-encode';
 import { composite, TemplateCache } from './layers';
 import { dropCrashingFilters, lightingFilters } from './crash-filters';
+import { warpPixels, type MeshWarp } from './mesh-warp';
+import { encodeRgba } from '../media/png';
 
 export interface RgbaImage { width: number; height: number; data: Uint8Array }
 
@@ -34,9 +36,11 @@ export interface PaintJob {
   thumbHeight: number;
 }
 
-/** 单独画成位图的 SVG 图片（inline-svg.ts）：画成 width 像素宽 */
+/** 单独画成位图的 SVG（inline-svg.ts 的嵌套 SVG 图片、mesh-warp.ts 的透视投影图片内容）：画成 width 像素宽 */
 export interface RasterSvg extends PaintSvg {
   width: number;
+  /** 画好后按三角形贴成投影后的样子 */
+  warp?: MeshWarp;
 }
 
 /** 页面里引用单独画成位图的 SVG 图片的地址前缀，后面是编号（向 resources.raster 要） */
@@ -112,7 +116,12 @@ export async function createPainter(wasm: Uint8Array | WebAssembly.Module): Prom
     const id = href.slice(RASTER_PREFIX.length);
     let p = rasters.get(id);
     if (!p) {
-      p = res.raster(id).then((s) => s && draw(s, s.width, res, warnings, undefined, (img) => new Uint8Array(img.asPng())))
+      p = res.raster(id).then(async (s) => {
+        if (!s) return undefined;
+        if (!s.warp) return draw(s, s.width, res, warnings, undefined, (img) => new Uint8Array(img.asPng()));
+        const img = await renderSafe(s, s.width, res, warnings);
+        return encodeRgba(warpPixels(img.data, img.width, img.height, s.warp), s.warp.width, s.warp.height);
+      })
         .catch((e: Error) => { warnings.push(`整页图里有图片画不出来，没画这张：${e.message}`); return undefined; });
       rasters.set(id, p);
     }
