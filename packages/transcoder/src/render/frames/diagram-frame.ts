@@ -38,6 +38,8 @@ export const diagramFrame: FrameHandler = {
     const scene3d = qsRel ? child(await pkg.xml(qsRel.target, false), 'dgm:scene3d') : undefined;
     const sub: SlideContext = { ...ctx, part: drawingPart, ownSlide: false, ...(scene3d ? { scene: { scene3d, w: box.w, h: box.h } } : {}) };
     const kids = children(tree).filter((c) => !c.name.endsWith('nvGrpSpPr') && !c.name.endsWith('grpSpPr'));
+    // 绘图缓存是空的（样本里见过：PowerPoint 打开时按数据模型重新排版，我们没有 SmartArt 排版引擎），和缺缓存一样提示
+    if (!kids.length && (data?.children ?? []).some((c) => c.name === 'dgm:ptLst' && c.children.length > 1)) r.env.pres.warn('SmartArt 绘图缓存是空的');
     const cam = cameraTransform(scene3d, box.w, box.h, r.env.pres.width);
     const light = cameraLightFilter(scene3d, r.doc);
     // 透视的场景：每个形状自己按场景相机投影（render/projection.ts），这里不再整体变换
