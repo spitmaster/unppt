@@ -27,6 +27,11 @@ export interface MountOptions extends InputOptions {
   /** 是否按演示文稿里设置的自动换片时间自动放映，默认是 */
   timings?: boolean;
   /**
+   * 静态显示（比对工具对照 PowerPoint 静态导出的参考图用）：每页所有对象原样显示，不放动画、不摆动画的起始状态
+   * （动画前隐藏的对象也显示，进入页面自动播放的动画不执行）
+   */
+  static?: boolean;
+  /**
    * present 演绎模式（默认）：观看者自己点击、按键、滑动翻页，有按钮和音视频控制条；
    * watch 观看模式：只由 JS 接口驱动，没有按钮，点击、键盘、触屏、链接、触发器、控制条都不响应，也不按计时自动放映
    */
@@ -289,13 +294,16 @@ export class Player {
     this.slideIdx = slideIdx;
     this.media.enter(slideIdx);
     this.stepIdx = Math.max(0, Math.min(data.steps.length, Math.floor(Number(step) || 0)));
-    // 初始状态
-    for (const uid of data.hidden) this.find(uid)?.classList.add('unppt-hide');
+    // 初始状态（静态显示时不摆，见 MountOptions.static）
+    const still = this.opts.static === true;
+    if (!still) for (const uid of data.hidden) this.find(uid)?.classList.add('unppt-hide');
     for (const uid of data.fullScreen ?? []) this.find(uid)?.querySelector('video')?.setAttribute('data-full-screen', '1');
     for (const tr of data.triggers ?? []) this.find(tr.uid)?.classList.add('unppt-trigger');
-    if (animated) this.engine.play(data.auto);
-    else this.engine.applyInstant(data.auto);
-    for (let i = 0; i < this.stepIdx; i++) this.engine.applyInstant(data.steps[i]);
+    if (!still) {
+      if (animated) this.engine.play(data.auto);
+      else this.engine.applyInstant(data.auto);
+      for (let i = 0; i < this.stepIdx; i++) this.engine.applyInstant(data.steps[i]);
+    }
     // 切换声音：翻页播放时才有（跳转、深链接不出声）
     if (animated && data.transition?.stopSound) this.media.stopSound();
     if (animated && data.transition?.sound) this.media.sound(data.transition.sound);
