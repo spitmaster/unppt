@@ -160,7 +160,8 @@ async function main() {
   // 出图用的 resvg：和 cli.js 放在一起的 resvg.wasm（读不到时不出图，prop.json 照常输出）
   const wasm = images ? await readFile(new URL('./resvg.wasm', import.meta.url)).then((b) => new Uint8Array(b), () => undefined) : undefined;
   const workers = jobs === 'auto' ? autoWorkers() : Math.max(1, Math.floor(Number(jobs)) || 1);
-  const pool = wasm && workers > 1 ? await createRasterPool(wasm, workers) : undefined;
+  // 线程池建不起来（例如 resvg.wasm 坏了）时退回主线程：转码器照常转、记"resvg 加载失败"的警告，只是不出图
+  const pool = wasm && workers > 1 ? await createRasterPool(wasm, workers).catch(() => undefined) : undefined;
   let peak = 0;
   const sample = () => { peak = Math.max(peak, process.memoryUsage().rss); };
   const timer = stats ? setInterval(sample, 20) : undefined;
