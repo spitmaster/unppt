@@ -62,7 +62,7 @@ export async function createPainter(wasm: Uint8Array | WebAssembly.Module): Prom
   let fonts = new Map<string, Promise<Uint8Array | undefined>>();
   let layers = new TemplateCache();
 
-  async function render(p: PaintSvg, width: number, res: PaintResources, background?: string): Promise<RgbaImage> {
+  async function render(p: PaintSvg, width: number, res: PaintResources, warnings: string[], background?: string): Promise<RgbaImage> {
     // resvg 只把 http(s) 地址报成"待解析图片"：media/…、共享图片编号先换成占位地址，再按占位地址把原图交给它
     const real = new Map<string, string>();
     const src = (await inlinePatternImages(p.svg, res))
@@ -87,7 +87,13 @@ export async function createPainter(wasm: Uint8Array | WebAssembly.Module): Prom
     try {
       for (const h of r.imagesToResolve() as string[]) {
         const b = await res.image(real.get(h) ?? h);
-        if (b) r.resolveImage(h, b);
+        if (!b) continue;
+        // resvg 只认 PNG、JPEG、GIF：别的格式（BMP、WebP、ICO 等）这一张不画，页面其它内容照画
+        try {
+          r.resolveImage(h, b);
+        } catch (e) {
+          warnings.push(`整页图里有图片画不出来，没画这张：${(e as Error).message}`);
+        }
       }
       const img = r.render();
       const out = { width: img.width, height: img.height, data: new Uint8Array(img.pixels) };
@@ -98,18 +104,18 @@ export async function createPainter(wasm: Uint8Array | WebAssembly.Module): Prom
     }
   }
 
-  async function page(job: PaintJob, res: PaintResources): Promise<RgbaImage> {
+  async function page(job: PaintJob, res: PaintResources, warnings: string[]): Promise<RgbaImage> {
     if (job.template) {
       const id = job.template;
       const bg = await layers.get(id, async () => {
         const t = await res.template(id);
-        return t && render(t, job.picWidth, res, '#ffffff');
+        return t && render(t, job.picWidth, res, warnings, '#ffffff');
       });
-      const fg = bg && await render(job.main, job.picWidth, res);
+      const fg = bg && await render(job.main, job.picWidth, res, warnings);
       const out = bg && fg && composite(fg, bg);
       if (out) return out;
     }
-    return render(job.main, job.picWidth, res, '#ffffff');
+    return render(job.main, job.picWidth, res, warnings, '#ffffff');
   }
 
   return {
@@ -122,9 +128,9 @@ export async function createPainter(wasm: Uint8Array | WebAssembly.Module): Prom
       const warnings: string[] = [];
       let img: RgbaImage;
       try {
-        img = await page(job, res);
+        img = await page(job, res, warnings);
       } catch (e) {
-        return { warnings: [`整页图画不出来：${(e as Error).message}`] };
+        return { warnings: [...warnings, `整页图画不出来：${(e as Error).message}`] };
       }
       // 编码器（libjpeg-turbo WASM）第一次用时初始化；出过错会重新初始化，所以每页都重新取
       let encode: JpegEncode;

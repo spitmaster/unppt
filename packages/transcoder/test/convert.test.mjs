@@ -216,3 +216,17 @@ test('prop.json：页数、宽高、备注（纯文本）、隐藏页；整页�
   assert.equal(JSON.parse(none.files.get('prop.json').toString()).count, 3);
   assert.ok(![...none.files.keys()].some((k) => k.startsWith('pic/') || k.startsWith('thum/')));
 });
+
+test('整页图：单文件形式里 EMF / SVG 图片（共享图片编号，没有扩展名）照常画，和按需加载形式逐字节一致', async () => {
+  const wasm = new Uint8Array(await readFile(new URL('../dist/resvg.wasm', import.meta.url)));
+  for (const name of ['emf-images.pptx', 'svg-images.pptx']) {
+    const input = new Uint8Array(await readFile(new URL(name, TC)));
+    const single = memoryWriter(), paged = memoryWriter();
+    const r = await convert(input, { write: single.write, output: 'single', rasterWasm: wasm });
+    await convert(input, { write: paged.write, output: 'paged', rasterWasm: wasm });
+    assert.ok(!r.report.warnings.some((w) => w.includes('画不出来')), name);
+    for (let i = 1; i <= r.slides; i++) {
+      for (const f of [`pic/${i}.jpg`, `thum/${i}.jpg`]) assert.ok(single.files.get(f)?.equals(paged.files.get(f)), `${name} ${f}`);
+    }
+  }
+});

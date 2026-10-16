@@ -121,9 +121,10 @@ async function inlineSvgImages(svg: string, images: ImageSource): Promise<string
     if (!href) continue;
     let inner: string | undefined;
     if (href.startsWith('data:image/svg+xml;base64,')) inner = decodeBase64(href.slice(26));
-    else if (/\.svg$/i.test(href)) {
+    else if (!href.startsWith('data:') && !/\.(png|jpe?g|gif)$/i.test(href)) {
+      // 写成文件的 .svg，或者单文件形式里的共享图片编号（unppt:asset/…，没有扩展名）：按内容认 SVG
       const b = await images(href);
-      inner = b ? new TextDecoder().decode(b) : undefined;
+      inner = b && isSvg(b) ? new TextDecoder().decode(b) : undefined;
     }
     const root = inner ? /^(?:<\?xml[^>]*>\s*)?<svg\b([^>]*)>([\s\S]*)<\/svg>\s*$/.exec(inner.trim()) : null;
     if (!root) continue;
@@ -139,6 +140,13 @@ async function inlineSvgImages(svg: string, images: ImageSource): Promise<string
     map.set(tag, `<g${rest ? ` ${rest}` : ''}><svg${box}${viewBox ? ` viewBox="${viewBox}"` : ''}${par ? ` preserveAspectRatio="${par}"` : ''}>${body}</svg></g>`);
   }
   return map.size ? svg.replace(/<image\b[^>]*>/g, (t) => map.get(t) ?? t) : svg;
+}
+
+/** 文本开头（跳过 UTF-8 BOM 和空白）是 "<" 的当成 SVG（EMF / WMF 转出来的、原本就是 SVG 的图片） */
+function isSvg(b: Uint8Array): boolean {
+  let i = b[0] === 0xef && b[1] === 0xbb && b[2] === 0xbf ? 3 : 0;
+  while (i < b.length && (b[i] === 0x20 || b[i] === 0x09 || b[i] === 0x0a || b[i] === 0x0d)) i++;
+  return b[i] === 0x3c;
 }
 
 function decodeBase64(b64: string): string {
