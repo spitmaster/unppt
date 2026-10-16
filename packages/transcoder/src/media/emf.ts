@@ -2,6 +2,7 @@
  * EMF（增强型图元文件）-> SVG。零依赖，按 [MS-EMF] 规范解析常用的 GDI 记录。
  * Office 生成的"双格式"EMF 里同时有 EMF+ 记录（在 GDI 注释里）和 GDI 记录，这里只画 GDI 部分。
  */
+import { EmfDefs } from './emf-defs';
 import { svgImage, type ImageDecoder } from './image-decoder';
 
 interface Pen { color: string; width: number; none: boolean; cap: string; join: string; dash?: string }
@@ -116,8 +117,10 @@ function emfToSvgUnsafe(bytes: Uint8Array): string | undefined {
   }
 
   const out: string[] = [];
-  const defs: string[] = [];
   let idn = 0;
+  // 裁剪区域、重复的位图只定义一次（emf-defs.ts）
+  const defsOf = new EmfDefs((prefix) => `${prefix}${idn++}`);
+  const defs = defsOf.defs;
   /** 由路径构成的裁剪：id -> 路径（求并等组合时要用） */
   const clipD = new Map<string, string>();
   /** GRADIENTFILL 的线性渐变：方向 + 两端颜色 -> id（同样的只定义一次） */
@@ -253,15 +256,16 @@ function emfToSvgUnsafe(bytes: Uint8Array): string | undefined {
       }
       case 67: { // SELECTCLIPPATH：用当前路径做裁剪，按区域模式和原来的裁剪组合
         if (path && path.length) {
-          const mode = u32(r), id = `c${idn++}`, d = path.join(''), prev = st.clip, prevD = prev ? clipD.get(prev) : undefined;
+          const mode = u32(r), d = path.join(''), prev = st.clip, prevD = prev ? clipD.get(prev) : undefined;
           // 1 求交（嵌套在原来的裁剪里）；4 求差（原来的裁剪 ∩ 超大矩形挖掉路径）；2 求并、3 异或（原来的裁剪是路径时
           // 合并成一条，异或按奇偶规则）；5 替换
-          if (mode === 1 && prev) defs.push(`<clipPath id="${id}" clip-path="url(#${prev})"><path d="${d}"/></clipPath>`);
-          else if (mode === 4) defs.push(`<clipPath id="${id}"${prev ? ` clip-path="url(#${prev})"` : ''}><path d="M-1e6 -1e6H1e6V1e6H-1e6Z${d}" clip-rule="evenodd"/></clipPath>`);
+          let id: string;
+          if (mode === 1 && prev) id = defsOf.clip(`<path d="${d}"/>`, prev);
+          else if (mode === 4) id = defsOf.clip(`<path d="M-1e6 -1e6H1e6V1e6H-1e6Z${d}" clip-rule="evenodd"/>`, prev);
           else if ((mode === 2 || mode === 3) && prevD) {
+            id = defsOf.clip(`<path d="${prevD}${d}"${mode === 2 ? '' : ' clip-rule="evenodd"'}/>`);
             clipD.set(id, prevD + d);
-            defs.push(`<clipPath id="${id}"><path d="${prevD}${d}"${mode === 2 ? '' : ' clip-rule="evenodd"'}/></clipPath>`);
-          } else { clipD.set(id, d); defs.push(`<clipPath id="${id}"><path d="${d}"/></clipPath>`); }
+          } else { id = defsOf.clip(`<path d="${d}"/>`); clipD.set(id, d); }
           st.clip = id;
         }
         path = undefined;
@@ -269,9 +273,7 @@ function emfToSvgUnsafe(bytes: Uint8Array): string | undefined {
       }
       case 30: { // INTERSECTCLIPRECT
         const [x0, y0] = tp(i32(r), i32(r + 4)), [x1, y1] = tp(i32(r + 8), i32(r + 12));
-        const id = `c${idn++}`;
-        defs.push(`<clipPath id="${id}"${st.clip ? ` clip-path="url(#${st.clip})"` : ''}><rect x="${f2(Math.min(x0, x1))}" y="${f2(Math.min(y0, y1))}" width="${f2(Math.abs(x1 - x0))}" height="${f2(Math.abs(y1 - y0))}"/></clipPath>`);
-        st.clip = id;
+        st.clip = defsOf.clip(`<rect x="${f2(Math.min(x0, x1))}" y="${f2(Math.min(y0, y1))}" width="${f2(Math.abs(x1 - x0))}" height="${f2(Math.abs(y1 - y0))}"/>`, st.clip);
         break;
       }
       case 75: { // EXTSELECTCLIPRGN：区域由若干矩形组成（设备坐标）
@@ -284,9 +286,7 @@ function emfToSvgUnsafe(bytes: Uint8Array): string | undefined {
           const q = rh + 32 + k * 16;
           rects.push(`<rect x="${i32(q)}" y="${i32(q + 4)}" width="${i32(q + 8) - i32(q)}" height="${i32(q + 12) - i32(q + 4)}"/>`);
         }
-        const id = `c${idn++}`;
-        defs.push(`<clipPath id="${id}"${mode === 1 && st.clip ? ` clip-path="url(#${st.clip})"` : ''}>${rects.join('')}</clipPath>`);
-        st.clip = id;
+        st.clip = defsOf.clip(rects.join(''), mode === 1 ? st.clip : undefined);
         break;
       }
       // ---------------- 图形
@@ -445,7 +445,7 @@ function emfToSvgUnsafe(bytes: Uint8Array): string | undefined {
         // ALPHABLEND 的混合方式：第 3 个字节是整体透明度，第 4 个字节 AC_SRC_ALPHA（1）表示用位图自带的逐像素透明度
         const alpha = type === 114 ? d.getUint8(r + 34) / 255 : 1;
         const href = cbBmi ? dibToBmp(d, p + offBmi, cbBmi, p + offBits, cbBits, type === 114 && d.getUint8(r + 35) === 1) : undefined;
-        if (href) emit(`<image href="${href}" x="${f2(X)}" y="${f2(Y)}" width="${f2(W)}" height="${f2(H)}" preserveAspectRatio="none"${alpha < 1 ? ` opacity="${f2(alpha)}"` : ''}${clipAttr()}/>`);
+        if (href) emit(defsOf.bitmap(href, X, Y, W, H, `${alpha < 1 ? ` opacity="${f2(alpha)}"` : ''}${clipAttr()}`));
         else if (type === 76 && !st.brush.none) {
           // 没有源位图的 BitBlt：用当前画刷填充（常见于背景）
           const rop = u32(r + 32);
@@ -464,7 +464,8 @@ function emfToSvgUnsafe(bytes: Uint8Array): string | undefined {
     }
     p += size;
   }
-  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${vb.map(f2).join(' ')}" preserveAspectRatio="none">${defs.length ? `<defs>${defs.join('')}</defs>` : ''}${out.join('')}</svg>`;
+  const body = defsOf.finish(out.join(''));
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${vb.map(f2).join(' ')}" preserveAspectRatio="none">${defs.length ? `<defs>${defs.join('')}</defs>` : ''}${body}</svg>`;
 }
 
 function bez(P: string[]): string {

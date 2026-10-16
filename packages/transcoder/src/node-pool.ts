@@ -107,7 +107,7 @@ export async function createRasterPool(wasm: Uint8Array, workers = autoWorkers()
     if (!t) return;
     if (m.type === 'need') {
       const r = t.res;
-      const value: Promise<unknown> = m.kind === 'font' ? r.font(m.key) : m.kind === 'image' ? r.image(m.key) : r.template(m.key);
+      const value: Promise<unknown> = m.kind === 'font' ? r.font(m.key) : m.kind === 'image' ? r.image(m.key) : m.kind === 'raster' ? r.raster(m.key) : r.template(m.key);
       value.catch(() => undefined).then((v) => slot.worker.postMessage({ type: 'res', req: m.req, value: share(v) }));
       return;
     }
