@@ -2,7 +2,7 @@
 import { esc, n2 } from '../common/svg';
 import type { BodyProps } from './body';
 import { reflection } from '../effects/reflection';
-import { child } from '../io/xml';
+import { child, type XEl } from '../io/xml';
 import { decorate } from './decorations';
 import { textEl } from './svg-text';
 import type { Atom, Line, ParagraphLayout, TextEnv } from './types';
@@ -162,7 +162,7 @@ export function emitParagraphs(
       if (refl && env.doc && pParts.length > lineStart) {
         const bottom = baseline, height = line.ascent;
         const content = `<g transform="translate(0 ${n2(height - bottom)})">${pParts.slice(lineStart).join('')}</g>`;
-        const mirrored = reflection(refl, height, env.doc, content);
+        const mirrored = reflection(scaleReflection(refl, line.size), height, env.doc, content);
         if (mirrored) under.push(`<g transform="translate(0 ${n2(bottom - height)})">${mirrored}</g>`);
       }
     }
@@ -172,6 +172,18 @@ export function emitParagraphs(
   env.lineBox = undefined;
   return parts;
 }
+
+/**
+ * 文字映像离基线的距离随字号线性变化：距离 × 字号 / REFL_PT（size 是像素）。实测（text-reflection-dist、text-glow-scale：
+ * Arial 16~128 磅、距离 0/5/10/20 磅）：距离 0 时映像紧贴基线；5 磅在 16/32/64 磅的字上是 6/14/25 像素，20 磅在 16/64 磅上
+ * 24/96 像素，吻合到 1~2 像素
+ */
+function scaleReflection(refl: XEl, size: number): XEl {
+  const d = Number(refl.attrs.dist ?? 0);
+  return d ? { ...refl, attrs: { ...refl.attrs, dist: String(Math.round((d * size * 0.75) / REFL_PT)) } } : refl;
+}
+
+const REFL_PT = 17.5;
 
 /**
  * 相邻、用同一个文字效果滤镜（阴影、发光、棱台……）的 <text> 收进一组，滤镜放在组上，和整段没拆开的文字一样（一段 <text> 的
