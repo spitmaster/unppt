@@ -14,11 +14,15 @@ const le32 = (b: Uint8Array, o: number) => (b[o] | (b[o + 1] << 8) | (b[o + 2] <
 const COMPRESSED = 0x4;
 const XOR = 0x10000000;
 
-/** MTX 容器：版本(1) 复制上限(3) 第二块偏移(3) 第三块偏移(3)，然后三个数据块。字形指令在后两块里，不需要 */
+/**
+ * MTX 容器：版本(1) 复制上限(3) 第二块偏移(3) 第三块偏移(3)，然后三个数据块。字形指令在后两块里，不需要。
+ * CFF 轮廓的字体（文件头 OTTO）没有 glyf 表，第一块解压出来就是字体本身（实测样本，没做 CTF 变换）
+ */
 function mtxToTtf(d: Uint8Array): Uint8Array {
   const off2 = (d[4] << 16) | (d[5] << 8) | d[6];
   if (d.length < 10 || off2 < 10 || off2 > d.length) throw new Error('MTX 头损坏');
-  return ctfToTtf(lzcompDecompress(d.subarray(10, off2), d[0]));
+  const raw = lzcompDecompress(d.subarray(10, off2), d[0]);
+  return raw[0] === 0x4f && raw[1] === 0x54 && raw[2] === 0x54 && raw[3] === 0x4f ? raw : ctfToTtf(raw);
 }
 
 /** EOT -> TTF；不是 EOT 时返回 undefined */
