@@ -3968,6 +3968,28 @@ def text_glow_scale(app):
     return p
 
 
+def text_reflection_dist(app):
+    """文字映像的距离随字号怎么变：Arial "H"，紧贴全映像（不透明到 50%），距离 0 / 5 / 20 磅（三行），字号 16/32/64/128 磅"""
+    p = new_pres(app)
+    s = blank(p)
+    for row, d in enumerate([0, 5, 20]):
+        for x, size in zip([30, 120, 260, 480], [16, 32, 64, 128]):
+            t = s.Shapes.AddTextbox(1, x, 10 + row * 175, 300, 150)
+            t.TextFrame.WordWrap = 0
+            tr = t.TextFrame.TextRange
+            tr.Text = "H"
+            tr.Font.Size = size
+            tr.Font.Name = "Arial"
+            tr.Font.Color.RGB = RGB(20, 20, 20)
+            rf = t.TextFrame2.TextRange.Font.Reflection
+            rf.Type = 9
+            rf.Offset = d
+            rf.Size = 100
+            rf.Transparency = 0
+            rf.Blur = 0
+    return p
+
+
 def picture_3d_shadow(app):
     """透视旋转的图片带效果：外部阴影（大模糊）、调亮度、两者都有、都没有（对照）；看阴影是投影前画（跟着图片一起变形）
     还是投影后画（平铺在页面上）"""
@@ -4020,7 +4042,7 @@ def _patch_axis_ea_vert(path):
                     if "<c:txPr>" in ax:
                         return re.sub(r"<a:bodyPr\b([^>]*?)(/?)>", lambda b: "<a:bodyPr" + re.sub(r'\s(rot|vert)="[^"]*"', "", b.group(1)) + ' rot="0" vert="eaVert"' + b.group(2) + ">", ax, count=1)
                     return ax.replace("<c:crossAx", '<c:txPr><a:bodyPr rot="0" vert="eaVert"/><a:lstStyle/><a:p><a:pPr><a:defRPr/></a:pPr><a:endParaRPr lang="zh-CN"/></a:p></c:txPr><c:crossAx', 1)
-                x = re.sub(r"<c:(catAx|valAx)>.*?</c:>", vert, x, flags=re.S)
+                x = re.sub(r"<c:(catAx|valAx)>.*?</c:\1>", vert, x, flags=re.S)
                 data = x.encode("utf-8")
             zout.writestr(item, data)
     tmp.replace(path)
@@ -4058,7 +4080,7 @@ def fills_tile_resample(app):
     s2.Background.Fill.UserTextured(tile(150, (17, 17, 17)))
     return p
 
-CASES = [shapes_all, text_sizes, text_align, text_spacing, text_bullets, text_missing_font, shapes_basic, fills_lines, table_basic, group_rotate, anim_basic, anim_auto, charts_basic, pictures, smartart, text_effects, text_layout, table_merge, links, emf_images, anim_advanced, charts_labels, freeform_icons, media_audio, anim_trigger, wmf_images, anim_iterate, picture_transparent, charts_more, shape_effects, equations, anim_path, anim_emphasis, transitions, fills_patterns, text_decoration, anim_entrance, svg_images, charts_markers, hidden_slides, media_background, text_glow_reflection, text_tabs, text_picture_bullets, fills_texture, transition_morph, text_embedded_fonts, text_warp, anim_repeat, charts_sizes, slide_timings, lines_compound, table_diagonal, lines_gradient, fills_radial, fills_rect_gradient, shapes_3d, table_vertical, transitions_more, anim_sound, anim_build, anim_after, anim_text_emphasis, charts_bubble, media_video, charts_options, charts_negative, shapes_bevel, charts_legend, shapes_3d_rotation, smartart_3d, charts_ofpie, charts_3d, anim_group_emphasis, activex_controls, charts_extras, charts_axis_titles, charts_fills, charts_outlines, charts_labels_more, group_scale, group_flip, charts_3d_line, charts_legend_pos, charts_crowded_labels, charts_label_skip, charts_bar_long_names, charts_multilevel, picture_recolor, text_symbols, text_numbering, lines_arrows, table_styles, shapes_styles, charts_styles, placeholders_inherit, text_bold_light, ole_objects, text_hanging_punct, speaker_notes, pictures_tiff, placeholders_picture, pictures_exif, text_picture_fill, pictures_mislabeled, emf_alphablend, placeholders_orphan, picture_fill_rect, slide_number_fields, table_builtin_styles, smartart_matrix, text_layout_unit, colors_gamma, text_latin_cjk_font, text_default_style, text_missing_font_jp, text_ea_line_break, text_ambiguous_punct, text_charset_slides, table_rowspan_tall, text_autofit_round, shapes_3d_contour, emf_clip_modes, placeholders_picture_geom, emf_gradient_fill, text_theme_font_lang, text_anchor_linespacing, table_linespacing, table_fontalgn, text_theme_font_latin, text_margin_right, text_charset_gap, slide_size_repair, fills_shape_gradient, text_shadow_runs, picture_3d_shadow, charts_axis_ea_vert, fills_tile_resample, text_shadow_dist, text_shadow_size, text_shadow_scale, text_shadow_blur, text_glow_scale]
+CASES = [shapes_all, text_sizes, text_align, text_spacing, text_bullets, text_missing_font, shapes_basic, fills_lines, table_basic, group_rotate, anim_basic, anim_auto, charts_basic, pictures, smartart, text_effects, text_layout, table_merge, links, emf_images, anim_advanced, charts_labels, freeform_icons, media_audio, anim_trigger, wmf_images, anim_iterate, picture_transparent, charts_more, shape_effects, equations, anim_path, anim_emphasis, transitions, fills_patterns, text_decoration, anim_entrance, svg_images, charts_markers, hidden_slides, media_background, text_glow_reflection, text_tabs, text_picture_bullets, fills_texture, transition_morph, text_embedded_fonts, text_warp, anim_repeat, charts_sizes, slide_timings, lines_compound, table_diagonal, lines_gradient, fills_radial, fills_rect_gradient, shapes_3d, table_vertical, transitions_more, anim_sound, anim_build, anim_after, anim_text_emphasis, charts_bubble, media_video, charts_options, charts_negative, shapes_bevel, charts_legend, shapes_3d_rotation, smartart_3d, charts_ofpie, charts_3d, anim_group_emphasis, activex_controls, charts_extras, charts_axis_titles, charts_fills, charts_outlines, charts_labels_more, group_scale, group_flip, charts_3d_line, charts_legend_pos, charts_crowded_labels, charts_label_skip, charts_bar_long_names, charts_multilevel, picture_recolor, text_symbols, text_numbering, lines_arrows, table_styles, shapes_styles, charts_styles, placeholders_inherit, text_bold_light, ole_objects, text_hanging_punct, speaker_notes, pictures_tiff, placeholders_picture, pictures_exif, text_picture_fill, pictures_mislabeled, emf_alphablend, placeholders_orphan, picture_fill_rect, slide_number_fields, table_builtin_styles, smartart_matrix, text_layout_unit, colors_gamma, text_latin_cjk_font, text_default_style, text_missing_font_jp, text_ea_line_break, text_ambiguous_punct, text_charset_slides, table_rowspan_tall, text_autofit_round, shapes_3d_contour, emf_clip_modes, placeholders_picture_geom, emf_gradient_fill, text_theme_font_lang, text_anchor_linespacing, table_linespacing, table_fontalgn, text_theme_font_latin, text_margin_right, text_charset_gap, slide_size_repair, fills_shape_gradient, text_shadow_runs, picture_3d_shadow, charts_axis_ea_vert, fills_tile_resample, text_shadow_dist, text_shadow_size, text_shadow_scale, text_shadow_blur, text_glow_scale, text_reflection_dist]
 
 
 def main():
