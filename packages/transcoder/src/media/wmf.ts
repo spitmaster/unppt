@@ -216,7 +216,11 @@ function wmfToSvgUnsafe(bytes: Uint8Array): string | undefined {
           const dh = i16(r + 4 + o + 8), dw = i16(r + 4 + o + 10), dy = i16(r + 4 + o + 12), dx = i16(r + 4 + o + 14);
           const dibStart = r + 4 + o + 16;
           const href = dibToBmp(bytes.subarray(dibStart, p + size));
-          if (href) out.push(`<image href="${href}" x="${f2(Math.min(dx, dx + dw))}" y="${f2(Math.min(dy, dy + dh))}" width="${f2(Math.abs(dw))}" height="${f2(Math.abs(dh))}" preserveAspectRatio="none"${clip()}/>`);
+          // 目标宽、高是负数时位图左右、上下翻转（和窗口范围是负数的翻转叠加，样本里两次翻转后是正的）
+          const x0 = Math.min(dx, dx + dw), y0 = Math.min(dy, dy + dh);
+          const flip = dw < 0 || dh < 0 ? ` transform="translate(${f2(dw < 0 ? 2 * x0 + Math.abs(dw) : 0)} ${f2(dh < 0 ? 2 * y0 + Math.abs(dh) : 0)}) scale(${dw < 0 ? -1 : 1} ${dh < 0 ? -1 : 1})"` : '';
+          const img = `<image href="${href}" x="${f2(x0)}" y="${f2(y0)}" width="${f2(Math.abs(dw))}" height="${f2(Math.abs(dh))}" preserveAspectRatio="none"`;
+          if (href) out.push(flip ? `<g${clip()}>${img}${flip}/></g>` : `${img}${clip()}/>`);
           break;
         }
         default: break;
@@ -226,7 +230,13 @@ function wmfToSvgUnsafe(bytes: Uint8Array): string | undefined {
     }
     p += size;
   }
-  // 有窗口原点/范围时以它为准
-  if (st.winExt) vb = [st.winOrg[0], st.winOrg[1], st.winExt[0], st.winExt[1]];
-  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${vb.map(f2).join(' ')}" preserveAspectRatio="none">${defs.length ? `<defs>${defs.join('')}</defs>` : ''}${groupClips(out)}</svg>`;
+  // 有窗口原点/范围时以它为准。范围是负数（MM_ANISOTROPIC 下逻辑坐标朝上 / 朝左，样本里有）：viewBox 用绝对值，内容整体翻转
+  let flipAll = '';
+  if (st.winExt) {
+    const [ox, oy] = st.winOrg, [ex, ey] = st.winExt;
+    vb = [ex < 0 ? 0 : ox, ey < 0 ? 0 : oy, Math.abs(ex), Math.abs(ey)];
+    if (ex < 0 || ey < 0) flipAll = `matrix(${ex < 0 ? -1 : 1} 0 0 ${ey < 0 ? -1 : 1} ${f2(ex < 0 ? ox : 0)} ${f2(ey < 0 ? oy : 0)})`;
+  }
+  const body = groupClips(out);
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${vb.map(f2).join(' ')}" preserveAspectRatio="none">${defs.length ? `<defs>${defs.join('')}</defs>` : ''}${flipAll ? `<g transform="${flipAll}">${body}</g>` : body}</svg>`;
 }
