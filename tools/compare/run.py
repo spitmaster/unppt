@@ -293,7 +293,7 @@ def run(set_name: str, only: str | None, do_build: bool, batch: str | None = Non
             ref = read_json(it["ref"] / "ref.json")
             out_html = OUT / it["key"] / "index.html"
             conv = convert(it["src"], out_html)
-            entry = {"key": it["key"], "convert": conv, "pages": []}
+            entry = {"key": it["key"], "convert": conv, "pages": [], **({"repaired": True} if ref.get("repaired") else {})}
             results.append(entry)
             if not conv["ok"]:
                 print(f"{it['key']} 转码失败：{conv['error']}")
@@ -357,6 +357,9 @@ def run(set_name: str, only: str | None, do_build: bool, batch: str | None = Non
 
 
 def summarize(results: list[dict], set_name: str) -> dict:
+    # PowerPoint 要"打开并修复"才能导出的课件（参考图常常丢了内容，我们照常画出来）不算分，单独计数
+    repaired = [r for r in results if r.get("repaired")]
+    results = [r for r in results if not r.get("repaired")]
     pages = [p for r in results for p in r["pages"]]
     warn_files: dict[str, int] = {}
     for r in results:
@@ -378,6 +381,7 @@ def summarize(results: list[dict], set_name: str) -> dict:
         "date": time.strftime("%Y-%m-%d %H:%M"),
         "set": set_name,
         "files": len(results),
+        "repairedFiles": len(repaired),
         "failedToConvert": sum(1 for r in results if not r["convert"]["ok"]),
         "pages": len(pages),
         "passed": passed,
