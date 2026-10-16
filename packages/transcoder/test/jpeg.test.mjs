@@ -92,3 +92,25 @@ test('损坏的 JPEG（随机改字节、截断）不会出错、不会卡住', 
   }
   assert.ok(Date.now() - t0 < 20000, '太慢');
 });
+
+// 按 1/8 解码（每块只存 DC、渐进式的交流扫描整段跳过）：和全尺寸解码后每个 8×8 块求平均接近（只比完整的块，右、下边缘不满 8 像素的不比）。
+// 色度抽样的图色度只有 1/16 精度、再放大，误差本来就大（和改成只存 DC 之前逐字节相同）
+for (const [name] of CASES) {
+  test(`JPEG 按 1/8 解码：${name}`, async () => {
+    const jpg = new Uint8Array(await readFile(new URL(`${name}.jpg`, DIR)));
+    const full = decodeJpeg(jpg);
+    const small = decodeJpeg(jpg, 1);
+    assert.ok(full && small, '解不开');
+    assert.equal(small.width, Math.ceil(full.width / 8));
+    assert.equal(small.height, Math.ceil(full.height / 8));
+    let sum = 0, n = 0;
+    for (let by = 0; by < Math.floor(full.height / 8); by++) for (let bx = 0; bx < Math.floor(full.width / 8); bx++) for (let c = 0; c < 3; c++) {
+      let s = 0;
+      for (let y = 0; y < 8; y++) for (let x = 0; x < 8; x++) s += full.data[((by * 8 + y) * full.width + bx * 8 + x) * 3 + c];
+      sum += Math.abs(s / 64 - small.data[(by * small.width + bx) * 3 + c]);
+      n++;
+    }
+    const limit = /42[02]|^progressive$|restart/.test(name) ? 14 : 4;
+    assert.ok(sum / n <= limit, `平均误差 ${(sum / n).toFixed(2)}`);
+  });
+}
