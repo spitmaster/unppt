@@ -234,8 +234,9 @@ def run(set_name: str, only: str | None, do_build: bool):
     shots.mkdir(exist_ok=True)
     results = []
     with sync_playwright() as p:
-        # 实验开关（默认关）：UNPPT_GRAY_AA=1 时浏览器用灰度抗锯齿画字（PowerPoint 参考图是灰度，默认的子像素抗锯齿有彩色边）
-        browser = p.chromium.launch(args=["--disable-lcd-text"] if os.environ.get("UNPPT_GRAY_AA") == "1" else [])
+        # 浏览器用灰度抗锯齿画字：PowerPoint 参考图是灰度，Chrome 默认的子像素抗锯齿有彩色边，比的是排版不是抗锯齿方式
+        # （10/16 起默认；UNPPT_GRAY_AA=0 恢复子像素抗锯齿）
+        browser = p.chromium.launch(args=[] if os.environ.get("UNPPT_GRAY_AA") == "0" else ["--disable-lcd-text"])
         for it in items:
             ref = read_json(it["ref"] / "ref.json")
             out_html = OUT / it["key"] / "index.html"
