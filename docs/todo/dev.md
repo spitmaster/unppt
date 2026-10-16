@@ -83,7 +83,8 @@ node packages/transcoder/dist/cli.js convert 你的文件.pptx -o out/index.html
 
 **10/17 待你决定**（不影响工作，先记下）：
 1. 课件包里缺了图片文件（关系指向不存在的部件，文件本身坏了；第三批 2000 份里约 10 份）时，PowerPoint 在图片位置画一个"图片无法显示"的占位框：细边框、左上角小红叉，再加一句提示"文件中找不到关系 ID 为 rIdN 的图像部件。"（随 PowerPoint 界面语言）。我们现在什么都不画、记一条转码提示。要不要照 PowerPoint 画这个框？照画的话学生会看到这句错误提示。补充（第二批比对）：这个框是不透明的白底（图片自己设的透明度对它不起作用），盖在下面的东西上——样本里一页的满版照片缺了，PowerPoint 那页是白框上叠深蓝渐变（上深下浅），我们透出母版的深蓝背景，整页颜色差很多（0.414）；
-2. HEIC 图片（苹果手机照片格式）：第三批里 1 份课件有 2 张，新版 PowerPoint 能显示，我们不支持（要 HEVC 解码，纯 JS/WASM 的实现是 LGPL、体积约 1MB）。先记下，量大了再做。
+2. **SmartArt 排版引擎要不要做**：SmartArt 我们靠课件里存的"绘图缓存"（PowerPoint 排好的形状）来画。样本 3281 份里有 102 份（约 3%）、339 个有文字的 SmartArt 绘图缓存是空的（都是 PowerPoint 存的，原因不明），PowerPoint 打开时按版式定义现场排版，我们一个都画不出来（整块空白）。版式很分散：chevron1 58 个、radial6 15、process1 15、LinedList 13、gear1 11、hierarchy1 11、list1 10……要画就得实现 SmartArt 的版式解释器（算法 lin/snake/cycle/hierRoot/pyra…、约束、规则、字号自动适配），做到和 PowerPoint 一致估计要几周。先只记下，等你定；
+3. HEIC 图片（苹果手机照片格式）：第三批里 1 份课件有 2 张，新版 PowerPoint 能显示，我们不支持（要 HEVC 解码，纯 JS/WASM 的实现是 LGPL、体积约 1MB）。先记下，量大了再做。
 
 ## 五、还没做的
 
