@@ -56,22 +56,77 @@ function excelDate(serial: number): Date {
   return new Date(Date.UTC(1899, 11, 30) + serial * 86400000);
 }
 
-export function formatNumber(v: number, fmt: string): string {
-  const f = fmt.toLowerCase();
-  if (/[ymd]/.test(f) && !/general/.test(f)) {
-    const d = excelDate(v);
-    const y = d.getUTCFullYear(), m = d.getUTCMonth() + 1, day = d.getUTCDate();
-    if (f.includes('d') && f.includes('m') && f.includes('y')) return `${y}/${m}/${day}`;
-    if (f.includes('m') && f.includes('d')) return `${m}/${day}`;
-    if (f.includes('y') && f.includes('m')) return `${y}/${m}`;
-    return `${y}/${m}/${day}`;
-  }
-  if (f.includes('%')) {
-    const dec = (f.split('.')[1] ?? '').replace(/[^0]/g, '').length;
-    return `${(v * 100).toFixed(dec)}%`;
-  }
-  const m = /0\.(0+)/.exec(f);
-  if (m) return v.toFixed(m[1].length);
+/** 常规格式：整数原样，小数最多 6 位有效小数 */
+function general(v: number): string {
   if (Number.isInteger(v)) return String(v);
   return String(Math.round(v * 1e6) / 1e6);
+}
+
+/** 按分号分段（引号里的分号不算）：正数;负数;零;文字 */
+function sections(fmt: string): string[] {
+  const out: string[] = [];
+  let cur = '', quoted = false;
+  for (let i = 0; i < fmt.length; i++) {
+    const c = fmt[i];
+    if (c === '"') quoted = !quoted;
+    if (c === '\\' && i + 1 < fmt.length) { cur += c + fmt[++i]; continue; }
+    if (c === ';' && !quoted) { out.push(cur); cur = ''; continue; }
+    cur += c;
+  }
+  out.push(cur);
+  return out;
+}
+
+/** 一段格式里的字面文字：引号里的、反斜杠转义的原样，"_x" 留一个空格的宽度，"*x" 填充不画；数字占位符换成 num */
+function render(sec: string, num: string): string {
+  let out = '', placed = false;
+  for (let i = 0; i < sec.length; i++) {
+    const c = sec[i];
+    if (c === '"') { const j = sec.indexOf('"', i + 1); out += sec.slice(i + 1, j < 0 ? sec.length : j); i = j < 0 ? sec.length : j; continue; }
+    if (c === '\\') { out += sec[++i] ?? ''; continue; }
+    if (c === '_') { i++; out += ' '; continue; }
+    if (c === '*') { i++; continue; }
+    if ('#0?.,'.includes(c)) { if (!placed) { out += num; placed = true; } continue; }
+    if (c === '%') { out += '%'; continue; }
+    out += c;
+  }
+  return placed ? out : out + num;
+}
+
+/**
+ * Excel 数字格式（图表的坐标轴、数据标签用）：按分号分段（负数用第二段、取绝对值），去掉 [Red]、[$-804] 这类方括号部分，
+ * 日期（y/m/d）、百分比、千分位、小数位、前后缀字面文字（引号、反斜杠、"_)" 留空）；数字后的逗号按千缩小
+ */
+export function formatNumber(v: number, fmt: string): string {
+  if (!fmt || /^general$/i.test(fmt.trim())) return general(v);
+  const secs = sections(fmt);
+  let sec = secs[0], val = v, sign = '';
+  if (v < 0) {
+    if (secs.length > 1 && secs[1].trim()) { sec = secs[1]; val = -v; } else { sign = '-'; val = -v; }
+  } else if (v === 0 && secs.length > 2 && secs[2].trim()) sec = secs[2];
+  sec = sec.replace(/\[[^\]]*\]/g, '');
+  const bare = sec.replace(/"[^"]*"/g, '').replace(/\\./g, '').replace(/[_*]./g, '').toLowerCase();
+  if (/general/.test(bare)) return sign + render(sec.replace(/general/i, '#'), general(val));
+  if (/[ymd]/.test(bare)) {
+    const d = excelDate(v);
+    const y = d.getUTCFullYear(), m = d.getUTCMonth() + 1, day = d.getUTCDate();
+    if (bare.includes('d') && bare.includes('m') && bare.includes('y')) return `${y}/${m}/${day}`;
+    if (bare.includes('m') && bare.includes('d')) return `${m}/${day}`;
+    if (bare.includes('y') && bare.includes('m')) return `${y}/${m}`;
+    return `${y}/${m}/${day}`;
+  }
+  const pat = /[#0?][#0?,]*(?:\.[#0?]*)?/.exec(bare)?.[0] ?? '';
+  // 没有数字占位符的段（比如零值写成 "-"）只显示字面文字
+  if (!pat && !bare.includes('%')) return render(sec, '');
+  if (bare.includes('%')) val *= 100;
+  const scale = /,+$/.exec(pat)?.[0].length ?? 0;
+  if (scale) val /= 1000 ** scale;
+  const [ip, dp = ''] = pat.replace(/,+$/, '').split('.');
+  const zeros = (dp.match(/0/g) ?? []).length, opt = (dp.match(/[#?]/g) ?? []).length;
+  let s = val.toFixed(zeros + opt);
+  if (opt) s = s.replace(new RegExp(`0{1,${opt}}$`), '').replace(/\.$/, '');
+  let [int, frac] = s.split('.');
+  if (ip.includes(',')) int = int.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+  if (int === '0' && !/0/.test(ip) && (frac || zeros)) int = '';
+  return sign + render(sec, frac ? `${int}.${frac}` : int);
 }
