@@ -164,7 +164,8 @@ export function renderCategoryChart(plots: Plot[], plotArea: XEl | undefined, ar
     let catFit: CatFit = { kind: 'line', skip: lblSkip };
     if (!horizontal && catLabels && !sides.catMid && sides.cat === 'b') {
       const bands = between ? nCat : Math.max(1, nCat - 1);
-      catFit = fitCategoryLabels(cats, (right - left) / bands, catStyle.size, tw, numAttr(child(catAx, 'c:tickLblSkip'), 'val'));
+      const eaVert = attr(child(child(catAx, 'c:txPr'), 'a:bodyPr'), 'vert') === 'eaVert';
+      catFit = fitCategoryLabels(cats, (right - left) / bands, catStyle.size, tw, numAttr(child(catAx, 'c:tickLblSkip'), 'val'), eaVert);
       if (catFit.kind === 'rot' && cats.length) {
         // 斜标签不往右伸，不用给首尾留半个宽度；分类在端点上时右边仍留约 1.05 × 字号（面积图一个样例）
         [left, right] = [left0, between ? right0 : Math.min(right0, area.right - ROT_MIDCAT_RIGHT * catStyle.size)];
