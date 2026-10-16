@@ -9,6 +9,7 @@ import type { FontFace } from '../font/font';
 import { withHugeImagesShrunk } from './huge-images';
 import { splitTemplate } from './layers';
 import { splitMorphology } from './morphology';
+import { svgImageParts } from './svg-image';
 import { cullOccluded } from './occlusion';
 import type { PaintJob, PaintResources, PaintSvg } from './paint';
 
@@ -65,7 +66,10 @@ export class Preparer {
       if (!id) {
         id = `t${this.templateIds.size}`;
         this.templateIds.set(split.key, id);
-        this.templates.set(id, this.prepare(split.template));
+        const t = this.prepare(split.template);
+        // 准备失败时由向它要背景层的绘制报出来；先标记成已处理，免得没人要时被 Node 当成没人管的错误
+        t.catch(() => {});
+        this.templates.set(id, t);
       }
       return { ...base, main: await this.prepare(split.page), template: id };
     }
@@ -74,7 +78,8 @@ export class Preparer {
 
   private async prepare(svg: string): Promise<PaintSvg> {
     const used = new Set<FontFace>();
-    const out = rewriteFonts(splitMorphology(await inlineSvgImages(svg, this.image)), this.fonts, used);
+    // 先拆发光的外扩再展开嵌套的 SVG 图片：图片里的 feMorphology 有自己的缩放，不按页面的缩放改
+    const out = rewriteFonts(await inlineSvgImages(splitMorphology(svg), this.image), this.fonts, used);
     const faces = [...used];
     return { svg: out, fonts: faces.map((f) => this.fontId(f)), ...(faces[0] ? { defaultFamily: faces[0].displayFamily } : {}) };
   }
@@ -128,18 +133,18 @@ async function inlineSvgImages(svg: string, images: ImageSource): Promise<string
       const b = await images(href);
       inner = b && isSvg(b) ? new TextDecoder().decode(b) : undefined;
     }
-    const root = inner ? /^(?:<\?xml[^>]*>\s*)?<svg\b([^>]*)>([\s\S]*)<\/svg>\s*$/.exec(inner.trim()) : null;
+    const root = inner ? svgImageParts(inner) : undefined;
     if (!root) continue;
     const attrs = tag.replace(/^<image\b/, '').replace(/\/?>$/, '').replace(/\s(?:xlink:)?href="[^"]*"/, '');
     const get = (k: string) => new RegExp(`\\s${k}="([^"]*)"`).exec(attrs)?.[1];
-    const viewBox = /\sviewBox="([^"]*)"/.exec(root[1])?.[1];
-    const par = get('preserveAspectRatio') ?? /\spreserveAspectRatio="([^"]*)"/.exec(root[1])?.[1];
+    const viewBox = /\sviewBox="([^"]*)"/.exec(root.attrs)?.[1];
+    const par = get('preserveAspectRatio') ?? /\spreserveAspectRatio="([^"]*)"/.exec(root.attrs)?.[1];
     // 其余属性（transform、clip-path、opacity、filter…）放到外面的 g 上
     const rest = attrs.replace(/\s(x|y|width|height|preserveAspectRatio)="[^"]*"/g, '').trim();
     const p = `ni${n++}_`;
-    const body = root[2].replace(/\sid="([^"]+)"/g, ` id="${p}$1"`).replace(/url\(#([^)]+)\)/g, `url(#${p}$1)`).replace(/(\s(?:xlink:)?href=")#([^"]+)"/g, `$1#${p}$2"`);
+    const body = root.body.replace(/\sid="([^"]+)"/g, ` id="${p}$1"`).replace(/url\(#([^)]+)\)/g, `url(#${p}$1)`).replace(/(\s(?:xlink:)?href=")#([^"]+)"/g, `$1#${p}$2"`);
     const box = ['x', 'y', 'width', 'height'].map((k) => (get(k) !== undefined ? ` ${k}="${get(k)}"` : '')).join('');
-    map.set(tag, `<g${rest ? ` ${rest}` : ''}><svg${box}${viewBox ? ` viewBox="${viewBox}"` : ''}${par ? ` preserveAspectRatio="${par}"` : ''}>${body}</svg></g>`);
+    map.set(tag, `<g${rest ? ` ${rest}` : ''}><svg${root.ns}${box}${viewBox ? ` viewBox="${viewBox}"` : ''}${par ? ` preserveAspectRatio="${par}"` : ''}>${body}</svg></g>`);
   }
   return map.size ? svg.replace(/<image\b[^>]*>/g, (t) => map.get(t) ?? t) : svg;
 }

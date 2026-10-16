@@ -111,9 +111,11 @@ export async function createPainter(wasm: Uint8Array | WebAssembly.Module): Prom
         const t = await res.template(id);
         return t && render(t, job.picWidth, res, warnings, '#ffffff');
       });
-      const fg = bg && await render(job.main, job.picWidth, res, warnings);
-      const out = bg && fg && composite(fg, bg);
-      if (out) return out;
+      // 取不到背景层时不能只画本页内容（会少了背景）：报错，这一页不出图
+      if (!bg) throw new Error('背景层画不出来');
+      const out = composite(await render(job.main, job.picWidth, res, warnings), bg);
+      if (!out) throw new Error('背景层和本页内容大小不一样');
+      return out;
     }
     return render(job.main, job.picWidth, res, warnings, '#ffffff');
   }

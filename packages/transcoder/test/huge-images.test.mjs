@@ -41,3 +41,11 @@ test('包一层图片来源：同一张图只缩一次，其它图片原样返�
   assert.equal(await src('media/a.png'), png);
   assert.equal(await src('media/missing.jpg'), undefined);
 });
+
+test('同时要同一张超大图（多个出图线程）：只读、只缩一次，拿到的是同一份', async () => {
+  let reads = 0;
+  const src = withHugeImagesShrunk(async () => { reads++; await new Promise((r) => setTimeout(r, 10)); return jpg; }, new Map(), 10000);
+  const all = await Promise.all([src('media/big.jpg'), src('media/big.jpg'), src('media/big.jpg')]);
+  assert.equal(reads, 1);
+  assert.ok(all.every((x) => x === all[0]));
+});
