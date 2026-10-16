@@ -7,6 +7,7 @@
   "main": "./dist/index.js",
   "exports": {
     ".": "./dist/index.js",
+    "./node": "./dist/node.js",
     "./resvg.wasm": "./dist/resvg.wasm"
   },
   "bin": {

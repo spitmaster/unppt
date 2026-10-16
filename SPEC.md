@@ -78,15 +78,15 @@
   - `picw` / `pich` 是幻灯片尺寸的磅值（16:9 是 960 × 540，可能带小数，保留两位）；`index` 从 1 开始，和图片文件名的页号一致（文件名是纯数字，直播服务靠它推页码）；路径相对 prop.json 所在目录；
   - `note` 是演讲者备注（备注页正文占位符的文字），**纯文本**：段落之间、段内换行都写成 `\n`，不转义、不转 `<br>`（怎么显示是使用方的事，用户 2026-10-15）；没有备注时不写这个字段；隐藏的页写 `"hidden": 1`，不隐藏时不写；
   - `pic/{n}.jpg` 整页图（宽高为 picw × pich 取整的像素），`thum/{n}.jpg` 缩略图（宽 216），JPG 质量 85。画的是这一页所有对象都显示的样子（和 PowerPoint 左侧缩略图一样），不放音视频（视频显示封面帧）。每页只光栅化一次（整页图），缩略图由整页图区域平均缩小得到；
-  - 光栅化用 resvg（WASM，SPEC D1/D6）：嵌套的 SVG 图片展开，字体名换成这一页用到的字体文件的英文名并把字体交给 resvg，页面引用的图片原样交给 resvg 解码；resvg 的 wasm 由调用方传入（`rasterWasm`，命令行自动读发布包里的 `dist/resvg.wasm`）；出图分"准备"（本线程，要字体库和媒体）和"绘制"（光栅化、编码，和运行环境无关）两半，调用方可以传入并行出图执行器（`rasterPool`），多页同时画，结果和本线程画的逐字节一致；
+  - 光栅化用 resvg（WASM，SPEC D1/D6）：嵌套的 SVG 图片展开，字体名换成这一页用到的字体文件的英文名并把字体交给 resvg，页面引用的图片原样交给 resvg 解码；resvg 的 wasm 由调用方传入（`rasterWasm`，命令行自动读发布包里的 `dist/resvg.wasm`）；出图分"准备"（本线程，要字体库和媒体）和"绘制"（光栅化、编码，和运行环境无关）两半，调用方可以传入并行出图执行器（`rasterPool`），多页同时画，结果和本线程画的逐字节一致。Node 用的执行器在 `@unppt/unppt/node`（`createRasterPool`：工作线程池，字体、图片放共享内存发给线程）；命令行默认按 CPU 数（容器里按 CPU 配额）和可用内存（每个线程按 400MB 估）自动定线程数，`--jobs <n>` 指定，`--jobs 1` 在主线程画；
   - 出图默认开启，`images: false`（命令行 `--no-images`）关掉：prop.json 照样写 pic / thum 路径，图片由使用方自己处理；没有 wasm、wasm 加载失败或某一页画失败时，缺的图片不输出并在 report 里警告；
-  - **出图速度还不达标**（用户 2026-10-15：现在的速度不能接受，后面一定要做性能优化），见 docs/todo/dev.md；
+  - **出图速度**（用户 2026-10-15：原来的速度不能接受；10/16 定目标：和转码在一个数量级，50 页几秒内），进度见 docs/todo/dev.md；
 - **诊断开关**（用户 2026-10-15 同意加进产品代码，给评测用，见 5.3）：`diagnostics: true`（命令行 `--diag`）时，每页额外输出 `diag/<页号>.json`：
   - `elements`：我们画的每个元素——编号（和页面 SVG 里的 `data-uid` 一致）、类型、在幻灯片上的外框（像素）、层级、特征标签（闭合词表）、画它时用到的规则（例如 `text.hanging-punct`、`placeholder.no-layout-match`）、文字行（每行的字符起止、基线、行首行尾）；
   - `skipped`：XML 里有、但没画的元素——外框和原因（隐藏、不支持、出错）；
   - `unknown`：没处理的 XML 元素名；
   - 默认关闭；关闭时产物逐字节不变（`scripts/golden.mjs check`）。特征标签和规则名只用代码里的固定词表，不写文件里的任何文字、名字。
-- 附带一个薄的命令行：`unppt convert in.pptx -o out.html [--fonts 目录] [--output single|paged|pages|data] [--no-images]`。
+- 附带一个薄的命令行：`unppt convert in.pptx -o out.html [--fonts 目录] [--output single|paged|pages|data] [--no-images] [--jobs n|auto]`。
 - 老格式 `.ppt` 第一版不支持（开发工具会用 PowerPoint 把样本里的 `.ppt` 另存为 `.pptx` 再测）。
 
 ### F2 播放器

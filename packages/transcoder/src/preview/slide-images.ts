@@ -29,8 +29,10 @@ export interface RasterPool {
 
 export class SlideImages {
   private prep: Preparer;
-  /** 按页码顺序排队的写出（每一项等前一项写完、自己画完再写） */
-  private pending: Promise<void>[] = [];
+  /** 按页码顺序串起来的写出（画完的页等前面的页写完再写；画得慢的页不占后面页的名额） */
+  private written: Promise<void> = Promise.resolve();
+  /** 还在画的页 */
+  private painting = new Set<Promise<unknown>>();
   /** 同时在画的页数上限：执行器的两倍（让它总有活干），本线程画时 1 */
   private limit: number;
 
@@ -50,19 +52,24 @@ export class SlideImages {
       return;
     }
     const result = this.painter.paint(job, this.prep.resources).catch((e: Error): PaintResult => ({ warnings: [`整页图画不出来：${e.message}`] }));
-    const prev = this.pending[this.pending.length - 1] ?? Promise.resolve();
-    this.pending.push(prev.then(async () => {
+    this.painting.add(result);
+    void result.then(() => this.painting.delete(result));
+    this.written = this.written.then(async () => {
       const r = await result;
       for (const w of r.warnings) this.warn(w);
       if (r.pic) await this.write(`pic/${n}.jpg`, r.pic);
       if (r.thum) await this.write(`thum/${n}.jpg`, r.thum);
-    }));
-    while (this.pending.length >= this.limit) await this.pending.shift();
+    });
+    // 写失败时在 flush（本线程画时在这里）报出来；先标记成已处理，免得被 Node 当成没人管的错误
+    this.written.catch(() => {});
+    while (this.painting.size >= this.limit) await Promise.race(this.painting);
+    // 本线程画时每页写完再画下一页（和以前的顺序一样）
+    if (this.limit === 1) await this.written;
   }
 
   /** 等所有页画完、写完 */
   async flush(): Promise<void> {
-    while (this.pending.length) await this.pending.shift();
+    await this.written;
   }
 
   /** 页面 SVG -> 整页图大小：音视频（foreignObject 里的 video / audio）去掉；根元素的宽高换成整页图大小 */
