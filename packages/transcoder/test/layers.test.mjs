@@ -51,10 +51,8 @@ test('叠加：预乘透明度的前景源在上叠到背景，超过 255 的截
   assert.equal(composite(fg, { width: 1, height: 1, data: new Uint8Array(4) }), undefined, '尺寸不一样不叠');
 });
 
-test('缓存：第二次出现才算重复；按字节数淘汰最久没用的', async () => {
+test('缓存：按字节数淘汰最久没用的', async () => {
   const c = new TemplateCache(20);
-  assert.equal(c.repeated('a'), false);
-  assert.equal(c.repeated('a'), true);
   let paints = 0;
   const img = () => { paints++; return Promise.resolve({ width: 1, height: 2, data: new Uint8Array(8) }); };
   await c.get('a', img); await c.get('a', img);

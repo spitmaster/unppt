@@ -84,24 +84,13 @@ export function composite(fg: RgbaImage, bg: RgbaImage): RgbaImage | undefined {
   return { width: bg.width, height: bg.height, data: out };
 }
 
-/**
- * 背景层缓存：同一个背景第二次出现时才画背景层（只出现一次的背景分开画反而多花一次叠加），
- * 按字节数淘汰最久没用的（默认 64MB，1920×1080 的背景每张约 8MB）
- */
+/** 背景层位图缓存：按字节数淘汰最久没用的（默认 64MB，1920×1080 的背景每张约 8MB） */
 export class TemplateCache {
-  private seen = new Set<string>();
   private layers = new Map<string, Promise<RgbaImage | undefined>>();
   private sizes = new Map<string, number>();
   private total = 0;
 
   constructor(private maxBytes = 64 * 1024 * 1024) {}
-
-  /** 这个背景之前出现过（这次值得分开画） */
-  repeated(key: string): boolean {
-    if (this.seen.has(key)) return true;
-    this.seen.add(key);
-    return false;
-  }
 
   /** 背景层位图；没有缓存时用 paint 画一张 */
   get(key: string, paint: () => Promise<RgbaImage | undefined>): Promise<RgbaImage | undefined> {
@@ -121,6 +110,10 @@ export class TemplateCache {
         this.drop(k);
       }
       return img;
+    }, (e: unknown) => {
+      // 画失败的不留在缓存里，下次重画
+      this.drop(key);
+      throw e;
     });
     this.layers.set(key, p);
     return p;
