@@ -114,6 +114,11 @@ export async function createRasterPool(wasm: Uint8Array, workers = autoWorkers()
     slot.task = undefined;
     slot.worker.unref();
     t.resolve(m.type === 'done' ? m.result : { warnings: [`整页图画不出来：${m.message}`] });
+    // 线程说 resvg 出错太多次了：换掉它（之后的页按需启动新线程）
+    if (m.type === 'done' && m.retire) {
+      slots.splice(slots.indexOf(slot), 1);
+      void slot.worker.terminate();
+    }
     pump();
   }
 
@@ -164,7 +169,7 @@ export async function createRasterPool(wasm: Uint8Array, workers = autoWorkers()
 type WorkerMessage =
   | { type: 'ready' }
   | { type: 'need'; req: number; kind: keyof PaintResources; key: string }
-  | { type: 'done'; result: PaintResult }
+  | { type: 'done'; result: PaintResult; retire?: boolean }
   | { type: 'error'; message: string };
 
 /** 发给线程的字节（字体、图片）放进共享内存：每个线程都要同一个字体文件时不必各复制一份；同一份字节只放一次 */
