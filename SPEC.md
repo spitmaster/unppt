@@ -221,6 +221,7 @@
 
 | 规则 | 实测依据 |
 |---|---|
+| 页面尺寸超出 PowerPoint 允许的范围（每边 1~56 英寸，即 914400~51206400 EMU）时，PowerPoint 打开时修复：超范围的宽改成 10 英寸、高改成 7.5 英寸，另一边不变，超出新页面的内容裁掉；按 PowerPoint 实际打开的样子为准（用户 10/16） | 11 组探针（宽、高分别超上限、低于下限、正好在边界）；slide-size-repair（0.999）；样本 1 份 5 页 |
 | SmartArt 绘图缓存里的文字框（dsp:txXfrm）在绘图坐标里按自己的外框放，转角 = 形状的转角 + 文字框自己的转角（矩阵图：形状 270°、文字框 90°，文字横排） | smartart-matrix；smartart 第 2 页颜色误差 1.47 → 0.62 |
 | 表格引用内置样式而 tableStyles.xml 里没存定义时，PowerPoint 照样按内置样式显示；内置样式的定义由 PowerPoint 导出（tools/make-case/gen_table_styles.py，目前 50 个） | table-builtin-styles：6 种内置样式、删掉文件里的定义 |
 | 页码字段（a:fld type="slidenum"）显示所在幻灯片的页码 = 页序 + 起始页码（p:presentation 的 firstSlideNum，默认 1）−1，母版、版式上普通文本框里的页码字段也一样（文件里存的是占位文字 ‹#›） | slide-number-fields：起始页码 5、母版文本框里的页码和页码占位符 |
