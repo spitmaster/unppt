@@ -2,10 +2,9 @@
  * TIFF -> PNG：浏览器（除 Safari）不能显示 TIFF，PowerPoint 能。解码交给 utif2（MIT，Photopea 作者的 UTIF.js 的维护版，
  * 支持无压缩、LZW、PackBits、Deflate、JPEG 等压缩方式），取第一幅图转成 8 位 RGBA，再存成 PNG。
  * 多页 TIFF 只取第一页（PowerPoint 也只显示第一页）。
- * 大的不透明照片存成 JPEG（用户 2026-10-16 同意）：样本里有 13.5MP 的照片存成无压缩 TIFF，转 PNG 要 4 秒多、得到 15MB；
- * 存 JPEG（质量 92、不做色度抽样）0.2 秒、几 MB，照片上看不出差别。截图、海报这类带文字的图片存 JPEG 文字边上会起毛，
- * 照旧存 PNG。"照片"按抽样像素判断：和右边相邻像素完全相同的不到一半、颜色不少于 4096 种（样本里 41 张 2MP 以上的
- * TIFF：照片 0.18，界面、网页、海报截图 0.63~0.99）。
+ * 大的不透明照片存成 JPEG（用户 2026-10-16 同意）：13.5MP 的无压缩 TIFF 转 PNG 要 4 秒多、得到约 15MB；存 JPEG
+ * （质量 92、不做色度抽样）0.2 秒、约 2MB，照片上看不出差别。带文字的图片（截图、海报等）存 JPEG 文字边上会起毛，照旧存 PNG。
+ * "照片"按抽样像素判断：和右边相邻像素完全相同的不到一半、颜色不少于 4096 种（带文字的图片大片纯色，这个比例高）。
  */
 import UTIF from 'utif2';
 import type { ImageDecoder } from './image-decoder';

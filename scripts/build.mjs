@@ -26,7 +26,8 @@ await build({
 });
 const player = (await readFile('packages/player/dist/player.js', 'utf8')).replace(/<\/script/gi, '<\\/script').trim();
 
-const define = { __UNPPT_PLAYER__: JSON.stringify(player) };
+// utif2 转 CMYK 时读全局的 window.UDOC（另一个可选的库），Node 里没有 window 会抛错：定义成 undefined，走它自带的换算
+const define = { __UNPPT_PLAYER__: JSON.stringify(player), 'window.UDOC': 'undefined' };
 await build({
   entryPoints: ['packages/transcoder/src/index.ts'],
   outfile: 'packages/transcoder/dist/index.js',
