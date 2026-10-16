@@ -1,6 +1,7 @@
 /**
  * 出图的"准备"一半（在主线程，要用字体库和媒体）：页面 SVG 先剔除被整页不透明图片盖住的元素（occlusion.ts），
- * 重复出现的背景拆成背景层（layers.ts），展开嵌套的 SVG 图片（inline-svg.ts；同一页里重复很多次的单独画成位图），
+ * 重复出现的背景拆成背景层（layers.ts），透视投影的图片换成单独画的位图（mesh-warp.ts），
+ * 展开嵌套的 SVG 图片（inline-svg.ts；同一页里重复很多次的单独画成位图），
  * 字体名换成这一页实际用到的字体文件里的英文名（resvg 不认浏览器的字体回退）、发光的外扩拆成两遍（morphology.ts）——
  * 得到交给 paint.ts 画的 PaintJob。
  * 绘制要的字体、图片、背景层按编号从这里取（PaintResources）；超大 JPEG 先缩小（huge-images.ts）。
@@ -11,6 +12,7 @@ import { splitTemplate } from './layers';
 import { splitMorphology } from './morphology';
 import { cullOccluded } from './occlusion';
 import { inlineSvgImages } from './inline-svg';
+import { warpMeshes, type MeshWarp } from './mesh-warp';
 import { RASTER_PREFIX, type PaintJob, type PaintResources, type PaintSvg, type RasterSvg } from './paint';
 
 /** 按字体名（可能是嵌入字体的别名）和粗细斜找字体文件 */
@@ -83,19 +85,24 @@ export class Preparer {
 
   private async prepare(svg: string): Promise<PaintSvg> {
     const used = new Set<FontFace>();
-    // 先拆发光的外扩再展开嵌套的 SVG 图片：图片里的 feMorphology 有自己的缩放，不按页面的缩放改
-    const out = rewriteFonts(await inlineSvgImages(splitMorphology(svg), this.image, (key, svg, width) => this.raster(key, svg, width)), this.fonts, used);
+    // 透视投影的图片先换成单独画的位图（内容在它自己的准备里处理）；先拆发光的外扩再展开嵌套的 SVG 图片：
+    // 图片里的 feMorphology 有自己的缩放，不按页面的缩放改
+    const flat = warpMeshes(svg, pageScale(svg), (content, width, warp) => this.raster(`mesh@${width}@${warp.dst.join(',')}@${content}`, content, width, warp));
+    const out = rewriteFonts(await inlineSvgImages(splitMorphology(flat), this.image, (key, svg, width) => this.raster(key, svg, width)), this.fonts, used);
     const faces = [...used];
     return { svg: out, fonts: faces.map((f) => this.fontId(f)), ...(faces[0] ? { defaultFamily: faces[0].displayFamily } : {}) };
   }
 
-  /** 一张要单独画成位图的 SVG 图片：同一次转换里同一张、同样宽度的只准备一次，返回页面里引用它的地址 */
-  private raster(key: string, svg: string, width: number): string {
+  /**
+   * 一张要单独画成位图的 SVG（嵌套的 SVG 图片、透视投影的图片内容）：同一次转换里同一张、同样宽度的只准备一次，
+   * 返回页面里引用它的地址；warp 给了时画好后按它贴成投影后的样子（mesh-warp.ts）
+   */
+  private raster(key: string, svg: string, width: number, warp?: MeshWarp): string {
     let id = this.rasterIds.get(key);
     if (!id) {
       id = `r${this.rasterIds.size}`;
       this.rasterIds.set(key, id);
-      const p = this.prepare(svg).then((s): RasterSvg => ({ ...s, width }));
+      const p = this.prepare(svg).then((s): RasterSvg => ({ ...s, width, ...(warp ? { warp } : {}) }));
       p.catch(() => {});
       this.rasters.set(id, p);
     }
@@ -111,6 +118,13 @@ export class Preparer {
     }
     return id;
   }
+}
+
+/** 页面的缩放：根元素的宽 / viewBox 的宽（整页图像素 / 用户单位） */
+function pageScale(svg: string): number {
+  const root = /^<svg\b[^>]*>/.exec(svg)?.[0] ?? '';
+  const vbw = Number(/\sviewBox="[^"\d-]*-?[\d.]+[\s,]+-?[\d.]+[\s,]+([\d.]+)/.exec(root)?.[1]);
+  return vbw > 0 ? (Number(/\swidth="([\d.]+)"/.exec(root)?.[1]) || vbw) / vbw : 1;
 }
 
 /** font-family="'甲','乙',sans-serif" 换成能找到的字体文件的英文名；找到的字体记进 used */
