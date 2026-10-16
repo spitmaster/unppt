@@ -19,4 +19,5 @@ function makeGlow(spread: number, blur: number): ShapeEffect {
 }
 
 export const glow = makeGlow(0.4, 0.25);
-export const textGlow = makeGlow(0.25, 0.12);
+/** 文字：半径先按字号缩放（text/svg-text.ts）；以前在 48 磅（缩放 0.763）上校准的 0.25、0.12 换算到 72 磅 */
+export const textGlow = makeGlow(0.328, 0.157);
