@@ -1,6 +1,7 @@
 // 构建：先打包播放器，再把播放器代码内嵌进转码器（转码出来的 HTML 自带播放器）。
 import { build } from 'esbuild';
 import { copyFile, mkdir, readFile, writeFile } from 'node:fs/promises';
+import { libjpegTurbo } from './esbuild-libjpeg.mjs';
 
 const minify = !process.argv.includes('--dev');
 
@@ -34,8 +35,9 @@ await build({
   platform: 'neutral',
   // 第三方类库（saxes 等）只写了 main 字段，通用平台默认不读，要显式指定
   mainFields: ['module', 'main'],
-  // 字体子集化用的 harfbuzz-subset.wasm 直接打进 JS
+  // 字体子集化用的 harfbuzz-subset.wasm、JPEG 编码用的 libjpeg-turbo wasm 直接打进 JS
   loader: { '.wasm': 'binary' },
+  plugins: [libjpegTurbo],
   target: ['es2020'],
   define,
 });
@@ -46,6 +48,7 @@ await build({
   format: 'esm',
   platform: 'node',
   loader: { '.wasm': 'binary' },
+  plugins: [libjpegTurbo],
   target: ['node20'],
   define,
 });

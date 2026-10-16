@@ -9,7 +9,10 @@
 | xmlchars（saxes 的依赖） | 2.2.0 | MIT | https://github.com/lddubeau/xmlchars | XML 字符判定（同上） |
 | harfbuzzjs（HarfBuzz 的 WebAssembly 版，用其中的 harfbuzz-subset.wasm） | 1.6.3 | MIT | https://github.com/harfbuzz/harfbuzzjs | 字体子集化（WASM 打进 `dist/index.js`、`dist/cli.js`） |
 | zip.js（@zip.js/zip.js，只用只读部分） | 2.23.0 | BSD-3-Clause | https://github.com/gildas-lormeau/zip.js | 读 pptx 的 zip 目录和条目（打进 JS） |
+| libjpeg-turbo（@cornerstonejs/codec-libjpeg-turbo-8bit，libjpeg-turbo 的 WebAssembly 版，只用编码部分） | 1.2.8 | libjpeg-turbo：IJG + BSD-3-Clause + Zlib；封装：ISC（仓库 MIT） | https://github.com/libjpeg-turbo/libjpeg-turbo 、https://github.com/cornerstonejs/codecs | 整页图和缩略图的 JPEG 编码（WASM 打进 `dist/index.js`、`dist/cli.js`；打包时把胶水代码里读 wasm 文件的 Node 分支去掉，见 scripts/esbuild-libjpeg.mjs） |
 | utif2（UTIF.js 的维护版） | 4.1.0 | MIT | https://github.com/photopea/UTIF.js | TIFF 图片解码，转成 PNG（打进 JS） |
 | pako（utif2 的依赖） | 1.0.11 | MIT AND Zlib | https://github.com/nodeca/pako | TIFF 里 Deflate 压缩数据的解压（打进 JS） |
 
 MPL-2.0 全文：https://www.mozilla.org/MPL/2.0/
+
+This software is based in part on the work of the Independent JPEG Group.（libjpeg-turbo 的 IJG 许可要求的致谢）

@@ -3,7 +3,7 @@
  * 画的是这一页所有对象都显示的样子，音视频去掉（视频的封面帧本身是图片，照常显示）。
  * 每页只光栅化一次（整页图，raster.ts），缩略图由整页图区域平均缩小得到。
  */
-import { encodeJpeg } from '../media/jpeg-encode';
+import { jpegEncoder, type JpegEncode } from '../media/jpeg-encode';
 import type { RgbaImage, Rasterizer } from './raster';
 import type { WriteFn } from '../media/media';
 
@@ -33,8 +33,26 @@ export class SlideImages {
       this.warn(`整页图画不出来：${(e as Error).message}`);
     }
     if (!img) return;
-    await this.write(`pic/${n}.jpg`, jpeg(img));
-    await this.write(`thum/${n}.jpg`, jpeg(shrink(img, this.size.thumbWidth, this.size.thumbHeight)));
+    // 编码器（libjpeg-turbo WASM）第一次用时初始化；出过错会重新初始化，所以每页都重新取
+    let encode: JpegEncode;
+    try {
+      encode = await jpegEncoder();
+    } catch (e) {
+      this.warn(`JPEG 编码器加载失败，不输出整页图和缩略图：${(e as Error).message}`);
+      return;
+    }
+    const thumb = shrink(img, this.size.thumbWidth, this.size.thumbHeight);
+    for (const [path, im] of [[`pic/${n}.jpg`, img], [`thum/${n}.jpg`, thumb]] as const) {
+      let jpg: Uint8Array | undefined;
+      try {
+        jpg = encode(im.data, im.width, im.height, JPEG_QUALITY);
+      } catch (e) {
+        this.warn(`JPEG 编码失败，不输出：${(e as Error).message}`);
+        continue;
+      }
+      if (jpg) await this.write(path, jpg);
+      else this.warn(`图片太小（${im.width}×${im.height}），JPEG 编码器放不下，不输出`);
+    }
   }
 
   /** 页面 SVG -> 整页图大小：音视频（foreignObject 里的 video / audio）去掉；根元素的宽高换成整页图大小 */
@@ -43,12 +61,6 @@ export class SlideImages {
     return svg.replace(/<foreignObject\b[^>]*>[\s\S]*?<\/foreignObject>/g, '')
       .replace(/^(<svg\b[^>]*?)\swidth="[^"]*"/, `$1 width="${w}"`).replace(/^(<svg\b[^>]*?)\sheight="[^"]*"/, `$1 height="${h}"`);
   }
-}
-
-function jpeg(img: RgbaImage): Uint8Array {
-  const rgb = new Uint8Array(img.width * img.height * 3);
-  for (let i = 0, j = 0; i < img.data.length; i += 4, j += 3) { rgb[j] = img.data[i]; rgb[j + 1] = img.data[i + 1]; rgb[j + 2] = img.data[i + 2]; }
-  return encodeJpeg(rgb, img.width, img.height, JPEG_QUALITY);
 }
 
 /** 区域平均缩小（整页图是不透明的，不用按透明度加权） */
