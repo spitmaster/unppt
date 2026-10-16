@@ -53,13 +53,33 @@ export async function createRasterPool(wasm: Uint8Array, workers = autoWorkers()
   const slots: Slot[] = [];
   const queue: Task[] = [];
   let failures = 0;
+  let closed = false;
+  // 线程里的缓存按转换区分：每次转换（一份 PaintResources）在这个池里给一个编号，不用 PaintJob.conv
+  // （两份转码器模块共用一个池时，它们各自的计数会撞上）
+  const convs = new WeakMap<PaintResources, string>();
+  let convCount = 0;
+  const convOf = (res: PaintResources) => {
+    let id = convs.get(res);
+    if (!id) { id = `c${++convCount}`; convs.set(res, id); }
+    return id;
+  };
 
   const fail = (t: Task, message: string) => t.resolve({ warnings: [`整页图画不出来：${message}`] });
 
   function spawn(): void {
-    const slot: Slot = { worker: new Worker(script, { workerData: { wasm: module } }), ready: false };
+    // 线程默认继承主进程的 node 参数；--input-type（node -e 运行时）只能用于字符串脚本，线程带着它会启动失败，这时不继承
+    const options = process.execArgv.some((a) => a.startsWith('--input-type')) ? { execArgv: [] } : {};
+    let worker: Worker;
+    try {
+      worker = new Worker(script, { workerData: { wasm: module }, ...options });
+    } catch {
+      failures++;
+      return;
+    }
+    const slot: Slot = { worker, ready: false };
     slots.push(slot);
-    slot.worker.unref();
+    // 启动中的线程拦着进程退出（排队等它的页还没画）；准备好以后空闲时不拦（见 onMessage）。
+    // 注意不能在这里 unref：之后加 message 监听时 Node 会重新 ref
     slot.worker.on('message', (m: WorkerMessage) => onMessage(slot, m));
     slot.worker.on('error', (e: Error) => gone(slot, e.message));
     slot.worker.on('exit', (code) => gone(slot, `出图线程退出（${code}）`));
@@ -76,7 +96,13 @@ export async function createRasterPool(wasm: Uint8Array, workers = autoWorkers()
   }
 
   function onMessage(slot: Slot, m: WorkerMessage) {
-    if (m.type === 'ready') { slot.ready = true; failures = 0; pump(); return; }
+    if (m.type === 'ready') {
+      slot.ready = true;
+      failures = 0;
+      pump();
+      if (!slot.task) slot.worker.unref();
+      return;
+    }
     const t = slot.task;
     if (!t) return;
     if (m.type === 'need') {
@@ -93,6 +119,7 @@ export async function createRasterPool(wasm: Uint8Array, workers = autoWorkers()
 
   /** 排队的页交给空闲线程；还有排队的就再启动线程（算上正在启动的，不超过上限）；连续启动失败 3 次后剩下的页都不画 */
   function pump() {
+    if (closed) return;
     for (const slot of slots) {
       if (!queue.length) return;
       if (!slot.ready || slot.task) continue;
@@ -100,14 +127,15 @@ export async function createRasterPool(wasm: Uint8Array, workers = autoWorkers()
       slot.task = t;
       // 有活时拦着进程退出，空闲时不拦
       slot.worker.ref();
-      slot.worker.postMessage({ type: 'job', job: t.job });
+      slot.worker.postMessage({ type: 'job', job: { ...t.job, conv: convOf(t.res) } });
     }
     if (failures >= 3) {
       if (!slots.length) for (const t of queue.splice(0)) fail(t, '出图线程启动不了');
       return;
     }
     const starting = slots.filter((s) => !s.ready).length;
-    for (let n = Math.min(queue.length - starting, workers - slots.length); n > 0; n--) spawn();
+    for (let n = Math.min(queue.length - starting, workers - slots.length); n > 0 && failures < 3; n--) spawn();
+    if (failures >= 3 && !slots.length) for (const t of queue.splice(0)) fail(t, '出图线程启动不了');
   }
 
   // 先启动两个（加载脚本、实例化 resvg 和主线程转码第一页同时进行），排队的页多了再补：只有一两页的课件不必启动一大堆
@@ -116,12 +144,18 @@ export async function createRasterPool(wasm: Uint8Array, workers = autoWorkers()
     size: workers,
     paint(job, res) {
       return new Promise((resolve) => {
-        queue.push({ job, res, resolve });
+        const t = { job, res, resolve };
+        if (closed) return fail(t, '出图线程池已关闭');
+        queue.push(t);
         pump();
       });
     },
     async close() {
+      // 关掉以后还没画完的页都记警告结束（不让调用方一直等），之后再来的页也直接结束
+      closed = true;
       const all = slots.splice(0);
+      for (const t of queue.splice(0)) fail(t, '出图线程池已关闭');
+      for (const s of all) if (s.task) { fail(s.task, '出图线程池已关闭'); s.task = undefined; }
       await Promise.all(all.map((s) => s.worker.terminate()));
     },
   };
