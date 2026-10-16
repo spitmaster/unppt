@@ -71,38 +71,57 @@ export function unfilter(f: number, src: Uint8Array, row: Uint8Array, up: Uint8A
 }
 
 /**
- * 按行过滤后压缩成 IDAT 的数据：每行在五种过滤里选残差绝对值之和最小的（PNG 规范推荐的做法，照片类图片能小一半以上）
+ * 按行过滤后压缩成 IDAT 的数据：每行在五种过滤里选残差绝对值之和最小的（并列取编号小的；PNG 规范推荐的做法，照片类图片能小一半以上）。
+ * 先一遍算出五种过滤的和，再只写选中的那种；行首 bpp 个字节（左边没有像素）单独算，后面的循环里不再判断
  */
 export function idatOf(px: Uint8Array, stride: number, h: number, bpp: number): Promise<Uint8Array | undefined> {
   const filtered = new Uint8Array((stride + 1) * h);
-  const cand = Array.from({ length: 5 }, () => new Uint8Array(stride));
+  const zero = new Uint8Array(stride);
+  const n = Math.min(bpp, stride);
   for (let y = 0; y < h; y++) {
-    const row = px.subarray(y * stride, (y + 1) * stride);
-    const up = y > 0 ? px.subarray((y - 1) * stride, y * stride) : undefined;
-    let best = 0, bestSum = Infinity;
-    for (let f = 0; f < 5; f++) {
-      const out = cand[f];
-      let sum = 0;
-      for (let i = 0; i < stride; i++) {
-        const a = i >= bpp ? row[i - bpp] : 0, b = up ? up[i] : 0, c = up && i >= bpp ? up[i - bpp] : 0;
-        let p = 0;
-        if (f === 1) p = a;
-        else if (f === 2) p = b;
-        else if (f === 3) p = (a + b) >> 1;
-        else if (f === 4) {
-          const q = a + b - c, pa = Math.abs(q - a), pb = Math.abs(q - b), pc = Math.abs(q - c);
-          p = pa <= pb && pa <= pc ? a : pb <= pc ? b : c;
-        }
-        const v = (row[i] - p) & 0xff;
-        out[i] = v;
-        sum += v < 128 ? v : 256 - v;
-      }
-      if (sum < bestSum) { bestSum = sum; best = f; }
+    const r = y * stride;
+    // 第一行的"上一行"当成全 0
+    const up = y > 0 ? px : zero, u = y > 0 ? r - stride : 0;
+    let s0 = 0, s1 = 0, s2 = 0, s3 = 0, s4 = 0;
+    for (let i = 0; i < n; i++) {
+      const x = px[r + i], b = up[u + i];
+      s0 += cost(x); s1 += cost(x); s2 += cost((x - b) & 0xff); s3 += cost((x - (b >> 1)) & 0xff); s4 += cost((x - b) & 0xff);
     }
-    filtered[y * (stride + 1)] = best;
-    filtered.set(cand[best], y * (stride + 1) + 1);
+    for (let i = n; i < stride; i++) {
+      const x = px[r + i], a = px[r + i - bpp], b = up[u + i], c = up[u + i - bpp];
+      s0 += cost(x);
+      s1 += cost((x - a) & 0xff);
+      s2 += cost((x - b) & 0xff);
+      s3 += cost((x - ((a + b) >> 1)) & 0xff);
+      s4 += cost((x - paeth(a, b, c)) & 0xff);
+    }
+    let best = 0, bs = s0;
+    if (s1 < bs) { bs = s1; best = 1; }
+    if (s2 < bs) { bs = s2; best = 2; }
+    if (s3 < bs) { bs = s3; best = 3; }
+    if (s4 < bs) best = 4;
+    const o = y * (stride + 1) + 1;
+    filtered[o - 1] = best;
+    if (best === 0) filtered.set(px.subarray(r, r + stride), o);
+    else if (best === 2) for (let i = 0; i < stride; i++) filtered[o + i] = (px[r + i] - up[u + i]) & 0xff;
+    else {
+      for (let i = 0; i < n; i++) filtered[o + i] = (px[r + i] - (best === 1 ? 0 : best === 3 ? up[u + i] >> 1 : up[u + i])) & 0xff;
+      if (best === 1) for (let i = n; i < stride; i++) filtered[o + i] = (px[r + i] - px[r + i - bpp]) & 0xff;
+      else if (best === 3) for (let i = n; i < stride; i++) filtered[o + i] = (px[r + i] - ((px[r + i - bpp] + up[u + i]) >> 1)) & 0xff;
+      else for (let i = n; i < stride; i++) filtered[o + i] = (px[r + i] - paeth(px[r + i - bpp], up[u + i], up[u + i - bpp])) & 0xff;
+    }
   }
   return transform(filtered, new CompressionStream('deflate'));
+}
+
+/** 残差按有符号字节的绝对值计 */
+function cost(v: number): number {
+  return v < 128 ? v : 256 - v;
+}
+
+function paeth(a: number, b: number, c: number): number {
+  const q = a + b - c, pa = q > a ? q - a : a - q, pb = q > b ? q - b : b - q, pc = q > c ? q - c : c - q;
+  return pa <= pb && pa <= pc ? a : pb <= pc ? b : c;
 }
 
 /** 8 位 RGBA 像素编码成 PNG */
