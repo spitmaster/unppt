@@ -3,12 +3,14 @@
  * resvg 不认浏览器的字体回退，所以画之前：
  *   - 页面里的字体名换成这一页实际用到的字体文件里的英文名，并把这些字体文件交给 resvg；
  *   - 嵌套的 SVG 图片（EMF / WMF 转出来的）展开成页面里的普通元素（resvg 画嵌套图片时不带字体，文字会丢）。
+ * 提速：被整页不透明图片盖住的元素不画（occlusion.ts）；超大 JPEG 先缩小（huge-images.ts）；重复出现的母版、版式背景只画一次（layers.ts）。
  */
 import { initWasm, Resvg } from '@resvg/resvg-wasm';
 import type { FontFace } from '../font/font';
 import { base64 } from '../media/media';
 import { cullOccluded } from './occlusion';
 import { withHugeImagesShrunk } from './huge-images';
+import { composite, splitTemplate, TemplateCache } from './layers';
 
 export interface RgbaImage { width: number; height: number; data: Uint8Array }
 
@@ -38,42 +40,58 @@ export async function resvgRasterizer(wasm: Uint8Array, fonts: FontResolver): Pr
     }
     return p;
   };
-  // 超大 JPEG 缩小后的版本（huge-images.ts），跨页共用
+  // 超大 JPEG 缩小后的版本（huge-images.ts）、背景层位图（layers.ts），跨页共用
   const shrunk = new Map<string, Promise<Uint8Array | undefined>>();
+  const layers = new TemplateCache();
+
+  /** 画一张整页 SVG；background 不给时画在透明画布上（像素是预乘透明度的） */
+  async function paint(svg: string, width: number, images: ImageSource, background?: string): Promise<RgbaImage> {
+    const used = new Set<FontFace>();
+    // resvg 只把 http(s) 地址报成"待解析图片"：media/…、共享图片编号先换成占位地址，再按占位地址把原图交给它
+    const real = new Map<string, string>();
+    const src = rewriteFonts(await inlinePatternImages(await inlineSvgImages(svg, images), images), fonts, used)
+      .replace(/(<image\b[^>]*?\s(?:xlink:)?href=")([^"#][^"]*)"/g, (m, pre: string, h: string) => {
+        if (h.startsWith('data:')) return m;
+        const u = `https://unppt.local/${real.size}`;
+        real.set(u, h);
+        return `${pre}${u}"`;
+      });
+    const buffers = (await Promise.all([...used].map(fontBytes))).filter((b): b is Uint8Array => !!b);
+    const first = [...used][0];
+    const r = new Resvg(src, {
+      fitTo: { mode: 'width', value: width },
+      ...(background ? { background } : {}),
+      font: { fontBuffers: buffers, loadSystemFonts: false, ...(first ? { defaultFontFamily: first.displayFamily } : {}) },
+    });
+    try {
+      // 页面里引用的图片文件（media/…、共享图片编号）：把原图字节交给 resvg
+      for (const h of r.imagesToResolve() as string[]) {
+        const b = await images(real.get(h) ?? h);
+        if (b) r.resolveImage(h, b);
+      }
+      const img = r.render();
+      const out = { width: img.width, height: img.height, data: new Uint8Array(img.pixels) };
+      img.free();
+      return out;
+    } finally {
+      r.free();
+    }
+  }
+
   return {
     async render(svg, width, original) {
       const images = withHugeImagesShrunk(original, shrunk);
-      const used = new Set<FontFace>();
-      // resvg 只把 http(s) 地址报成"待解析图片"：media/…、共享图片编号先换成占位地址，再按占位地址把原图交给它
-      const real = new Map<string, string>();
-      // 被整页不透明图片盖住的元素先剔除（像素不变），它们的图片就不用再读、再解码
-      const src = rewriteFonts(await inlinePatternImages(await inlineSvgImages(await cullOccluded(svg, images), images), images), fonts, used)
-        .replace(/(<image\b[^>]*?\s(?:xlink:)?href=")([^"#][^"]*)"/g, (m, pre: string, h: string) => {
-          if (h.startsWith('data:')) return m;
-          const u = `https://unppt.local/${real.size}`;
-          real.set(u, h);
-          return `${pre}${u}"`;
-        });
-      const buffers = (await Promise.all([...used].map(fontBytes))).filter((b): b is Uint8Array => !!b);
-      const first = [...used][0];
-      const r = new Resvg(src, {
-        fitTo: { mode: 'width', value: width },
-        background: '#ffffff',
-        font: { fontBuffers: buffers, loadSystemFonts: false, ...(first ? { defaultFontFamily: first.displayFamily } : {}) },
-      });
-      try {
-        // 页面里引用的图片文件（media/…、共享图片编号）：把原图字节交给 resvg
-        for (const h of r.imagesToResolve() as string[]) {
-          const b = await images(real.get(h) ?? h);
-          if (b) r.resolveImage(h, b);
-        }
-        const img = r.render();
-        const out = { width: img.width, height: img.height, data: new Uint8Array(img.pixels) };
-        img.free();
-        return out;
-      } finally {
-        r.free();
+      // 被整页不透明图片盖住的元素先剔除，它们的图片就不用再读、再解码
+      const page = await cullOccluded(svg, images);
+      // 背景第二次出现起：背景层用缓存，只画本页内容再叠上去
+      const split = splitTemplate(page);
+      if (split && layers.repeated(split.key)) {
+        const bg = await layers.get(split.key, () => paint(split.template, width, images, '#ffffff'));
+        const fg = bg && await paint(split.page, width, images);
+        const out = bg && fg && composite(fg, bg);
+        if (out) return out;
       }
+      return paint(page, width, images, '#ffffff');
     },
   };
 }
