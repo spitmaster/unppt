@@ -1,7 +1,7 @@
 """比对：转码 -> 截图 -> 和 PowerPoint 参考图比对 -> 打分 -> 出报告。
 
 用法：
-  python tools/compare/run.py [--set testcases|daily|all] [--only 编号] [--batch 批次目录名] [--no-build]
+  python tools/compare/run.py [--set testcases|daily|all] [--only 编号[,编号…]] [--batch 批次目录名] [--no-build]
   --batch 20261016：只比对 samples/20261016/ 里的课件
   只跑一部分（--only、--batch）时不改写 scores/ 下的汇总分数，汇总只写进报告目录的 summary.json
 
@@ -220,7 +220,9 @@ def pick_items(set_name: str, only: str | None, batch: str | None = None) -> lis
             src = REF / h / "converted.pptx" if ref.get("converted") else ROOT / index[h]["paths"][0]
             items.append({"key": h, "src": src, "ref": REF / h})
     if only:
-        items = [i for i in items if i["key"].startswith(only) or i["key"] == f"tc-{only}"]
+        # 可以用逗号分隔多个编号（前缀）
+        keys = [k for k in only.split(",") if k]
+        items = [i for i in items if any(i["key"].startswith(k) or i["key"] == f"tc-{k}" for k in keys)]
     return items
 
 
