@@ -10,7 +10,8 @@ from collections import Counter, defaultdict
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-from common import CACHE  # noqa: E402
+from common import CACHE, is_holdout  # noqa: E402
+import os  # noqa: E402
 
 # MsoShapeType
 SHAPE_TYPES = {
@@ -23,7 +24,8 @@ PASS = 0.95
 
 
 def main():
-    results = json.load(open(CACHE / "report" / "results.json", encoding="utf-8"))
+    report = Path(os.environ["UNPPT_REPORT"]) if os.environ.get("UNPPT_REPORT") else CACHE / "report"
+    results = json.load(open(report / "results.json", encoding="utf-8"))
     pages = [(r["key"], p) for r in results for p in r["pages"]]
     failed = [(k, p) for k, p in pages if p["ssim"] < PASS]
 
@@ -67,8 +69,8 @@ def main():
     print("\n缺少的字体（按文件数）：")
     for f, n in fonts.most_common(20):
         print(f"  {f}：{n} 个文件")
-    print("\n分数最低的页面（编号）：")
-    for k, p in sorted(failed, key=lambda x: x[1]["ssim"])[:10]:
+    print("\n分数最低的页面（编号；不列期末卷）：")
+    for k, p in sorted([f for f in failed if not is_holdout(f[0])], key=lambda x: x[1]["ssim"])[:10]:
         print(f"  {k} 第 {p['slide'] + 1} 页 第 {p['step']} 步：{p['ssim']:.3f}")
 
 
