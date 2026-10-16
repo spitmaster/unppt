@@ -21,14 +21,17 @@ import { renderSlide } from './render/render';
 import type { FontEmbedder } from './text/types';
 import { toSource, type InputSource } from './io/source';
 import { outputForm } from './output/forms';
-import { previewSize, SlideImages } from './preview/slide-images';
-import { resvgRasterizer } from './preview/raster';
+import { previewSize, SlideImages, type RasterPool } from './preview/slide-images';
+import { createPainter, type Painter } from './preview/paint';
 import { slideNotes } from './model/notes';
 import { propJson, type PropSlide } from './output/prop';
 import { ZipReader } from './io/zip';
 
 export type { InputSource, RandomAccessSource } from './io/source';
 export type { WriteData, WriteFn } from './media/media';
+export type { RasterPool } from './preview/slide-images';
+export type { PaintJob, PaintResources, PaintResult, PaintSvg } from './preview/paint';
+export { createPainter } from './preview/paint';
 export { UNPPT_VERSION };
 
 declare const __UNPPT_PLAYER__: string;
@@ -61,6 +64,11 @@ export interface ConvertOptions {
   images?: boolean;
   /** 出图用的 resvg WASM 文件字节（发布包里的 dist/resvg.wasm；命令行自动读取）。没给或加载失败时不出图并警告 */
   rasterWasm?: Uint8Array | Promise<Uint8Array | undefined>;
+  /**
+   * 并行出图执行器（可选，例如 Node 的 @unppt/unppt/node 里的 createRasterPool，命令行按 CPU 和内存自动创建）：
+   * 给了时多页同时画，不需要 rasterWasm（执行器自己加载 resvg）；结果和本线程画的逐字节一致
+   */
+  rasterPool?: RasterPool;
   /** 每处理完一页回调一次 */
   onProgress?: (done: number, total: number) => void;
 }
@@ -102,12 +110,10 @@ export async function convert(input: InputSource, options: ConvertOptions): Prom
   const aliasFace = (name: string) => [...usage].find(([, u]) => u.alias === name)?.[0];
   const size = previewSize(pres.width, pres.height);
   const wantImages = options.images !== false;
-  const wasm = wantImages ? await Promise.resolve(options.rasterWasm).catch(() => undefined) : undefined;
-  if (wantImages && !wasm) pres.warn('没有 resvg.wasm，不输出整页图和缩略图（prop.json 照常输出）');
-  const raster = wasm
-    ? await resvgRasterizer(wasm, (n, b, i) => aliasFace(n) ?? fonts.find(n, b, i)).catch((e: Error) => { pres.warn(`resvg 加载失败，不输出整页图和缩略图：${e.message}`); return undefined; })
+  const painter = wantImages ? options.rasterPool ?? await localPainter(options.rasterWasm, (m) => pres.warn(m)) : undefined;
+  const images = painter
+    ? new SlideImages(size, painter, (n, b, i) => aliasFace(n) ?? fonts.find(n, b, i), (h) => media.bytes(h), options.write, (m) => pres.warn(m))
     : undefined;
-  const images = raster ? new SlideImages(size, raster, (h) => media.bytes(h), options.write, (m) => pres.warn(m)) : undefined;
   // 出图时页面引用的图片要能再读一次
   media.keep = !!images;
   const propSlides: PropSlide[] = [];
@@ -189,8 +195,16 @@ export async function convert(input: InputSource, options: ConvertOptions): Prom
   const takeAssets = () => { const a = media.pending; media.pending = []; return a; };
 
   await form.write({ slides, takeAssets, fontFiles, meta, title, player: __UNPPT_PLAYER__, write: options.write, fileName });
+  await images?.flush();
   await options.write('prop.json', propJson({ width: pres.width * 0.75, height: pres.height * 0.75, thumbWidth: size.thumbWidth, thumbHeight: size.thumbHeight, slides: propSlides }));
   return { slides: count, width: pres.width, height: pres.height, report };
+}
+
+/** 在本线程画：加载 resvg；没有或加载失败时不出图并警告 */
+async function localPainter(wasm: ConvertOptions['rasterWasm'], warn: (m: string) => void): Promise<Painter | undefined> {
+  const bytes = await Promise.resolve(wasm).catch(() => undefined);
+  if (!bytes) { warn('没有 resvg.wasm，不输出整页图和缩略图（prop.json 照常输出）'); return undefined; }
+  return createPainter(bytes).catch((e: Error) => { warn(`resvg 加载失败，不输出整页图和缩略图：${e.message}`); return undefined; });
 }
 
 async function readTitle(pkg: OpcPackage): Promise<string> {
