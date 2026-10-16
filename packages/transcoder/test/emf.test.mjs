@@ -52,3 +52,33 @@ test('文字里的 NUL 去掉，后面的字位置不乱；SVG 能被 resvg 解�
   rv.render().free();
   rv.free();
 });
+
+/** 拼一个只有一个三角形 GRADIENTFILL 的 EMF；三个顶点的颜色 cs（8 位 RGB） */
+function emfTriangle(cs) {
+  const recs = [];
+  const rec = (type, body) => { const b = new Uint8Array(8 + body.length); const v = new DataView(b.buffer); v.setUint32(0, type, true); v.setUint32(4, b.length, true); b.set(body, 8); recs.push(b); };
+  const h = new Uint8Array(80), hv = new DataView(h.buffer);
+  hv.setInt32(8, 1000, true); hv.setInt32(12, 1000, true); hv.setInt32(24, 26458, true); hv.setInt32(28, 26458, true);
+  hv.setUint32(32, 0x464d4520, true); hv.setInt32(64, 1000, true); hv.setInt32(68, 1000, true); hv.setInt32(72, 265, true); hv.setInt32(76, 265, true);
+  rec(1, h);
+  // Bounds(16) 顶点数 三角形数 模式(2 = 三角形)，顶点：x y 和 16 位的 R G B A，然后三个顶点下标
+  const g = new Uint8Array(28 + 3 * 16 + 12), gv = new DataView(g.buffer);
+  gv.setUint32(16, 3, true); gv.setUint32(20, 1, true); gv.setUint32(24, 2, true);
+  [[0, 0], [1000, 0], [0, 1000]].forEach(([x, y], k) => {
+    const o = 28 + k * 16;
+    gv.setInt32(o, x, true); gv.setInt32(o + 4, y, true);
+    cs[k].forEach((c, ch) => gv.setUint16(o + 8 + ch * 2, c << 8, true));
+  });
+  [0, 1, 2].forEach((k) => gv.setUint32(28 + 48 + k * 4, k, true));
+  rec(118, g);
+  rec(14, new Uint8Array(12));
+  const out = new Uint8Array(recs.reduce((a, b) => a + b.length, 0));
+  let o = 0; for (const b of recs) { out.set(b, o); o += b.length; }
+  return out;
+}
+
+test('三角形渐变：三个顶点几乎同色时不细分（1 块），颜色差大的照常细分', () => {
+  const paths = (svg) => (svg.match(/<path\b/g) ?? []).length;
+  assert.equal(paths(emfToSvg(emfTriangle([[100, 100, 100], [102, 101, 100], [100, 103, 100]]))), 1);
+  assert.ok(paths(emfToSvg(emfTriangle([[255, 0, 0], [0, 255, 0], [0, 0, 255]]))) > 50);
+});

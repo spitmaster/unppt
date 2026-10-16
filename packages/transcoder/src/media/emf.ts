@@ -400,7 +400,10 @@ function emfToSvgUnsafe(bytes: Uint8Array): string | undefined {
             // 顶点着色：按大小细分成 n² 个小三角形，每块取重心处插值的颜色（导出工具拼出的小三角形 n = 1，就是平均色）
             const P = ks.map((k) => tp(vx(k), vy(k))), C = ks.map(vc);
             const edge = Math.max(...[0, 1, 2].map((j) => Math.hypot(P[j][0] - P[(j + 1) % 3][0], P[j][1] - P[(j + 1) % 3][1])));
-            const n = Math.min(10, Math.max(1, Math.ceil(edge / Math.max(vb[2], vb[3]) * 40)));
+            // 细分次数也受颜色差限制（相邻小块最多差 4 级）：三个顶点几乎同色时不用细分。
+            // 实测样本里一张 EMF 有 2.4 万个顶点同色的大三角形，每个分成 100 块，转出 238 万条路径、232MB
+            const delta = Math.max(...[0, 1, 2].map((ch) => Math.max(C[0][ch], C[1][ch], C[2][ch]) - Math.min(C[0][ch], C[1][ch], C[2][ch])));
+            const n = Math.max(1, Math.min(10, Math.ceil(edge / Math.max(vb[2], vb[3]) * 40), Math.ceil(delta / 4)));
             const at = (a: number, b: number) => [P[0][0] + (P[1][0] - P[0][0]) * a / n + (P[2][0] - P[0][0]) * b / n, P[0][1] + (P[1][1] - P[0][1]) * a / n + (P[2][1] - P[0][1]) * b / n];
             const tri = (q: number[][]) => {
               const u = (q.reduce((s2, v) => s2 + v[0], 0) / 3) / n, w = (q.reduce((s2, v) => s2 + v[1], 0) / 3) / n;
