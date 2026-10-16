@@ -1,0 +1,159 @@
+{
+ "version": 8,
+ "level": "full",
+ "slideWidthPt": 960.0,
+ "slideHeightPt": 540.0,
+ "imageWidth": 1280,
+ "imageHeight": 720,
+ "slides": [
+  {
+   "index": 0,
+   "hidden": false,
+   "shapes": [
+    {
+     "id": 2,
+     "name": "TextBox 1",
+     "type": 17,
+     "x": 30.0,
+     "y": 20.0,
+     "w": 900.0,
+     "h": 41.198,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 23,
+       "text": "1979年前，只有单一的中国人民银行 Bank",
+       "x": 37.2,
+       "y": 23.6,
+       "w": 531.38,
+       "h": 33.6
+      }
+     ]
+    },
+    {
+     "id": 3,
+     "name": "TextBox 2",
+     "type": 17,
+     "x": 30.0,
+     "y": 105.0,
+     "w": 900.0,
+     "h": 41.198,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 23,
+       "text": "1979年前，只有单一的中国人民银行 Bank",
+       "x": 37.2,
+       "y": 108.6,
+       "w": 531.38,
+       "h": 33.6
+      }
+     ]
+    },
+    {
+     "id": 4,
+     "name": "TextBox 3",
+     "type": 17,
+     "x": 30.0,
+     "y": 190.0,
+     "w": 900.0,
+     "h": 41.198,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 23,
+       "text": "1979年前，只有单一的中国人民银行 Bank",
+       "x": 37.2,
+       "y": 193.6,
+       "w": 531.38,
+       "h": 33.6
+      }
+     ]
+    },
+    {
+     "id": 5,
+     "name": "TextBox 4",
+     "type": 17,
+     "x": 30.0,
+     "y": 275.0,
+     "w": 900.0,
+     "h": 41.198,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 23,
+       "text": "1979年前，只有单一的中国人民银行 Bank",
+       "x": 37.2,
+       "y": 278.6,
+       "w": 531.38,
+       "h": 33.6
+      }
+     ]
+    },
+    {
+     "id": 6,
+     "name": "TextBox 5",
+     "type": 17,
+     "x": 30.0,
+     "y": 360.0,
+     "w": 900.0,
+     "h": 41.198,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 23,
+       "text": "1979年前，只有单一的中国人民银行 Bank",
+       "x": 37.2,
+       "y": 363.6,
+       "w": 511.505,
+       "h": 33.6
+      }
+     ]
+    },
+    {
+     "id": 7,
+     "name": "TextBox 6",
+     "type": 17,
+     "x": 30.0,
+     "y": 445.0,
+     "w": 900.0,
+     "h": 41.198,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 23,
+       "text": "1979年前，只有单一的中国人民银行 Bank",
+       "x": 37.2,
+       "y": 448.6,
+       "w": 531.38,
+       "h": 33.6
+      }
+     ]
+    }
+   ],
+   "effects": [],
+   "triggerHidden": [],
+   "steps": 0,
+   "keptSlideshow": false
+  }
+ ],
+ "ok": true
+}
