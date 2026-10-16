@@ -7,6 +7,7 @@ import { ctfToTtf } from './ctf';
 import { loadFontFile, type FontFace, type FontMetrics } from './font';
 import { toSource } from '../io/source';
 import { lzcompDecompress } from './lzcomp';
+import { sortTableDirectory } from './sfnt';
 
 const le16 = (b: Uint8Array, o: number) => b[o] | (b[o + 1] << 8);
 const le32 = (b: Uint8Array, o: number) => (b[o] | (b[o + 1] << 8) | (b[o + 2] << 16)) + b[o + 3] * 0x1000000;
@@ -40,7 +41,8 @@ export function eotToTtf(eot: Uint8Array): Uint8Array | undefined {
 export async function loadEmbeddedFont(bytes: Uint8Array, typeface: string, bold: boolean, italic: boolean): Promise<FontFace[]> {
   let ttf: Uint8Array | undefined;
   try {
-    ttf = eotToTtf(bytes) ?? bytes;
+    // 表目录可能没按规范排序（见 sortTableDirectory）
+    ttf = sortTableDirectory(eotToTtf(bytes) ?? bytes);
   } catch {
     return [];
   }
