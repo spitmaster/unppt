@@ -15,13 +15,18 @@ import { hasCjk, label } from './draw';
 import type { TextWidth } from './layout';
 import type { CatLevel, TextStyle } from './model';
 
-export type CatFit = ({ kind: 'line' } | { kind: 'wrap'; lines: string[][]; n: number } | { kind: 'rot' } | { kind: 'vert' }) & { skip: number };
+export type CatFit = ({ kind: 'line' } | { kind: 'wrap'; lines: string[][]; n: number } | { kind: 'rot' } | { kind: 'vert' } | { kind: 'ea' }) & { skip: number };
 
 const SIN45 = Math.SQRT1_2;
 /** 实测：折行每多一行的高度、斜标签带的常数项、斜标签末端的位置、第一个斜标签的中心离图表左边的距离（像素，s 是字号） */
 const WRAP_LINE = 1.044, ROT_BAND = 1.54, ROT_X = 0.02, ROT_Y = 1.27, ROT_Y0 = 4.2, ROT_EDGE = 15.4, ROT_SPAN = 0.667;
 /** 实测：斜排、竖排要求的行距（× 字号）、竖排文字末端离轴、竖排标签带的常数项 */
 const ROT_ROOM = 1.3, VERT_Y = 0.7, VERT_Y0 = 2, VERT_BAND = 0.62;
+/**
+ * 实测（charts-axis-ea-vert：12 磅、1~6 个汉字）：文字设成东亚竖排（bodyPr vert="eaVert"）时每个字往下排、字距 1 个字号，
+ * 第一个字的上沿在轴下 0.56 × 字号；标签带比横排一行的高 (最多的字数 − 1.375) × 字号
+ */
+const EA_TOP = 0.56, EA_LINE = 1.375;
 /** 实测：多级分类外层每级的标签带比单级的少的高度 */
 const LEVEL_TRIM = 0.6;
 
@@ -38,8 +43,9 @@ function wrapWords(t: string, width: number, s: number, tw: TextWidth): string[]
   return lines;
 }
 
-export function fitCategoryLabels(cats: string[], catW: number, s: number, tw: TextWidth, fixedSkip?: number): CatFit {
+export function fitCategoryLabels(cats: string[], catW: number, s: number, tw: TextWidth, fixedSkip?: number, eaVert = false): CatFit {
   const first = fixedSkip && fixedSkip > 0 ? fixedSkip : 1, last = fixedSkip ? first : Math.max(1, cats.length);
+  if (eaVert) return { kind: 'ea', skip: first };
   for (let skip = first; ; skip++) {
     const w = catW * skip;
     const shown = cats.filter((_, i) => i % skip === 0);
@@ -60,6 +66,7 @@ export function catFitBand(fit: CatFit, base: number, cats: string[], s: number,
   if (fit.kind === 'wrap') return base + (fit.n - 1) * WRAP_LINE * s;
   if (fit.kind === 'rot') return (cats.some(hasCjk) ? SIN45 : ROT_SPAN) * widest() + ROT_BAND * s;
   if (fit.kind === 'vert') return widest() + VERT_BAND * s;
+  if (fit.kind === 'ea') return base + (Math.max(1, ...cats.filter((_, i) => i % fit.skip === 0).map((c) => [...c].length)) - EA_LINE) * s;
   return base;
 }
 
@@ -74,6 +81,7 @@ export function categoryLabel(fit: CatFit, i: number, text: string, x: number, a
   const s = st.size;
   if (i % fit.skip) return '';
   if (fit.kind === 'vert') return `<g transform="translate(${n2(x)} ${n2(axisY + VERT_Y * s - VERT_Y0)}) rotate(-90)">${label(text, 0, 0, st, 'end')}</g>`;
+  if (fit.kind === 'ea') return [...text].map((ch, k) => label(ch, x, axisY + (EA_TOP + k + 0.5) * s, st)).join('');
   if (fit.kind === 'rot') {
     return `<g transform="translate(${n2(x - ROT_X * s)} ${n2(axisY + ROT_Y * s - ROT_Y0)}) rotate(-45)">${label(text, 0, 0, st, 'end')}</g>`;
   }
