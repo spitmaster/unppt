@@ -7,6 +7,7 @@
 import { initWasm, Resvg } from '@resvg/resvg-wasm';
 import type { FontFace } from '../font/font';
 import { base64 } from '../media/media';
+import { cullOccluded } from './occlusion';
 
 export interface RgbaImage { width: number; height: number; data: Uint8Array }
 
@@ -41,7 +42,8 @@ export async function resvgRasterizer(wasm: Uint8Array, fonts: FontResolver): Pr
       const used = new Set<FontFace>();
       // resvg 只把 http(s) 地址报成"待解析图片"：media/…、共享图片编号先换成占位地址，再按占位地址把原图交给它
       const real = new Map<string, string>();
-      const src = rewriteFonts(await inlinePatternImages(await inlineSvgImages(svg, images), images), fonts, used)
+      // 被整页不透明图片盖住的元素先剔除（像素不变），它们的图片就不用再读、再解码
+      const src = rewriteFonts(await inlinePatternImages(await inlineSvgImages(await cullOccluded(svg, images), images), images), fonts, used)
         .replace(/(<image\b[^>]*?\s(?:xlink:)?href=")([^"#][^"]*)"/g, (m, pre: string, h: string) => {
           if (h.startsWith('data:')) return m;
           const u = `https://unppt.local/${real.size}`;
