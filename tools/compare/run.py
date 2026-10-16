@@ -231,6 +231,47 @@ def convert(src: Path, out: Path) -> dict:
     }
 
 
+def freeze_gifs(out_dir: Path) -> int:
+    """动图换成第一帧（媒体文件和页面里内嵌的 data URI）：PowerPoint 导出静态图用的是第一帧（实测样本：参考图和第 0 帧平均差 6.5，
+    其它帧 ≥ 18），浏览器里动图在播，截到哪一帧看时机，同一份课件两次比对分数会跳。只改比对用的产物，返回改了几处"""
+    import base64
+    import io
+    import re
+
+    def first(data: bytes) -> bytes | None:
+        try:
+            im = Image.open(io.BytesIO(data))
+            if getattr(im, "n_frames", 1) < 2:
+                return None
+            im.seek(0)
+            buf = io.BytesIO()
+            im.save(buf, format="GIF")
+            return buf.getvalue()
+        except Exception:
+            return None
+
+    n = 0
+    for f in (out_dir / "media").glob("*.gif") if (out_dir / "media").exists() else []:
+        b = first(f.read_bytes())
+        if b:
+            f.write_bytes(b)
+            n += 1
+    pat = re.compile(r"data:image/gif;base64,([A-Za-z0-9+/=]+)")
+    for f in [*out_dir.glob("*.html"), *(out_dir / "pages").glob("*.js")]:
+        t = f.read_text(encoding="utf-8")
+        if "data:image/gif;base64," not in t:
+            continue
+        def rep(m):
+            nonlocal n
+            b = first(base64.b64decode(m.group(1)))
+            if not b:
+                return m.group(0)
+            n += 1
+            return "data:image/gif;base64," + base64.b64encode(b).decode()
+        f.write_text(pat.sub(rep, t), encoding="utf-8")
+    return n
+
+
 def targets(ref: dict) -> list[tuple[int, int, str]]:
     """要比对的 (我们的页号, 步骤, 参考图文件名)。隐藏页也输出（放映时跳过），页号和原文件一致。"""
     out = []
@@ -293,6 +334,8 @@ def run(set_name: str, only: str | None, do_build: bool, batch: str | None = Non
             ref = read_json(it["ref"] / "ref.json")
             out_html = OUT / it["key"] / "index.html"
             conv = convert(it["src"], out_html)
+            if conv["ok"] and ref.get("level") == "static":
+                freeze_gifs(out_html.parent)
             entry = {"key": it["key"], "convert": conv, "pages": [], **({"repaired": True} if ref.get("repaired") else {})}
             results.append(entry)
             if not conv["ok"]:
