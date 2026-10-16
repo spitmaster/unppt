@@ -44,6 +44,8 @@ export interface PaintResult {
   pic?: Uint8Array;
   thum?: Uint8Array;
   warnings: string[];
+  /** 这次画背景层时的警告（背景层每个线程画一次，调用方按背景层编号只记一次） */
+  layerWarnings?: string[];
 }
 
 export interface Painter {
@@ -104,12 +106,12 @@ export async function createPainter(wasm: Uint8Array | WebAssembly.Module): Prom
     }
   }
 
-  async function page(job: PaintJob, res: PaintResources, warnings: string[]): Promise<RgbaImage> {
+  async function page(job: PaintJob, res: PaintResources, warnings: string[], layerWarnings: string[]): Promise<RgbaImage> {
     if (job.template) {
       const id = job.template;
       const bg = await layers.get(id, async () => {
         const t = await res.template(id);
-        return t && render(t, job.picWidth, res, warnings, '#ffffff');
+        return t && render(t, job.picWidth, res, layerWarnings, '#ffffff');
       });
       // 取不到背景层时不能只画本页内容（会少了背景）：报错，这一页不出图
       if (!bg) throw new Error('背景层画不出来');
@@ -127,21 +129,22 @@ export async function createPainter(wasm: Uint8Array | WebAssembly.Module): Prom
         fonts = new Map();
         layers = new TemplateCache();
       }
-      const warnings: string[] = [];
+      const warnings: string[] = [], layerWarnings: string[] = [];
+      const layer = () => (layerWarnings.length ? { layerWarnings } : {});
       let img: RgbaImage;
       try {
-        img = await page(job, res, warnings);
+        img = await page(job, res, warnings, layerWarnings);
       } catch (e) {
-        return { warnings: [...warnings, `整页图画不出来：${(e as Error).message}`] };
+        return { warnings: [...warnings, `整页图画不出来：${(e as Error).message}`], ...layer() };
       }
       // 编码器（libjpeg-turbo WASM）第一次用时初始化；出过错会重新初始化，所以每页都重新取
       let encode: JpegEncode;
       try {
         encode = await jpegEncoder();
       } catch (e) {
-        return { warnings: [`JPEG 编码器加载失败，不输出整页图和缩略图：${(e as Error).message}`] };
+        return { warnings: [`JPEG 编码器加载失败，不输出整页图和缩略图：${(e as Error).message}`], ...layer() };
       }
-      const out: PaintResult = { warnings };
+      const out: PaintResult = { warnings, ...layer() };
       const thumb = shrink(img, job.thumbWidth, job.thumbHeight);
       for (const [key, im] of [['pic', img], ['thum', thumb]] as const) {
         try {

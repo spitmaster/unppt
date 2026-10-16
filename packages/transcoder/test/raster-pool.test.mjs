@@ -10,7 +10,8 @@ const TC = new URL('../../../testcases/', import.meta.url);
 async function images(name, options) {
   const files = new Map();
   const write = async (path, data) => { if (/^(pic|thum)\//.test(path)) files.set(path, Buffer.from(data)); };
-  await convert(new Uint8Array(await readFile(new URL(name, TC))), { write, output: 'paged', ...options });
+  const r = await convert(new Uint8Array(await readFile(new URL(name, TC))), { write, output: 'paged', ...options });
+  files.warnings = r.report.warnings;
   return files;
 }
 
@@ -18,12 +19,13 @@ test('线程池画的和本线程画的逐字节一致（背景层、嵌入字�
   const wasm = new Uint8Array(await readFile(new URL('../dist/resvg.wasm', import.meta.url)));
   const pool = await createRasterPool(wasm, 3);
   try {
-    for (const name of ['theme-ion.pptx', 'theme-gallery.pptx', 'text-embedded-fonts.pptx', 'svg-images.pptx', 'shape-effects.pptx', 'pictures.pptx']) {
+    for (const name of ['theme-ion.pptx', 'theme-gallery.pptx', 'text-embedded-fonts.pptx', 'svg-images.pptx', 'shape-effects.pptx', 'pictures.pptx', 'emf-images.pptx', 'pictures-tiff.pptx']) {
       const local = await images(name, { rasterWasm: wasm });
       const pooled = await images(name, { rasterPool: pool });
       assert.ok(local.size >= 2, name);
       assert.deepEqual([...pooled.keys()].sort(), [...local.keys()].sort(), name);
       for (const [k, v] of local) assert.ok(v.equals(pooled.get(k)), `${name} ${k}`);
+      assert.deepEqual(pooled.warnings, local.warnings, `${name} 警告`);
     }
   } finally {
     await pool.close();

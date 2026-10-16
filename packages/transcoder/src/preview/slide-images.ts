@@ -35,6 +35,12 @@ export class SlideImages {
   private painting = new Set<Promise<unknown>>();
   /** 同时在画的页数上限：执行器的两倍（让它总有活干），本线程画时 1 */
   private limit: number;
+  /**
+   * 出图的警告按页码顺序攒着，flush 时一起记：警告的先后、次数和用几个线程、谁先画完无关（产物里的 report 每次一样）。
+   * 背景层的警告每个背景层只记一次（每个线程各画一次背景层）
+   */
+  private notes: string[] = [];
+  private layersNoted = new Set<string>();
 
   constructor(private size: PreviewSize, private painter: Painter | RasterPool, fonts: FontResolver, bytes: ImageBytes, private write: WriteFn, private warn: (m: string) => void) {
     this.prep = new Preparer(fonts, (h) => bytes(unescape(h)));
@@ -48,7 +54,8 @@ export class SlideImages {
     try {
       job = await this.prep.job(n, this.page(svg), { picWidth, thumbWidth, thumbHeight });
     } catch (e) {
-      this.warn(`整页图画不出来：${(e as Error).message}`);
+      const m = `整页图画不出来：${(e as Error).message}`;
+      this.written = this.written.then(() => { this.notes.push(m); });
       return;
     }
     const result = this.painter.paint(job, this.prep.resources).catch((e: Error): PaintResult => ({ warnings: [`整页图画不出来：${e.message}`] }));
@@ -56,7 +63,11 @@ export class SlideImages {
     void result.then(() => this.painting.delete(result));
     this.written = this.written.then(async () => {
       const r = await result;
-      for (const w of r.warnings) this.warn(w);
+      if (job.template && r.layerWarnings && !this.layersNoted.has(job.template)) {
+        this.layersNoted.add(job.template);
+        this.notes.push(...r.layerWarnings);
+      }
+      this.notes.push(...r.warnings);
       if (r.pic) await this.write(`pic/${n}.jpg`, r.pic);
       if (r.thum) await this.write(`thum/${n}.jpg`, r.thum);
     });
@@ -70,6 +81,7 @@ export class SlideImages {
   /** 等所有页画完、写完 */
   async flush(): Promise<void> {
     await this.written;
+    for (const m of this.notes.splice(0)) this.warn(m);
   }
 
   /** 页面 SVG -> 整页图大小：音视频（foreignObject 里的 video / audio）去掉；根元素的宽高换成整页图大小 */
