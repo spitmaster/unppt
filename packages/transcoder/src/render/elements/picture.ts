@@ -9,9 +9,9 @@ import { esc, n2 } from '../../common/svg';
 import { attr, child, children, numAttr, path, type XEl } from '../../io/xml';
 import { flipTransform, nvProps, pc, placeBox, readXfrm, withUid } from '../box';
 import { snapBox } from '../pixel-snap';
-import { cameraLightFilter, cameraTransform, hasCamera } from '../../style/camera';
-import { faceLightFilter, has3d } from '../../style/lighting';
-import { baseProjection } from '../projection';
+import { cameraLightTransfer, cameraTransform, hasCamera } from '../../style/camera';
+import { faceLightTransfer, has3d, lightFilter } from '../../style/lighting';
+import { baseProjection, projectedBounds } from '../projection';
 import type { RenderContext } from '../context';
 
 export async function renderPicture(r: RenderContext, el: XEl, ctx: SlideContext): Promise<string> {
@@ -109,8 +109,11 @@ export async function renderPicture(r: RenderContext, el: XEl, ctx: SlideContext
   // 效果（图片样式常见：映像、柔化边缘、阴影、发光）：图片自己写的 > 主题样式
   const effect = child(spPr, 'a:effectLst') ?? child(effRef.el, 'a:effectLst');
   const refl = visual ? reflection(child(effect, 'a:reflection'), box.h, r.doc, visual) : '';
-  const filter = visual ? effectFilter(effect, effect === child(spPr, 'a:effectLst') ? ctx.colors : effRef.ctx, r.doc, box.w, box.h) : undefined;
-  if (filter) visual = `<g filter="url(#${filter})">${visual}</g>`;
+  // 透视（自己的相机，或者所在 SmartArt 场景的）：图片按网格三角形画，阴影、发光等效果在投影以后对整张图做（和形状一样）——
+  // 每个三角形各带一份效果时，半透明的阴影在三角形重叠处叠深，露出网格接缝
+  const proj = baseProjection(box, scene3d, ctx.scene, r.env.pres.width)?.base;
+  const filter = visual ? effectFilter(effect, effect === child(spPr, 'a:effectLst') ? ctx.colors : effRef.ctx, r.doc, box.w, box.h, undefined, undefined, proj && projectedBounds(proj, box.w, box.h)) : undefined;
+  if (filter && !proj) visual = `<g filter="url(#${filter})">${visual}</g>`;
   let media = mediaParts.join('');
   if (media && (box.flipH || box.flipV)) media = `<g${flipTransform(box)}>${media}</g>`;
   const inner = refl + visual + media;
@@ -118,15 +121,15 @@ export async function renderPicture(r: RenderContext, el: XEl, ctx: SlideContext
   const clickable = mediaLink && !child(nvProps(el), 'a:hlinkClick') ? ' data-link="media" style="cursor:pointer"' : '';
   // 三维旋转（图片样式常见的"透视""旋转"）
   const cam = cameraTransform(scene3d, box.w, box.h, r.env.pres.width);
-  const light = cameraLightFilter(scene3d, r.doc);
+  const light = cameraLightTransfer(scene3d);
   // 开了三维（相机或棱台）的图片和形状一样，正面按灯光提亮（实测：透视正面下灰 128 -> 139）
   const sp3d = child(spPr, 'a:sp3d') ?? child(effRef.el, 'a:sp3d');
-  const lit3d = hasCamera(scene3d) || has3d(sp3d) ? faceLightFilter(attr(child(scene3d, 'a:lightRig'), 'rig'), attr(sp3d, 'prstMaterial'), r.doc) : undefined;
+  const lit3d = hasCamera(scene3d) || has3d(sp3d) ? faceLightTransfer(attr(child(scene3d, 'a:lightRig'), 'rig'), attr(sp3d, 'prstMaterial')) : undefined;
 
-  // 透视（自己的相机，或者所在 SmartArt 场景的）：按网格三角形画
-  const proj = baseProjection(box, scene3d, ctx.scene, r.env.pres.width)?.base;
-  const lit = lit3d ? `<g filter="url(#${lit3d})">${inner}</g>` : inner;
-  return withUid(uid, placeBox(box, light ? `<g filter="url(#${light})">${lit}</g>` : lit, r.doc, cam, proj, clickable), el);
+  // 正面光照、转动后的明暗合成一个滤镜（分两层套，Chrome 会把里面的阴影画丢）
+  const lf = lightFilter(r.doc, [lit3d, light]);
+  const attrs = clickable + (filter && proj ? ` filter="url(#${filter})"` : '');
+  return withUid(uid, placeBox(box, lf ? `<g filter="url(#${lf})">${inner}</g>` : inner, r.doc, cam, proj, attrs), el);
 }
 
 /** 图片整个在幻灯片范围里（坐标系换算不知道时按不在算；toSlide 换算到的是对齐像素） */

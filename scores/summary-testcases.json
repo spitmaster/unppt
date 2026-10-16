@@ -1,5 +1,5 @@
 {
- "date": "2026-10-17 03:47",
+ "date": "2026-10-17 04:29",
  "set": "testcases",
  "files": 153,
  "repairedFiles": 1,
@@ -7,7 +7,7 @@
  "pages": 411,
  "passed": 391,
  "passRate": 0.9513,
- "meanSsim": 0.9863,
+ "meanSsim": 0.9868,
  "passLine": 0.95,
  "issues": {},
  "missingFontCount": 11,
@@ -15,7 +15,7 @@
   "files": 153,
   "pages": 411,
   "passRate": 0.9513,
-  "meanSsim": 0.9863
+  "meanSsim": 0.9868
  },
  "holdout": {
   "files": 0,

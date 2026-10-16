@@ -53,11 +53,22 @@ export function litFill(fill: Fill | undefined, light: LightFn = litColor): Fill
   }
 }
 
-/** 同样的正面光照写成调色滤镜（图片用：图片的每个像素和填充色一样被提亮，实测），返回编号 */
-export function faceLightFilter(rig: string | undefined, material: string | undefined, doc: SvgDoc): string {
+/** 同样的正面光照写成调色的一步（图片用：图片的每个像素和填充色一样被提亮，实测），交给 lightFilter */
+export function faceLightTransfer(rig: string | undefined, material: string | undefined): string {
   const k = coeffs(rig, material);
-  const id = doc.id('f');
   const fn = ['R', 'G', 'B'].map((ch, i) => `<feFunc${ch} type="linear" slope="${k[2 * i]}" intercept="${+(k[2 * i + 1] / 255).toFixed(4)}"/>`).join('');
-  doc.addDef(`<filter id="${id}" color-interpolation-filters="sRGB"><feComponentTransfer>${fn}</feComponentTransfer></filter>`);
+  return `<feComponentTransfer>${fn}</feComponentTransfer>`;
+}
+
+/**
+ * 几步调色（正面光照、转动后的明暗）合成一个滤镜依次做，返回编号；一步都没有时返回 undefined。
+ * 实测：两个调色滤镜分两层套在带阴影的图片外面，Chrome 把里面的阴影画丢（只套一层就正常；resvg 都正常）。
+ * 滤镜套在整个元素（连同它的阴影）外面，范围放到外框四周各一半：默认的外扩 10% 按图片本身的外框算，伸出去的阴影会被裁掉
+ */
+export function lightFilter(doc: SvgDoc, steps: (string | undefined)[]): string | undefined {
+  const s = steps.filter((x): x is string => !!x);
+  if (!s.length) return undefined;
+  const id = doc.id('f');
+  doc.addDef(`<filter id="${id}" color-interpolation-filters="sRGB" x="-50%" y="-50%" width="200%" height="200%">${s.join('')}</filter>`);
   return id;
 }

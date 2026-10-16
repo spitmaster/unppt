@@ -11,6 +11,7 @@
 import { attr, child, numAttr, type XEl } from '../io/xml';
 import type { SvgDoc } from '../common/svg';
 import { faceLight } from '../model/light-rig';
+import { lightFilter } from './lighting';
 
 /** 预设：[绕竖轴, 绕横轴, 平面内, 视角, 是否透视]（度） */
 const PRESETS: Record<string, [number, number, number, number, number]> = {
@@ -188,6 +189,11 @@ const SIDE_SHADE = 0.6;
 
 /** 转动后正面的明暗：在 defs 里加一个调色滤镜，返回编号；变化很小或没有转动时返回 undefined */
 export function cameraLightFilter(scene3d: XEl | undefined, doc: SvgDoc): string | undefined {
+  return lightFilter(doc, [cameraLightTransfer(scene3d)]);
+}
+
+/** 转动后正面的明暗：调色的一步（交给 lighting.ts 的 lightFilter）；变化很小或没有转动时返回 undefined */
+export function cameraLightTransfer(scene3d: XEl | undefined): string | undefined {
   const c = cameraOf(scene3d);
   // 实测：等轴测（正交）预设转动后亮度几乎不变（0.98~1.06），透视预设才按朝向变亮变暗；
   // 灯光模型只对默认的三点灯光拟合过，别的灯光方案（SmartArt 三维样式常用"平衡""平面"）不调
@@ -196,8 +202,6 @@ export function cameraLightFilter(scene3d: XEl | undefined, doc: SvgDoc): string
   const M = rotationOf(c);
   const { k, add } = faceLight([M[0][2], M[1][2], M[2][2]]);
   if (Math.abs(k - 1) < 0.01 && add < 0.004) return undefined;
-  const id = doc.id('f');
   const fn = ['R', 'G', 'B'].map((ch) => `<feFunc${ch} type="linear" slope="${+k.toFixed(4)}" intercept="${+add.toFixed(4)}"/>`).join('');
-  doc.addDef(`<filter id="${id}" color-interpolation-filters="sRGB"><feComponentTransfer>${fn}</feComponentTransfer></filter>`);
-  return id;
+  return `<feComponentTransfer>${fn}</feComponentTransfer>`;
 }
