@@ -35,7 +35,11 @@ const STOCK: Record<number, Pen | Brush | Font> = {
 const hex = (n: number) => n.toString(16).padStart(2, '0');
 const colorRef = (v: number) => `#${hex(v & 255)}${hex((v >> 8) & 255)}${hex((v >> 16) & 255)}`;
 const f2 = (v: number) => (Math.round(v * 100) / 100).toString();
-const escXml = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+/** XML 1.0 不允许的控制字符（GDI 的字符串里可能带 NUL 等）：留着整张 SVG 都解析不了（浏览器里整张图不显示，出图整页画不出来） */
+const BAD_XML = /[\u0000-\u0008\u000b\u000c\u000e-\u001f\ufffe\uffff]/g;
+/** 单个字符是否 XML 不允许（BAD_XML 带 g 标志，test 会记位置，单独一个不带 g 的） */
+const BAD_CHAR = new RegExp(BAD_XML.source);
+const escXml = (s: string) => s.replace(BAD_XML, '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
 function base64(bytes: Uint8Array): string {
   let s = '';
@@ -355,8 +359,11 @@ function emfToSvgUnsafe(bytes: Uint8Array): string | undefined {
         const options = u32(t + 16);
         const refX = i32(t), refY = i32(t + 4), n = u32(t + 8), offStr = u32(t + 12);
         const offDx = u32(t + (options & 0x100 ? 20 : 36));
-        let str = '';
-        for (let k = 0; k < n; k++) str += wide ? String.fromCharCode(d.getUint16(p + offStr + k * 2, true)) : String.fromCharCode(bytes[p + offStr + k]);
+        const chars: string[] = [];
+        for (let k = 0; k < n; k++) chars.push(wide ? String.fromCharCode(d.getUint16(p + offStr + k * 2, true)) : String.fromCharCode(bytes[p + offStr + k]));
+        // XML 不允许的控制字符（字数常把结束符 NUL 也算进去）连同它的位置一起去掉
+        const keep = chars.map((_, k) => k).filter((k) => !BAD_CHAR.test(chars[k]));
+        const str = keep.map((k) => chars[k]).join('');
         if (!str.trim() || !st.font) break;
         const f = st.font;
         const ta = st.textAlign;
@@ -372,7 +379,7 @@ function emfToSvgUnsafe(bytes: Uint8Array): string | undefined {
         const anchor = (ta & 6) === 6 ? 'middle' : (ta & 6) === 2 ? 'end' : 'start';
         const vbase = (ta & 24) === 24 ? '' : (ta & 8) === 8 ? ' dominant-baseline="text-after-edge"' : ' dominant-baseline="text-before-edge"';
         const rot = f.escapement ? ` transform="rotate(${f2(-f.escapement / 10)} ${f2(x0)} ${f2(y0)})"` : '';
-        const xAttr = offDx && anchor === 'start' ? xs.map(f2).join(' ') : f2(x0);
+        const xAttr = offDx && anchor === 'start' ? keep.map((k) => f2(xs[k])).join(' ') : f2(x0);
         const deco = [f.underline ? 'underline' : '', f.strike ? 'line-through' : ''].filter(Boolean).join(' ');
         emit(`<text x="${xAttr}" y="${f2(y0)}" font-family="'${escXml(f.face)}',sans-serif" font-size="${f2(em)}" fill="${st.textColor}"${f.weight >= 600 ? ' font-weight="bold"' : ''}${f.italic ? ' font-style="italic"' : ''}${deco ? ` text-decoration="${deco}"` : ''} text-anchor="${anchor}"${vbase}${rot}${clipAttr()} xml:space="preserve">${escXml(str)}</text>`);
         break;

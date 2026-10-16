@@ -13,7 +13,9 @@ type Obj = { kind: 'pen'; v: Pen } | { kind: 'brush'; v: Brush } | { kind: 'font
 const hex = (n: number) => n.toString(16).padStart(2, '0');
 const colorRef = (v: number) => `#${hex(v & 255)}${hex((v >> 8) & 255)}${hex((v >> 16) & 255)}`;
 const f2 = (v: number) => (Math.round(v * 100) / 100).toString();
-const escXml = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+/** XML 1.0 不允许的控制字符（GDI 的字符串里可能带 NUL 等）：留着整张 SVG 都解析不了（浏览器里整张图不显示，出图整页画不出来） */
+const BAD_XML = /[\u0000-\u0008\u000b\u000c\u000e-\u001f\ufffe\uffff]/g;
+const escXml = (s: string) => s.replace(BAD_XML, '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
 /**
  * 按字符集解码文字（中文 GBK、繁体 Big5、日文 Shift-JIS、韩文 EUC-KR）。
