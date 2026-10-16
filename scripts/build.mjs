@@ -52,6 +52,19 @@ await build({
   target: ['node20'],
   define,
 });
+// Node 的并行出图：工作线程池（@unppt/unppt/node）和工作线程脚本（和 cli.js、node.js 放在一起）
+for (const [entry, outfile] of [['node-pool.ts', 'node.js'], ['raster-worker.ts', 'raster-worker.js']]) {
+  await build({
+    entryPoints: [`packages/transcoder/src/${entry}`],
+    outfile: `packages/transcoder/dist/${outfile}`,
+    bundle: true,
+    format: 'esm',
+    platform: 'node',
+    loader: { '.wasm': 'binary' },
+    plugins: [libjpegTurbo],
+    target: ['node20'],
+  });
+}
 // 缩略图光栅化用的 resvg（WASM，MPL-2.0）：JS 部分已经打进转码器，.wasm 文件放在旁边一起发布
 await copyFile('node_modules/@resvg/resvg-wasm/index_bg.wasm', 'packages/transcoder/dist/resvg.wasm');
 console.log(`构建完成（播放器 ${(player.length / 1024).toFixed(1)} KB）`);

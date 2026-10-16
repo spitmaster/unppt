@@ -9,6 +9,7 @@ import { createWriteStream } from 'node:fs';
 import { basename, dirname, extname, join, resolve } from 'node:path';
 import { homedir, platform } from 'node:os';
 import { convert, UNPPT_VERSION, type RandomAccessSource, type WriteData } from './index';
+import { autoWorkers, createRasterPool } from './node-pool';
 
 /** 打开过的文件句柄统一登记，结束时显式关闭（Node 不允许句柄被垃圾回收时自动关闭） */
 const openHandles: Promise<import('node:fs/promises').FileHandle>[] = [];
@@ -107,6 +108,7 @@ function usage(): never {
   --embed-fonts           把用到的字做成字体子集嵌入（观看端无需安装字体；商业字体注意授权）
   --data                  只输出演示数据 deck.json（开发调试用）
   --no-images             不输出整页图 pic/ 和缩略图 thum/（prop.json 照常输出，见 SPEC F1）
+  --jobs <n|auto>         出图用几个线程同时画，默认 auto（按 CPU 数和可用内存自动定）；1 是在主线程画
   --inline-limit <字节>   小于这个大小的图片内联进 HTML，默认 2097152
   --stats                 结束时显示用时和峰值内存
   -q, --quiet             不显示进度`);
@@ -126,6 +128,7 @@ async function main() {
   let inlineLimit: number | undefined;
   let quiet = false;
   let stats = false;
+  let jobs = 'auto';
   for (let i = 2; i < args.length; i++) {
     const a = args[i];
     if (a === '-o' || a === '--out') out = args[++i];
@@ -138,6 +141,7 @@ async function main() {
     else if (a === '--inline-limit') inlineLimit = Number(args[++i]);
     else if (a === '-q' || a === '--quiet') quiet = true;
     else if (a === '--stats') stats = true;
+    else if (a === '--jobs') jobs = args[++i];
     else usage();
   }
   const dataOnly = form === 'data';
@@ -153,6 +157,10 @@ async function main() {
   const privateFiles = (await Promise.all(privateDirs.map((d) => listFonts(d)))).flat();
   const privateFonts = await Promise.all(privateFiles.map(async (f) => fileSource(f, (await stat(f)).size)));
   const t0 = Date.now();
+  // 出图用的 resvg：和 cli.js 放在一起的 resvg.wasm（读不到时不出图，prop.json 照常输出）
+  const wasm = images ? await readFile(new URL('./resvg.wasm', import.meta.url)).then((b) => new Uint8Array(b), () => undefined) : undefined;
+  const workers = jobs === 'auto' ? autoWorkers() : Math.max(1, Math.floor(Number(jobs)) || 1);
+  const pool = wasm && workers > 1 ? await createRasterPool(wasm, workers) : undefined;
   let peak = 0;
   const sample = () => { peak = Math.max(peak, process.memoryUsage().rss); };
   const timer = stats ? setInterval(sample, 20) : undefined;
@@ -161,13 +169,14 @@ async function main() {
     fonts, privateFonts,
     output: form,
     images,
-    // 出图用的 resvg：和 cli.js 放在一起的 resvg.wasm（读不到时不出图，prop.json 照常输出）
-    rasterWasm: readFile(new URL('./resvg.wasm', import.meta.url)).then((b) => new Uint8Array(b), () => undefined),
+    rasterWasm: wasm,
+    rasterPool: pool,
     embedFonts,
     fileName: dataOnly ? 'deck.json' : 'index.html',
     inlineLimit,
     onProgress: quiet ? undefined : (d, t) => process.stderr.write(`\r转码中 ${d}/${t} 页`),
   });
+  await pool?.close();
   if (timer) {
     clearInterval(timer);
     sample();

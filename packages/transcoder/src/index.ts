@@ -182,6 +182,8 @@ export async function convert(input: InputSource, options: ConvertOptions): Prom
         ...(advance ? { advance } : {}),
       };
     }
+    // 并行出图时等所有页画完、写完：画图的警告要进 report（产物形式在所有页之后才生成 meta）
+    await images?.flush();
   }
 
   const meta = () => {
@@ -195,7 +197,6 @@ export async function convert(input: InputSource, options: ConvertOptions): Prom
   const takeAssets = () => { const a = media.pending; media.pending = []; return a; };
 
   await form.write({ slides, takeAssets, fontFiles, meta, title, player: __UNPPT_PLAYER__, write: options.write, fileName });
-  await images?.flush();
   await options.write('prop.json', propJson({ width: pres.width * 0.75, height: pres.height * 0.75, thumbWidth: size.thumbWidth, thumbHeight: size.thumbHeight, slides: propSlides }));
   return { slides: count, width: pres.width, height: pres.height, report };
 }
