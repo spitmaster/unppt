@@ -33,11 +33,20 @@ export interface PaintJob {
   thumbHeight: number;
 }
 
+/** 单独画成位图的 SVG 图片（inline-svg.ts）：画成 width 像素宽 */
+export interface RasterSvg extends PaintSvg {
+  width: number;
+}
+
+/** 页面里引用单独画成位图的 SVG 图片的地址前缀，后面是编号（向 resources.raster 要） */
+export const RASTER_PREFIX = 'unppt-raster:';
+
 export interface PaintResources {
   font(id: string): Promise<Uint8Array | undefined>;
   /** 页面里图片地址（属性原文，可能带 &amp;）-> 图片字节 */
   image(href: string): Promise<Uint8Array | undefined>;
   template(id: string): Promise<PaintSvg | undefined>;
+  raster(id: string): Promise<RasterSvg | undefined>;
 }
 
 export interface PaintResult {
@@ -63,11 +72,32 @@ export async function createPainter(wasm: Uint8Array | WebAssembly.Module): Prom
   let conv = '';
   let fonts = new Map<string, Promise<Uint8Array | undefined>>();
   let layers = new TemplateCache();
+  /** 单独画成位图的 SVG 图片（PNG），这次转换里共用 */
+  let rasters = new Map<string, Promise<Uint8Array | undefined>>();
 
-  async function render(p: PaintSvg, width: number, res: PaintResources, warnings: string[], background?: string): Promise<RgbaImage> {
+  /** 页面里图片地址 -> 图片字节；单独画成位图的 SVG 图片在这里画（画一次） */
+  function imageBytes(href: string, res: PaintResources, warnings: string[]): Promise<Uint8Array | undefined> {
+    if (!href.startsWith(RASTER_PREFIX)) return res.image(href);
+    const id = href.slice(RASTER_PREFIX.length);
+    let p = rasters.get(id);
+    if (!p) {
+      p = res.raster(id).then((s) => s && draw(s, s.width, res, warnings, undefined, (img) => new Uint8Array(img.asPng())))
+        .catch((e: Error) => { warnings.push(`整页图里有图片画不出来，没画这张：${e.message}`); return undefined; });
+      rasters.set(id, p);
+    }
+    return p;
+  }
+
+  function render(p: PaintSvg, width: number, res: PaintResources, warnings: string[], background?: string): Promise<RgbaImage> {
+    return draw(p, width, res, warnings, background, (img) => ({ width: img.width, height: img.height, data: new Uint8Array(img.pixels) }));
+  }
+
+  /** 画一张 SVG；background 不给时画在透明画布上（像素是预乘透明度的）；take 从画好的图里取要的东西 */
+  async function draw<T>(p: PaintSvg, width: number, res: PaintResources, warnings: string[], background: string | undefined,
+    take: (img: { width: number; height: number; pixels: Uint8Array; asPng(): Uint8Array }) => T): Promise<T> {
     // resvg 只把 http(s) 地址报成"待解析图片"：media/…、共享图片编号先换成占位地址，再按占位地址把原图交给它
     const real = new Map<string, string>();
-    const src = (await inlinePatternImages(p.svg, res))
+    const src = (await inlinePatternImages(p.svg, (h) => imageBytes(h, res, warnings)))
       .replace(/(<image\b[^>]*?\s(?:xlink:)?href=")([^"#][^"]*)"/g, (m, pre: string, h: string) => {
         if (h.startsWith('data:')) return m;
         const u = `https://unppt.local/${real.size}`;
@@ -88,7 +118,7 @@ export async function createPainter(wasm: Uint8Array | WebAssembly.Module): Prom
     });
     try {
       for (const h of r.imagesToResolve() as string[]) {
-        const b = await res.image(real.get(h) ?? h);
+        const b = await imageBytes(real.get(h) ?? h, res, warnings);
         if (!b) continue;
         // resvg 只认 PNG、JPEG、GIF：别的格式（BMP、WebP、ICO 等）这一张不画，页面其它内容照画
         try {
@@ -98,9 +128,11 @@ export async function createPainter(wasm: Uint8Array | WebAssembly.Module): Prom
         }
       }
       const img = r.render();
-      const out = { width: img.width, height: img.height, data: new Uint8Array(img.pixels) };
-      img.free();
-      return out;
+      try {
+        return take(img);
+      } finally {
+        img.free();
+      }
     } finally {
       r.free();
     }
@@ -128,6 +160,7 @@ export async function createPainter(wasm: Uint8Array | WebAssembly.Module): Prom
         conv = job.conv;
         fonts = new Map();
         layers = new TemplateCache();
+        rasters = new Map();
       }
       const warnings: string[] = [], layerWarnings: string[] = [];
       const layer = () => (layerWarnings.length ? { layerWarnings } : {});
@@ -161,14 +194,14 @@ export async function createPainter(wasm: Uint8Array | WebAssembly.Module): Prom
 }
 
 /** resvg 不把 <pattern> 里的图片报成待解析（实测：图片填充、背景图都画成空白），这些图片直接内联成 data URI */
-async function inlinePatternImages(svg: string, res: PaintResources): Promise<string> {
+async function inlinePatternImages(svg: string, image: (href: string) => Promise<Uint8Array | undefined>): Promise<string> {
   const out: string[] = [];
   let last = 0;
   for (const m of svg.matchAll(/<pattern\b[\s\S]*?<\/pattern>/g)) {
     let body = m[0];
     for (const [tag, pre, href] of body.matchAll(/(<image\b[^>]*?\s(?:xlink:)?href=")([^"#][^"]*)"/g)) {
       if (href.startsWith('data:')) continue;
-      const b = await res.image(href);
+      const b = await image(href);
       if (b) body = body.replace(tag, () => `${pre}data:${mimeOf(b)};base64,${base64(b)}"`);
     }
     out.push(svg.slice(last, m.index), body);

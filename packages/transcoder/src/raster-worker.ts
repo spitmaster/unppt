@@ -22,6 +22,7 @@ const resources: PaintResources = {
   font: (id) => ask('font', id),
   image: (href) => ask('image', href),
   template: (id) => ask('template', id),
+  raster: (id) => ask('raster', id),
 };
 
 port.on('message', async (m: { type: 'res'; req: number; value: never } | { type: 'job'; job: PaintJob }) => {
