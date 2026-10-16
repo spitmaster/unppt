@@ -6,32 +6,10 @@
  * 4 份样本 322 页里只有 1 页 1 个像素差 1，其余逐字节一致。
  */
 
+import { rootChildren } from './svg-root';
+
 /** 按页面里的图片地址取原图字节 */
 type ImageSource = (href: string) => Promise<Uint8Array | undefined>;
-
-/** 页面根元素下的各个子元素（按原文切开；切不开时返回 undefined） */
-function rootChildren(svg: string): { open: string; kids: string[]; close: string } | undefined {
-  const open = /^<svg\b[^>]*>/.exec(svg)?.[0];
-  const end = svg.lastIndexOf('</svg>');
-  if (!open || end < 0) return undefined;
-  const body = svg.slice(open.length, end);
-  const kids: string[] = [];
-  let depth = 0, start = 0;
-  for (const m of body.matchAll(/<(\/?)([a-zA-Z][\w:.-]*)(?:[^>"']|"[^"]*"|'[^']*')*?(\/?)>|<!--[\s\S]*?-->|<!\[CDATA\[[\s\S]*?\]\]>/g)) {
-    if (m[2] === undefined) continue;  // 注释、CDATA
-    if (m[1]) {
-      depth--;
-      if (depth < 0) return undefined;
-      if (depth === 0) { kids.push(body.slice(start, m.index! + m[0].length)); start = m.index! + m[0].length; }
-    } else if (m[3]) {
-      if (depth === 0) { kids.push(body.slice(m.index!, m.index! + m[0].length)); start = m.index! + m[0].length; }
-    } else {
-      if (depth === 0) start = m.index!;
-      depth++;
-    }
-  }
-  return depth === 0 ? { open, kids, close: svg.slice(end) } : undefined;
-}
 
 const NUM = '(-?\\d+(?:\\.\\d+)?(?:e-?\\d+)?)';
 /** 只有平移（或没有变换）、只带 data-* 标记的 <g> */
