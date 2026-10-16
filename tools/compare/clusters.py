@@ -10,7 +10,7 @@ from collections import Counter, defaultdict
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-from common import CACHE, is_holdout  # noqa: E402
+from common import CACHE, is_holdout, read_json  # noqa: E402
 import os  # noqa: E402
 
 # MsoShapeType
@@ -26,6 +26,9 @@ PASS = 0.95
 def main():
     report = Path(os.environ["UNPPT_REPORT"]) if os.environ.get("UNPPT_REPORT") else CACHE / "report"
     results = json.load(open(report / "results.json", encoding="utf-8"))
+    # PowerPoint 要"打开并修复"才能导出的课件：参考图常常丢了内容，不进排行（单独计数）
+    repaired = {r["key"] for r in results if r.get("repaired") or (read_json(CACHE / "ref" / r["key"] / "ref.json", {}) or {}).get("repaired")}
+    results = [r for r in results if r["key"] not in repaired]
     pages = [(r["key"], p) for r in results for p in r["pages"]]
     failed = [(k, p) for k, p in pages if p["ssim"] < PASS]
 
@@ -57,7 +60,7 @@ def main():
         for f in r["convert"]["missingFonts"]:
             fonts[f] += 1
 
-    print(f"页面 {len(pages)} 张，未通过 {len(failed)} 张（通过线 {PASS}）")
+    print(f"页面 {len(pages)} 张，未通过 {len(failed)} 张（通过线 {PASS}）；修复过才能打开的课件 {len(repaired)} 份不计")
     print(f"文本框换行不一致：{line_mismatch} / {line_total}")
     print(f"PowerPoint 有、我们没画出来的形状：{missing}")
     print("\n问题形状（区域相似度 < %.1f），按影响页数排序：" % LOW)
