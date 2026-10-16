@@ -6,7 +6,7 @@
 
 export interface RgbImage { width: number; height: number; data: Uint8Array }
 
-/** 像素数超过这个的不解（防止异常文件占满内存） */
+/** 像素数超过这个的不解（防止异常文件占满内存）；按 1/8 解码时每块只存一个系数，上限放宽 64 倍 */
 const MAX_PIXELS = 16_000_000;
 
 /** 之字形顺序 -> 8×8 块里的位置 */
@@ -114,8 +114,8 @@ const extend = (v: number, s: number) => (s && v < 1 << (s - 1) ? v - (1 << s) +
 interface Scan { comps: Component[]; ss: number; se: number; ah: number; al: number }
 
 /**
- * minSize：只要最长边不小于这个尺寸就够用时（缩略图），按 1/8 解码——每个 8×8 块只取平均值（DC 系数），
- * 省掉反向 DCT，快好几倍；按 1/8 解出来不够大时照常全尺寸解码
+ * minSize：只要最长边不小于这个尺寸就够用时（缩略图、超大图缩小），按 1/8 解码——每个 8×8 块只取平均值（DC 系数），
+ * 省掉反向 DCT，快好几倍；每块只存 DC，内存是全尺寸的 1/64，渐进式文件的交流扫描整段跳过。按 1/8 解出来不够大时照常全尺寸解码
  */
 export function decodeJpeg(b: Uint8Array, minSize?: number): RgbImage | undefined {
   try {
@@ -133,6 +133,8 @@ function decode(b: Uint8Array, minSize?: number): RgbImage | undefined {
   let width = 0, height = 0, progressive = false, restartInterval = 0, adobe = -1;
   let mcusPerLine = 0, mcusPerCol = 0, maxH = 1, maxV = 1;
   let eobrun = 0;
+  // 按 1/8 解码时每块只存 DC（stride 1），否则存 64 个系数
+  let eighth = false, stride = 64;
   const u16 = (o: number) => (b[o] << 8) | b[o + 1];
   let pos = 2;
   while (pos + 4 <= b.length) {
@@ -167,7 +169,9 @@ function decode(b: Uint8Array, minSize?: number): RgbImage | undefined {
       height = u16(seg + 1);
       width = u16(seg + 3);
       const n = b[seg + 5];
-      if (!width || !height || width * height > MAX_PIXELS || (n !== 1 && n !== 3 && n !== 4)) return undefined;
+      eighth = minSize !== undefined && Math.max(Math.ceil(width / 8), Math.ceil(height / 8)) >= minSize;
+      stride = eighth ? 1 : 64;
+      if (!width || !height || width * height > MAX_PIXELS * (eighth ? 64 : 1) || (n !== 1 && n !== 3 && n !== 4)) return undefined;
       comps = [];
       for (let i = 0; i < n; i++) {
         const o = seg + 6 + i * 3;
@@ -182,7 +186,7 @@ function decode(b: Uint8Array, minSize?: number): RgbImage | undefined {
         c.blocksPerColumn = Math.ceil(Math.ceil((height * c.v) / maxV) / 8);
         c.bpl = mcusPerLine * c.h;
         c.bpc = mcusPerCol * c.v;
-        c.coef = new Int16Array(c.bpl * c.bpc * 64);
+        c.coef = new Int16Array(c.bpl * c.bpc * stride);
       }
     } else if (m >= 0xc3 && m <= 0xcf && m !== 0xc4 && m !== 0xc8 && m !== 0xcc) {
       // 无损、算术编码等：不支持
@@ -206,10 +210,17 @@ function decode(b: Uint8Array, minSize?: number): RgbImage | undefined {
       }
       const o = seg + 1 + ns * 2;
       const scan: Scan = { comps: sc, ss: b[o], se: b[o + 1], ah: b[o + 2] >> 4, al: b[o + 2] & 15 };
+      if (eighth && progressive && scan.ss > 0) {
+        // 按 1/8 解码用不到交流系数：整段跳到下一个标记（0xFF 后面不是 0x00 填充、也不是重启标记）
+        let q = end;
+        while (q + 1 < b.length && !(b[q] === 0xff && b[q + 1] !== 0 && (b[q + 1] < 0xd0 || b[q + 1] > 0xd7))) q++;
+        pos = q;
+        continue;
+      }
       const bits = new Bits(b, end);
       eobrun = 0;
       for (const c of sc) c.pred = 0;
-      const block = progressive ? progressiveBlock(scan, bits, () => eobrun, (v) => { eobrun = v; }) : baselineBlock(bits);
+      const block = progressive ? progressiveBlock(scan, bits, () => eobrun, (v) => { eobrun = v; }) : baselineBlock(bits, stride === 64);
       const single = sc.length === 1;
       const total = single ? sc[0].blocksPerLine * sc[0].blocksPerColumn : mcusPerLine * mcusPerCol;
       for (let mcu = 0; mcu < total; mcu++) {
@@ -221,12 +232,12 @@ function decode(b: Uint8Array, minSize?: number): RgbImage | undefined {
         if (single) {
           const c = sc[0];
           const row = Math.floor(mcu / c.blocksPerLine), col = mcu % c.blocksPerLine;
-          block(c, (row * c.bpl + col) * 64);
+          block(c, (row * c.bpl + col) * stride);
         } else {
           const mr = Math.floor(mcu / mcusPerLine), mc = mcu % mcusPerLine;
           for (const c of sc) {
             for (let v = 0; v < c.v; v++) for (let h = 0; h < c.h; h++) {
-              block(c, ((mr * c.v + v) * c.bpl + mc * c.h + h) * 64);
+              block(c, ((mr * c.v + v) * c.bpl + mc * c.h + h) * stride);
             }
           }
         }
@@ -237,13 +248,13 @@ function decode(b: Uint8Array, minSize?: number): RgbImage | undefined {
     pos = end;
   }
   if (!comps.length) return undefined;
-  const eighth = minSize !== undefined && Math.max(Math.ceil(width / 8), Math.ceil(height / 8)) >= minSize;
   return toRgb(comps, qt, eighth ? Math.ceil(width / 8) : width, eighth ? Math.ceil(height / 8) : height, maxH, maxV, adobe, eighth ? 1 : 8);
 }
 
 type BlockFn = (c: Component, off: number) => void;
 
-function baselineBlock(bits: Bits): BlockFn {
+/** ac：存交流系数（按 1/8 解码时只解析、不存） */
+function baselineBlock(bits: Bits, ac: boolean): BlockFn {
   return (c, off) => {
     if (!c.dc || !c.ac) return;
     const t = bits.decode(c.dc);
@@ -259,7 +270,8 @@ function baselineBlock(bits: Bits): BlockFn {
       }
       k += r;
       if (k > 63) break;
-      c.coef[off + ZIGZAG[k]] = extend(bits.bits(s), s);
+      const v = extend(bits.bits(s), s);
+      if (ac) c.coef[off + ZIGZAG[k]] = v;
       k++;
     }
   };
@@ -350,11 +362,11 @@ const COS = (() => {
   return t;
 })();
 
-/** 1/8 解码：每个块只用 DC 系数（反变换后整块的平均值 = DC × 量化值 / 8） */
+/** 1/8 解码：每个块只用 DC 系数（反变换后整块的平均值 = DC × 量化值 / 8）；这时每块只存了 DC */
 function dcPlane(c: Component, q: Int32Array): Uint8Array {
   const out = new Uint8Array(c.bpl * c.bpc);
   for (let i = 0; i < out.length; i++) {
-    const p = Math.round((c.coef[i * 64] * q[0]) / 8 + 128);
+    const p = Math.round((c.coef[i] * q[0]) / 8 + 128);
     out[i] = p < 0 ? 0 : p > 255 ? 255 : p;
   }
   return out;
