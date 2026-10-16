@@ -32,6 +32,7 @@ export interface RenderedSlide {
 class SlideRenderer implements RenderContext {
   doc: SvgDoc;
   images: ImageResolver;
+  bgSvg?: string;
 
   constructor(public env: RenderEnv, public slideIndex: number) {
     this.doc = new SvgDoc(`u${slideIndex}_`);
@@ -169,11 +170,12 @@ export async function renderSlide(ref: SlideRef, env: RenderEnv): Promise<Render
   const W = pres.width, H = pres.height;
 
   const parts: string[] = [];
-  parts.push(await r.background([
+  r.bgSvg = await r.background([
     { xml, ctx: mk(ref.part, true) },
     { xml: layout.xml, ctx: mk(layout.part, false) },
     { xml: master.xml, ctx: mk(master.part, false) },
-  ], W, H));
+  ], W, H);
+  parts.push(r.bgSvg);
   const showMaster = attr(xml, 'showMasterSp') !== '0';
   if (showMaster && attr(layout.xml, 'showMasterSp') !== '0') {
     parts.push(await r.shapes(children(path(master.xml, 'p:cSld', 'p:spTree')), mk(master.part, false)));
