@@ -141,6 +141,14 @@ export function matchPlaceholder(list: Placeholder[], ph: { type: string; idx?: 
 /** 演示文稿里嵌入的一个字体文件（p:embeddedFontLst） */
 export interface EmbeddedFontRef { typeface: string; part: string; bold: boolean; italic: boolean; }
 
+/**
+ * 页面的一边：超出 PowerPoint 允许的范围（1~56 英寸）时，PowerPoint 打开时修复成默认值（宽 10 英寸、高 7.5 英寸），
+ * 另一边不变，超出新页面的内容被裁掉（实测：宽、高分别超上限、低于下限共 11 组探针）
+ */
+function slideSide(v: number | undefined, fallback: number): number {
+  return v !== undefined && v >= 914400 && v <= 51206400 ? v : fallback;
+}
+
 export class Presentation {
   width = 0;
   height = 0;
@@ -175,8 +183,8 @@ export class Presentation {
     const pres = await this.pkg.xml(this.presPart);
     if (!pres) throw new Error('演示文稿主部件为空');
     const sz = child(pres, 'p:sldSz');
-    this.width = Math.round((numAttr(sz, 'cx') ?? 9144000) / EMU_PER_PX);
-    this.height = Math.round((numAttr(sz, 'cy') ?? 6858000) / EMU_PER_PX);
+    this.width = Math.round(slideSide(numAttr(sz, 'cx'), 9144000) / EMU_PER_PX);
+    this.height = Math.round(slideSide(numAttr(sz, 'cy'), 6858000) / EMU_PER_PX);
     this.displayScale = this.width > 0 ? Math.round(96 * DISPLAY_WIDTH / this.width) / 96 : 1;
     this.defaultTextStyle = child(pres, 'p:defaultTextStyle');
     this.firstSlideNum = numAttr(pres, 'firstSlideNum') ?? 1;

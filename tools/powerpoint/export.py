@@ -355,10 +355,11 @@ def export_one(src: Path, out: Path, static: bool = False) -> dict:
         w_pt = pres.PageSetup.SlideWidth
         h_pt = pres.PageSetup.SlideHeight
         if repaired:
-            # 修复改了页面尺寸（文件写的超出 PowerPoint 允许的范围，修复时被改小、内容被裁掉）：修复后的样子不作参考
+            # 修复改了页面尺寸（文件写的超出 PowerPoint 允许的 1~56 英寸，修复成默认值、内容被裁掉）：以 PowerPoint 实际打开的样子为准
+            # （用户 10/16），转码器按同样规则改尺寸；ref.json 记下文件里写的尺寸
             fw, fh = _file_slide_size(src)
             if fw and (abs(fw - w_pt) > 1 or abs(fh - h_pt) > 1):
-                raise RuntimeError(f"修复后页面尺寸 {w_pt:.0f}×{h_pt:.0f} 磅和文件里的 {fw:.0f}×{fh:.0f} 磅不一致，不作参考")
+                result["fileSlideSizePt"] = [_num(fw), _num(fh)]
         width = EXPORT_WIDTH
         height = round(EXPORT_WIDTH * h_pt / w_pt)
         result.update({"slideWidthPt": _num(w_pt), "slideHeightPt": _num(h_pt),
