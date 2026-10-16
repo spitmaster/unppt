@@ -59,3 +59,15 @@ test('有背景层编号但取不到背景层时：这一页报错、不出图�
   assert.equal(r.pic, undefined);
   assert.ok(r.warnings.some((w) => w.includes('背景层')));
 });
+
+test('resvg 的光照滤镜崩溃时：去掉棱台滤镜再画，这一页照样出图并记警告', async () => {
+  const { createPainter } = await load('packages/transcoder/src/preview/paint.ts');
+  const painter = await createPainter(await readFile('node_modules/@resvg/resvg-wasm/index_bg.wasm'));
+  // 实测会让 resvg 崩溃的位置和形状（很细的竖条 + 光照）
+  const shape = '<path d="M153 0L153 11.34L31.88 11.34L31.88 34.03L153 34.03L153 45.38L204 22.69Z" fill="#3c638f"/><path d="M12.75 11.34L12.75 34.03L25.5 34.03L25.5 11.34Z" fill="#3c638f"/><path d="M0 11.34L0 34.03L6.38 34.03L6.38 11.34Z" fill="#3c638f"/>';
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 720" width="960" height="540"><defs><filter id="f" filterUnits="userSpaceOnUse" x="-20" y="-20" width="244" height="85.38"><feGaussianBlur in="SourceAlpha" stdDeviation="0.95" result="b"/><feSpecularLighting in="b" surfaceScale="1.39" specularConstant="0.475" specularExponent="20" lighting-color="#fff"><feDistantLight azimuth="246.72" elevation="12.15"/></feSpecularLighting></filter></defs><g transform="translate(508.27 0)"><g filter="url(#f)">${shape}</g></g></svg>`;
+  const r = await painter.paint({ conv: 'lighting', page: 1, main: { svg, fonts: [] }, picWidth: 960, thumbWidth: 216, thumbHeight: 122 },
+    { font: async () => undefined, image: async () => undefined, template: async () => undefined, raster: async () => undefined });
+  assert.ok(r.pic, '照样出图');
+  assert.ok(r.warnings.some((w) => w.includes('棱台')));
+});
