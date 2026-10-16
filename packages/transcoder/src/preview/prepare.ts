@@ -1,12 +1,14 @@
 /**
  * 出图的"准备"一半（在主线程，要用字体库和媒体）：页面 SVG 先剔除被整页不透明图片盖住的元素（occlusion.ts），
  * 重复出现的背景拆成背景层（layers.ts），展开嵌套的 SVG 图片（EMF / WMF 转出来的：resvg 画嵌套图片时不带字体，文字会丢），
- * 字体名换成这一页实际用到的字体文件里的英文名（resvg 不认浏览器的字体回退）——得到交给 paint.ts 画的 PaintJob。
+ * 字体名换成这一页实际用到的字体文件里的英文名（resvg 不认浏览器的字体回退）、发光的外扩拆成两遍（morphology.ts）——
+ * 得到交给 paint.ts 画的 PaintJob。
  * 绘制要的字体、图片、背景层按编号从这里取（PaintResources）；超大 JPEG 先缩小（huge-images.ts）。
  */
 import type { FontFace } from '../font/font';
 import { withHugeImagesShrunk } from './huge-images';
 import { splitTemplate } from './layers';
+import { splitMorphology } from './morphology';
 import { cullOccluded } from './occlusion';
 import type { PaintJob, PaintResources, PaintSvg } from './paint';
 
@@ -72,7 +74,7 @@ export class Preparer {
 
   private async prepare(svg: string): Promise<PaintSvg> {
     const used = new Set<FontFace>();
-    const out = rewriteFonts(await inlineSvgImages(svg, this.image), this.fonts, used);
+    const out = rewriteFonts(splitMorphology(await inlineSvgImages(svg, this.image)), this.fonts, used);
     const faces = [...used];
     return { svg: out, fonts: faces.map((f) => this.fontId(f)), ...(faces[0] ? { defaultFamily: faces[0].displayFamily } : {}) };
   }
