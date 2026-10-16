@@ -134,7 +134,25 @@ export async function createPainter(wasm: Uint8Array | WebAssembly.Module): Prom
         img.free();
       }
     } finally {
-      r.free();
+      // resvg 内部出错（Rust panic）后这个对象还处在借用状态，free 会再报一个"recursive use"，盖掉真正的错误：吞掉
+      try { r.free(); } catch { /* 已经坏了 */ }
+    }
+  }
+
+  /**
+   * 画一张 SVG；resvg 内部出错时，如果用了光照滤镜（棱台效果的 feDiffuseLighting / feSpecularLighting），去掉这些元素的
+   * 滤镜再画一次（棱台不画，形状按原色），记警告。实测 resvg 的光照滤镜在某些形状、某些位置会越界崩溃（样本里 1 页）
+   */
+  async function renderSafe(p: PaintSvg, width: number, res: PaintResources, warnings: string[], background?: string): Promise<RgbaImage> {
+    try {
+      return await render(p, width, res, warnings, background);
+    } catch (e) {
+      const lit = [...p.svg.matchAll(/<filter\b[^>]*\sid="([^"]+)"[^>]*>(?:(?!<\/filter>)[\s\S])*?<fe(?:Diffuse|Specular)Lighting\b/g)].map((m) => m[1]);
+      if (!lit.length) throw e;
+      const ids = new Set(lit);
+      const svg = p.svg.replace(/\sfilter="url\(#([^)"]+)\)"/g, (m, id: string) => (ids.has(id) ? '' : m));
+      warnings.push(`整页图里有棱台效果画不出来，按没有棱台画：${(e as Error).message}`);
+      return render({ ...p, svg }, width, res, warnings, background);
     }
   }
 
@@ -143,15 +161,15 @@ export async function createPainter(wasm: Uint8Array | WebAssembly.Module): Prom
       const id = job.template;
       const bg = await layers.get(id, async () => {
         const t = await res.template(id);
-        return t && render(t, job.picWidth, res, layerWarnings, '#ffffff');
+        return t && renderSafe(t, job.picWidth, res, layerWarnings, '#ffffff');
       });
       // 取不到背景层时不能只画本页内容（会少了背景）：报错，这一页不出图
       if (!bg) throw new Error('背景层画不出来');
-      const out = composite(await render(job.main, job.picWidth, res, warnings), bg);
+      const out = composite(await renderSafe(job.main, job.picWidth, res, warnings), bg);
       if (!out) throw new Error('背景层和本页内容大小不一样');
       return out;
     }
-    return render(job.main, job.picWidth, res, warnings, '#ffffff');
+    return renderSafe(job.main, job.picWidth, res, warnings, '#ffffff');
   }
 
   return {
