@@ -14,7 +14,7 @@
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "devDependencies": {
-    "@resvg/resvg-wasm": "2.6.2",
+    "@resvg/resvg-wasm": "2.7.0-alpha.2",
     "@types/node": "^26.6.5",
     "@zip.js/zip.js": "2.23.0",
     "esbuild": "^0.28.2",
