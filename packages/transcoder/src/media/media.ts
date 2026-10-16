@@ -16,7 +16,7 @@ export type WriteData = Uint8Array | string | AsyncIterable<Uint8Array>;
 export type WriteFn = (path: string, data: WriteData) => Promise<void>;
 
 const MIME: Record<string, string> = {
-  png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg', jpe: 'image/jpeg', gif: 'image/gif', bmp: 'image/bmp',
+  png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg', jpe: 'image/jpeg', jfif: 'image/jpeg', gif: 'image/gif', bmp: 'image/bmp',
   svg: 'image/svg+xml', webp: 'image/webp', ico: 'image/x-icon',
   mp4: 'video/mp4', m4v: 'video/mp4', webm: 'video/webm', ogv: 'video/ogg', mov: 'video/quicktime',
   mp3: 'audio/mpeg', m4a: 'audio/mp4', wav: 'audio/wav', ogg: 'audio/ogg', aac: 'audio/aac',
@@ -27,7 +27,8 @@ const KEY_MAX_BYTES = 32 * 1024 * 1024;
 
 /** 扩展名 -> 文件头识别出的格式名（sniff.ts） */
 const FORMAT_OF: Record<string, string> = { png: 'png', jpg: 'jpeg', jpeg: 'jpeg', jpe: 'jpeg', jfif: 'jpeg', gif: 'gif', bmp: 'bmp', tif: 'tiff', tiff: 'tiff', webp: 'webp', emf: 'emf', wmf: 'wmf' };
-const BROWSER_IMAGES = new Set(['png', 'jpg', 'jpeg', 'jpe', 'gif', 'bmp', 'svg', 'webp', 'ico']);
+// .jfif、.jpe 就是 JPEG（样本里 9 份课件有 .jfif，以前当成不支持的格式丢了）
+const BROWSER_IMAGES = new Set(['png', 'jpg', 'jpeg', 'jpe', 'jfif', 'gif', 'bmp', 'svg', 'webp', 'ico']);
 
 export function extOf(p: string): string {
   return p.slice(p.lastIndexOf('.') + 1).toLowerCase();
@@ -201,7 +202,8 @@ export class MediaStore {
     const bytes = (jpeg ? clearOrientation(raw) : undefined) ?? raw;
     // 同一张图片只存一份（母版上的 logo、背景每页都会用到）
     if (bytes.length <= this.inlineLimit) return this.asset(`data:${mime};base64,${base64(bytes)}`);
-    const name = mediaName(target, entry.crc, ext);
+    // 写成文件时 .jfif、.jpe 改叫 .jpg：有的服务器不认这两个扩展名的类型
+    const name = mediaName(target, entry.crc, jpeg && ext !== 'jpeg' ? 'jpg' : ext);
     await this.file(name, bytes, jpeg ? async () => { const b = await reread(); return b && (clearOrientation(b) ?? b); } : reread);
     return name;
   }
