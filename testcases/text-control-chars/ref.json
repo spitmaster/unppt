@@ -1,0 +1,149 @@
+{
+ "version": 8,
+ "level": "full",
+ "slideWidthPt": 960.0,
+ "slideHeightPt": 540.0,
+ "imageWidth": 1280,
+ "imageHeight": 720,
+ "slides": [
+  {
+   "index": 0,
+   "hidden": false,
+   "shapes": [
+    {
+     "id": 2,
+     "name": "TextBox 1",
+     "type": 17,
+     "x": 40.0,
+     "y": 40.0,
+     "w": 420.0,
+     "h": 41.198,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 6,
+       "text": "第一段开头\r",
+       "x": 47.2,
+       "y": 43.6,
+       "w": 148.25,
+       "h": 33.6
+      },
+      {
+       "start": 6,
+       "len": 6,
+       "text": "第二部分文字",
+       "x": 47.2,
+       "y": 77.2,
+       "w": 168.005,
+       "h": 33.6
+      }
+     ]
+    },
+    {
+     "id": 3,
+     "name": "TextBox 2",
+     "type": 17,
+     "x": 490.0,
+     "y": 40.0,
+     "w": 420.0,
+     "h": 41.198,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 6,
+       "text": "第一段开头\n",
+       "x": 497.2,
+       "y": 43.6,
+       "w": 148.25,
+       "h": 33.6
+      },
+      {
+       "start": 6,
+       "len": 6,
+       "text": "第二部分文字",
+       "x": 497.2,
+       "y": 77.2,
+       "w": 168.005,
+       "h": 33.6
+      }
+     ]
+    },
+    {
+     "id": 4,
+     "name": "TextBox 3",
+     "type": 17,
+     "x": 40.0,
+     "y": 280.0,
+     "w": 420.0,
+     "h": 41.198,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 17,
+       "text": "第一段开头_x000B_第二部分文",
+       "x": 47.2,
+       "y": 283.6,
+       "w": 386.0,
+       "h": 33.6
+      },
+      {
+       "start": 17,
+       "len": 1,
+       "text": "字",
+       "x": 47.2,
+       "y": 317.2,
+       "w": 28.005,
+       "h": 33.6
+      }
+     ]
+    },
+    {
+     "id": 5,
+     "name": "TextBox 4",
+     "type": 17,
+     "x": 490.0,
+     "y": 280.0,
+     "w": 420.0,
+     "h": 41.198,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 6,
+       "text": "第一段开头\u000b",
+       "x": 497.2,
+       "y": 283.6,
+       "w": 147.625,
+       "h": 33.6
+      },
+      {
+       "start": 6,
+       "len": 6,
+       "text": "第二部分文字",
+       "x": 497.2,
+       "y": 317.2,
+       "w": 168.005,
+       "h": 33.6
+      }
+     ]
+    }
+   ],
+   "effects": [],
+   "triggerHidden": [],
+   "steps": 0,
+   "keptSlideshow": false
+  }
+ ],
+ "ok": true
+}

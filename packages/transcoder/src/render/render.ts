@@ -48,7 +48,9 @@ class SlideRenderer implements RenderContext {
     if (!ph) return {};
     if (ctx.part === ctx.master.part) return { ph };
     let layoutPh: XEl | undefined;
-    if (ctx.part !== ctx.layout.part) layoutPh = matchPlaceholder(ctx.layout.placeholders, ph, false);
+    // 实测（placeholders-no-index）：编号是 4294967295（"没有编号"，老 .ppt 转换常见）的占位符不继承版式里的占位符，
+    // 只按类型继承母版——版式的标题幻灯片标题居中、在中部，这种标题仍在母版标题的位置、靠左
+    if (ctx.part !== ctx.layout.part && ph.idx !== '4294967295') layoutPh = matchPlaceholder(ctx.layout.placeholders, ph, false);
     const lph = layoutPh ? phInfo(layoutPh) : undefined;
     const masterPh = matchPlaceholder(ctx.master.placeholders, lph ?? ph, true);
     return { layoutPh, masterPh, ph };

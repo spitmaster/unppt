@@ -45,7 +45,8 @@ export async function layoutParagraph(p: XEl, pi: number, ctx: ParagraphContext)
       const style = runStyle(merge([defRPr, child(r, 'a:rPr')]), env, fontScale);
       firstStyle ??= style;
       // 页码字段显示当前幻灯片的页码（文件里存的是保存时的页码，母版、版式上的是占位文字 ‹#›）
-      const text = r.name === 'a:fld' && attr(r, 'type') === 'slidenum' && env.slideNumber !== undefined ? String(env.slideNumber) : child(r, 'a:t')?.text ?? '';
+      // 文字里直接写的回车（&#13;，转换、程序生成的课件常见）PowerPoint 按换行画，和换行符一样（实测 text-control-chars）
+      const text = (r.name === 'a:fld' && attr(r, 'type') === 'slidenum' && env.slideNumber !== undefined ? String(env.slideNumber) : child(r, 'a:t')?.text ?? '').replace(/\r\n?/g, '\n');
       const runAtoms = await makeAtoms(text, style, measurer);
       await kernAcross(atoms[atoms.length - 1], runAtoms[0]);
       atoms.push(...runAtoms);
