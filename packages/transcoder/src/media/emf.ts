@@ -2,7 +2,7 @@
  * EMF（增强型图元文件）-> SVG。零依赖，按 [MS-EMF] 规范解析常用的 GDI 记录。
  * Office 生成的"双格式"EMF 里同时有 EMF+ 记录（在 GDI 注释里）和 GDI 记录，这里只画 GDI 部分。
  */
-import { EmfDefs } from './emf-defs';
+import { EmfDefs, groupClips } from './emf-defs';
 import { svgImage, type ImageDecoder } from './image-decoder';
 
 interface Pen { color: string; width: number; none: boolean; cap: string; join: string; dash?: string }
@@ -464,7 +464,7 @@ function emfToSvgUnsafe(bytes: Uint8Array): string | undefined {
     }
     p += size;
   }
-  const body = defsOf.finish(out.join(''));
+  const body = defsOf.finish(groupClips(out));
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${vb.map(f2).join(' ')}" preserveAspectRatio="none">${defs.length ? `<defs>${defs.join('')}</defs>` : ''}${body}</svg>`;
 }
 

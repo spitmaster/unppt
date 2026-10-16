@@ -52,3 +52,28 @@ export class EmfDefs {
     });
   }
 }
+
+/**
+ * 连续用同一个裁剪区域的元素（两个以上）收进一个 <g clip-path>：画出来一样（只有裁剪边缘半透明的像素有取整差别），
+ * resvg 和浏览器都只做一次裁剪。实测样本里一张 EMF 转出 47 万条路径、几乎每条各带裁剪：resvg 画 253 秒，不带裁剪 0.2 秒。
+ * parts 是一个个顶层元素；只看元素自己开始标签里的 clip-path
+ */
+export function groupClips(parts: string[]): string {
+  const out: string[] = [];
+  let run: string[] = [], plain: string[] = [], clip: string | undefined;
+  const flush = () => {
+    if (run.length > 1) out.push(`<g clip-path="url(#${clip})">${plain.join('')}</g>`);
+    else out.push(...run);
+    run = []; plain = []; clip = undefined;
+  };
+  for (const p of parts) {
+    const m = /^(<[\w:-]+\b[^>]*?) clip-path="url\(#([^)"]+)\)"/.exec(p);
+    if (!m) { flush(); out.push(p); continue; }
+    if (m[2] !== clip) flush();
+    clip = m[2];
+    run.push(p);
+    plain.push(m[1] + p.slice(m[0].length));
+  }
+  flush();
+  return out.join('');
+}
