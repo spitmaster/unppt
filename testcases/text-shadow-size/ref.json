@@ -1,0 +1,205 @@
+{
+ "version": 8,
+ "level": "full",
+ "slideWidthPt": 960.0,
+ "slideHeightPt": 540.0,
+ "imageWidth": 1280,
+ "imageHeight": 720,
+ "slides": [
+  {
+   "index": 0,
+   "hidden": false,
+   "shapes": [
+    {
+     "id": 2,
+     "name": "TextBox 1",
+     "type": 17,
+     "x": 20.0,
+     "y": 30.0,
+     "w": 220.0,
+     "h": 21.811,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 2,
+       "text": "工H",
+       "x": 27.2,
+       "y": 33.6,
+       "w": 21.255,
+       "h": 14.4
+      }
+     ]
+    },
+    {
+     "id": 3,
+     "name": "Rectangle 2",
+     "type": 1,
+     "x": 20.0,
+     "y": 290.0,
+     "w": 220.0,
+     "h": 200.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 2,
+       "text": "工H",
+       "x": 119.375,
+       "y": 382.8,
+       "w": 21.255,
+       "h": 14.4
+      }
+     ]
+    },
+    {
+     "id": 4,
+     "name": "TextBox 3",
+     "type": 17,
+     "x": 255.0,
+     "y": 30.0,
+     "w": 220.0,
+     "h": 36.352,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 2,
+       "text": "工H",
+       "x": 262.2,
+       "y": 33.6,
+       "w": 42.63,
+       "h": 28.8
+      }
+     ]
+    },
+    {
+     "id": 5,
+     "name": "Rectangle 4",
+     "type": 1,
+     "x": 255.0,
+     "y": 290.0,
+     "w": 220.0,
+     "h": 200.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 2,
+       "text": "工H",
+       "x": 343.688,
+       "y": 375.6,
+       "w": 42.63,
+       "h": 28.8
+      }
+     ]
+    },
+    {
+     "id": 6,
+     "name": "TextBox 5",
+     "type": 17,
+     "x": 490.0,
+     "y": 30.0,
+     "w": 220.0,
+     "h": 65.433,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 2,
+       "text": "工H",
+       "x": 497.2,
+       "y": 33.6,
+       "w": 85.13,
+       "h": 57.6
+      }
+     ]
+    },
+    {
+     "id": 7,
+     "name": "Rectangle 6",
+     "type": 1,
+     "x": 490.0,
+     "y": 290.0,
+     "w": 220.0,
+     "h": 200.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 2,
+       "text": "工H",
+       "x": 557.438,
+       "y": 361.2,
+       "w": 85.13,
+       "h": 57.6
+      }
+     ]
+    },
+    {
+     "id": 8,
+     "name": "TextBox 7",
+     "type": 17,
+     "x": 725.0,
+     "y": 30.0,
+     "w": 220.0,
+     "h": 123.595,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 2,
+       "text": "工H",
+       "x": 732.2,
+       "y": 33.6,
+       "w": 170.255,
+       "h": 115.2
+      }
+     ]
+    },
+    {
+     "id": 9,
+     "name": "Rectangle 8",
+     "type": 1,
+     "x": 725.0,
+     "y": 290.0,
+     "w": 220.0,
+     "h": 200.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 2,
+       "text": "工H",
+       "x": 749.875,
+       "y": 332.4,
+       "w": 170.255,
+       "h": 115.2
+      }
+     ]
+    }
+   ],
+   "effects": [],
+   "triggerHidden": [],
+   "steps": 0,
+   "keptSlideshow": false
+  }
+ ],
+ "ok": true
+}

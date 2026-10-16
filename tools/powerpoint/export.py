@@ -2,7 +2,7 @@
 
 用法：
   python tools/powerpoint/export.py scan                 # 登记 samples/ 里的样本，报告新增/重复/删除
-  python tools/powerpoint/export.py run [--set all|testcases] [--force] [--only 哈希] [--static] [--until HH:MM]
+  python tools/powerpoint/export.py run [--set all|testcases] [--force] [--only 哈希或用例名[,…]] [--static] [--until HH:MM]
   python tools/powerpoint/export.py one <pptx> <输出目录>  # 内部用：处理单个文件（子进程）
 
 每个样本的输出（.cache/ref/<哈希>/，测试用例则在 testcases/<名字>/）：
@@ -534,7 +534,7 @@ def main():
             return
         items = {h: v for h, v in index.items() if v.get("present")}
         if a.only:
-            items = {h: v for h, v in items.items() if h.startswith(a.only)}
+            items = {h: v for h, v in items.items() if any(h.startswith(o) for o in a.only.split(","))}
         run(items, lambda h: REF / h, a.force, a.static, a.until)
         for h, v in items.items():
             ref = read_json(REF / h / "ref.json")
@@ -546,7 +546,7 @@ def main():
     else:
         items = testcase_index()
         if a.only:
-            items = {k: v for k, v in items.items() if k == a.only}
+            items = {k: v for k, v in items.items() if k in a.only.split(",")}
         run(items, lambda k: ROOT / items[k]["ref"], a.force, a.static, a.until)
 
 
