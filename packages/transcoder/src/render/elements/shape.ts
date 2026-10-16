@@ -87,7 +87,7 @@ export async function renderShape(r: RenderContext, el: XEl, ctx: SlideContext, 
   const filter = effectFilter(effect, effect === child(effRef.el, 'a:effectLst') ? effRef.ctx : colors, r.doc, gb.w, gb.h, undefined, [has3d(sp3d) ? bevelLayer(sp3d) : undefined], sp && projectedBounds(sp.map, box.w, box.h));
   for (const [i, p] of paths.entries()) {
     if (!p.d) continue;
-    const fa = p.fill !== 'none' ? await fillAttrs(fill, r.doc, gb.w, gb.h, p.fill, r.images, gb) : ' fill="none"';
+    const fa = p.fill !== 'none' ? await fillAttrs(fill, r.doc, gb.w, gb.h, p.fill, r.images, gb, cust ? undefined : attr(prst, 'prst') ?? 'rect') : ' fill="none"';
     const sa = p.stroke ? strokeAttrs(line, r.doc, p.fill, gb) : ' stroke="none"';
     if (fa === ' fill="none"' && sa === ' stroke="none"') continue;
     const evenodd = p.d.split('M').length > 2 ? ' fill-rule="evenodd"' : '';

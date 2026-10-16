@@ -167,10 +167,18 @@ async function tileFill(fill: Extract<Fill, { kind: 'image' }>, tile: Tile, href
   return ` fill="url(#${id})"`;
 }
 
-/** 渐变：生成 defs 里的渐变定义，返回 url(#编号)（填充和描边共用）。w/h 是形状尺寸 */
-export function gradientPaint(fill: Extract<Fill, { kind: 'grad' }>, doc: SvgDoc, w: number, h: number, mode: string): string {
+/** 渐变：生成 defs 里的渐变定义，返回 url(#编号)（填充和描边共用）。w/h 是形状尺寸；geom 是预设形状名（"按形状"的路径渐变要用） */
+export function gradientPaint(fill: Extract<Fill, { kind: 'grad' }>, doc: SvgDoc, w: number, h: number, mode: string, geom?: string): string {
   const id = doc.id('g');
   const stops = gradientStops(fill.stops, (c) => adjustForPathMode(c, mode));
+  // "按形状"的路径渐变（path="shape"）：等值线是形状向焦点缩小的轮廓。椭圆、焦点在正中时（样本里 2147 个全是这样）就是按外框缩放的
+  // 径向渐变，精确；其它形状照旧按矩形画（圆角矩形接近）
+  const r0 = fill.rect;
+  if (fill.path === 'shape' && geom === 'ellipse' && w > 0 && h > 0 && (!r0 || (r0.l === 0.5 && r0.t === 0.5 && r0.r === 0.5 && r0.b === 0.5))) {
+    const k = h / w;
+    doc.addDef(`<radialGradient id="${id}" gradientUnits="userSpaceOnUse" cx="${n2(w / 2)}" cy="${n2(h / 2)}" r="${n2(w / 2)}" gradientTransform="matrix(1 0 0 ${n2(k)} 0 ${n2((h / 2) * (1 - k))})">${stops}</radialGradient>`);
+    return `url(#${id})`;
+  }
   if (fill.path === 'rect' || fill.path === 'shape') return rectGradient(fill, doc, w, h, stops);
   if (fill.path) {
     // 实测（6 种焦点 × 正方形和 2:1 矩形，吻合到抖动噪声水平）：渐变的终点是形状的外接圆
@@ -237,7 +245,7 @@ function rectGradient(fill: Extract<Fill, { kind: 'grad' }>, doc: SvgDoc, w: num
  */
 export async function fillAttrs(
   fill: Fill | undefined, doc: SvgDoc, w: number, h: number, mode: string, images: ImageResolver,
-  origin?: { x: number; y: number },
+  origin?: { x: number; y: number }, geom?: string,
 ): Promise<string> {
   if (!fill || fill.kind === 'none') return ' fill="none"';
   if (fill.kind === 'pattern' && mode === 'norm') {
@@ -249,7 +257,7 @@ export async function fillAttrs(
     c = adjustForPathMode(c, mode);
     return ` fill="${css(c)}"${c.a < 0.999 ? ` fill-opacity="${n2(c.a)}"` : ''}`;
   }
-  if (fill.kind === 'grad') return ` fill="${gradientPaint(fill, doc, w, h, mode)}"`;
+  if (fill.kind === 'grad') return ` fill="${gradientPaint(fill, doc, w, h, mode, geom)}"`;
   // 图片填充：用 pattern 把图片拉伸到形状框
   const { href, filter: fid } = await blipImage(images, fill.part, fill.rid, fill.effects, doc);
   if (!href) return ' fill="#d9d9d9"';
