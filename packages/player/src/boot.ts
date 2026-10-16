@@ -26,6 +26,8 @@ function readParams(win: Window) {
   return {
     slide: num('slide'), step: num('step'),
     ui: q.get('ui') !== '0',
+    // static=1：每页所有对象原样显示，不放动画（比对工具对照静态导出的参考图用）
+    still: q.get('static') === '1',
     // 观看模式：只由 JS 接口驱动（直播课的学生端）
     mode: q.get('mode') === 'watch' ? 'watch' as const : 'present' as const,
     // links=0：外部链接不自己打开，只发 link 事件（由宿主决定，比如先提示）
@@ -49,7 +51,7 @@ export function autoBoot() {
   try {
     const deck = indexEl ? indexDeck(doc, indexEl) : embeddedDeck(doc, metaEl!);
     const p = readParams(win);
-    const player = new Player(host, deck, { slide: p.slide, step: p.step, ui: p.ui, timings: p.timings, mode: p.mode, openLinks: p.openLinks });
+    const player = new Player(host, deck, { slide: p.slide, step: p.step, ui: p.ui, timings: p.timings, mode: p.mode, openLinks: p.openLinks, static: p.still });
     const api = installBridge(win, player, p.origins);
     (win as unknown as { unppt: UnpptApi }).unppt = api;
   } catch (e) {

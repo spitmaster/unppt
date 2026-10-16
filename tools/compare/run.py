@@ -258,7 +258,9 @@ def run(set_name: str, only: str | None, do_build: bool, batch: str | None = Non
                 ref_png = it["ref"] / ref_name
                 if not ref_png.exists():
                     continue
-                url = out_html.resolve().as_uri() + f"?slide={slide}&step={step}&ui=0"
+                # 静态导出的参考图上所有对象原样显示（不管动画）：我们这边也用播放器的静态显示（static=1，不摆动画的起始状态、
+                # 不执行进入页面自动播放的动画）。以前只去掉 unppt-hide，自动播放动画的结束状态（退出、路径终点）还在
+                url = out_html.resolve().as_uri() + f"?slide={slide}&step={step}&ui=0" + ("&static=1" if ref.get("level") == "static" else "")
                 # 机器忙时偶尔加载超时：换一个新页面重试一次，还不行就跳过这一页（记在输出里），不让整轮中断
                 try:
                     page.goto(url)
@@ -273,9 +275,6 @@ def run(set_name: str, only: str | None, do_build: bool, batch: str | None = Non
                         print(f"{it['key']} 第 {slide + 1} 页加载失败，跳过：{type(e).__name__}")
                         continue
                 page.evaluate("document.fonts.ready")
-                if ref.get("level") == "static":
-                    # 静态导出的参考图上所有对象都显示（不管动画），我们这边也把动画藏起来的对象全部显示
-                    page.evaluate("document.querySelectorAll('.unppt-hide').forEach((e) => e.classList.remove('unppt-hide'))")
                 page.wait_for_timeout(50)
                 stem = f"{it['key']}-{slide:03d}-{step:02d}"
                 ours_png = shots / f"{stem}-ours.png"
