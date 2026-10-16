@@ -23,6 +23,9 @@ import { readAxisTitle, renderAxisTitles, reserveAxisTitles, type AxisTitles } f
 import { NO_GRID, type PixelGrid } from './pixel-grid';
 import { catFitBand, categoryLabel, fitCategoryLabels, outerLevelBands, outerLevels, ROT_MIDCAT_RIGHT, rotFirstCenter, sideLabel, sideLabelMax, sideLevelBands, sideOuterLevels, wrapSideLabel, type CatFit, type LevelBand } from './cat-labels';
 
+/** 条形图两侧的分类标签每行要的高度（× 字号）：样本校准（27 个分类、24 磅，每个分类约 20 像素高，PowerPoint 隔一个显示；1.3 时会隔两个） */
+const SIDE_ROOM = 1.2;
+
 export interface CatEnv { colors: ColorContext; part: string; baseText: TextStyle; makeAxis: AxisMaker; tw: TextWidth; w: number; view?: View3D; zh?: boolean; plotBg?: (r: Rect) => string; snap?: PixelGrid }
 
 export function renderCategoryChart(plots: Plot[], plotArea: XEl | undefined, area0: Rect, env: CatEnv, out: string[]): void {
@@ -229,9 +232,14 @@ export function renderCategoryChart(plots: Plot[], plotArea: XEl | undefined, ar
   // 分类轴标签：挨着绘图区的边，或者挨着中间的分类轴线
   if (catLabels) {
     const edge = sides.catMid ? frame.valPx(prim.pos(sides.catCross)) : sides.cat === 'b' ? bottom : sides.cat === 't' ? top : sides.cat === 'l' ? left : right;
+    // 条形图两侧的分类标签：每个分类的高度放不下标签（SIDE_ROOM × 字号一行）时隔几个显示，文件里写了间隔时按文件
+    // （样本实测：27 个分类、24 磅的字，PowerPoint 隔一个显示）
+    const sideSkip = horizontal && !child(catAx, 'c:tickLblSkip')
+      ? Math.max(1, Math.ceil((SIDE_ROOM * catStyle.size * Math.max(1, ...sideLines.map((l) => l.length))) / Math.max(1e-6, band)))
+      : 1;
     cats.forEach((c, i) => {
       const at = frame.catPx(bandCenter(i));
-      if (i % catFit.skip) return;
+      if (i % catFit.skip || i % sideSkip) return;
       if (!horizontal) {
         axisText.push(sides.cat === 'b' && !sides.catMid ? categoryLabel(catFit, i, c, at, edge, edge + catC(catStyle.size), catStyle)
           : label(c, at, sides.cat === 'b' ? edge + catC(catStyle.size) : edge - catC(catStyle.size), catStyle));
