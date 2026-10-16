@@ -1,7 +1,9 @@
 """比对：转码 -> 截图 -> 和 PowerPoint 参考图比对 -> 打分 -> 出报告。
 
 用法：
-  python tools/compare/run.py [--set testcases|daily|all] [--only 编号] [--no-build]
+  python tools/compare/run.py [--set testcases|daily|all] [--only 编号] [--batch 批次目录名] [--no-build]
+  --batch 20261016：只比对 samples/20261016/ 里的课件
+  只跑一部分（--only、--batch）时不改写 scores/ 下的汇总分数，汇总只写进报告目录的 summary.json
 
 输出：
   .cache/report/index.html     可视化报告（参考图 / 我们的结果 / 差异图），只在本机
@@ -197,7 +199,7 @@ def targets(ref: dict) -> list[tuple[int, int, str]]:
     return out
 
 
-def pick_items(set_name: str, only: str | None) -> list[dict]:
+def pick_items(set_name: str, only: str | None, batch: str | None = None) -> list[dict]:
     items = []
     if set_name == "testcases":
         for name, v in testcase_index().items():
@@ -209,6 +211,8 @@ def pick_items(set_name: str, only: str | None) -> list[dict]:
             # 先简单按哈希均匀取样；样本多了以后改成按特征分层（SPEC 待定事项）
             step = len(present) / DAILY_SIZE
             present = [present[int(i * step)] for i in range(DAILY_SIZE)]
+        if batch:
+            present = [h for h in present if any(p.replace("\\", "/").startswith(f"samples/{batch}/") for p in index[h]["paths"])]
         for h in present:
             ref = read_json(REF / h / "ref.json")
             if not ref or not ref.get("ok"):
@@ -220,12 +224,12 @@ def pick_items(set_name: str, only: str | None) -> list[dict]:
     return items
 
 
-def run(set_name: str, only: str | None, do_build: bool):
+def run(set_name: str, only: str | None, do_build: bool, batch: str | None = None):
     from playwright.sync_api import sync_playwright
 
     if do_build:
         build()
-    items = pick_items(set_name, only)
+    items = pick_items(set_name, only, batch)
     if not items:
         print("没有可比对的文件（先运行 tools/powerpoint/export.py run）")
         return
@@ -297,7 +301,8 @@ def run(set_name: str, only: str | None, do_build: bool):
     write_json(REPORT / "results.json", results)
     summary = summarize(results, set_name)
     write_report(results, summary)
-    if set_name in ("daily", "all", "testcases"):
+    write_json(REPORT / "summary.json", summary)
+    if set_name in ("daily", "all", "testcases") and not only and not batch:
         write_json(ROOT / "scores" / f"summary-{set_name}.json", summary)
     print(f"\n页面 {summary['pages']} 张，通过 {summary['passed']}（{summary['passRate']:.0%}），平均相似度 {summary['meanSsim']:.3f}")
     print(f"报告：{(REPORT / 'index.html').resolve()}")
@@ -370,12 +375,13 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--set", default="daily", choices=["testcases", "daily", "all"])
     ap.add_argument("--only", default=None)
+    ap.add_argument("--batch", default=None, help="只比对 samples/<批次>/ 里的课件")
     ap.add_argument("--no-build", action="store_true")
     ap.add_argument("--embed-fonts", action="store_true", help="转码时嵌入字体子集")
     a = ap.parse_args()
     if a.embed_fonts:
         EXTRA_ARGS.append("--embed-fonts")
-    run(a.set, a.only, not a.no_build)
+    run(a.set, a.only, not a.no_build, a.batch)
 
 
 if __name__ == "__main__":
