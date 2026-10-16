@@ -61,6 +61,9 @@ def scan_dir(root: Path) -> dict[str, dict]:
     for p in sorted(root.rglob("*")):
         if not p.is_file() or p.suffix.lower() not in PPT_EXTS or p.name.startswith("~$"):
             continue
+        # samples/_broken/：下载下来就是坏的文件（打不开），只用来测转码器遇到坏文件不崩溃，不导参考图、不比对
+        if "_broken" in p.relative_to(root).parts:
+            continue
         h = file_hash(p)
         item = found.setdefault(h, {"paths": [], "ext": p.suffix.lower(), "size": p.stat().st_size})
         item["paths"].append(str(p.relative_to(ROOT)))

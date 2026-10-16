@@ -63,6 +63,23 @@ def main():
     print("\n问题形状（区域相似度 < %.1f），按影响页数排序：" % LOW)
     for name, n in sorted(by_type.items(), key=lambda x: -len(by_type_pages[x[0]])):
         print(f"  {name}：{n} 个，涉及 {len(by_type_pages[name])} 页")
+    # 只导了静态图的页：我们这边的叶子元素按标签汇总（一个元素可以有几个标签）
+    leaf_bad: Counter = Counter()
+    leaf_all: Counter = Counter()
+    leaf_pages: dict[str, set] = defaultdict(set)
+    leaf_decks: dict[str, set] = defaultdict(set)
+    for key, p in pages:
+        for e in p.get("leaves", []):
+            for tag in e["tags"]:
+                leaf_all[tag] += 1
+                if e["region"] < LOW:
+                    leaf_bad[tag] += 1
+                    leaf_pages[tag].add((key, p["slide"], p["step"]))
+                    leaf_decks[tag].add(key)
+    if leaf_all:
+        print("\n问题元素（只导了静态图的页，按我们这边的元素类别；区域相似度 < %.1f）：" % LOW)
+        for tag, n in sorted(leaf_bad.items(), key=lambda x: -len(leaf_decks[x[0]])):
+            print(f"  {tag}：{n} / {leaf_all[tag]} 个，涉及 {len(leaf_pages[tag])} 页、{len(leaf_decks[tag])} 份课件")
     print("\n转码提示（按文件数）：")
     for w, n in warn.most_common():
         print(f"  {w}：{n} 个文件")

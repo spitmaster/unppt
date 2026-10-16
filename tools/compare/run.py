@@ -101,6 +101,52 @@ OUR_SHAPES_JS = """() => {
 }"""
 
 
+# 只导了静态图的参考结果没有形状信息：用我们页面上的"叶子元素"（自己不再包含别的 data-uid 元素）算区域相似度，
+# 按元素内容打几个固定的标签（不读任何文字内容）：错题归到哪类元素上（SPEC 5.3）
+OUR_LEAVES_JS = r"""() => {
+  const out = [];
+  const slide = document.querySelector('.unppt-slide');
+  if (!slide) return out;
+  for (const el of slide.querySelectorAll('[data-uid]')) {
+    if (!/^s\d+$/.test(el.getAttribute('data-uid')) || el.querySelector('[data-uid]')) continue;
+    const r = el.getBoundingClientRect();
+    if (r.width < 1 || r.height < 1) continue;
+    const tags = [];
+    if (el.querySelector('text')) tags.push('text');
+    if (el.closest('[data-cpart]') || el.querySelector('[data-cpart]')) tags.push('chart');
+    if (el.querySelector('[data-media]')) tags.push('media');
+    const imgs = [...el.querySelectorAll('image')].map((i) => i.getAttribute('href') || i.getAttribute('xlink:href') || '');
+    if (imgs.some((h) => /\.svg$|^data:image\/svg/i.test(h))) tags.push('vector-image');
+    if (imgs.some((h) => !/\.svg$|^data:image\/svg/i.test(h))) tags.push('image');
+    if (el.querySelector('[filter]') || el.hasAttribute('filter')) tags.push('effect');
+    const fills = [...el.querySelectorAll('[fill^="url("]')].map((e) => document.getElementById((e.getAttribute('fill').match(/#([^)]+)/) || [])[1] || ''));
+    if (fills.some((f) => f && /Gradient$/.test(f.tagName))) tags.push('gradient');
+    if (fills.some((f) => f && f.tagName === 'pattern')) tags.push('pattern-fill');
+    if (!tags.length) tags.push('shape');
+    out.push({ uid: el.getAttribute('data-uid'), x: r.x, y: r.y, w: r.width, h: r.height, tags });
+  }
+  return out;
+}"""
+
+
+def diagnose_leaves(page, ref_png: Path, ours_png: Path) -> list[dict]:
+    try:
+        leaves = page.evaluate(OUR_LEAVES_JS)
+    except Exception:
+        return []
+    ra = _gray(Image.open(ref_png))
+    oa = _gray(Image.open(ours_png).resize((ra.shape[1], ra.shape[0])))
+    out = []
+    for e in leaves:
+        x0, y0 = max(0, int(e["x"])), max(0, int(e["y"]))
+        x1, y1 = min(ra.shape[1], int(e["x"] + e["w"]) + 1), min(ra.shape[0], int(e["y"] + e["h"]) + 1)
+        if x1 - x0 < 32 or y1 - y0 < 32:
+            continue
+        out.append({"uid": e["uid"], "tags": e["tags"], "region": round(ssim(ra[y0:y1, x0:x1], oa[y0:y1, x0:x1]), 4),
+                    "box": [x0, y0, x1 - x0, y1 - y0]})
+    return out
+
+
 def _flatten(shapes, out=None):
     out = [] if out is None else out
     for s in shapes:
@@ -293,7 +339,8 @@ def run(set_name: str, only: str | None, do_build: bool, batch: str | None = Non
                 score = compare_images(ref_png, ours_png, shots / f"{stem}-diff.png")
                 ref_slide = next(s for s in ref["slides"] if f"slide-{s['index'] + 1:03d}" in ref_name)
                 shapes = diagnose_shapes(page, ref, ref_slide, ref_png, ours_png)
-                entry["pages"].append({"slide": slide, "step": step, "img": stem, **score, "shapes": shapes})
+                leaves = diagnose_leaves(page, ref_png, ours_png) if ref.get("level") == "static" else []
+                entry["pages"].append({"slide": slide, "step": step, "img": stem, **score, "shapes": shapes, **({"leaves": leaves} if leaves else {})})
             page.close()
             pages = entry["pages"]
             avg = sum(p["ssim"] for p in pages) / len(pages) if pages else 0
