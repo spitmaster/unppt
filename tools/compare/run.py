@@ -27,7 +27,7 @@ import numpy as np
 from PIL import Image
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-from common import CACHE, REF, ROOT, read_json, testcase_index, update_index, write_json  # noqa: E402
+from common import CACHE, REF, ROOT, is_holdout, read_json, testcase_index, update_index, write_json  # noqa: E402
 
 # 环境变量 UNPPT_REPORT 改报告目录、UNPPT_CLI 改转码器（用开发构建在另一个目录比对，不打扰正在跑的全量比对）
 OUT = Path(os.environ["UNPPT_REPORT"]) / "out" if os.environ.get("UNPPT_REPORT") else CACHE / "out"
@@ -320,6 +320,12 @@ def summarize(results: list[dict], set_name: str) -> dict:
         for f in r["convert"]["missingFonts"]:
             fonts[f] = fonts.get(f, 0) + 1
     passed = sum(1 for p in pages if p["ssim"] >= PASS_SSIM)
+
+    def part(rs: list[dict]) -> dict:
+        ps = [p for r in rs for p in r["pages"]]
+        ok = sum(1 for p in ps if p["ssim"] >= PASS_SSIM)
+        return {"files": len(rs), "pages": len(ps), "passRate": round(ok / len(ps), 4) if ps else 0,
+                "meanSsim": round(sum(p["ssim"] for p in ps) / len(ps), 4) if ps else 0}
     return {
         "date": time.strftime("%Y-%m-%d %H:%M"),
         "set": set_name,
@@ -333,6 +339,9 @@ def summarize(results: list[dict], set_name: str) -> dict:
         # 只记录问题类别和出现的文件数，不含样本信息
         "issues": dict(sorted(warn_files.items(), key=lambda x: -x[1])),
         "missingFontCount": len(fonts),
+        # 练习卷 / 期末卷（SPEC 5.1：期末卷只看分数，检验修的规律在没见过的课件上是否也成立）
+        "practice": part([r for r in results if not is_holdout(r["key"])]),
+        "holdout": part([r for r in results if is_holdout(r["key"])]),
     }
 
 

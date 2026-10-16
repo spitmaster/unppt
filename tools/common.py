@@ -35,6 +35,11 @@ def file_hash(path: Path) -> str:
     return h.hexdigest()[:12]
 
 
+def is_holdout(h: str) -> bool:
+    """期末卷（SPEC 5.1）：按编号稳定地留出 20%，agent 不看这些课件的图，只看分数"""
+    return not h.startswith("tc-") and int(h[:8], 16) % 5 == 0
+
+
 def read_json(path: Path, default=None):
     if not path.exists():
         return default
