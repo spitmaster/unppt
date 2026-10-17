@@ -1,6 +1,6 @@
 /** 图片（p:pic）：裁剪、外形、边框、效果；以及视频、音频 */
 import type { SlideContext } from '../../model/model';
-import { blipImage, imagePlacement, parseFill, styleRef } from '../../style/fill';
+import { blipImage, fillAttrs, findFillEl, imagePlacement, parseFill, styleRef } from '../../style/fill';
 import { parseLine, strokeAttrs } from '../../style/line';
 import { effectFilter } from '../../effects/effect-filter';
 import { reflection } from '../../effects/reflection';
@@ -44,6 +44,10 @@ export async function renderPicture(r: RenderContext, el: XEl, ctx: SlideContext
   const av = new Map<string, string>();
   for (const g of children(child(prstEl ?? custEl, 'a:avLst'), 'a:gd')) av.set(attr(g, 'name') ?? '', attr(g, 'fmla') ?? '');
   const outlineD = buildGeometry(gdef, box.w, box.h, av).paths.map((p) => p.d).join('');
+  // 图片自己写的填充（spPr 里的纯色、渐变……）：垫在图片下面，图片透明的地方露出来（样本：半透明的深色 PNG 下面垫深灰色，
+  // PowerPoint 画出来接近黑色，不垫是浅灰）
+  const under = parseFill(findFillEl(spPr), ctx.colors, ctx.part);
+  if (under && under.kind !== 'none') parts.push(`<path d="${outlineD}"${await fillAttrs(under, r.doc, box.w, box.h, 'norm', r.images, box, custEl ? undefined : prst)}/>`);
   if (fill && fill.kind === 'image') {
     const { href, filter: fid } = await blipImage(r.images, ctx.part, fill.rid, fill.effects, r.doc);
     poster = href;
