@@ -26,7 +26,8 @@ import { catFitBand, categoryLabel, fitCategoryLabels, outerLevelBands, outerLev
 /** 条形图两侧的分类标签每行要的高度（× 字号）：样本校准（27 个分类、24 磅，每个分类约 20 像素高，PowerPoint 隔一个显示；1.3 时会隔两个） */
 const SIDE_ROOM = 1.2;
 
-export interface CatEnv { colors: ColorContext; part: string; baseText: TextStyle; makeAxis: AxisMaker; tw: TextWidth; w: number; view?: View3D; zh?: boolean; plotBg?: (r: Rect) => string; snap?: PixelGrid }
+/** inner：area 就是绘图区内框（手动布局的 layoutTarget="inner"），坐标轴标签画在它外面，不再从里面让位置 */
+export interface CatEnv { colors: ColorContext; part: string; baseText: TextStyle; makeAxis: AxisMaker; tw: TextWidth; w: number; view?: View3D; zh?: boolean; plotBg?: (r: Rect) => string; snap?: PixelGrid; inner?: boolean }
 
 export function renderCategoryChart(plots: Plot[], plotArea: XEl | undefined, area0: Rect, env: CatEnv, out: string[]): void {
   const { colors, baseText, makeAxis, tw, w } = env;
@@ -180,7 +181,10 @@ export function renderCategoryChart(plots: Plot[], plotArea: XEl | undefined, ar
       }
       innerBand = catFitBand(catFit, catH(catStyle.size), cats, catStyle.size, catTw);
       bottom -= innerBand + levelBands.reduce((a, b) => a + b.band, 0);
+      // 手动布局的内框：绘图区就是给的框，分类标签按它的宽度排、画在框外，不截断（样本：矮图表的斜标签以前被截成两个字）
+      if (env.inner) catFit = fitCategoryLabels(cats, (area.right - area.left) / bands, catStyle.size, catTw, numAttr(child(catAx, 'c:tickLblSkip'), 'val'), eaVert);
     }
+    if (env.inner) ({ left, top, right, bottom } = area);
     return { prim, sec, left, top, right, bottom, sides, unit, edgeLeft, edgeRight, valLabels, valStyle, tickLabels, between, catFit, innerBand, levelBands };
   };
   // 自动刻度的疏密取决于轴长（axis.ts）：先按默认刻度排一遍得到轴长，再按轴长选刻度重排

@@ -1,0 +1,69 @@
+{
+ "version": 8,
+ "level": "full",
+ "slideWidthPt": 960.0,
+ "slideHeightPt": 540.0,
+ "imageWidth": 1280,
+ "imageHeight": 720,
+ "slides": [
+  {
+   "index": 0,
+   "hidden": false,
+   "shapes": [
+    {
+     "id": 2,
+     "name": "Chart 1",
+     "type": 3,
+     "x": 10.0,
+     "y": 10.0,
+     "w": 335.0,
+     "h": 206.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": -2
+    },
+    {
+     "id": 3,
+     "name": "Chart 2",
+     "type": 3,
+     "x": 480.0,
+     "y": 10.0,
+     "w": 335.0,
+     "h": 206.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": -2
+    },
+    {
+     "id": 4,
+     "name": "Chart 3",
+     "type": 3,
+     "x": 10.0,
+     "y": 270.0,
+     "w": 335.0,
+     "h": 206.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": -2
+    },
+    {
+     "id": 5,
+     "name": "Chart 4",
+     "type": 3,
+     "x": 480.0,
+     "y": 270.0,
+     "w": 335.0,
+     "h": 206.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": -2
+    }
+   ],
+   "effects": [],
+   "triggerHidden": [],
+   "steps": 0,
+   "keptSlideshow": false
+  }
+ ],
+ "ok": true
+}
