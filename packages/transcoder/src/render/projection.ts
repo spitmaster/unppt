@@ -22,11 +22,11 @@ export interface ShapeProjection {
 }
 
 /** 框里（局部坐标，转动前）一点投影后的位置：形状自己的透视相机，或者 SmartArt 场景的透视相机；都没有时 undefined */
-export function baseProjection(box: Box, scene3d: XEl | undefined, scene: SlideContext['scene'], slideW: number): { camera: XEl; base: PointMap } | undefined {
-  const own = perspectiveProjector(scene3d, box.w, box.h, slideW);
+export function baseProjection(box: Box, scene3d: XEl | undefined, scene: SlideContext['scene'], slideW: number, elev = 0): { camera: XEl; base: PointMap } | undefined {
+  const own = perspectiveProjector(scene3d, box.w, box.h, slideW, elev);
   if (own) return { camera: scene3d!, base: own };
   if (!scene) return undefined;
-  const sp = perspectiveProjector(scene.scene3d, scene.w, scene.h, slideW);
+  const sp = perspectiveProjector(scene.scene3d, scene.w, scene.h, slideW, elev);
   if (!sp) return undefined;
   return {
     camera: scene.scene3d,
@@ -37,8 +37,9 @@ export function baseProjection(box: Box, scene3d: XEl | undefined, scene: SlideC
   };
 }
 
-export function shapeProjection(box: Box, scene3d: XEl | undefined, scene: SlideContext['scene'], slideW: number): ShapeProjection | undefined {
-  const bp = baseProjection(box, scene3d, scene, slideW);
+/** elev：a:sp3d 的 z（形状平面离开原位的距离，像素） */
+export function shapeProjection(box: Box, scene3d: XEl | undefined, scene: SlideContext['scene'], slideW: number, elev = 0): ShapeProjection | undefined {
+  const bp = baseProjection(box, scene3d, scene, slideW, elev);
   if (!bp) return undefined;
   const { base, camera } = bp;
   const t = (box.rot * Math.PI) / 180, c = Math.cos(t), s = Math.sin(t), cx = box.w / 2, cy = box.h / 2;
