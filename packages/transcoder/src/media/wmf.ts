@@ -106,9 +106,14 @@ function wmfToSvgUnsafe(bytes: Uint8Array): string | undefined {
 
   const pt = (x: number, y: number) => `${f2(x)} ${f2(y)}`;
   const stroke = () => (st.pen.none ? ' stroke="none"' : ` stroke="${st.pen.color}" stroke-width="${f2(Math.max(st.pen.width, 1))}" stroke-linejoin="round" stroke-linecap="round"`);
+  // 宽 0 / 1 的笔（装饰笔）在显示出来的图上至少 1 像素：再叠一条不随缩放变细的 1 像素线（同 emf.ts）
+  const hairline = (el: string) => (!st.pen.none && st.pen.width <= 1 ? el.replace(/ fill="[^"]*"/, ' fill="none"').replace(/ stroke-width="[^"]*"/, ' stroke-width="1" vector-effect="non-scaling-stroke"') : '');
   const fill = () => (st.brush.none ? ' fill="none"' : ` fill="${st.brush.color}"${st.polyFill === 1 ? ' fill-rule="evenodd"' : ''}`);
   const clip = () => (st.clip ? ` clip-path="url(#${st.clip})"` : '');
-  const shape = (dd: string, filled: boolean) => out.push(`<path d="${dd}"${filled ? fill() : ' fill="none"'}${stroke()}${clip()}/>`);
+  const shape = (dd: string, filled: boolean) => {
+    const el = `<path d="${dd}"${filled ? fill() : ' fill="none"'}${stroke()}${clip()}/>`;
+    out.push(el + hairline(el));
+  };
 
   while (p + 6 <= bytes.length) {
     const size = u32(p) * 2;
@@ -190,7 +195,8 @@ function wmfToSvgUnsafe(bytes: Uint8Array): string | undefined {
           if (fn === 0x0418) shape(`M${pt(x, y + h / 2)}A${f2(w / 2)} ${f2(h / 2)} 0 1 1 ${pt(x + w, y + h / 2)}A${f2(w / 2)} ${f2(h / 2)} 0 1 1 ${pt(x, y + h / 2)}Z`, true);
           else if (fn === 0x061c) {
             const ry = Math.min(h / 2, Math.abs(i16(r)) / 2), rx = Math.min(w / 2, Math.abs(i16(r + 2)) / 2);
-            out.push(`<rect x="${f2(x)}" y="${f2(y)}" width="${f2(w)}" height="${f2(h)}" rx="${f2(rx)}" ry="${f2(ry)}"${fill()}${stroke()}${clip()}/>`);
+            const el = `<rect x="${f2(x)}" y="${f2(y)}" width="${f2(w)}" height="${f2(h)}" rx="${f2(rx)}" ry="${f2(ry)}"${fill()}${stroke()}${clip()}/>`;
+            out.push(el + hairline(el));
           } else shape(`M${pt(x, y)}H${f2(x + w)}V${f2(y + h)}H${f2(x)}Z`, true);
           break;
         }
