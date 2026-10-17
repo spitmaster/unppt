@@ -465,7 +465,10 @@ function emfToSvgUnsafe(bytes: Uint8Array): string | undefined {
         const alpha = type === 114 ? d.getUint8(r + 34) / 255 : 1;
         const rop = type === 81 ? u32(r + 60) : type === 114 ? 0 : u32(r + 32);
         const href = cbBmi ? dibToBmp(d, p + offBmi, cbBmi, p + offBits, cbBits, type === 114 && d.getUint8(r + 35) === 1, ROP_KEY.get(rop)) : undefined;
-        if (href) emit(defsOf.bitmap(href, X, Y, W, H, `${alpha < 1 ? ` opacity="${f2(alpha)}"` : ''}${clipAttr()}`, cbBmi ? bitmapSource(d, p + offBmi, type === 81, sx, sy, sw, sh) : undefined));
+        // 目标框经过坐标换算后左右或上下颠倒（世界变换翻转、目标宽高为负）时 GDI 把位图镜像着画（样本：世界变换上下翻转、
+        // 位图本身倒着存，PowerPoint 显示是正的）
+        const flip = { h: bx < ax, v: by < ay };
+        if (href) emit(defsOf.bitmap(href, X, Y, W, H, `${alpha < 1 ? ` opacity="${f2(alpha)}"` : ''}${clipAttr()}`, cbBmi ? bitmapSource(d, p + offBmi, type === 81, sx, sy, sw, sh) : undefined, flip));
         else if (type === 76 && !st.brush.none) {
           // 没有源位图的 BitBlt：用当前画刷填充（常见于背景）
           if (rop === 0x00f00021 || rop === 0x00000042 || rop === 0x00ff0062) {

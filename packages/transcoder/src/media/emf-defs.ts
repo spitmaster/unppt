@@ -7,7 +7,7 @@ import { partSvg, type BitmapSource } from './dib-blit';
 
 const f2 = (v: number) => (Math.round(v * 100) / 100).toString();
 
-interface Bitmap { href: string; x: number; y: number; w: number; h: number; attrs: string; src?: BitmapSource }
+interface Bitmap { href: string; x: number; y: number; w: number; h: number; attrs: string; src?: BitmapSource; flip?: { h: boolean; v: boolean } }
 
 export class EmfDefs {
   readonly defs: string[] = [];
@@ -28,9 +28,12 @@ export class EmfDefs {
     return id;
   }
 
-  /** 位图：先放占位符，finish 时按用到的次数决定直接写还是引用；attrs 是透明度、裁剪等其它属性；src 给了时只画源框里的部分 */
-  bitmap(href: string, x: number, y: number, w: number, h: number, attrs: string, src?: BitmapSource): string {
-    this.bitmaps.push({ href, x, y, w, h, attrs, ...(src ? { src } : {}) });
+  /**
+   * 位图：先放占位符，finish 时按用到的次数决定直接写还是引用；attrs 是透明度、裁剪等其它属性；src 给了时只画源框里的部分；
+   * flip 是在框里左右 / 上下镜像
+   */
+  bitmap(href: string, x: number, y: number, w: number, h: number, attrs: string, src?: BitmapSource, flip?: { h: boolean; v: boolean }): string {
+    this.bitmaps.push({ href, x, y, w, h, attrs, ...(src ? { src } : {}), ...(flip && (flip.h || flip.v) ? { flip } : {}) });
     return `\u0000unppt-bitmap-${this.bitmaps.length - 1}\u0000`;
   }
 
@@ -42,23 +45,30 @@ export class EmfDefs {
     const ids = new Map<string, string>();
     return body.replace(/\u0000unppt-bitmap-(\d+)\u0000/g, (_, k: string) => {
       const b = this.bitmaps[Number(k)];
-      // 只画一部分：外面套一层 <svg>，viewBox 是源框，里面按位图原尺寸放
-      const s = b.src;
-      const part = (inner: string) => `<g${b.attrs}>${partSvg(b.x, b.y, b.w, b.h, s!, inner)}</g>`;
-      if (count.get(b.href) === 1) {
-        if (s) return part(`<image href="${b.href}" width="${s.bw}" height="${s.bh}" preserveAspectRatio="none"/>`);
-        return `<image href="${b.href}" x="${f2(b.x)}" y="${f2(b.y)}" width="${f2(b.w)}" height="${f2(b.h)}" preserveAspectRatio="none"${b.attrs}/>`;
-      }
-      let id = ids.get(b.href);
-      if (!id) {
-        id = this.id('b');
-        ids.set(b.href, id);
-        // 1×1 的位图，各处用变换拉到自己的位置大小；裁剪、透明度放在外面的 g 上（和位图在同一个坐标系）
-        this.defs.push(`<image id="${id}" href="${b.href}" width="1" height="1" preserveAspectRatio="none"/>`);
-      }
-      if (s) return part(`<use href="#${id}" transform="matrix(${s.bw} 0 0 ${s.bh} 0 0)"/>`);
-      return `<g${b.attrs}><use href="#${id}" transform="matrix(${f2(b.w)} 0 0 ${f2(b.h)} ${f2(b.x)} ${f2(b.y)})"/></g>`;
+      if (!b.flip) return this.place(b, count, ids);
+      // 镜像：裁剪等属性留在外层（和别的元素同一个坐标系），里面按框的中线翻过来
+      const m = `matrix(${b.flip.h ? -1 : 1} 0 0 ${b.flip.v ? -1 : 1} ${b.flip.h ? f2(2 * b.x + b.w) : 0} ${b.flip.v ? f2(2 * b.y + b.h) : 0})`;
+      return `<g${b.attrs}><g transform="${m}">${this.place({ ...b, attrs: '' }, count, ids)}</g></g>`;
     });
+  }
+
+  private place(b: Bitmap, count: Map<string, number>, ids: Map<string, string>): string {
+    // 只画一部分：外面套一层 <svg>，viewBox 是源框，里面按位图原尺寸放
+    const s = b.src;
+    const part = (inner: string) => `<g${b.attrs}>${partSvg(b.x, b.y, b.w, b.h, s!, inner)}</g>`;
+    if (count.get(b.href) === 1) {
+      if (s) return part(`<image href="${b.href}" width="${s.bw}" height="${s.bh}" preserveAspectRatio="none"/>`);
+      return `<image href="${b.href}" x="${f2(b.x)}" y="${f2(b.y)}" width="${f2(b.w)}" height="${f2(b.h)}" preserveAspectRatio="none"${b.attrs}/>`;
+    }
+    let id = ids.get(b.href);
+    if (!id) {
+      id = this.id('b');
+      ids.set(b.href, id);
+      // 1×1 的位图，各处用变换拉到自己的位置大小；裁剪、透明度放在外面的 g 上（和位图在同一个坐标系）
+      this.defs.push(`<image id="${id}" href="${b.href}" width="1" height="1" preserveAspectRatio="none"/>`);
+    }
+    if (s) return part(`<use href="#${id}" transform="matrix(${s.bw} 0 0 ${s.bh} 0 0)"/>`);
+    return `<g${b.attrs}><use href="#${id}" transform="matrix(${f2(b.w)} 0 0 ${f2(b.h)} ${f2(b.x)} ${f2(b.y)})"/></g>`;
   }
 }
 
