@@ -226,6 +226,7 @@
 | SmartArt 绘图缓存里的文字框（dsp:txXfrm）在绘图坐标里按自己的外框放，转角 = 形状的转角 + 文字框自己的转角（矩阵图：形状 270°、文字框 90°，文字横排） | smartart-matrix；smartart 第 2 页颜色误差 1.47 → 0.62 |
 | 表格引用内置样式而 tableStyles.xml 里没存定义时，PowerPoint 照样按内置样式显示；内置样式的定义由 PowerPoint 导出（tools/make-case/gen_table_styles.py，目前 50 个） | table-builtin-styles：6 种内置样式、删掉文件里的定义 |
 | 页码字段（a:fld type="slidenum"）显示所在幻灯片的页码 = 页序 + 起始页码（p:presentation 的 firstSlideNum，默认 1）−1，母版、版式上普通文本框里的页码字段也一样（文件里存的是占位文字 ‹#›） | slide-number-fields：起始页码 5、母版文本框里的页码和页码占位符 |
+| 页码字段里没有 `<a:t>`（只有 `<a:fld type="slidenum"><a:rPr/></a:fld>`）也照样显示页码 | slide-number-bare-field 0.998 → 0.999（页码以前整个文本框不画）；样本一页右下角的大号页码 |
 | 图片拉伸时先按 a:stretch/a:fillRect 的内边距（相对形状框，负数是伸出形状）得到目标矩形，再按 srcRect 裁剪铺满它；形状的图片填充和普通图片都一样 | picture-fill-rect：负、正、不对称的内边距 |
 | 图片格式按文件内容认，不看扩展名（内容是 TIFF 叫 .png、内容是 PNG 叫 .emf、内容是 JPEG 叫 .png 都照常显示） | pictures-mislabeled；第一批真实课件里 17 份有这种图片 |
 | EMF 里 AlphaBlend 贴的位图（114 号记录）：混合方式第 3 个字节是整体透明度，第 4 个字节为 1 时用位图自带的逐像素透明度（预乘） | emf-alphablend：逐像素透明的圆点、整体 50% 的方块 |
