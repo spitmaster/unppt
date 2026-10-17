@@ -7,7 +7,7 @@
  * 绘制要的字体、图片、背景层按编号从这里取（PaintResources）；超大 JPEG 先缩小（huge-images.ts）。
  */
 import type { FontFace } from '../font/font';
-import { withHugeImagesShrunk } from './huge-images';
+import { HUGE_PIXELS, withHugeImagesShrunk } from './huge-images';
 import { splitTemplate } from './layers';
 import { splitMorphology } from './morphology';
 import { cullOccluded } from './occlusion';
@@ -42,8 +42,9 @@ export class Preparer {
   readonly image: ImageSource;
   readonly resources: PaintResources;
 
-  constructor(private fonts: FontResolver, source: ImageSource) {
-    this.image = withHugeImagesShrunk(source, this.shrunk);
+  /** side：整页图的长边（像素），长边是它 4 倍以上的 JPEG 先缩小（huge-images.ts） */
+  constructor(private fonts: FontResolver, source: ImageSource, side = 0) {
+    this.image = withHugeImagesShrunk(source, this.shrunk, HUGE_PIXELS, side);
     this.resources = {
       font: (id) => {
         let p = this.fontBytes.get(id);

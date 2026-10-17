@@ -43,7 +43,7 @@ export class SlideImages {
   private layersNoted = new Set<string>();
 
   constructor(private size: PreviewSize, private painter: Painter | RasterPool, fonts: FontResolver, bytes: ImageBytes, private write: WriteFn, private warn: (m: string) => void) {
-    this.prep = new Preparer(fonts, (h) => bytes(unescape(h)));
+    this.prep = new Preparer(fonts, (h) => bytes(unescape(h)), Math.max(size.picWidth, size.picHeight));
     this.limit = 'size' in painter ? Math.max(1, painter.size * 2) : 1;
   }
 
