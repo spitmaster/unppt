@@ -1,0 +1,103 @@
+{
+ "version": 8,
+ "level": "full",
+ "slideWidthPt": 960.0,
+ "slideHeightPt": 540.0,
+ "imageWidth": 1280,
+ "imageHeight": 720,
+ "slides": [
+  {
+   "index": 0,
+   "hidden": false,
+   "shapes": [
+    {
+     "id": 2,
+     "name": "Diagram 1",
+     "type": 24,
+     "x": 20.0,
+     "y": 60.0,
+     "w": 300.0,
+     "h": 400.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": -2
+    },
+    {
+     "id": 3,
+     "name": "Diagram 2",
+     "type": 24,
+     "x": 335.0,
+     "y": 60.0,
+     "w": 300.0,
+     "h": 400.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": -2
+    },
+    {
+     "id": 4,
+     "name": "Diagram 3",
+     "type": 24,
+     "x": 650.0,
+     "y": 60.0,
+     "w": 300.0,
+     "h": 400.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": -2
+    }
+   ],
+   "effects": [],
+   "triggerHidden": [],
+   "steps": 0,
+   "keptSlideshow": false
+  },
+  {
+   "index": 1,
+   "hidden": false,
+   "shapes": [
+    {
+     "id": 2,
+     "name": "Diagram 1",
+     "type": 24,
+     "x": 20.0,
+     "y": 60.0,
+     "w": 300.0,
+     "h": 400.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": -2
+    },
+    {
+     "id": 3,
+     "name": "Diagram 2",
+     "type": 24,
+     "x": 335.0,
+     "y": 60.0,
+     "w": 300.0,
+     "h": 400.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": -2
+    },
+    {
+     "id": 4,
+     "name": "Diagram 3",
+     "type": 24,
+     "x": 650.0,
+     "y": 60.0,
+     "w": 300.0,
+     "h": 400.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": -2
+    }
+   ],
+   "effects": [],
+   "triggerHidden": [],
+   "steps": 0,
+   "keptSlideshow": false
+  }
+ ],
+ "ok": true
+}

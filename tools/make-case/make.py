@@ -356,6 +356,29 @@ def smartart(app):
     return p
 
 
+def smartart_colors(app):
+    """SmartArt 的颜色方案（"更改颜色"）：同一个 6 项的基本列表，第 1 页彩色方案三种，第 2 页其它方案三种"""
+    p = new_pres(app, window=True)
+    layout = app.SmartArtLayouts(1)
+    colors = app.SmartArtColors
+    cats = [(i, colors(i).Category.lower()) for i in range(1, colors.Count + 1)]
+    picks = [i for i, c in cats if c == 'colorful'][:3]
+    # 第 2 页：主题色 2、4 的几种（单色的渐变、透明渐变等）
+    grads = [i for i, c in cats if c == 'accent2'][2:4] + [i for i, c in cats if c == 'accent4'][2:3]
+    for idxs in (picks, grads):
+        s = blank(p)
+        for k, idx in enumerate(idxs):
+            sa = s.Shapes.AddSmartArt(layout, 20 + k * 315, 60, 300, 400)
+            nodes = sa.SmartArt.AllNodes
+            while nodes.Count < 6:
+                nodes.Add()
+            for j in range(1, nodes.Count + 1):
+                nodes(j).TextFrame2.TextRange.Text = f"项目 {j}"
+            sa.SmartArt.Color = colors(idx)
+            print("颜色方案", idx, colors(idx).Category, colors(idx).Name)
+    return p
+
+
 def smartart_3d(app):
     """SmartArt 的三维样式（快速样式库里后几个）：同一个基本流程图，分别套用不同的三维样式"""
     p = new_pres(app, window=True)
@@ -4508,7 +4531,7 @@ def fills_tile_resample(app):
     s2.Background.Fill.UserTextured(tile(150, (17, 17, 17)))
     return p
 
-CASES = [shapes_all, text_sizes, text_align, text_spacing, text_bullets, text_missing_font, shapes_basic, fills_lines, table_basic, group_rotate, anim_basic, anim_auto, charts_basic, pictures, smartart, text_effects, text_layout, table_merge, links, emf_images, anim_advanced, charts_labels, freeform_icons, media_audio, anim_trigger, wmf_images, anim_iterate, picture_transparent, charts_more, shape_effects, equations, anim_path, anim_emphasis, transitions, fills_patterns, text_decoration, anim_entrance, svg_images, charts_markers, hidden_slides, media_background, text_glow_reflection, text_tabs, text_picture_bullets, fills_texture, transition_morph, text_embedded_fonts, text_warp, anim_repeat, charts_sizes, slide_timings, lines_compound, table_diagonal, lines_gradient, fills_radial, fills_rect_gradient, shapes_3d, table_vertical, transitions_more, anim_sound, anim_build, anim_after, anim_text_emphasis, charts_bubble, media_video, charts_options, charts_negative, shapes_bevel, charts_legend, shapes_3d_rotation, smartart_3d, charts_ofpie, charts_3d, anim_group_emphasis, activex_controls, charts_extras, charts_axis_titles, charts_fills, charts_outlines, charts_labels_more, group_scale, group_flip, charts_3d_line, charts_legend_pos, charts_crowded_labels, charts_label_skip, charts_bar_long_names, charts_multilevel, picture_recolor, text_symbols, text_numbering, lines_arrows, table_styles, shapes_styles, charts_styles, placeholders_inherit, text_bold_light, ole_objects, text_hanging_punct, speaker_notes, pictures_tiff, placeholders_picture, pictures_exif, text_picture_fill, pictures_mislabeled, emf_alphablend, placeholders_orphan, picture_fill_rect, slide_number_fields, table_builtin_styles, smartart_matrix, text_layout_unit, colors_gamma, text_latin_cjk_font, text_default_style, text_missing_font_jp, text_ea_line_break, text_ambiguous_punct, text_charset_slides, table_rowspan_tall, text_autofit_round, shapes_3d_contour, emf_clip_modes, placeholders_picture_geom, emf_gradient_fill, text_theme_font_lang, text_anchor_linespacing, table_linespacing, table_fontalgn, text_theme_font_latin, text_margin_right, text_charset_gap, slide_size_repair, fills_shape_gradient, text_shadow_runs, picture_3d_shadow, charts_axis_ea_vert, fills_tile_resample, text_shadow_dist, text_shadow_size, text_shadow_scale, text_shadow_blur, text_glow_scale, text_reflection_dist, shapes_bg_fill, text_control_chars, placeholders_no_index, text_ambiguous_missing_ea, text_missing_panose, emf_bitmap_src, fills_group, fills_rot_with_shape, picture_bg_fill, charts_legend_manual, charts_long_cats, charts_cat_vertical, charts_cat_rot_len, charts_pie_label_sep, text_slash_break]
+CASES = [shapes_all, text_sizes, text_align, text_spacing, text_bullets, text_missing_font, shapes_basic, fills_lines, table_basic, group_rotate, anim_basic, anim_auto, charts_basic, pictures, smartart, text_effects, text_layout, table_merge, links, emf_images, anim_advanced, charts_labels, freeform_icons, media_audio, anim_trigger, wmf_images, anim_iterate, picture_transparent, charts_more, shape_effects, equations, anim_path, anim_emphasis, transitions, fills_patterns, text_decoration, anim_entrance, svg_images, charts_markers, hidden_slides, media_background, text_glow_reflection, text_tabs, text_picture_bullets, fills_texture, transition_morph, text_embedded_fonts, text_warp, anim_repeat, charts_sizes, slide_timings, lines_compound, table_diagonal, lines_gradient, fills_radial, fills_rect_gradient, shapes_3d, table_vertical, transitions_more, anim_sound, anim_build, anim_after, anim_text_emphasis, charts_bubble, media_video, charts_options, charts_negative, shapes_bevel, charts_legend, shapes_3d_rotation, smartart_3d, charts_ofpie, charts_3d, anim_group_emphasis, activex_controls, charts_extras, charts_axis_titles, charts_fills, charts_outlines, charts_labels_more, group_scale, group_flip, charts_3d_line, charts_legend_pos, charts_crowded_labels, charts_label_skip, charts_bar_long_names, charts_multilevel, picture_recolor, text_symbols, text_numbering, lines_arrows, table_styles, shapes_styles, charts_styles, placeholders_inherit, text_bold_light, ole_objects, text_hanging_punct, speaker_notes, pictures_tiff, placeholders_picture, pictures_exif, text_picture_fill, pictures_mislabeled, emf_alphablend, placeholders_orphan, picture_fill_rect, slide_number_fields, table_builtin_styles, smartart_matrix, text_layout_unit, colors_gamma, text_latin_cjk_font, text_default_style, text_missing_font_jp, text_ea_line_break, text_ambiguous_punct, text_charset_slides, table_rowspan_tall, text_autofit_round, shapes_3d_contour, emf_clip_modes, placeholders_picture_geom, emf_gradient_fill, text_theme_font_lang, text_anchor_linespacing, table_linespacing, table_fontalgn, text_theme_font_latin, text_margin_right, text_charset_gap, slide_size_repair, fills_shape_gradient, text_shadow_runs, picture_3d_shadow, charts_axis_ea_vert, fills_tile_resample, text_shadow_dist, text_shadow_size, text_shadow_scale, text_shadow_blur, text_glow_scale, text_reflection_dist, shapes_bg_fill, text_control_chars, placeholders_no_index, text_ambiguous_missing_ea, text_missing_panose, emf_bitmap_src, fills_group, fills_rot_with_shape, picture_bg_fill, charts_legend_manual, charts_long_cats, charts_cat_vertical, charts_cat_rot_len, charts_pie_label_sep, text_slash_break, smartart_colors]
 
 
 def main():
