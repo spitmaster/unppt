@@ -12,6 +12,7 @@ import { contour } from '../../effects/contour';
 import { effectFilter } from '../../effects/effect-filter';
 import { reflection } from '../../effects/reflection';
 import { buildGeometry, parseGeomXml, presetGeometry } from '../../geometry/geometry';
+import { turnedBounds } from '../../geometry/turned-bounds';
 import { colorIn, css } from '../../model/color';
 import { renderText, type TextEnv } from '../../text/text';
 import { attr, child, children, numAttr, path, type XEl } from '../../io/xml';
@@ -93,6 +94,12 @@ export async function renderShape(r: RenderContext, el: XEl, ctx: SlideContext, 
     ? backgroundFill(r.bgSvg, paths.filter((p) => p.d && p.fill !== 'none').map((p) => p.d).join(''), gb, ctx, r.env.pres.displayScale, r.doc)
     : undefined;
   if (bgLayer) fill = undefined;
+  // 不跟着形状转的图片、渐变（实测样本：切掉一角的自定义形状转 45°）：正着铺在转动后轮廓的外接矩形里（不是形状框的外接矩形），
+  // 也不跟着翻转（实测 fills-rot-cut）
+  if ((fill?.kind === 'image' || fill?.kind === 'grad') && fill.upright && !fill.area && gb.rot && !sp) {
+    const t = turnedBounds(def, gb.w, gb.h, av, gb.rot, gb.flipH, gb.flipV);
+    if (t) fill = { ...fill, area: { x: gb.x + t.x, y: gb.y + t.y, w: t.w, h: t.h } };
+  }
   for (const [i, p] of paths.entries()) {
     if (!p.d) continue;
     const fa = p.fill !== 'none' ? await fillAttrs(fill, r.doc, gb.w, gb.h, p.fill, r.images, gb, cust ? undefined : attr(prst, 'prst') ?? 'rect') : ' fill="none"';

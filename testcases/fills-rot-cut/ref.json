@@ -1,0 +1,93 @@
+{
+ "version": 8,
+ "level": "full",
+ "slideWidthPt": 960.0,
+ "slideHeightPt": 540.0,
+ "imageWidth": 1280,
+ "imageHeight": 720,
+ "slides": [
+  {
+   "index": 0,
+   "hidden": false,
+   "shapes": [
+    {
+     "id": 2,
+     "name": "Snip Single Corner Rectangle 1",
+     "type": 1,
+     "x": 70.0,
+     "y": 40.0,
+     "w": 210.0,
+     "h": 200.0,
+     "rot": 45.0,
+     "visible": true,
+     "autoShapeType": 155
+    },
+    {
+     "id": 3,
+     "name": "Freeform 2",
+     "type": 5,
+     "x": 370.0,
+     "y": 40.0,
+     "w": 210.0,
+     "h": 200.0,
+     "rot": 45.0,
+     "visible": true,
+     "autoShapeType": 138
+    },
+    {
+     "id": 4,
+     "name": "Isosceles Triangle 3",
+     "type": 1,
+     "x": 670.0,
+     "y": 40.0,
+     "w": 210.0,
+     "h": 200.0,
+     "rot": 30.0,
+     "visible": true,
+     "autoShapeType": 7
+    },
+    {
+     "id": 5,
+     "name": "Snip Single Corner Rectangle 4",
+     "type": 1,
+     "x": 70.0,
+     "y": 300.0,
+     "w": 210.0,
+     "h": 200.0,
+     "rot": 45.0,
+     "visible": true,
+     "autoShapeType": 155
+    },
+    {
+     "id": 6,
+     "name": "Freeform 5",
+     "type": 5,
+     "x": 370.0,
+     "y": 300.0,
+     "w": 210.0,
+     "h": 200.0,
+     "rot": 45.0,
+     "visible": true,
+     "autoShapeType": 138
+    },
+    {
+     "id": 7,
+     "name": "Isosceles Triangle 6",
+     "type": 1,
+     "x": 670.0,
+     "y": 300.0,
+     "w": 210.0,
+     "h": 200.0,
+     "rot": 30.0,
+     "visible": true,
+     "autoShapeType": 7
+    }
+   ],
+   "effects": [],
+   "triggerHidden": [],
+   "steps": 0,
+   "keptSlideshow": false
+  }
+ ],
+ "ok": true
+}
