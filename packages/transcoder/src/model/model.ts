@@ -65,7 +65,8 @@ function readClrMap(el: XEl | undefined): Record<string, string> | undefined {
 }
 
 function readTheme(xml: XEl | undefined, part: string): Theme {
-  const el = path(xml, 'a:themeElements');
+  // 图表的主题覆盖（a:themeOverride）没有 themeElements 这一层，配色、字体直接在根下
+  const el = xml?.name === 'a:themeOverride' ? xml : path(xml, 'a:themeElements');
   const colors: Record<string, string> = {};
   for (const c of children(child(el, 'a:clrScheme'))) {
     const key = c.name.slice(2);
