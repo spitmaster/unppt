@@ -15,6 +15,7 @@ export function textStyle(txPr: XEl | undefined, ctx: ColorContext, base: TextSt
   const sz = numAttr(def, 'sz');
   const fill = child(def, 'a:solidFill');
   const latin = attr(child(def, 'a:latin'), 'typeface');
+  const ea = attr(child(def, 'a:ea'), 'typeface');
   // bodyPr rot = -60000000 表示"自动"（不转）
   const rot = numAttr(child(txPr, 'a:bodyPr'), 'rot');
   const spc = numAttr(def, 'spc');
@@ -23,6 +24,7 @@ export function textStyle(txPr: XEl | undefined, ctx: ColorContext, base: TextSt
     color: (fill && colorIn(fill, ctx)) || base.color,
     bold: attr(def, 'b') === '1' ? true : attr(def, 'b') === '0' ? false : base.bold,
     font: latin && !latin.startsWith('+') ? latin : base.font,
+    ...(ea && !ea.startsWith('+') ? { eaFont: ea } : base.eaFont ? { eaFont: base.eaFont } : {}),
     ...(rot !== undefined && rot !== -60000000 && rot !== 0 ? { rot: rot / 60000 } : {}),
     ...(spc ? { spc: ((spc / 100) * 96) / 72 } : {}),
   };
@@ -35,7 +37,7 @@ export function textWidth(s: string, size: number): number {
 }
 
 export function label(s: string, x: number, y: number, st: TextStyle, anchor: 'start' | 'middle' | 'end' = 'middle', baseline: 'central' | 'auto' = 'central'): string {
-  return `<text x="${n2(x)}" y="${n2(y)}" font-size="${n2(st.size)}" font-family="'${esc(st.font)}',sans-serif" fill="${css(st.color)}"${st.bold ? ' font-weight="bold"' : ''}${st.spc ? ` letter-spacing="${n2(st.spc)}"` : ''} text-anchor="${anchor}"${baseline === 'central' ? ' dominant-baseline="central"' : ''}>${esc(s)}</text>`;
+  return `<text x="${n2(x)}" y="${n2(y)}" font-size="${n2(st.size)}" font-family="'${esc(st.font)}',${st.eaFont ? `'${esc(st.eaFont)}',` : ''}sans-serif" fill="${css(st.color)}"${st.bold ? ' font-weight="bold"' : ''}${st.spc ? ` letter-spacing="${n2(st.spc)}"` : ''} text-anchor="${anchor}"${baseline === 'central' ? ' dominant-baseline="central"' : ''}>${esc(s)}</text>`;
 }
 
 /** 文字里有中日韩字符（这类标签占的高度比纯数字、字母的大，见 layout.ts） */
