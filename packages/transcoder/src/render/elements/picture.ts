@@ -32,6 +32,8 @@ export async function renderPicture(r: RenderContext, el: XEl, ctx: SlideContext
   const parts: string[] = [];
   const mediaParts: string[] = [];
   let poster: string | undefined;
+  /** 图片调整（重新着色、亮度等）的滤镜：视频画面也一样加（样本：双色调的视频封面） */
+  let posterFilter: string | undefined;
   // 图片的外形（裁剪和边框都按它画）：自己没写时按版式、母版里对应占位符的
   // 实测（placeholders-picture、placeholders-picture-geom）：继承链上哪里都没写形状的图片 PowerPoint 不画
   // （占位符继承到母版正文占位符的矩形时照常画；版式占位符是自定义形状时按它裁剪）
@@ -51,6 +53,7 @@ export async function renderPicture(r: RenderContext, el: XEl, ctx: SlideContext
   if (fill && fill.kind === 'image') {
     const { href, filter: fid } = await blipImage(r.images, ctx.part, fill.rid, fill.effects, r.doc);
     poster = href;
+    posterFilter = fid;
     if (href) {
       const sr = fill.srcRect ?? { l: 0, t: 0, r: 0, b: 0 };
       const fr = fill.fillRect;
@@ -94,7 +97,8 @@ export async function renderPicture(r: RenderContext, el: XEl, ctx: SlideContext
         mediaParts.push(`<foreignObject x="0" y="0" width="1" height="1"><audio xmlns="http://www.w3.org/1999/xhtml" data-media="1"${trim} src="${esc(href)}" preload="metadata" style="display:none"></audio></foreignObject>`);
       } else {
         // 视频：显示封面帧，不用浏览器自带控件，点击播放/暂停
-        mediaParts.push(`<foreignObject x="0" y="0" width="${n2(box.w)}" height="${n2(box.h)}"><video xmlns="http://www.w3.org/1999/xhtml" data-media="1"${trim} src="${esc(href)}" playsinline="" preload="metadata"${poster ? ` poster="${esc(poster)}"` : ''} style="width:100%;height:100%;object-fit:fill"></video></foreignObject>`);
+        const video = `<foreignObject x="0" y="0" width="${n2(box.w)}" height="${n2(box.h)}"><video xmlns="http://www.w3.org/1999/xhtml" data-media="1"${trim} src="${esc(href)}" playsinline="" preload="metadata"${poster ? ` poster="${esc(poster)}"` : ''} style="width:100%;height:100%;object-fit:fill"></video></foreignObject>`;
+        mediaParts.push(posterFilter ? `<g filter="url(#${posterFilter})">${video}</g>` : video);
       }
       mediaLink = true;
     }
