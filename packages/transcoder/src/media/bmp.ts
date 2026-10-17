@@ -26,6 +26,30 @@ export async function bmpToPng(b: Uint8Array): Promise<Uint8Array | undefined> {
 
 type Decoded = { width: number; height: number; data: Uint8Array; alpha: boolean } | { embedded: Uint8Array };
 
+/** RGBA 像素（从上往下）编成 32 位、带透明度掩码的 BMP（BITMAPV4HEADER：浏览器和 decodeBmp 都认透明度） */
+export function rgbaToBmp(w: number, h: number, rgba: Uint8Array): Uint8Array {
+  const n = w * h * 4;
+  const out = new Uint8Array(14 + 108 + n);
+  const v = new DataView(out.buffer);
+  out[0] = 0x42; out[1] = 0x4d;
+  v.setUint32(2, out.length, true); v.setUint32(10, 14 + 108, true);
+  v.setUint32(14, 108, true); v.setInt32(18, w, true); v.setInt32(22, -h, true);
+  v.setUint16(26, 1, true); v.setUint16(28, 32, true); v.setUint32(30, 3, true); v.setUint32(34, n, true);   // BI_BITFIELDS
+  v.setUint32(54, 0x00ff0000, true); v.setUint32(58, 0x0000ff00, true); v.setUint32(62, 0x000000ff, true); v.setUint32(66, 0xff000000, true);
+  v.setUint32(70, 0x73524742, true);                                                                       // 'sRGB'
+  for (let i = 0, o = 122; i < n; i += 4, o += 4) { out[o] = rgba[i + 2]; out[o + 1] = rgba[i + 1]; out[o + 2] = rgba[i]; out[o + 3] = rgba[i + 3]; }
+  return out;
+}
+
+/** BMP 里颜色正好是 key（0xRRGGBB）的像素变透明，返回新的 BMP；解不开时返回 undefined */
+export function keyBmp(b: Uint8Array, key: number): Uint8Array | undefined {
+  const img = decodeBmp(b);
+  if (!img || 'embedded' in img) return undefined;
+  const r = (key >> 16) & 255, g = (key >> 8) & 255, bl = key & 255, px = img.data;
+  for (let i = 0; i < px.length; i += 4) if (px[i] === r && px[i + 1] === g && px[i + 2] === bl) px[i + 3] = 0;
+  return rgbaToBmp(img.width, img.height, px);
+}
+
 /** 按位域掩码取一个通道并换算到 0~255；掩码是 0 时返回 undefined */
 function field(mask: number): ((v: number) => number) | undefined {
   if (!mask) return undefined;

@@ -5,7 +5,10 @@
  */
 const f2 = (v: number) => (Math.round(v * 100) / 100).toString();
 
-interface Bitmap { href: string; x: number; y: number; w: number; h: number; attrs: string }
+/** 只画位图的一部分：源框（x、y 从位图左上角算，像素）和位图的宽高 */
+export interface BitmapSource { x: number; y: number; w: number; h: number; bw: number; bh: number }
+
+interface Bitmap { href: string; x: number; y: number; w: number; h: number; attrs: string; src?: BitmapSource }
 
 export class EmfDefs {
   readonly defs: string[] = [];
@@ -26,9 +29,9 @@ export class EmfDefs {
     return id;
   }
 
-  /** 位图：先放占位符，finish 时按用到的次数决定直接写还是引用；attrs 是透明度、裁剪等其它属性 */
-  bitmap(href: string, x: number, y: number, w: number, h: number, attrs: string): string {
-    this.bitmaps.push({ href, x, y, w, h, attrs });
+  /** 位图：先放占位符，finish 时按用到的次数决定直接写还是引用；attrs 是透明度、裁剪等其它属性；src 给了时只画源框里的部分 */
+  bitmap(href: string, x: number, y: number, w: number, h: number, attrs: string, src?: BitmapSource): string {
+    this.bitmaps.push({ href, x, y, w, h, attrs, ...(src ? { src } : {}) });
     return `\u0000unppt-bitmap-${this.bitmaps.length - 1}\u0000`;
   }
 
@@ -40,7 +43,13 @@ export class EmfDefs {
     const ids = new Map<string, string>();
     return body.replace(/\u0000unppt-bitmap-(\d+)\u0000/g, (_, k: string) => {
       const b = this.bitmaps[Number(k)];
-      if (count.get(b.href) === 1) return `<image href="${b.href}" x="${f2(b.x)}" y="${f2(b.y)}" width="${f2(b.w)}" height="${f2(b.h)}" preserveAspectRatio="none"${b.attrs}/>`;
+      // 只画一部分：外面套一层 <svg>，viewBox 是源框，里面按位图原尺寸放
+      const s = b.src;
+      const part = (inner: string) => `<g${b.attrs}><svg x="${f2(b.x)}" y="${f2(b.y)}" width="${f2(b.w)}" height="${f2(b.h)}" viewBox="${s!.x} ${s!.y} ${s!.w} ${s!.h}" preserveAspectRatio="none">${inner}</svg></g>`;
+      if (count.get(b.href) === 1) {
+        if (s) return part(`<image href="${b.href}" width="${s.bw}" height="${s.bh}" preserveAspectRatio="none"/>`);
+        return `<image href="${b.href}" x="${f2(b.x)}" y="${f2(b.y)}" width="${f2(b.w)}" height="${f2(b.h)}" preserveAspectRatio="none"${b.attrs}/>`;
+      }
       let id = ids.get(b.href);
       if (!id) {
         id = this.id('b');
@@ -48,6 +57,7 @@ export class EmfDefs {
         // 1×1 的位图，各处用变换拉到自己的位置大小；裁剪、透明度放在外面的 g 上（和位图在同一个坐标系）
         this.defs.push(`<image id="${id}" href="${b.href}" width="1" height="1" preserveAspectRatio="none"/>`);
       }
+      if (s) return part(`<use href="#${id}" transform="matrix(${s.bw} 0 0 ${s.bh} 0 0)"/>`);
       return `<g${b.attrs}><use href="#${id}" transform="matrix(${f2(b.w)} 0 0 ${f2(b.h)} ${f2(b.x)} ${f2(b.y)})"/></g>`;
     });
   }

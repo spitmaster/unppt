@@ -2,8 +2,9 @@
  * EMF（增强型图元文件）-> SVG。零依赖，按 [MS-EMF] 规范解析常用的 GDI 记录。
  * Office 生成的"双格式"EMF 里同时有 EMF+ 记录（在 GDI 注释里）和 GDI 记录，这里只画 GDI 部分。
  */
-import { EmfDefs, groupClips } from './emf-defs';
+import { EmfDefs, groupClips, type BitmapSource } from './emf-defs';
 import { svgImage, type ImageDecoder } from './image-decoder';
+import { keyBmp } from './bmp';
 
 interface Pen { color: string; width: number; none: boolean; cap: string; join: string; dash?: string }
 interface Brush { color: string; none: boolean }
@@ -48,11 +49,17 @@ function base64(bytes: Uint8Array): string {
 }
 
 /**
+ * 位图记录的光栅操作 -> 按哪个颜色抠透明（实测 emf-bitmap-src：图标先用黑白掩码 SRCAND、再用彩色图 SRCINVERT / SRCPAINT 画，
+ * 掩码的白色和彩色图的黑色都是"不改变底下"）；其它光栅操作照常画
+ */
+const ROP_KEY = new Map([[0x008800c6, 0xffffff], [0x00660046, 0x000000], [0x00ee0086, 0x000000]]);
+
+/**
  * DIB（BITMAPINFO + 像素）-> BMP 文件的 data URI，浏览器能直接显示。
  * alpha：ALPHABLEND 的逐像素透明度（AC_SRC_ALPHA，32 位、预乘）——普通 BMP 头浏览器会忽略透明度，
- * 换成带透明通道掩码的 BITMAPV4HEADER，像素还原成不预乘的
+ * 换成带透明通道掩码的 BITMAPV4HEADER，像素还原成不预乘的；key：这个颜色的像素变透明（见 ROP_KEY）
  */
-function dibToBmp(d: DataView, offBmi: number, cbBmi: number, offBits: number, cbBits: number, alpha = false): string | undefined {
+function dibToBmp(d: DataView, offBmi: number, cbBmi: number, offBits: number, cbBits: number, alpha = false, key?: number): string | undefined {
   if (!cbBmi || !cbBits) return undefined;
   // 32 位、普通格式（BI_RGB），或者标准 RGB 掩码的位域格式（BI_BITFIELDS）：像素都是 BGRA
   const comp = cbBmi >= 40 ? d.getUint32(offBmi + 16, true) : -1;
@@ -68,7 +75,7 @@ function dibToBmp(d: DataView, offBmi: number, cbBmi: number, offBits: number, c
   v.setUint32(10, 14 + cbBmi, true);
   out.set(new Uint8Array(d.buffer, d.byteOffset + offBmi, cbBmi), 14);
   out.set(new Uint8Array(d.buffer, d.byteOffset + offBits, cbBits), 14 + cbBmi);
-  return `data:image/bmp;base64,${base64(out)}`;
+  return `data:image/bmp;base64,${base64(key === undefined ? out : keyBmp(out, key) ?? out)}`;
 }
 
 function alphaBmp(d: DataView, offBmi: number, offBits: number, cbBits: number): string {
@@ -442,23 +449,30 @@ function emfToSvgUnsafe(bytes: Uint8Array): string | undefined {
       }
       case 76: case 77: case 81: case 114: {
         let x: number, y: number, w: number, h: number, offBmi: number, cbBmi: number, offBits: number, cbBits: number;
+        // 源框（位图里取哪一块）：BITBLT 和目标一样大
+        let sx: number, sy: number, sw: number, sh: number;
         if (type === 81) {
           x = i32(r + 16); y = i32(r + 20);
+          sx = i32(r + 24); sy = i32(r + 28); sw = i32(r + 32); sh = i32(r + 36);
           offBmi = u32(r + 40); cbBmi = u32(r + 44); offBits = u32(r + 48); cbBits = u32(r + 52);
           w = i32(r + 64); h = i32(r + 68);
         } else {
           x = i32(r + 16); y = i32(r + 20); w = i32(r + 24); h = i32(r + 28);
           offBmi = u32(r + 76); cbBmi = u32(r + 80); offBits = u32(r + 84); cbBits = u32(r + 88);
+          [sw, sh] = type === 76 ? [w, h] : [i32(r + 92), i32(r + 96)];
+          // 源坐标按源设备的变换（XformSrc）换成位图像素：录制时只存用到的那块位图，偏移写在这里（实测 BITBLT 源点 (40, 40) 存成 eDx = -39）
+          const m11 = f32(r + 44), m22 = f32(r + 56), dx = f32(r + 60), dy = f32(r + 64);
+          sx = m11 * i32(r + 36) + dx; sy = m22 * i32(r + 40) + dy; sw *= m11; sh *= m22;
         }
         const [ax, ay] = tp(x, y), [bx, by] = tp(x + w, y + h);
         const X = Math.min(ax, bx), Y = Math.min(ay, by), W = Math.abs(bx - ax), H = Math.abs(by - ay);
         // ALPHABLEND 的混合方式：第 3 个字节是整体透明度，第 4 个字节 AC_SRC_ALPHA（1）表示用位图自带的逐像素透明度
         const alpha = type === 114 ? d.getUint8(r + 34) / 255 : 1;
-        const href = cbBmi ? dibToBmp(d, p + offBmi, cbBmi, p + offBits, cbBits, type === 114 && d.getUint8(r + 35) === 1) : undefined;
-        if (href) emit(defsOf.bitmap(href, X, Y, W, H, `${alpha < 1 ? ` opacity="${f2(alpha)}"` : ''}${clipAttr()}`));
+        const rop = type === 81 ? u32(r + 60) : type === 114 ? 0 : u32(r + 32);
+        const href = cbBmi ? dibToBmp(d, p + offBmi, cbBmi, p + offBits, cbBits, type === 114 && d.getUint8(r + 35) === 1, ROP_KEY.get(rop)) : undefined;
+        if (href) emit(defsOf.bitmap(href, X, Y, W, H, `${alpha < 1 ? ` opacity="${f2(alpha)}"` : ''}${clipAttr()}`, bitmapSource(d, p + offBmi, cbBmi, type === 81, sx, sy, sw, sh)));
         else if (type === 76 && !st.brush.none) {
           // 没有源位图的 BitBlt：用当前画刷填充（常见于背景）
-          const rop = u32(r + 32);
           if (rop === 0x00f00021 || rop === 0x00000042 || rop === 0x00ff0062) {
             const color = rop === 0x00000042 ? '#000000' : rop === 0x00ff0062 ? '#ffffff' : st.brush.color;
             emit(`<rect x="${f2(X)}" y="${f2(Y)}" width="${f2(W)}" height="${f2(H)}" fill="${color}"${clipAttr()}/>`);
@@ -476,6 +490,24 @@ function emfToSvgUnsafe(bytes: Uint8Array): string | undefined {
   }
   const body = defsOf.finish(groupClips(out));
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${vb.map(f2).join(' ')}" preserveAspectRatio="none">${defs.length ? `<defs>${defs.join('')}</defs>` : ''}${body}</svg>`;
+}
+
+/**
+ * 源框不是整张位图时（样本：一张扫描页分成 4 块贴、源框比位图宽几个像素）返回要画的部分，整张时 undefined。
+ * 实测（emf-bitmap-src）：STRETCHDIBITS 的源框 y 从位图最下面一行往上数（从上往下存的 DIB 也一样）；BITBLT、STRETCHBLT、
+ * ALPHABLEND 从左上角数；源框超出位图的部分不算，位图里取到的部分拉满整个目标框
+ */
+function bitmapSource(d: DataView, offBmi: number, cbBmi: number, dib: boolean, sx: number, sy: number, sw: number, sh: number): BitmapSource | undefined {
+  if (cbBmi < 12 || sw <= 0 || sh <= 0) return undefined;
+  const core = d.getUint32(offBmi, true) === 12;
+  const bw = core ? d.getUint16(offBmi + 4, true) : d.getInt32(offBmi + 4, true);
+  const bh = Math.abs(core ? d.getInt16(offBmi + 6, true) : d.getInt32(offBmi + 8, true));
+  const top = dib ? bh - (sy + sh) : sy;
+  const x0 = Math.max(0, sx), y0 = Math.max(0, top), x1 = Math.min(bw, sx + sw), y1 = Math.min(bh, top + sh);
+  if (x1 <= x0 || y1 <= y0) return undefined;
+  const same = (a: number, b: number) => Math.abs(a - b) < 1e-3;
+  if (same(x0, 0) && same(y0, 0) && same(x1, bw) && same(y1, bh)) return undefined;
+  return { x: x0, y: y0, w: x1 - x0, h: y1 - y0, bw, bh };
 }
 
 function bez(P: string[]): string {
