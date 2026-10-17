@@ -86,6 +86,8 @@ export interface RunStyle {
   eaScript?: 'jp' | 'ea';
   /** 文字语言是中日韩（a:rPr lang）：引号按东亚字体、全角排（measure.ts） */
   eaLang: boolean;
+  /** lang 或 altLang 是中日韩：行首禁则、标点悬挂按中文规则（linebreak.ts） */
+  eaBreak: boolean;
   outline?: { color: Rgba; width: number };
   /** 文字效果（a:effectLst）：阴影、发光、内阴影、映像…… */
   effects?: XEl;

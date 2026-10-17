@@ -2908,12 +2908,12 @@ text_br_empty_line.patch = _patch_br_empty_line
 
 def text_ea_lang(app):
     """行首禁则、标点悬挂和文字语言（rPr lang）：正好放下 10 个汉字的框，第 11 个字是标点；每行一个框，
-    整段的 lang 依次是 zh-CN、en-US、没写（保存后改 XML）；左列第 11 个字是"、"，右列是"）" """
+    整段的 lang 依次是 zh-CN、en-US、没写、en-US 加 altLang="zh-CN"（保存后改 XML）；左列第 11 个字是"、"，右列是"）" """
     p = new_pres(app)
     s = blank(p)
-    for k in range(6):
-        col, row = k // 3, k % 3
-        tb = s.Shapes.AddTextbox(1, 30 + col * 460, 30 + row * 150, 240.5, 120)
+    for k in range(8):
+        col, row = k // 4, k % 4
+        tb = s.Shapes.AddTextbox(1, 30 + col * 460, 20 + row * 125, 240.5, 110)
         tf = tb.TextFrame
         tf.MarginLeft = tf.MarginRight = 0
         tf.WordWrap = -1
@@ -2936,7 +2936,7 @@ def _patch_ea_lang(path):
             data = zin.read(item.filename)
             if item.filename == "ppt/slides/slide1.xml":
                 x = data.decode("utf8")
-                for row, lang in enumerate(['lang="zh-CN"', 'lang="en-US"', '']):
+                for row, lang in enumerate(['lang="zh-CN"', 'lang="en-US"', '', 'lang="en-US" altLang="zh-CN"']):
                     def fix(m):
                         body = re.sub(r'<a:rPr\b[^>]*?(/?)>', lambda r: f'<a:rPr{" " + lang if lang else ""} sz="2400"{r.group(1)}>', m.group(0))
                         body = re.sub(r'<a:endParaRPr\b[^>]*?(/?)>', lambda r: f'<a:endParaRPr{" " + lang if lang else ""} sz="2400"{r.group(1)}>', body)
