@@ -66,8 +66,9 @@ export async function renderTable(tbl: XEl | undefined, origin: { x: number; y: 
         ...(attr(tcPr, 'vert') ? { vert: attr(tcPr, 'vert')! } : {}),
       },
     };
-    // 实测（text-default-style）：表格文字在演示文稿默认样式之上还用母版 otherStyle（文本框、形状不用）
-    return renderText(child(c.tc, 'a:txBody'), [r.env.pres.defaultTextStyle, ctx.master.txStyles.other, defaults], [bodyPr], box, env, out);
+    // 实测（text-default-style、table-default-bold）：表格文字用母版 otherStyle，不用演示文稿默认样式（默认样式写的粗体、斜体
+    // 不带到表格里，老 .ppt 转来的课件常见）；文本框、形状反过来只用默认样式
+    return renderText(child(c.tc, 'a:txBody'), [ctx.master.txStyles.other, defaults], [bodyPr], box, env, out);
   };
   const cells: Cell[] = [];
   const rowH = rows.map((tr) => px(numAttr(tr, 'h')));
