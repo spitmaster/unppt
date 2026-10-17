@@ -267,7 +267,8 @@ export async function fillAttrs(
   if (!fill || fill.kind === 'none') return ' fill="none"';
   if ((fill.kind === 'grad' || fill.kind === 'image') && origin) {
     if (fill.area) return areaFill(fill, fill.area, doc, w, h, mode, images, origin);
-    // 不跟着形状转的填充（实测 fills-rot-with-shape）：转动的形状里，图片、渐变正着铺在转动后形状的外接矩形里（翻转照旧）
+    // 不跟着形状转的填充（实测 fills-rot-with-shape）：转动的形状里，图片、渐变正着铺在转动后形状的外接矩形里，也不跟着翻转（实测 fills-rot-cut）；
+    // 形状（shape.ts）按转动后轮廓的外接矩形先算好 area，这里是没有几何的（图片下面的填充）
     if (fill.upright && origin.rot) return areaFill(fill, uprightArea(origin, w, h), doc, w, h, mode, images, origin);
   }
   if (fill.kind === 'pattern' && mode === 'norm') {
@@ -293,11 +294,11 @@ export async function fillAttrs(
   return ` fill="url(#${id})"`;
 }
 
-/** 转动的形状的外接矩形（所在坐标里），翻转照形状的 */
+/** 转动的形状的外接矩形（所在坐标里） */
 function uprightArea(b: Placement, w: number, h: number): FillArea {
   const a = ((b.rot ?? 0) * Math.PI) / 180, c = Math.abs(Math.cos(a)), s = Math.abs(Math.sin(a));
   const hw = (w * c + h * s) / 2, hh = (w * s + h * c) / 2;
-  return { x: b.x + w / 2 - hw, y: b.y + h / 2 - hh, w: 2 * hw, h: 2 * hh, flipH: b.flipH, flipV: b.flipV };
+  return { x: b.x + w / 2 - hw, y: b.y + h / 2 - hh, w: 2 * hw, h: 2 * hh };
 }
 
 /**
