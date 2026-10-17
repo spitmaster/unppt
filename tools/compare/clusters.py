@@ -92,6 +92,11 @@ def main():
     print("\n分数最低的页面（编号；不列期末卷）：")
     for k, p in sorted([f for f in failed if not is_holdout(f[0])], key=lambda x: x[1]["ssim"])[:10]:
         print(f"  {k} 第 {p['slide'] + 1} 页 第 {p['step']} 步：{p['ssim']:.3f}")
+    # 相似度按灰度算，对整体偏色（例如底色画错）不敏感：差异像素多、相似度却不低的页单独列出来
+    tinted = [(k, p) for k, p in pages if p["ssim"] >= 0.85 and p.get("diff", 0) >= 0.3 and not is_holdout(k)]
+    print(f"\n颜色可能画错的页（相似度 ≥ 0.85、差异像素 ≥ 30%）：{len(tinted)} 页")
+    for k, p in sorted(tinted, key=lambda x: -x[1]["diff"])[:10]:
+        print(f"  {k} 第 {p['slide'] + 1} 页 第 {p['step']} 步：相似度 {p['ssim']:.3f}，差异像素 {p['diff']:.0%}")
 
 
 if __name__ == "__main__":
