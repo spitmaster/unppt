@@ -5,7 +5,7 @@
  *   - 左边一列放图例键和系列名：从图表边 22.3 像素处开始，宽 = 键宽 + 系列名宽 + 0.5 × 字号 + 4
  *     （键：色块 0.48 × 字号，线条约 26 像素）；绘图区左边至少让到这一列右边；
  *   - 表格线：外框、横线、竖线可以分别关掉（showOutline / showHorzBorder / showVertBorder），颜色取 c:spPr 的线条；
- *     数值按"常规"格式居中。
+ *     数值居中，按源数据的格式（c:numCache 的 formatCode，样本：百分比数据显示成 97%）。
  */
 import { css, type ColorContext } from '../model/color';
 import { parseLine, type Line } from '../style/line';
@@ -78,7 +78,8 @@ export function renderDataTable(
     const vals = series[k]?.vals ?? [];
     cats.forEach((_c, i) => {
       const v = vals[i];
-      if (v !== null && v !== undefined) out.push(label(formatNumber(v, 'General'), left + (i + 0.5) * band, y, dt.style));
+      // 数值按源数据的格式显示（样本：百分比格式的数据，数据表里是 97% 而不是 0.9655…）
+      if (v !== null && v !== undefined) out.push(label(formatNumber(v, series[k]?.valFmt ?? 'General'), left + (i + 0.5) * band, y, dt.style));
     });
   });
   // 表格线

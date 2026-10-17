@@ -110,7 +110,7 @@ export function readPlots(plotArea: XEl | undefined, colors: ColorContext, part:
         index,
         labels: readLabels(child(s, 'c:dLbls'), plotLabels, colors, baseText),
         name,
-        cats, vals, ...(catLevels ? { catLevels } : {}),
+        cats, vals, ...(catLevels ? { catLevels } : {}), ...(val.format && !/^general$/i.test(val.format) ? { valFmt: val.format } : {}),
         xs: rules.xy ? cats.map((_c, i) => { const v = Number(cat.pts.get(i)); return cat.pts.has(i) && !isNaN(v) ? v : i + 1; }) : undefined,
         ...(child(s, 'c:bubbleSize') ? { sizes: sizesOf(child(s, 'c:bubbleSize'), n), bubble3D: attr(child(s, 'c:bubble3D'), 'val') === '1' } : {}),
         fill: fill?.kind === 'solid' ? fill.color : fill?.kind === 'none' ? undefined : fill?.kind === 'grad' && fill.stops.length ? fill.stops[0].color : fill?.kind === 'pattern' ? fill.fg : accent,

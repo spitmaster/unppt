@@ -38,6 +38,8 @@ export interface Series {
   /** 多级分类的外层（从里往外），每级是各组的起始分类序号和名称 */
   catLevels?: CatLevel[];
   vals: (number | null)[];
+  /** 数值的源数据格式（c:numCache 的 formatCode，常规时不写）：数据表按它显示 */
+  valFmt?: string;
   /** 散点图的 X 值 */
   xs?: (number | null)[];
   /** 气泡图的气泡大小；bubble3D 时画成有高光的球 */
