@@ -14,6 +14,8 @@ function renderLineArea(p: Plot, f: CategoryFrame, A: AxisInfo, out: string[], l
   const vpos = A.pos;
   const valFmt = A.fmt;
   const acc = new Array(nCat).fill(0);
+  // 百分比堆积：每个分类按各系列的合计归一（和柱形图一样）
+  const totals = new Array(nCat).fill(0).map((_, i) => p.series.reduce((a, s) => a + Math.abs(s.vals[i] ?? 0), 0) || 1);
   const series = p.kind === 'area' && p.grouping !== 'standard' ? p.series : p.series;
   const drawn: string[] = [];
   // 垂直线、高低点连线、涨跌柱画在系列下面
@@ -32,6 +34,7 @@ function renderLineArea(p: Plot, f: CategoryFrame, A: AxisInfo, out: string[], l
         continue;
       }
       const stacked = p.grouping === 'stacked' || p.grouping === 'percentStacked';
+      if (p.grouping === 'percentStacked') v = v / totals[i];
       const b0 = stacked ? acc[i] : 0;
       const v1 = stacked ? acc[i] + v : v;
       if (stacked) acc[i] = v1;
@@ -102,5 +105,7 @@ export const areaType: ChartType = {
   legendByCategory: false,
   seriesRules: () => ({ xy: false, defaultLine: false, marker: () => false }),
   legendKey: (_p, s) => ({ color: s.fill, line: false }),
+  // 堆积面积图第一个系列在最下面：竖排图例倒序（实测 charts-pct-stacked）
+  legendReversed: (p, vertical) => vertical && (p.grouping === 'stacked' || p.grouping === 'percentStacked'),
   renderOnAxes: renderLineArea,
 };

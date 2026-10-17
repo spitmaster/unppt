@@ -96,7 +96,10 @@ export function axisMaker(colors: ColorContext, baseText: TextStyle, part: strin
       }
     } else {
       const maxLabels = opts.length ? maxTickLabels(opts.length, style.size, !!opts.horizontal) : Infinity;
-      const sc = niceScale(vmin, vmax, fixedMin, fixedMax, numAttr(child(ax, 'c:majorUnit'), 'val'), margin, maxLabels);
+      // 百分比堆积：自动范围就是 0~100%（有负数时从 −100% 起），不留余量（样本 COM 读 MaximumScale = 1）
+      const pctMax = pct && fixedMax === undefined && vmax <= 1 ? 1 : fixedMax;
+      const pctMin = pct && fixedMin === undefined ? (vmin < 0 ? -1 : 0) : fixedMin;
+      const sc = niceScale(vmin, vmax, pctMin, pctMax, numAttr(child(ax, 'c:majorUnit'), 'val'), margin, maxLabels);
       ({ lo, hi } = sc);
       raw = (v) => (v - lo) / (hi - lo);
       for (let v = lo; v <= hi + sc.unit * 1e-6; v += sc.unit) ticks.push(Math.round(v / sc.unit) * sc.unit);

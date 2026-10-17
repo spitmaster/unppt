@@ -4,9 +4,12 @@ import { cpart, label, lineOf, paintOf, strokeOf } from '../draw';
 import { labelText } from '../format';
 import { errRanges, errSvg } from '../error-bars';
 import type { ChartType } from '../chart-type';
+import type { Plot } from '../model';
 
 /** 实测：竖排数据标签离柱子顶端的距离 = ROT_LABEL_GAP + ROT_LABEL_GAP_S × 字号（像素） */
 const ROT_LABEL_GAP = 2.5, ROT_LABEL_GAP_S = 0.4;
+
+const stackedGrouping = (p: Plot) => p.grouping === 'stacked' || p.grouping === 'percentStacked';
 
 export const barType: ChartType = {
   kind: 'bar',
@@ -16,8 +19,9 @@ export const barType: ChartType = {
   legendByCategory: false,
   defaultGrouping: 'clustered',
   horizontal: (p) => p.horizontal,
-  // 条形图第一个系列画在每组的最下面，横排图例倒过来和它对应；分类轴逆序时整体翻过来，图例不倒
-  legendReversed: (p) => p.horizontal && !p.catReversed,
+  // 簇状条形图第一个系列画在每组的最下面，图例倒过来和它对应（分类轴逆序时整体翻过来，图例不倒）；堆积条形图不倒。
+  // 堆积柱形图第一个系列在最下面：竖排图例倒序，横排图例不倒（实测 charts-pct-stacked）
+  legendReversed: (p, vertical) => (p.horizontal ? !stackedGrouping(p) && !p.catReversed : vertical && stackedGrouping(p)),
   seriesRules: () => ({ xy: false, defaultLine: false, marker: () => false }),
   legendKey: (_p, s) => ({ color: s.fill, line: false }),
   renderOnAxes(p, f, A, out, labelsOut) {
