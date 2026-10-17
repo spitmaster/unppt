@@ -1,6 +1,7 @@
 /** 图表里的数字 / 日期格式、数据标签文字、缓存数据读取 */
 import { child, children, findAll, numAttr, type XEl } from '../io/xml';
 import type { CatLevel, Labels } from './model';
+import { formatDate } from './date-format';
 
 /**
  * 数据标签的文字：系列名、类别名、数值、百分比按这个顺序，用 c:separator 隔开（没写时一般是", "，
@@ -51,11 +52,6 @@ export function cacheValues(ref: XEl | undefined): { pts: Map<number, string>; c
   return { pts, count: numAttr(child(cache ?? multi, 'c:ptCount'), 'val') ?? pts.size, format: child(cache, 'c:formatCode')?.text ?? 'General', outer };
 }
 
-/** Excel 日期序号 -> 年/月/日 */
-function excelDate(serial: number): Date {
-  return new Date(Date.UTC(1899, 11, 30) + serial * 86400000);
-}
-
 /** 常规格式：整数原样，小数最多 6 位有效小数 */
 function general(v: number): string {
   if (Number.isInteger(v)) return String(v);
@@ -95,7 +91,7 @@ function render(sec: string, num: string): string {
 
 /**
  * Excel 数字格式（图表的坐标轴、数据标签用）：按分号分段（负数用第二段、取绝对值），去掉 [Red]、[$-804] 这类方括号部分，
- * 日期（y/m/d）、百分比、千分位、小数位、前后缀字面文字（引号、反斜杠、"_)" 留空）；数字后的逗号按千缩小
+ * 日期时间（date-format.ts）、百分比、千分位、小数位、前后缀字面文字（引号、反斜杠、"_)" 留空）；数字后的逗号按千缩小
  */
 export function formatNumber(v: number, fmt: string): string {
   if (!fmt || /^general$/i.test(fmt.trim())) return general(v);
@@ -107,14 +103,7 @@ export function formatNumber(v: number, fmt: string): string {
   sec = sec.replace(/\[[^\]]*\]/g, '');
   const bare = sec.replace(/"[^"]*"/g, '').replace(/\\./g, '').replace(/[_*]./g, '').toLowerCase();
   if (/general/.test(bare)) return sign + render(sec.replace(/general/i, '#'), general(val));
-  if (/[ymd]/.test(bare)) {
-    const d = excelDate(v);
-    const y = d.getUTCFullYear(), m = d.getUTCMonth() + 1, day = d.getUTCDate();
-    if (bare.includes('d') && bare.includes('m') && bare.includes('y')) return `${y}/${m}/${day}`;
-    if (bare.includes('m') && bare.includes('d')) return `${m}/${day}`;
-    if (bare.includes('y') && bare.includes('m')) return `${y}/${m}`;
-    return `${y}/${m}/${day}`;
-  }
+  if (/[ymdhs]/.test(bare) && !/[#0?]/.test(bare)) return formatDate(v, sec);
   const pat = /[#0?][#0?,]*(?:\.[#0?]*)?/.exec(bare)?.[0] ?? '';
   // 没有数字占位符的段（比如零值写成 "-"）只显示字面文字
   if (!pat && !bare.includes('%')) return render(sec, '');
