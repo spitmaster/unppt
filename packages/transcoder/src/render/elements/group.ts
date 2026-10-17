@@ -12,7 +12,8 @@ export async function renderGroup(r: RenderContext, el: XEl, ctx: SlideContext, 
   const box = readXfrm(xfrm);
   const chOff = child(xfrm, 'a:chOff');
   const chExt = child(xfrm, 'a:chExt');
-  const groupFill = parseFill(findFillEl(gp), ctx.colors, ctx.part, parentFill) ?? parentFill;
+  const own = parseFill(findFillEl(gp), ctx.colors, ctx.part, parentFill);
+  let groupFill = own ?? parentFill;
   const kids = el.children.filter((c) => !c.name.endsWith(':nvGrpSpPr') && !c.name.endsWith(':grpSpPr'));
   const uid = r.uidOf(el, ctx);
   if (!box) {
@@ -20,6 +21,13 @@ export async function renderGroup(r: RenderContext, el: XEl, ctx: SlideContext, 
     return inner ? withUid(uid, inner, el) : '';
   }
   // 子元素的框按比例换算到组合里、翻转下放到子元素（线宽、字号不跟着缩放，文字不镜像，见 group-map.ts）
+  // 组合填充的图片、渐变铺满组合的外框（子元素坐标以组合左上角为原点）；从外层组合继承来的，范围换到这一层的坐标
+  if (groupFill?.kind === 'image' || groupFill?.kind === 'grad') {
+    const a = groupFill.area;
+    groupFill = own && own !== parentFill
+      ? { ...groupFill, area: { x: 0, y: 0, w: box.w, h: box.h, flipH: box.flipH, flipV: box.flipV } }
+      : a ? { ...groupFill, area: { ...a, x: a.x - box.x, y: a.y - box.y } } : groupFill;
+  }
   const cw = px(numAttr(chExt, 'cx')) || box.w, ch = px(numAttr(chExt, 'cy')) || box.h;
   const map = {
     ox: numAttr(chOff, 'x') ?? 0, oy: numAttr(chOff, 'y') ?? 0, sx: cw ? box.w / cw : 1, sy: ch ? box.h / ch : 1,

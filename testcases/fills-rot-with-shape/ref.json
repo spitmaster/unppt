@@ -1,0 +1,93 @@
+{
+ "version": 8,
+ "level": "full",
+ "slideWidthPt": 960.0,
+ "slideHeightPt": 540.0,
+ "imageWidth": 1280,
+ "imageHeight": 720,
+ "slides": [
+  {
+   "index": 0,
+   "hidden": false,
+   "shapes": [
+    {
+     "id": 2,
+     "name": "Rectangle 1",
+     "type": 1,
+     "x": 50.0,
+     "y": 50.0,
+     "w": 220.0,
+     "h": 160.0,
+     "rot": 30.0,
+     "visible": true,
+     "autoShapeType": 1
+    },
+    {
+     "id": 3,
+     "name": "Rectangle 2",
+     "type": 1,
+     "x": 360.0,
+     "y": 50.0,
+     "w": 220.0,
+     "h": 160.0,
+     "rot": 30.0,
+     "visible": true,
+     "autoShapeType": 1
+    },
+    {
+     "id": 4,
+     "name": "Rectangle 3",
+     "type": 1,
+     "x": 670.0,
+     "y": 50.0,
+     "w": 240.0,
+     "h": 120.0,
+     "rot": 90.0,
+     "visible": true,
+     "autoShapeType": 1
+    },
+    {
+     "id": 5,
+     "name": "Rectangle 4",
+     "type": 1,
+     "x": 50.0,
+     "y": 300.0,
+     "w": 220.0,
+     "h": 160.0,
+     "rot": 30.0,
+     "visible": true,
+     "autoShapeType": 1
+    },
+    {
+     "id": 6,
+     "name": "Rectangle 5",
+     "type": 1,
+     "x": 360.0,
+     "y": 300.0,
+     "w": 220.0,
+     "h": 160.0,
+     "rot": 30.0,
+     "visible": true,
+     "autoShapeType": 1
+    },
+    {
+     "id": 7,
+     "name": "Rectangle 6",
+     "type": 1,
+     "x": 670.0,
+     "y": 300.0,
+     "w": 240.0,
+     "h": 120.0,
+     "rot": 90.0,
+     "visible": true,
+     "autoShapeType": 1
+    }
+   ],
+   "effects": [],
+   "triggerHidden": [],
+   "steps": 0,
+   "keptSlideshow": false
+  }
+ ],
+ "ok": true
+}

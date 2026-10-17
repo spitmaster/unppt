@@ -10,14 +10,20 @@ import { blipFilter, parseBlipEffects, type BlipEffects } from './blip';
 import { patternFill } from './pattern';
 import { gradientStops } from './gradient-stops';
 
+/**
+ * 组合填充铺的范围：组合的外框（在子元素所在的坐标里，像素）和组合的翻转。子元素写 a:grpFill 时，图片、渐变按这个框铺，
+ * 各子元素只露出自己那一块（实测 group-fill），不是每个子元素各铺一整张
+ */
+export interface FillArea { x: number; y: number; w: number; h: number; flipH?: boolean; flipV?: boolean }
+
 /** 平铺（a:tile）：缩放比例、偏移（像素）、对齐方式、翻转 */
 export interface Tile { sx: number; sy: number; tx: number; ty: number; algn: string; flip: string }
 
 export type Fill =
   | { kind: 'none' }
   | { kind: 'solid'; color: Rgba }
-  | { kind: 'grad'; stops: { pos: number; color: Rgba }[]; angle: number; scaled?: boolean; path?: string; rect?: { l: number; t: number; r: number; b: number } }
-  | { kind: 'image'; rid: string; part: string; alpha: number; tile?: Tile; srcRect?: { l: number; t: number; r: number; b: number }; fillRect?: { l: number; t: number; r: number; b: number }; effects?: BlipEffects }
+  | { kind: 'grad'; stops: { pos: number; color: Rgba }[]; angle: number; scaled?: boolean; path?: string; rect?: { l: number; t: number; r: number; b: number }; area?: FillArea; upright?: boolean }
+  | { kind: 'image'; rid: string; part: string; alpha: number; tile?: Tile; srcRect?: { l: number; t: number; r: number; b: number }; fillRect?: { l: number; t: number; r: number; b: number }; effects?: BlipEffects; area?: FillArea; upright?: boolean }
   | { kind: 'pattern'; prst: string; fg: Rgba; bg: Rgba };
 
 const FILL_NAMES = new Set(['a:noFill', 'a:solidFill', 'a:gradFill', 'a:blipFill', 'a:pattFill', 'a:grpFill']);
@@ -45,6 +51,7 @@ export function parseFill(f: XEl | undefined, ctx: ColorContext, part: string, g
       const ftr = child(p, 'a:fillToRect');
       return {
         kind: 'grad', stops,
+        ...(noRotate(f) ? { upright: true } : {}),
         angle: (numAttr(lin, 'ang') ?? 0) / 60000,
         ...(attr(lin, 'scaled') === '1' || attr(lin, 'scaled') === 'true' ? { scaled: true } : {}),
         path: p ? (attr(p, 'path') ?? 'circle') : undefined,
@@ -63,6 +70,7 @@ export function parseFill(f: XEl | undefined, ctx: ColorContext, part: string, g
       const fr = child(child(f, 'a:stretch'), 'a:fillRect');
       return {
         kind: 'image', rid, part, alpha: (numAttr(amf, 'amt') ?? 100000) / 100000, tile: parseTile(child(f, 'a:tile')),
+        ...(noRotate(f) ? { upright: true } : {}),
         effects: parseBlipEffects(blip, ctx),
         srcRect: sr ? {
           l: (numAttr(sr, 'l') ?? 0) / 100000, t: (numAttr(sr, 't') ?? 0) / 100000,
@@ -85,6 +93,12 @@ export function parseFill(f: XEl | undefined, ctx: ColorContext, part: string, g
 }
 
 /** p:style 里的 fillRef / lnRef / effectRef：从主题样式表里取，phClr 用引用自带的颜色 */
+/** rotWithShape="0"：填充不跟着形状转（没写时跟着转） */
+function noRotate(f: XEl): boolean {
+  const v = attr(f, 'rotWithShape');
+  return v === '0' || v === 'false';
+}
+
 export function styleRef(ref: XEl | undefined, list: XEl[], ctx: ColorContext): { el?: XEl; ctx: ColorContext } {
   if (!ref) return { ctx };
   const idx = numAttr(ref, 'idx') ?? 0;
@@ -238,16 +252,24 @@ function rectGradient(fill: Extract<Fill, { kind: 'grad' }>, doc: SvgDoc, w: num
   return `url(#${pid})`;
 }
 
+/** 元素在所在坐标里的外框：位置、大小，转角（度）和翻转（shape.ts 按 平移 → 绕中心转 → 翻转 摆放） */
+interface Placement { x: number; y: number; w?: number; h?: number; rot?: number; flipH?: boolean; flipV?: boolean }
+
 /**
  * 生成 fill 属性。w/h 是形状尺寸（像素），用于渐变方向和图片填充；
- * origin 是元素坐标原点在幻灯片上的位置（图案填充从幻灯片原点对齐）。
+ * origin 是元素的外框（图案填充从幻灯片原点对齐；组合填充按它换算到组合的外框）。
  * 返回形如 ` fill="#fff" fill-opacity="0.5"` 的字符串。
  */
 export async function fillAttrs(
   fill: Fill | undefined, doc: SvgDoc, w: number, h: number, mode: string, images: ImageResolver,
-  origin?: { x: number; y: number }, geom?: string,
+  origin?: Placement, geom?: string,
 ): Promise<string> {
   if (!fill || fill.kind === 'none') return ' fill="none"';
+  if ((fill.kind === 'grad' || fill.kind === 'image') && origin) {
+    if (fill.area) return areaFill(fill, fill.area, doc, w, h, mode, images, origin);
+    // 不跟着形状转的填充（实测 fills-rot-with-shape）：转动的形状里，图片、渐变正着铺在转动后形状的外接矩形里（翻转照旧）
+    if (fill.upright && origin.rot) return areaFill(fill, uprightArea(origin, w, h), doc, w, h, mode, images, origin);
+  }
   if (fill.kind === 'pattern' && mode === 'norm') {
     const id = patternFill(doc, fill.prst, fill.fg, fill.bg, origin);
     if (id) return ` fill="url(#${id})"`;
@@ -269,6 +291,45 @@ export async function fillAttrs(
   const { x, y, iw, ih } = imagePlacement(fill, w, h);
   doc.addDef(`<pattern id="${id}" patternUnits="userSpaceOnUse" width="${n2(w)}" height="${n2(h)}"><image href="${esc(href)}" x="${n2(x)}" y="${n2(y)}" width="${n2(iw)}" height="${n2(ih)}" preserveAspectRatio="none"${fill.alpha < 1 ? ` opacity="${n2(fill.alpha)}"` : ''}${fid ? ` filter="url(#${fid})"` : ''}/></pattern>`);
   return ` fill="url(#${id})"`;
+}
+
+/** 转动的形状的外接矩形（所在坐标里），翻转照形状的 */
+function uprightArea(b: Placement, w: number, h: number): FillArea {
+  const a = ((b.rot ?? 0) * Math.PI) / 180, c = Math.abs(Math.cos(a)), s = Math.abs(Math.sin(a));
+  const hw = (w * c + h * s) / 2, hh = (w * s + h * c) / 2;
+  return { x: b.x + w / 2 - hw, y: b.y + h / 2 - hh, w: 2 * hw, h: 2 * hh, flipH: b.flipH, flipV: b.flipV };
+}
+
+/**
+ * 组合填充、不跟着转的填充：按铺的范围画好图片 / 渐变，放进一个 pattern，用 patternTransform 从所在坐标换到形状自己的坐标
+ * （形状的平移、转动、翻转反过来），形状只露出它那一块。渐变在范围外面延续两端的颜色（实测：组合里转动的子元素伸出组合外框的部分）
+ */
+async function areaFill(fill: Extract<Fill, { kind: 'grad' | 'image' }>, area: FillArea, doc: SvgDoc, w: number, h: number, mode: string, images: ImageResolver, b: Placement): Promise<string> {
+  const inner = await fillAttrs({ ...fill, area: undefined }, doc, area.w, area.h, mode, images);
+  const url = /^ fill="(url\(#[^)"]+\))"$/.exec(inner)?.[1];
+  if (!url) return inner;
+  // 子元素坐标 -> 所在坐标：translate(x y) rotate(rot 中心) 再翻转（和 shape.ts 一样），取逆
+  const a = ((b.rot ?? 0) * Math.PI) / 180, c = Math.cos(a), s = Math.sin(a);
+  const cx = w / 2, cy = h / 2;
+  const fx = b.flipH ? -1 : 1, fy = b.flipV ? -1 : 1;
+  // M = T(x, y) · R(a, cx, cy) · F，F = translate(flipH ? w : 0, flipV ? h : 0) scale(fx fy)
+  const ma = c * fx, mb = s * fx, mc = -s * fy, md = c * fy;
+  const ftx = b.flipH ? w : 0, fty = b.flipV ? h : 0;
+  const me = b.x + cx - c * cx + s * cy + c * ftx - s * fty;
+  const mf = b.y + cy - s * cx - c * cy + s * ftx + c * fty;
+  const det = ma * md - mb * mc || 1;
+  const ia = md / det, ib = -mb / det, ic = -mc / det, id = ma / det;
+  const ie = -(ia * me + ic * mf), iF = -(ib * me + id * mf);
+  const flip = area.flipH || area.flipV
+    ? ` transform="translate(${area.flipH ? n2(area.w) : 0} ${area.flipV ? n2(area.h) : 0}) scale(${area.flipH ? -1 : 1} ${area.flipV ? -1 : 1})"` : '';
+  const pid = doc.id('p');
+  const m = [ia, ib, ic, id, ie, iF].map((v) => +v.toFixed(6)).join(' ');
+  // 渐变：图案画成三倍大（范围外按渐变两端的颜色延续；图案内容的原点在图案左上角，挪回来）；图片照旧按范围重复
+  const k = fill.kind === 'grad' ? 1 : 0;
+  const box = `x="${n2(-k * area.w)}" y="${n2(-k * area.h)}" width="${n2((1 + 2 * k) * area.w)}" height="${n2((1 + 2 * k) * area.h)}"`;
+  const rect = `<rect ${box} fill="${url}"${flip}/>`;
+  doc.addDef(`<pattern id="${pid}" patternUnits="userSpaceOnUse" ${box} patternTransform="matrix(${m}) translate(${n2(area.x)} ${n2(area.y)})">${k ? `<g transform="translate(${n2(area.w)} ${n2(area.h)})">${rect}</g>` : rect}</pattern>`);
+  return ` fill="url(#${pid})"`;
 }
 
 /**
