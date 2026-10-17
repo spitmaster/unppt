@@ -8,6 +8,8 @@ import { dgmUid } from '../../common/uid';
 import type { SlideContext } from '../../model/model';
 import type { FrameHandler } from './frame-handler';
 import { cameraLightFilter, cameraTransform, perspectiveProjector } from '../../style/camera';
+import { fillAttrs, findFillEl, parseFill } from '../../style/fill';
+import { parseLine, strokeAttrs } from '../../style/line';
 
 export const diagramFrame: FrameHandler = {
   uri: '/diagram',
@@ -48,13 +50,19 @@ export const diagramFrame: FrameHandler = {
       const lit = light ? `<g filter="url(#${light})">${svg}</g>` : svg;
       return cam && !persp ? `<g transform="${cam}">${lit}</g>` : lit;
     };
-    if (!uid) return { svg: scene(await r.shapes(kids, sub)) };
+    // 整张图的背景和外框（数据模型的 dgm:bg、dgm:whole；样本：整张 SmartArt 垫一块青色）画在最下面
+    const bgFill = parseFill(findFillEl(child(data, 'dgm:bg')), ctx.colors, dataRel.target);
+    const wholeLine = parseLine([child(child(data, 'dgm:whole'), 'a:ln')], [ctx.colors], dataRel.target, r.env.pres.displayScale);
+    const fa = bgFill && bgFill.kind !== 'none' ? await fillAttrs(bgFill, r.doc, box.w, box.h, 'norm', r.images) : ' fill="none"';
+    const sa = wholeLine ? strokeAttrs(wholeLine, r.doc, 'norm') : ' stroke="none"';
+    const back = fa !== ' fill="none"' || sa !== ' stroke="none"' ? `<rect width="${box.w}" height="${box.h}"${fa}${sa}/>` : '';
+    if (!uid) return { svg: back + scene(await r.shapes(kids, sub)) };
     const parts: string[] = [];
     for (const k of kids) {
       const svg = await r.shapes([k], sub);
       const id = dgmUid(uid, attr(k, 'modelId'));
       parts.push(svg && id ? `<g data-uid="${id}">${svg}</g>` : svg);
     }
-    return { svg: scene(parts.join('')) };
+    return { svg: back + scene(parts.join('')) };
   },
 };
