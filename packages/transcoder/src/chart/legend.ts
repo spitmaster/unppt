@@ -1,6 +1,6 @@
 /** 图例：按系列（或饼图按分类）列出图例项，放在上下左右，返回剩下的绘图空间 */
 import type { ColorContext, Rgba } from '../model/color';
-import { attr, child, type XEl } from '../io/xml';
+import { attr, child, numAttr, type XEl } from '../io/xml';
 import { chartTypeOf } from './chart-types';
 import { accentColor, label, legendKey, strokeOf, textStyle } from './draw';
 import { LEGEND_LINE_KEY, legendBand, legendCenter, legendItemGap, legendKeyGap, legendLead, legendPlotGap, legendRow, legendSquare, legendTopBand, legendTopCenter, PAD, type TextWidth } from './layout';
@@ -43,8 +43,53 @@ function entriesOf(plots: Plot[], colors: ColorContext): LegendEntry[] {
   return entries;
 }
 
-/** 画图例（加到 out），返回去掉图例后的区域；drawTop 是摆图例用的上沿（标题下面，不给时用 area.top） */
-export function renderLegend(legend: XEl | undefined, plots: Plot[], area: Rect, w: number, colors: ColorContext, baseText: TextStyle, tw: TextWidth, out: string[], drawTop?: number, hasAxes = true, bandOf = legendBand): Rect {
+/**
+ * 画图例（加到 out），返回去掉图例后的区域；drawTop 是摆图例用的上沿（标题下面，不给时用 area.top），h 是图表高（手动摆放的图例要用）。
+ * 手动摆放的图例（c:layout 的 manualLayout，样本里近一半的图例）：实测（charts-legend-manual）绘图区照样按 legendPos 那一侧
+ * 让出自动图例的位置，图例本身画在手动的框里（manualBox）
+ */
+export function renderLegend(legend: XEl | undefined, plots: Plot[], area: Rect, w: number, colors: ColorContext, baseText: TextStyle, tw: TextWidth, out: string[], drawTop?: number, hasAxes = true, bandOf = legendBand, h?: number): Rect {
+  const box = manualBox(legend, w, h);
+  if (!box) return autoLegend(legend, plots, area, w, colors, baseText, tw, out, drawTop, hasAxes, bandOf);
+  const rest = autoLegend(legend, plots, area, w, colors, baseText, tw, [], drawTop, hasAxes, bandOf);
+  manualLegend(entriesOf(plots, colors), box, textStyle(child(legend, 'c:txPr'), colors, baseText), tw, out);
+  return rest;
+}
+
+/** 图例的手动位置（图表坐标）：只认 x、y 按图表边算（edge）、宽高按图表比例的写法，其它按自动 */
+function manualBox(legend: XEl | undefined, w: number, h: number | undefined): Rect | undefined {
+  const ml = child(child(legend, 'c:layout'), 'c:manualLayout');
+  if (!ml || !h) return undefined;
+  const x = numAttr(child(ml, 'c:x'), 'val'), y = numAttr(child(ml, 'c:y'), 'val'), bw = numAttr(child(ml, 'c:w'), 'val'), bh = numAttr(child(ml, 'c:h'), 'val');
+  const edge = (k: string) => attr(child(ml, k), 'val') === 'edge';
+  if (x === undefined || y === undefined || !bw || !bh || !edge('c:xMode') || !edge('c:yMode')) return undefined;
+  return { left: x * w, top: y * h, right: (x + bw) * w, bottom: (y + bh) * h };
+}
+
+/**
+ * 手动框里的图例（实测 charts-legend-manual，框四边和各项位置误差 1~2 像素）：各项排成网格，格宽是最宽的一项（键 + 间隔 + 名字）；
+ * 列数是框宽里放得下的最多格数（至少 1），每行的格子之间、和框两边的空隙都相等；后面的行用同样的列；框高按行数等分，每行在自己那一格的中间
+ */
+function manualLegend(entries: LegendEntry[], box: Rect, st: TextStyle, tw: TextWidth, out: string[]): void {
+  if (!entries.length) return;
+  const sz = st.size, ks = sz * 0.6;
+  const anyLine = entries.some((e) => e.line);
+  const keyW = (e: LegendEntry) => (anyLine ? LEGEND_LINE_KEY : e.line ? ks * 3 : legendSquare(sz));
+  const kGap = legendKeyGap(sz, anyLine);
+  const cell = Math.max(...entries.map((e) => keyW(e) + kGap + tw(e.name, sz, st.font)));
+  const bw = box.right - box.left;
+  const cols = Math.max(1, Math.min(entries.length, Math.floor(bw / cell)));
+  const rows = Math.ceil(entries.length / cols);
+  const gap = (bw - cols * cell) / (cols + 1);
+  const rowH = (box.bottom - box.top) / rows;
+  entries.forEach((e, i) => {
+    const x = box.left + gap + (i % cols) * (cell + gap), y = box.top + (Math.floor(i / cols) + 0.5) * rowH;
+    if (!e.none) out.push(anyLine ? legendKey(e, x, y, legendSquare(sz), keyW(e)) : legendKey(e, x, y, e.line ? ks : legendSquare(sz)));
+    out.push(label(e.name, x + keyW(e) + kGap, y, st, 'start'));
+  });
+}
+
+function autoLegend(legend: XEl | undefined, plots: Plot[], area: Rect, w: number, colors: ColorContext, baseText: TextStyle, tw: TextWidth, out: string[], drawTop?: number, hasAxes = true, bandOf = legendBand): Rect {
   let { left, top, right, bottom } = area;
   const shift = (drawTop ?? top) - top;
   if (!legend) return area;

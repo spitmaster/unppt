@@ -115,7 +115,7 @@ export function renderChart(space: XEl | undefined, w: number, h: number, env: C
   }
 
   // ---------------- 图例
-  ({ left, top, right, bottom } = renderLegend(child(chart, 'c:legend'), plots, { left, top, right, bottom }, w, colors, baseText, tw, out, legendTop, type0.hasAxes, flatPie ? pieLegendBand : undefined));
+  ({ left, top, right, bottom } = renderLegend(child(chart, 'c:legend'), plots, { left, top, right, bottom }, w, colors, baseText, tw, out, legendTop, type0.hasAxes, flatPie ? pieLegendBand : undefined, h));
   // 底部没有图例时，下边只留 BOTTOM_PAD（COM 读 3 种字号：图例从下方移走后绘图区增高 1.03 × 字号 + 12 磅，比图例带多出约 5 磅）
   // 平面饼图例外：下边仍留 11 磅（COM 读饼图的外接正方形：9~20 磅、有无标题和图例）
   if (bottom === h - PAD && !flatPie) bottom = h - BOTTOM_PAD;
