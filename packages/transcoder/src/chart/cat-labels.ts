@@ -3,7 +3,8 @@
  * 面积图，读绘图区内框和标签间隔，导出图量标签位置）。从间隔 1（每个都显示）开始，依次试：
  *   - 每个标签宽 ≤ 分类宽 × 间隔：横排一行；
  *   - 每个标签都能在空格处折成每行 ≤ 分类宽 × 间隔：折行，标签带每多一行高 1.044 × 字号；
- *   - 分类宽 × 间隔 × 0.707 ≥ 1.3 × 字号：整体转 −45°（含没有空格的中文）：文字（右对齐、居中基线）的锚点在分类中心
+ *   - 分类宽 × 间隔 × 0.707 ≥ 1.75 × 字号：整体转 −45°（含没有空格的中文；原来按 1.3 倍，charts-cat-rot-len 和样本：分类宽 2.72 倍字号斜排、
+ *     2.17 倍竖排）：文字（右对齐、居中基线）的锚点在分类中心
  *     左 0.02 × 字号、轴下 1.27 × 字号 − 4.2；标签带高 0.707 × 最宽标签 + 1.54 × 字号（标签都不带中文时 0.667 × 最宽标签）；
  *     绘图区左边让第一个分类的中心离图表左边至少 15.4 + 0.667 × 第一个标签宽（9~20 磅、2~8 个字、中英文都成立）；
  *   - 分类宽 × 间隔 ≥ 1 × 字号：竖排（转 −90°），文字末端在轴下 0.7 × 字号 − 2，标签带高最宽标签 + 0.62 × 字号
@@ -17,13 +18,13 @@ import { hasCjk, label } from './draw';
 import type { TextWidth } from './layout';
 import type { CatLevel, TextStyle } from './model';
 
-export type CatFit = ({ kind: 'line' } | { kind: 'wrap'; lines: string[][]; n: number } | { kind: 'rot' } | { kind: 'vert'; cut?: string[] } | { kind: 'ea' }) & { skip: number };
+export type CatFit = ({ kind: 'line' } | { kind: 'wrap'; lines: string[][]; n: number } | { kind: 'rot'; cut?: string[] } | { kind: 'vert'; cut?: string[] } | { kind: 'ea' }) & { skip: number };
 
 const SIN45 = Math.SQRT1_2;
 /** 实测：折行每多一行的高度、斜标签带的常数项、斜标签末端的位置、第一个斜标签的中心离图表左边的距离（像素，s 是字号） */
 const WRAP_LINE = 1.044, ROT_BAND = 1.54, ROT_X = 0.02, ROT_Y = 1.27, ROT_Y0 = 4.2, ROT_EDGE = 15.4, ROT_SPAN = 0.667;
 /** 实测：斜排、竖排要求的行距（× 字号）、竖排文字末端离轴、竖排标签带的常数项 */
-const ROT_ROOM = 1.3, VERT_ROOM = 1, VERT_Y = 0.7, VERT_Y0 = 2, VERT_BAND = 0.62;
+const ROT45_ROOM = 1.75, VERT_ROOM = 1, VERT_Y = 0.7, VERT_Y0 = 2, VERT_BAND = 0.62;
 /**
  * 实测（charts-axis-ea-vert：12 磅、1~6 个汉字）：文字设成东亚竖排（bodyPr vert="eaVert"）时每个字往下排、字距 1 个字号，
  * 第一个字的上沿在轴下 0.56 × 字号；标签带比横排一行的高 (最多的字数 − 1.375) × 字号
@@ -57,28 +58,30 @@ export function fitCategoryLabels(cats: string[], catW: number, s: number, tw: T
       const lines = wrapped as string[][];
       return { kind: 'wrap', lines, n: Math.max(...lines.filter((_, i) => i % skip === 0).map((l) => l.length)), skip };
     }
-    if (SIN45 * w >= ROT_ROOM * s) return { kind: 'rot', skip };
+    if (SIN45 * w >= ROT45_ROOM * s) return { kind: 'rot', skip };
     if (w >= VERT_ROOM * s || skip >= last) return { kind: 'vert', skip };
   }
 }
 
 /** 标签带的高度：横排、折行时在平常的带高 base 上加多出的行，斜排按最宽标签 */
 export function catFitBand(fit: CatFit, base: number, cats: string[], s: number, tw: TextWidth): number {
-  const widest = () => Math.max(0, ...cats.filter((_, i) => i % fit.skip === 0).map((c) => tw(c, s)));
+  const shownW = (list: string[]) => Math.max(0, ...list.filter((_, i) => i % fit.skip === 0).map((c) => tw(c, s)));
+  const widest = () => shownW(fit.kind === 'rot' || fit.kind === 'vert' ? fit.cut ?? cats : cats);
   if (fit.kind === 'wrap') return base + (fit.n - 1) * WRAP_LINE * s;
   if (fit.kind === 'rot') return (cats.some(hasCjk) ? SIN45 : ROT_SPAN) * widest() + ROT_BAND * s;
-  if (fit.kind === 'vert') return fit.cut ? Math.max(0, ...fit.cut.filter((_, i) => i % fit.skip === 0).map((c) => tw(c, s))) + VERT_BAND * s : widest() + VERT_BAND * s;
+  if (fit.kind === 'vert') return widest() + VERT_BAND * s;
   if (fit.kind === 'ea') return base + (Math.max(1, ...cats.filter((_, i) => i % fit.skip === 0).map((c) => [...c].length)) - EA_LINE) * s;
   return base;
 }
 
 /**
- * 竖排标签带最多和绘图区一样高（room 是绘图区和标签带一共的高度）：更长的标签按字截断、末尾加省略号，标签带按截断后的算
- * （实测 charts-cat-vertical、charts-long-cats：图表高 160~460 磅，20 个字的名称，标签带等于绘图区高或比它少不到一个字）
+ * 竖排、斜排的标签带最多和绘图区一样高（room 是绘图区和标签带一共的高度）：更长的标签按字截断、末尾加省略号，标签带按截断后的算
+ * （实测 charts-cat-vertical、charts-long-cats：图表高 160~460 磅，20 个字的名称，标签带等于绘图区高或比它少不到一个字；
+ * charts-cat-rot-len：斜排的 9~16 个字名称同样截断）
  */
 export function capVertical(fit: CatFit, cats: string[], s: number, tw: TextWidth, room: number): CatFit {
-  if (fit.kind !== 'vert' || catFitBand(fit, 0, cats, s, tw) <= room / 2) return fit;
-  const max = room / 2 - VERT_BAND * s;
+  if ((fit.kind !== 'vert' && fit.kind !== 'rot') || catFitBand(fit, 0, cats, s, tw) <= room / 2) return fit;
+  const max = fit.kind === 'vert' ? room / 2 - VERT_BAND * s : (room / 2 - ROT_BAND * s) / (cats.some(hasCjk) ? SIN45 : ROT_SPAN);
   const cut = cats.map((c) => {
     if (tw(c, s) <= max) return c;
     const chars = [...c];
@@ -101,7 +104,7 @@ export function categoryLabel(fit: CatFit, i: number, text: string, x: number, a
   if (fit.kind === 'vert') return `<g transform="translate(${n2(x)} ${n2(axisY + VERT_Y * s - VERT_Y0)}) rotate(-90)">${label(fit.cut?.[i] ?? text, 0, 0, st, 'end')}</g>`;
   if (fit.kind === 'ea') return [...text].map((ch, k) => label(ch, x, axisY + (EA_TOP + k + 0.5) * s, st)).join('');
   if (fit.kind === 'rot') {
-    return `<g transform="translate(${n2(x - ROT_X * s)} ${n2(axisY + ROT_Y * s - ROT_Y0)}) rotate(-45)">${label(text, 0, 0, st, 'end')}</g>`;
+    return `<g transform="translate(${n2(x - ROT_X * s)} ${n2(axisY + ROT_Y * s - ROT_Y0)}) rotate(-45)">${label(fit.cut?.[i] ?? text, 0, 0, st, 'end')}</g>`;
   }
   if (fit.kind === 'wrap') return fit.lines[i].map((t, k) => label(t, x, centerY + k * WRAP_LINE * s, st)).join('');
   return label(text, x, centerY, st);
