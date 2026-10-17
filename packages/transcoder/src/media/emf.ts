@@ -158,16 +158,18 @@ function emfToSvgUnsafe(bytes: Uint8Array): string | undefined {
   const strokeAttr = () => {
     const p = st.pen;
     if (p.none) return ' stroke="none"';
-    // 装饰笔：在显示出来的图上 1 像素宽（样本：大尺寸 EMF 表格缩小显示，表格线 PowerPoint 照样是 1 像素的黑线，按比例缩就只剩 0.15 像素）
-    const width = p.cosmetic ? '1" vector-effect="non-scaling-stroke' : f2(Math.max(tlen(p.width), 0.5));
-    return ` stroke="${p.color}" stroke-width="${width}" stroke-linecap="${p.cap}" stroke-linejoin="${p.join}"${p.dash ? ` stroke-dasharray="${p.dash}"` : ''}`;
+    return ` stroke="${p.color}" stroke-width="${f2(Math.max(tlen(p.width), 0.5))}" stroke-linecap="${p.cap}" stroke-linejoin="${p.join}"${p.dash ? ` stroke-dasharray="${p.dash}"` : ''}`;
   };
   const fillAttr = () => (st.brush.none ? ' fill="none"' : ` fill="${st.brush.color}"${st.polyFill === 1 ? ' fill-rule="evenodd"' : ''}`);
   const clipAttr = () => (st.clip ? ` clip-path="url(#${st.clip})"` : '');
   const emit = (el: string) => out.push(el);
   const shape = (d: string, fill: boolean, stroke: boolean) => {
     emit(`<path d="${d}"${fill ? fillAttr() : ' fill="none"'}${stroke ? strokeAttr() : ' stroke="none"'}${clipAttr()}/>`);
+    // 装饰笔在显示出来的图上至少 1 像素（样本：大尺寸 EMF 表格缩小显示，按比例缩只剩 0.15 像素，PowerPoint 照样是 1 像素的线）：
+    // 再叠一条不随缩放变细的 1 像素线，合起来就是"按比例的宽度和 1 像素取大的"
+    if (stroke && !st.pen.none && st.pen.cosmetic) emit(`<path d="${d}" fill="none"${hairline(st.pen)}${clipAttr()}/>`);
   };
+  const hairline = (pen: Pen) => ` stroke="${pen.color}" stroke-width="1" vector-effect="non-scaling-stroke" stroke-linecap="${pen.cap}" stroke-linejoin="${pen.join}"${pen.dash ? ` stroke-dasharray="${pen.dash}"` : ''}`;
 
   let p = 0;
   while (p + 8 <= bytes.length) {
