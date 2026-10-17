@@ -123,6 +123,7 @@ export function renderChart(space: XEl | undefined, w: number, h: number, env: C
 
   // ---------------- 绘图区（手动布局优先）
   const ml = path(plotArea, 'c:layout', 'c:manualLayout');
+  const innerLayout = !!ml && numAttr(child(ml, 'c:w'), 'val') !== undefined && attr(child(ml, 'c:layoutTarget'), 'val') === 'inner';
   if (ml && numAttr(child(ml, 'c:w'), 'val') !== undefined) {
     const fx = numAttr(child(ml, 'c:x'), 'val') ?? 0, fy = numAttr(child(ml, 'c:y'), 'val') ?? 0;
     const fw = numAttr(child(ml, 'c:w'), 'val') ?? 1, fh = numAttr(child(ml, 'c:h'), 'val') ?? 1;
@@ -145,7 +146,7 @@ export function renderChart(space: XEl | undefined, w: number, h: number, env: C
     return groupBackground(out);
   }
 
-  renderCategoryChart(plots, plotArea, { left, top, right, bottom }, { colors, part: env.part, baseText, makeAxis, tw, w, view: view3D, zh: lang.startsWith('zh'), plotBg, snap }, out);
+  renderCategoryChart(plots, plotArea, { left, top, right, bottom }, { colors, part: env.part, baseText, makeAxis, tw, w, view: view3D, zh: lang.startsWith('zh'), plotBg, snap, inner: innerLayout }, out);
   return groupBackground(out);
 }
 
