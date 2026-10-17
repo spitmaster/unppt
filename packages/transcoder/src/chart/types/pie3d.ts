@@ -110,7 +110,7 @@ export function renderPie3D(p: Plot, area: Rect, view: View3D, colors: ColorCont
     if (lb) {
       const rr = lb.pos === 'ctr' ? 0.5 : lb.pos === 'outEnd' ? 1.15 : 0.8;
       const q = proj(rr * Math.cos(mid) + ex[0], 0, rr * Math.sin(mid) + ex[1]);
-      labels.push(cpart(`${s.index}x${i}l`, label(labelText(lb, v, total, s.cats[i] ?? '', s.name, 'General'), ox + S * q[0], oy + S * q[1], lb.style)));
+      labels.push(cpart(`${s.index}x${i}l`, label(labelText(lb, v, total, s.cats[i] ?? '', s.name, s.valFmt ?? 'General'), ox + S * q[0], oy + S * q[1], lb.style)));
     }
     ang = a2;
   });

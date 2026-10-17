@@ -54,7 +54,7 @@ function renderPie(p: Plot, x: number, y: number, w: number, h: number, colors: 
     out.push(cpart(`${s.index}x${i}`, `<path d="${d}" fill="${s.pointPaints?.get(i) ?? css(color)}" fill-rule="evenodd"${strokeOf(s, i, PIE_EDGE)}${move}/>`));
     const lb = s.labels;
     if (lb) {
-      const text = labelText(lb, v, total, s.cats[i] ?? '', s.name, 'General', pcts[i], '\n');
+      const text = labelText(lb, v, total, s.cats[i] ?? '', s.name, s.valFmt ?? 'General', pcts[i], '\n');
       const cos = Math.cos(mid), sin = Math.sin(mid);
       let lx: number, ly: number;
       if (!ri && lb.pos === 'outEnd') {

@@ -40,12 +40,32 @@ export const chartFrame: FrameHandler = {
     const rel = rid ? await pkg.rel(ctx.part, rid) : undefined;
     const xml = rel ? await pkg.xml(rel.target, false) : undefined;
     if (!xml) { r.env.pres.warn('图表数据缺失'); return { svg: '' }; }
-    const measure = await chartMeasure(r.env.fonts, ctx.theme, xml);
-    const svg = renderChart(xml, box.w, box.h, { colors: ctx.colors, theme: ctx.theme, part: rel!.target, warn: (m) => r.env.pres.warn(m), measure, defs: { id: (k) => r.doc.id(k), add: (x) => r.doc.addDef(x) }, doc: r.doc, origin: chartOrigin(ctx.toSlide, box) });
+    // 图表自己带的主题（themeOverride，从别的文件复制来的图表常有；样本：Office 2007 配色）：自动配色、主题字体按它
+    const ov = await pkg.relByType(rel!.target, 'themeOverride');
+    const theme = ov ? overrideTheme(ctx.theme, await r.env.pres.theme(ov.target)) : ctx.theme;
+    const colors = ov ? { ...ctx.colors, scheme: theme.colors } : ctx.colors;
+    const measure = await chartMeasure(r.env.fonts, theme, xml);
+    const svg = renderChart(xml, box.w, box.h, { colors, theme, part: rel!.target, warn: (m) => r.env.pres.warn(m), measure, defs: { id: (k) => r.doc.id(k), add: (x) => r.doc.addDef(x) }, doc: r.doc, origin: chartOrigin(ctx.toSlide, box) });
     // 数据部分的标记换成动画编号（"按系列""按类别"动画用）；不是幻灯片自己的图表就去掉
     return { svg: svg.replace(/ data-cpart="([0-9a-z]{1,16})"/g, (_m, key: string) => (uid ? ` data-uid="${chartUid(uid, key)}"` : '')) };
   },
 };
+
+/** 主题覆盖里写了的部分盖过页面的主题（配色、字体、样式列表各自没写时用页面的） */
+function overrideTheme(base: Theme, ov: Theme): Theme {
+  return {
+    ...base,
+    colors: Object.keys(ov.colors).length ? ov.colors : base.colors,
+    ...(ov.minorLatin || ov.majorLatin ? {
+      majorLatin: ov.majorLatin, minorLatin: ov.minorLatin, majorEa: ov.majorEa, minorEa: ov.minorEa,
+      majorScripts: ov.majorScripts, minorScripts: ov.minorScripts, majorEaOwn: ov.majorEaOwn, minorEaOwn: ov.minorEaOwn,
+    } : {}),
+    fillStyles: ov.fillStyles.length ? ov.fillStyles : base.fillStyles,
+    lineStyles: ov.lineStyles.length ? ov.lineStyles : base.lineStyles,
+    effectStyles: ov.effectStyles.length ? ov.effectStyles : base.effectStyles,
+    bgFillStyles: ov.bgFillStyles.length ? ov.bgFillStyles : base.bgFillStyles,
+  };
+}
 
 /** 图表左上角在幻灯片上的位置和缩放；在转动、翻转的组合里不知道 */
 function chartOrigin(m: SlideMapping | null | undefined, box: { x: number; y: number }): ChartEnv['origin'] {
