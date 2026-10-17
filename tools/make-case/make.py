@@ -2191,6 +2191,49 @@ def charts_legend_manual(app):
     return p
 
 
+def charts_long_cats(app):
+    """很多分类、名称很长（竖排标签放不下时 PowerPoint 截断加省略号）：30 个分类 × 名称 4 / 10 / 20 个汉字，
+    图表高 440 磅；第 4 个是 20 个汉字、图表高 250 磅"""
+    p = new_pres(app, window=True)
+    stem = '甲乙丙丁戊己庚辛壬癸子丑寅卯辰巳午未申酉'
+    for k, (n, h) in enumerate([(4, 440), (10, 440), (20, 440), (20, 250)]):
+        if k % 2 == 0:
+            s = blank(p)
+        ch = s.Shapes.AddChart2(-1, 51, 20 + (k % 2) * 470, 40, 450, h)
+        rows = [['', '系列 1']] + [[f'{i + 1:02d}' + stem[:n - 2], (i * 7) % 10 + 2] for i in range(30)]
+        _chart_values(ch, rows)
+        _close_data(ch)
+        c = ch.Chart
+        c.HasTitle = False
+        c.HasLegend = False
+    return p
+
+
+def charts_cat_vertical(app):
+    """分类标签什么时候竖排、竖排放不下时截断：第 1、2 页 300×250 磅的柱形图分别 20/24/28、30/33/36 个"第 N 周"；
+    第 3、4 页 20 个 20 字长名称，图表高 160/220/300、380/460 磅（宽 300 磅）"""
+    p = new_pres(app, window=True)
+    stem = '甲乙丙丁戊己庚辛壬癸子丑寅卯辰巳午未'
+    specs = [(n, 250, False) for n in (20, 24, 28, 30, 33, 36)] + [(20, h, True) for h in (160, 220, 300, 380, 460)]
+    per = [3, 3, 3, 2]
+    k = 0
+    for page, cnt in enumerate(per):
+        s = blank(p)
+        for j in range(cnt):
+            if k >= len(specs):
+                break
+            n, h, long_ = specs[k]
+            ch = s.Shapes.AddChart2(-1, 51, 10 + j * 315, 10, 300, h)
+            cats = [f'{i + 1:02d}' + stem for i in range(n)] if long_ else [f'第{i + 1}周' for i in range(n)]
+            _chart_values(ch, [['', '系列 1']] + [[c, (i * 7) % 10 + 2] for i, c in enumerate(cats)])
+            _close_data(ch)
+            c = ch.Chart
+            c.HasTitle = False
+            c.HasLegend = False
+            k += 1
+    return p
+
+
 def charts_crowded_labels(app):
     """分类标签放不下：中文转 −45°（柱形、折线、面积图、16 磅），英文按空格折行，刚好放得下的保持横排"""
     p = new_pres(app, window=True)
@@ -4413,7 +4456,7 @@ def fills_tile_resample(app):
     s2.Background.Fill.UserTextured(tile(150, (17, 17, 17)))
     return p
 
-CASES = [shapes_all, text_sizes, text_align, text_spacing, text_bullets, text_missing_font, shapes_basic, fills_lines, table_basic, group_rotate, anim_basic, anim_auto, charts_basic, pictures, smartart, text_effects, text_layout, table_merge, links, emf_images, anim_advanced, charts_labels, freeform_icons, media_audio, anim_trigger, wmf_images, anim_iterate, picture_transparent, charts_more, shape_effects, equations, anim_path, anim_emphasis, transitions, fills_patterns, text_decoration, anim_entrance, svg_images, charts_markers, hidden_slides, media_background, text_glow_reflection, text_tabs, text_picture_bullets, fills_texture, transition_morph, text_embedded_fonts, text_warp, anim_repeat, charts_sizes, slide_timings, lines_compound, table_diagonal, lines_gradient, fills_radial, fills_rect_gradient, shapes_3d, table_vertical, transitions_more, anim_sound, anim_build, anim_after, anim_text_emphasis, charts_bubble, media_video, charts_options, charts_negative, shapes_bevel, charts_legend, shapes_3d_rotation, smartart_3d, charts_ofpie, charts_3d, anim_group_emphasis, activex_controls, charts_extras, charts_axis_titles, charts_fills, charts_outlines, charts_labels_more, group_scale, group_flip, charts_3d_line, charts_legend_pos, charts_crowded_labels, charts_label_skip, charts_bar_long_names, charts_multilevel, picture_recolor, text_symbols, text_numbering, lines_arrows, table_styles, shapes_styles, charts_styles, placeholders_inherit, text_bold_light, ole_objects, text_hanging_punct, speaker_notes, pictures_tiff, placeholders_picture, pictures_exif, text_picture_fill, pictures_mislabeled, emf_alphablend, placeholders_orphan, picture_fill_rect, slide_number_fields, table_builtin_styles, smartart_matrix, text_layout_unit, colors_gamma, text_latin_cjk_font, text_default_style, text_missing_font_jp, text_ea_line_break, text_ambiguous_punct, text_charset_slides, table_rowspan_tall, text_autofit_round, shapes_3d_contour, emf_clip_modes, placeholders_picture_geom, emf_gradient_fill, text_theme_font_lang, text_anchor_linespacing, table_linespacing, table_fontalgn, text_theme_font_latin, text_margin_right, text_charset_gap, slide_size_repair, fills_shape_gradient, text_shadow_runs, picture_3d_shadow, charts_axis_ea_vert, fills_tile_resample, text_shadow_dist, text_shadow_size, text_shadow_scale, text_shadow_blur, text_glow_scale, text_reflection_dist, shapes_bg_fill, text_control_chars, placeholders_no_index, text_ambiguous_missing_ea, text_missing_panose, emf_bitmap_src, fills_group, fills_rot_with_shape, picture_bg_fill, charts_legend_manual]
+CASES = [shapes_all, text_sizes, text_align, text_spacing, text_bullets, text_missing_font, shapes_basic, fills_lines, table_basic, group_rotate, anim_basic, anim_auto, charts_basic, pictures, smartart, text_effects, text_layout, table_merge, links, emf_images, anim_advanced, charts_labels, freeform_icons, media_audio, anim_trigger, wmf_images, anim_iterate, picture_transparent, charts_more, shape_effects, equations, anim_path, anim_emphasis, transitions, fills_patterns, text_decoration, anim_entrance, svg_images, charts_markers, hidden_slides, media_background, text_glow_reflection, text_tabs, text_picture_bullets, fills_texture, transition_morph, text_embedded_fonts, text_warp, anim_repeat, charts_sizes, slide_timings, lines_compound, table_diagonal, lines_gradient, fills_radial, fills_rect_gradient, shapes_3d, table_vertical, transitions_more, anim_sound, anim_build, anim_after, anim_text_emphasis, charts_bubble, media_video, charts_options, charts_negative, shapes_bevel, charts_legend, shapes_3d_rotation, smartart_3d, charts_ofpie, charts_3d, anim_group_emphasis, activex_controls, charts_extras, charts_axis_titles, charts_fills, charts_outlines, charts_labels_more, group_scale, group_flip, charts_3d_line, charts_legend_pos, charts_crowded_labels, charts_label_skip, charts_bar_long_names, charts_multilevel, picture_recolor, text_symbols, text_numbering, lines_arrows, table_styles, shapes_styles, charts_styles, placeholders_inherit, text_bold_light, ole_objects, text_hanging_punct, speaker_notes, pictures_tiff, placeholders_picture, pictures_exif, text_picture_fill, pictures_mislabeled, emf_alphablend, placeholders_orphan, picture_fill_rect, slide_number_fields, table_builtin_styles, smartart_matrix, text_layout_unit, colors_gamma, text_latin_cjk_font, text_default_style, text_missing_font_jp, text_ea_line_break, text_ambiguous_punct, text_charset_slides, table_rowspan_tall, text_autofit_round, shapes_3d_contour, emf_clip_modes, placeholders_picture_geom, emf_gradient_fill, text_theme_font_lang, text_anchor_linespacing, table_linespacing, table_fontalgn, text_theme_font_latin, text_margin_right, text_charset_gap, slide_size_repair, fills_shape_gradient, text_shadow_runs, picture_3d_shadow, charts_axis_ea_vert, fills_tile_resample, text_shadow_dist, text_shadow_size, text_shadow_scale, text_shadow_blur, text_glow_scale, text_reflection_dist, shapes_bg_fill, text_control_chars, placeholders_no_index, text_ambiguous_missing_ea, text_missing_panose, emf_bitmap_src, fills_group, fills_rot_with_shape, picture_bg_fill, charts_legend_manual, charts_long_cats, charts_cat_vertical]
 
 
 def main():

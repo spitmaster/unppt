@@ -21,7 +21,7 @@ import { extraValues, trendlines } from './extras';
 import { dataTableSize, readDataTable, renderDataTable } from './data-table';
 import { readAxisTitle, renderAxisTitles, reserveAxisTitles, type AxisTitles } from './axis-title';
 import { NO_GRID, type PixelGrid } from './pixel-grid';
-import { catFitBand, categoryLabel, fitCategoryLabels, outerLevelBands, outerLevels, ROT_MIDCAT_RIGHT, rotFirstCenter, sideLabel, sideLabelMax, sideLevelBands, sideOuterLevels, wrapSideLabel, type CatFit, type LevelBand } from './cat-labels';
+import { catFitBand, categoryLabel, fitCategoryLabels, outerLevelBands, outerLevels, ROT_MIDCAT_RIGHT, rotFirstCenter, sideLabel, sideLabelMax, sideLevelBands, sideOuterLevels, wrapSideLabel, type CatFit, type LevelBand, capVertical } from './cat-labels';
 
 /** 条形图两侧的分类标签每行要的高度（× 字号）：样本校准（27 个分类、24 磅，每个分类约 20 像素高，PowerPoint 隔一个显示；1.3 时会隔两个） */
 const SIDE_ROOM = 1.2;
@@ -176,8 +176,9 @@ export function renderCategoryChart(plots: Plot[], plotArea: XEl | undefined, ar
         const f = between ? 0.5 / bands : 0;
         left = Math.max(left, (rotFirstCenter(cats[0], catStyle.size, catTw) - f * right) / (1 - f));
       }
-      innerBand = catFitBand(catFit, catH(catStyle.size), cats, catStyle.size, catTw);
       levelBands = outerLevelBands(catLevels, catStyle.size, (c, sz) => (c ? catBand(sz) : valBand(sz)));
+      catFit = capVertical(catFit, cats, catStyle.size, catTw, bottom - top - levelBands.reduce((a, b) => a + b.band, 0));
+      innerBand = catFitBand(catFit, catH(catStyle.size), cats, catStyle.size, catTw);
       bottom -= innerBand + levelBands.reduce((a, b) => a + b.band, 0);
     }
     return { prim, sec, left, top, right, bottom, sides, unit, edgeLeft, edgeRight, valLabels, valStyle, tickLabels, between, catFit, innerBand, levelBands };
