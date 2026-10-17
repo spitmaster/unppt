@@ -1,0 +1,68 @@
+{
+ "version": 8,
+ "level": "full",
+ "slideWidthPt": 960.0,
+ "slideHeightPt": 540.0,
+ "imageWidth": 1280,
+ "imageHeight": 720,
+ "slides": [
+  {
+   "index": 0,
+   "hidden": false,
+   "shapes": [
+    {
+     "id": 2,
+     "name": "TextBox 1",
+     "type": 17,
+     "x": 40.0,
+     "y": 40.0,
+     "w": 860.0,
+     "h": 29.081,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 22,
+       "text": "文本框 Text Box 2021.1.12",
+       "x": 47.2,
+       "y": 43.6,
+       "w": 213.38,
+       "h": 21.6
+      }
+     ]
+    },
+    {
+     "id": 3,
+     "name": "Table 2",
+     "type": 19,
+     "x": 40.0,
+     "y": 160.0,
+     "w": 420.0,
+     "h": 120.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": -2
+    },
+    {
+     "id": 4,
+     "name": "Table 3",
+     "type": 19,
+     "x": 490.0,
+     "y": 160.0,
+     "w": 420.0,
+     "h": 120.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": -2
+    }
+   ],
+   "effects": [],
+   "triggerHidden": [],
+   "steps": 0,
+   "keptSlideshow": false
+  }
+ ],
+ "ok": true
+}

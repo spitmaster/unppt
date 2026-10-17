@@ -53,7 +53,9 @@ export async function layoutParagraph(p: XEl, pi: number, ctx: ParagraphContext)
     } else if (r.name === 'a:br') {
       const style = runStyle(merge([defRPr, child(r, 'a:rPr')]), env, fontScale);
       firstStyle ??= style;
-      atoms.push({ text: '\n', cp: 10, width: 0, style, family: style.latin, ascent: 0, descent: 0, strikeY: 0, space: false, wide: false, tab: false });
+      // 上伸、下伸只在这个换行单独成一行（空行）时用
+      const m = (await measurer.metrics(style.latin, style.bold, style.italic, true) ?? await measurer.metrics(style.ea, style.bold, style.italic, true))?.metrics;
+      atoms.push({ text: '\n', cp: 10, width: 0, style, family: style.latin, ascent: (m?.ascent ?? 0.92) * style.size, descent: (m?.descent ?? 0.24) * style.size, strikeY: 0, space: false, wide: false, tab: false });
     }
   }
   const endStyle = runStyle(merge([defRPr, child(p, 'a:endParaRPr')]), env, fontScale);
@@ -86,15 +88,19 @@ export async function layoutParagraph(p: XEl, pi: number, ctx: ParagraphContext)
   // 制表符宽度：自定义制表位，超出后按默认制表位
   layoutTabs(atoms, tabStops(pPr), defTab, firstX);
 
-  const rows = breakLines(atoms, (first) => (first ? availFirst : availRest), wrap, attr(pPr, 'hangingPunct') === '1', attr(pPr, 'eaLnBrk') !== '0');
+  // 标点溢出边界：哪里都没写时也开着（实测 text-hanging-unset：老 .ppt 转来的课件常不写），只有写了 "0" 才关
+  const rows = breakLines(atoms, (first) => (first ? availFirst : availRest), wrap, attr(pPr, 'hangingPunct') !== '0', attr(pPr, 'eaLnBrk') !== '0');
   const lines: Line[] = rows.map((row, i) => {
     const vis = row.filter((a) => a.text !== '\n');
+    // 只有一个换行的空行（两个 a:br 之间没有字）：行高按结束这一行的换行自己的字号（实测 text-br-empty-line）；
+    // 有字的行不管行尾换行的字号，段末的空行按段末字号
+    const br = vis.length ? undefined : row.find((a) => a.text === '\n');
     return {
       atoms: vis,
       width: trimmedWidth(vis),
-      size: vis.length ? Math.max(...vis.map((a) => (a.style.baseline ? a.style.size * 0.67 : a.style.size))) : endStyle.size,
-      ascent: vis.length ? Math.max(...vis.map((a) => a.ascent)) : emptyAsc,
-      descent: vis.length ? Math.max(...vis.map((a) => a.descent)) : emptyDesc,
+      size: vis.length ? Math.max(...vis.map((a) => (a.style.baseline ? a.style.size * 0.67 : a.style.size))) : br ? br.style.size : endStyle.size,
+      ascent: vis.length ? Math.max(...vis.map((a) => a.ascent)) : br ? br.ascent : emptyAsc,
+      descent: vis.length ? Math.max(...vis.map((a) => a.descent)) : br ? br.descent : emptyDesc,
       x0: i === 0 ? firstX : marL,
       avail: i === 0 ? availFirst : availRest,
     };

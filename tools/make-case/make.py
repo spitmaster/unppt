@@ -2635,6 +2635,70 @@ def _patch_no_geometry(path):
 placeholders_inherit.patch = _patch_no_geometry
 
 
+def text_fontref_ph(app):
+    """占位符带形状样式（p:style 的 fontRef：主题次要字体、白字）时，字体、颜色听谁的（保存后改 XML，各级字体不同好区分）：
+    主题次要字体 Times New Roman / 东亚字体空着（中文按"汉字"脚本字体），主要字体 Georgia / 宋体；
+    母版正文样式 Courier New / 楷体、绿字；母版正文占位符自己的列表样式第 2 级 Comic Sans MS / 仿宋、紫字；
+    版式 2 的正文占位符 Arial Black / 黑体、红字。
+    第 1 页：版式 2 的正文占位符（fontRef 次要字体）；第 2 页：两栏内容版式（没写字体）的左栏占位符（fontRef 改成主要字体，
+    第二段是第 2 级）；
+    两页都有一个形状样式相同（fontRef 次要字体）的文本框对照"""
+    p = new_pres(app)
+    for k, lay in enumerate([2, 4]):          # 母版的第 2 个版式（标题和内容，slideLayout2）、第 4 个（两栏内容）
+        sl = p.Slides.AddSlide(k + 1, p.SlideMaster.CustomLayouts(lay))
+        sl.Shapes.Placeholders(1).TextFrame.TextRange.Text = "fontRef 和占位符"
+        ph = sl.Shapes.Placeholders(2)
+        ph.TextFrame.TextRange.Text = "占位符 Style 文字" + chr(13) + "第二段 Second"
+        ph.ShapeStyle = 2                   # 线框样式：fontRef idx=minor + dk1
+        if lay == 4:
+            sl.Shapes.Placeholders(3).Delete()
+            ph.TextFrame.TextRange.Paragraphs(2).IndentLevel = 2
+        tb = sl.Shapes.AddTextbox(1, 520, 150, 380, 120)
+        tb.TextFrame.TextRange.Text = "文本框 Style 文字"
+        tb.TextFrame.TextRange.Font.Size = 28
+        tb.ShapeStyle = 2
+    return p
+
+
+def _patch_fontref_ph(path):
+    import re
+    import zipfile
+    def fonts(latin, ea, color):
+        return f'<a:solidFill><a:srgbClr val="{color}"/></a:solidFill><a:latin typeface="{latin}"/><a:ea typeface="{ea}"/>'
+    tmp = path.with_suffix(".tmp")
+    with zipfile.ZipFile(path) as zin, zipfile.ZipFile(tmp, "w", zipfile.ZIP_DEFLATED) as zout:
+        for item in zin.infolist():
+            data = zin.read(item.filename)
+            if item.filename == "ppt/theme/theme1.xml":
+                x = data.decode("utf8")
+                x = re.sub(r'(<a:minorFont><a:latin typeface=")[^"]*(".*?<a:ea typeface=")[^"]*"', r'\1Times New Roman\2"', x, count=1, flags=re.S)
+                x = re.sub(r'(<a:majorFont><a:latin typeface=")[^"]*(".*?<a:ea typeface=")[^"]*"', r'\1Georgia\2宋体"', x, count=1, flags=re.S)
+                data = x.encode("utf8")
+            elif item.filename == "ppt/slideMasters/slideMaster1.xml":
+                x = data.decode("utf8")
+                # 母版正文样式第 1 级：<a:defRPr ...>颜色、字体</a:defRPr> 的内容换掉
+                i = x.index("<p:bodyStyle>")
+                e = x.index(">", x.index("<a:defRPr", i)) + 1
+                x = x[:e] + fonts("Courier New", "楷体", "00B050") + x[x.index("</a:defRPr>", i):]
+                # 母版正文占位符自己的列表样式（第 2 级）
+                j = x.index("<a:lstStyle/>", x.index('<p:ph type="body"'))
+                x = x[:j] + f'<a:lstStyle><a:lvl2pPr><a:defRPr>{fonts("Comic Sans MS", "仿宋", "7030A0")}</a:defRPr></a:lvl2pPr></a:lstStyle>' + x[j + len("<a:lstStyle/>"):]
+                data = x.encode("utf8")
+            elif item.filename == "ppt/slides/slide2.xml":
+                data = data.replace(b'<a:fontRef idx="minor">', b'<a:fontRef idx="major">', 1)
+            elif item.filename == "ppt/slideLayouts/slideLayout2.xml":
+                x = data.decode("utf8")
+                i = x.index('<p:ph idx="1"')
+                j = x.index("<a:lstStyle/>", i)
+                x = x[:j] + f'<a:lstStyle><a:lvl1pPr><a:defRPr>{fonts("Arial Black", "黑体", "FF0000")}</a:defRPr></a:lvl1pPr></a:lstStyle>' + x[j + len("<a:lstStyle/>"):]
+                data = x.encode("utf8")
+            zout.writestr(item, data)
+    tmp.replace(path)
+
+
+text_fontref_ph.patch = _patch_fontref_ph
+
+
 def text_bold_light(app):
     """细体字体标粗体：微软雅黑 Light、等线 Light、Calibri Light、Segoe UI Light / Semilight 的常规和粗体；
     对照：没有粗体字形的黑体、宋体（会不会人工加粗）、有粗体字形的微软雅黑"""
@@ -2690,6 +2754,128 @@ def text_hanging_punct(app):
         tb.Line.Visible = -1
         tb.Line.ForeColor.RGB = RGB(200, 200, 200)
     return p
+
+
+def text_hanging_unset(app):
+    """哪里都没写"允许标点溢出边界"（hangingPunct）时：保存后把演示文稿默认样式、母版里的 hangingPunct 删掉（老 .ppt 转来的课件常见）；
+    正好放下 10 个汉字的文本框，第 11 个字是标点；左列文本框，右列正文占位符"""
+    p = new_pres(app)
+    s = p.Slides.AddSlide(1, p.SlideMaster.CustomLayouts(2))
+    s.Shapes.Placeholders(1).Delete()
+    ph = s.Shapes.Placeholders(1)
+    ph.Left, ph.Top, ph.Width, ph.Height = 480, 20, 240.5 + 18, 400
+    ph.TextFrame.MarginLeft = ph.TextFrame.MarginRight = 0
+    ph.TextFrame.TextRange.Text = chr(13).join("一二三四五六七八九十" + c + "后续" for c in "，。；）")
+    ph.TextFrame.TextRange.Font.Name = "Microsoft YaHei"
+    ph.TextFrame.TextRange.Font.Size = 24
+    ph.TextFrame.TextRange.ParagraphFormat.Bullet.Visible = 0
+    ph.TextFrame.TextRange.IndentLevel = 1
+    for k, c in enumerate("，。；）"):
+        tb = s.Shapes.AddTextbox(1, 20, 20 + k * 80, 240.5, 70)
+        tf = tb.TextFrame
+        tf.MarginLeft = tf.MarginRight = tf.MarginTop = tf.MarginBottom = 0
+        tf.WordWrap = -1
+        tf.AutoSize = 0
+        tf.TextRange.Text = "一二三四五六七八九十" + c + "后续文字"
+        tf.TextRange.Font.Name = "Microsoft YaHei"
+        tf.TextRange.Font.Size = 24
+        tb.Line.Visible = -1
+        tb.Line.ForeColor.RGB = RGB(200, 200, 200)
+    return p
+
+
+def _patch_hanging_unset(path):
+    import re
+    import zipfile
+    tmp = path.with_suffix(".tmp")
+    with zipfile.ZipFile(path) as zin, zipfile.ZipFile(tmp, "w", zipfile.ZIP_DEFLATED) as zout:
+        for item in zin.infolist():
+            data = zin.read(item.filename)
+            if item.filename in ("ppt/presentation.xml", "ppt/slideMasters/slideMaster1.xml") or item.filename.startswith("ppt/slides/slide"):
+                data = re.sub(rb' hangingPunct="[01]"', b"", data)
+            zout.writestr(item, data)
+    tmp.replace(path)
+
+
+text_hanging_unset.patch = _patch_hanging_unset
+
+
+def text_fakebold_width(app):
+    """人工加粗的字宽：没有粗体字形的宋体、黑体标粗体，框宽正好放下 N 个字再多 1 磅（不加粗时放得下，人工加粗后每字变宽、
+    最后一个字换到下一行）；对照：有粗体字形的微软雅黑、不加粗的宋体。字号 18 / 27 / 54 磅，最后一行是西文字母"""
+    p = new_pres(app)
+    s = blank(p)
+    rows = [("宋体", True, 18, 20), ("宋体", True, 27, 14), ("黑体", True, 27, 14), ("宋体", False, 27, 14),
+            ("宋体", True, 54, 7), ("微软雅黑", True, 27, 14), ("宋体", True, 27, 28)]
+    y = [10, 10]
+    for k, (font, bold, size, n) in enumerate(rows):
+        col = 0 if k < 4 else 1
+        latin = n == 28
+        tb = s.Shapes.AddTextbox(1, 20 + col * 470, y[col], size * n / (2 if latin else 1) + 1 + 14.4, size * 2.6)
+        tf = tb.TextFrame
+        tf.WordWrap = -1
+        tf.AutoSize = 0
+        tf.TextRange.Text = "a" * (n + 3) if latin else ("一二三四五六七八九十" * 3)[:n + 3]
+        tf.TextRange.Font.Name = font
+        tf.TextRange.Font.NameFarEast = font
+        tf.TextRange.Font.Size = size
+        tf.TextRange.Font.Bold = -1 if bold else 0
+        tb.Line.Visible = -1
+        tb.Line.ForeColor.RGB = RGB(200, 200, 200)
+        y[col] += size * 2.6 + 8
+    return p
+
+
+BR_LINE_PARAS = [
+    # 两个换行之间的空行：换行（a:br）各自写了字号，段末 endParaRPr 18 磅
+    ('<a:r><a:rPr lang="zh-CN" sz="1000"/><a:t>第一行十磅</a:t></a:r><a:br><a:rPr lang="zh-CN" sz="1000"/></a:br>'
+     '<a:br><a:rPr lang="zh-CN" sz="4000"/></a:br><a:r><a:rPr lang="zh-CN" sz="1000"/><a:t>第三行十磅</a:t></a:r>'
+     '<a:endParaRPr lang="zh-CN" sz="1800"/>'),
+    ('<a:r><a:rPr lang="zh-CN" sz="1000"/><a:t>第一行十磅</a:t></a:r><a:br><a:rPr lang="zh-CN" sz="4000"/></a:br>'
+     '<a:br><a:rPr lang="zh-CN" sz="1000"/></a:br><a:r><a:rPr lang="zh-CN" sz="1000"/><a:t>第三行十磅</a:t></a:r>'
+     '<a:endParaRPr lang="zh-CN" sz="1800"/>'),
+    # 样本里的写法：空行里还有一个空的文字段，都是 8 磅
+    ('<a:r><a:rPr lang="zh-CN" sz="800"/><a:t>第一行八磅</a:t></a:r><a:br><a:rPr lang="zh-CN" sz="800"/></a:br>'
+     '<a:r><a:rPr lang="zh-CN" sz="800"/><a:t/></a:r><a:br><a:rPr lang="zh-CN" sz="800"/></a:br>'
+     '<a:r><a:rPr lang="zh-CN" sz="800"/><a:t>第三行八磅</a:t></a:r><a:endParaRPr lang="zh-CN" sz="1800"/>'),
+    # 段末的空行（最后一个换行后面没有字）：按段末字号
+    ('<a:r><a:rPr lang="zh-CN" sz="1000"/><a:t>第一行十磅</a:t></a:r><a:br><a:rPr lang="zh-CN" sz="1000"/></a:br>'
+     '<a:endParaRPr lang="zh-CN" sz="4000"/>'),
+]
+
+
+def text_br_empty_line(app):
+    """只有换行的空行有多高：段落里两个换行（a:br）之间没有字，换行写了不同的字号（保存后改 XML）；每个框下面接一段 10 磅文字看位置"""
+    p = new_pres(app)
+    s = blank(p)
+    for k in range(len(BR_LINE_PARAS)):
+        tb = s.Shapes.AddTextbox(1, 20 + k * 235, 40, 220, 300)
+        tb.TextFrame.WordWrap = -1
+        tb.TextFrame.AutoSize = 0
+        tb.TextFrame.TextRange.Text = f"BRMARK{k}" + chr(13) + "后面一段"
+        tb.TextFrame.TextRange.Font.Size = 10
+        tb.Line.Visible = -1
+        tb.Line.ForeColor.RGB = RGB(200, 200, 200)
+    return p
+
+
+def _patch_br_empty_line(path):
+    import re
+    import zipfile
+    tmp = path.with_suffix(".tmp")
+    with zipfile.ZipFile(path) as zin, zipfile.ZipFile(tmp, "w", zipfile.ZIP_DEFLATED) as zout:
+        for item in zin.infolist():
+            data = zin.read(item.filename)
+            if item.filename == "ppt/slides/slide1.xml":
+                x = data.decode("utf8")
+                for k, para in enumerate(BR_LINE_PARAS):
+                    x = re.sub(rf"<a:p>(?:(?!</a:p>).)*?BRMARK{k}(?:(?!</a:p>).)*?</a:p>", lambda m: f"<a:p>{para}</a:p>", x, count=1, flags=re.S)
+                data = x.encode("utf8")
+            zout.writestr(item, data)
+    tmp.replace(path)
+
+
+text_br_empty_line.patch = _patch_br_empty_line
 
 
 def text_ea_line_break(app):
@@ -3978,6 +4164,41 @@ def _patch_default_style(path):
 text_default_style.patch = _patch_default_style
 
 
+def table_default_bold(app):
+    """演示文稿默认样式写了粗体、斜体（b="1" i="1"，老 .ppt 转来的课件常见；保存后改 XML），母版 otherStyle 没写：
+    文本框、默认样式的表格、无样式的表格里没写格式的文字是不是粗斜体"""
+    p = new_pres(app)
+    s = blank(p)
+    tb = s.Shapes.AddTextbox(1, 40, 40, 860, 60)
+    tb.TextFrame.TextRange.Text = "文本框 Text Box 2021.1.12"
+    for k, style in enumerate([None, "{2D5ABB26-0587-4C30-8999-92F81FD0307C}"]):   # 默认样式、无样式无网格
+        t = s.Shapes.AddTable(2, 2, 40 + k * 450, 160, 420, 120).Table
+        if style:
+            t.ApplyStyle(style)
+        for r in range(1, 3):
+            for c in range(1, 3):
+                t.Cell(r, c).Shape.TextFrame.TextRange.Text = f"表格 Cell{r}{c} 2021.{r}.{c}"
+    return p
+
+
+def _patch_default_bold(path):
+    import zipfile
+    tmp = path.with_suffix(".tmp")
+    with zipfile.ZipFile(path) as zin, zipfile.ZipFile(tmp, "w", zipfile.ZIP_DEFLATED) as zout:
+        for item in zin.infolist():
+            data = zin.read(item.filename)
+            if item.filename == "ppt/presentation.xml":
+                x = data.decode("utf8")
+                i = x.index("<p:defaultTextStyle>")
+                j = x.index("<a:defRPr", x.index("<a:lvl1pPr", i)) + len("<a:defRPr")
+                data = (x[:j] + ' b="1" i="1"' + x[j:]).encode("utf8")
+            zout.writestr(item, data)
+    tmp.replace(path)
+
+
+table_default_bold.patch = _patch_default_bold
+
+
 MISSING_JP_FONTS = [
     '<a:latin typeface="Unppt Missing JP" panose="020B0500000000000000" pitchFamily="34" charset="-128"/><a:ea typeface="Unppt Missing JP" panose="020B0500000000000000" pitchFamily="34" charset="-128"/>',
     '<a:latin typeface="Unppt Missing JP Light" panose="020B0300000000000000" pitchFamily="34" charset="-128"/><a:ea typeface="Unppt Missing JP Light" panose="020B0300000000000000" pitchFamily="34" charset="-128"/>',
@@ -4437,6 +4658,51 @@ MISSING_PANOSE_FONTS = [
 ]
 
 
+MISSING_CJK_NAME_FONTS = [
+    ("缺失测试黑体_GBK", ' panose="02000000000000000000" charset="-122"'),   # 中文名、PANOSE 只写了大类
+    ("Unppt Missing PanZ", ' panose="02000000000000000000" charset="-122"'),  # 同样的 PANOSE、英文名
+    ("缺失测试黑体", ' charset="-122"'),                                       # 中文名、没写 PANOSE
+    ("缺失测试黑体", ''),                                                       # 中文名、什么都没写（同名共用字符集，见 SPEC：前面写过 -122）
+    ("缺失测试宋体乙", ''),                                                     # 另一个中文名、什么都没写
+    ("Unppt Missing PanY", ''),                                                # 英文名、什么都没写（对照）
+]
+
+
+def text_missing_cjk_name(app):
+    """缺失字体的名字是中文时替代字体是什么（以前实测的缺失字体都是英文名，中文用雅黑）：同样的中文加数字，
+    分别写不同的名字、PANOSE、字符集（保存后改 XML）"""
+    p = new_pres(app)
+    s = blank(p)
+    for k in range(len(MISSING_CJK_NAME_FONTS)):
+        tb = s.Shapes.AddTextbox(1, 30, 20 + k * 85, 900, 70)
+        tr = tb.TextFrame.TextRange
+        tr.Text = "1979年前，只有单一的中国人民银行 Bank"
+        tr.Font.Size = 28
+        tr.Font.Name = f"CjkMarker{k}"
+    return p
+
+
+def _patch_missing_cjk_name(path):
+    import re
+    import zipfile
+    tmp = path.with_suffix(".tmp")
+    with zipfile.ZipFile(path) as zin, zipfile.ZipFile(tmp, "w", zipfile.ZIP_DEFLATED) as zout:
+        for item in zin.infolist():
+            data = zin.read(item.filename)
+            if item.filename == "ppt/slides/slide1.xml":
+                x = data.decode("utf8")
+                x = re.sub(r'(<a:rPr\b[^>]*?) lang="[^"]*"', r'\1 lang="zh-CN"', x)
+                for k, (name, attrs) in enumerate(MISSING_CJK_NAME_FONTS):
+                    x = re.sub(rf'<a:(latin|ea|cs) typeface="CjkMarker{k}"[^>]*/>', lambda m: f'<a:{m.group(1)} typeface="{name}"{attrs}/>', x)
+                    x = re.sub(rf'(<a:latin typeface="{name}"[^>]*/>)(?!<a:ea)', lambda m: m.group(1) + m.group(1).replace("<a:latin", "<a:ea"), x)
+                data = x.encode("utf8")
+            zout.writestr(item, data)
+    tmp.replace(path)
+
+
+text_missing_cjk_name.patch = _patch_missing_cjk_name
+
+
 def text_missing_panose(app):
     """缺失字体按 PANOSE 选替代字体吗：同样的中文加数字，字体都是没有的，分别写不同的 PANOSE、字符集（保存后改 XML）。
     看 PowerPoint 用雅黑（无衬线）还是宋体（衬线）"""
@@ -4563,7 +4829,7 @@ def fills_tile_resample(app):
     s2.Background.Fill.UserTextured(tile(150, (17, 17, 17)))
     return p
 
-CASES = [shapes_all, text_sizes, text_align, text_spacing, text_bullets, text_missing_font, shapes_basic, fills_lines, table_basic, group_rotate, anim_basic, anim_auto, charts_basic, pictures, smartart, text_effects, text_layout, table_merge, links, emf_images, anim_advanced, charts_labels, freeform_icons, media_audio, anim_trigger, wmf_images, anim_iterate, picture_transparent, charts_more, shape_effects, equations, anim_path, anim_emphasis, transitions, fills_patterns, text_decoration, anim_entrance, svg_images, charts_markers, hidden_slides, media_background, text_glow_reflection, text_tabs, text_picture_bullets, fills_texture, transition_morph, text_embedded_fonts, text_warp, anim_repeat, charts_sizes, slide_timings, lines_compound, table_diagonal, lines_gradient, fills_radial, fills_rect_gradient, shapes_3d, table_vertical, transitions_more, anim_sound, anim_build, anim_after, anim_text_emphasis, charts_bubble, media_video, charts_options, charts_negative, shapes_bevel, charts_legend, shapes_3d_rotation, smartart_3d, charts_ofpie, charts_3d, anim_group_emphasis, activex_controls, charts_extras, charts_axis_titles, charts_fills, charts_outlines, charts_labels_more, group_scale, group_flip, charts_3d_line, charts_legend_pos, charts_crowded_labels, charts_label_skip, charts_bar_long_names, charts_multilevel, picture_recolor, text_symbols, text_numbering, lines_arrows, table_styles, shapes_styles, charts_styles, placeholders_inherit, text_bold_light, ole_objects, text_hanging_punct, speaker_notes, pictures_tiff, placeholders_picture, pictures_exif, text_picture_fill, pictures_mislabeled, emf_alphablend, placeholders_orphan, picture_fill_rect, slide_number_fields, table_builtin_styles, smartart_matrix, text_layout_unit, colors_gamma, text_latin_cjk_font, text_default_style, text_missing_font_jp, text_ea_line_break, text_ambiguous_punct, text_charset_slides, table_rowspan_tall, text_autofit_round, shapes_3d_contour, emf_clip_modes, placeholders_picture_geom, emf_gradient_fill, text_theme_font_lang, text_anchor_linespacing, table_linespacing, table_fontalgn, text_theme_font_latin, text_margin_right, text_charset_gap, slide_size_repair, fills_shape_gradient, text_shadow_runs, picture_3d_shadow, charts_axis_ea_vert, fills_tile_resample, text_shadow_dist, text_shadow_size, text_shadow_scale, text_shadow_blur, text_glow_scale, text_reflection_dist, shapes_bg_fill, text_control_chars, placeholders_no_index, text_ambiguous_missing_ea, text_missing_panose, emf_bitmap_src, fills_group, fills_rot_with_shape, fills_rot_cut, picture_bg_fill, charts_legend_manual, charts_long_cats, charts_cat_vertical, charts_cat_rot_len, charts_pie_label_sep, text_slash_break, smartart_colors]
+CASES = [shapes_all, text_sizes, text_align, text_spacing, text_bullets, text_missing_font, shapes_basic, fills_lines, table_basic, group_rotate, anim_basic, anim_auto, charts_basic, pictures, smartart, text_effects, text_layout, table_merge, links, emf_images, anim_advanced, charts_labels, freeform_icons, media_audio, anim_trigger, wmf_images, anim_iterate, picture_transparent, charts_more, shape_effects, equations, anim_path, anim_emphasis, transitions, fills_patterns, text_decoration, anim_entrance, svg_images, charts_markers, hidden_slides, media_background, text_glow_reflection, text_tabs, text_picture_bullets, fills_texture, transition_morph, text_embedded_fonts, text_warp, anim_repeat, charts_sizes, slide_timings, lines_compound, table_diagonal, lines_gradient, fills_radial, fills_rect_gradient, shapes_3d, table_vertical, transitions_more, anim_sound, anim_build, anim_after, anim_text_emphasis, charts_bubble, media_video, charts_options, charts_negative, shapes_bevel, charts_legend, shapes_3d_rotation, smartart_3d, charts_ofpie, charts_3d, anim_group_emphasis, activex_controls, charts_extras, charts_axis_titles, charts_fills, charts_outlines, charts_labels_more, group_scale, group_flip, charts_3d_line, charts_legend_pos, charts_crowded_labels, charts_label_skip, charts_bar_long_names, charts_multilevel, picture_recolor, text_symbols, text_numbering, lines_arrows, table_styles, shapes_styles, charts_styles, placeholders_inherit, text_bold_light, ole_objects, text_hanging_punct, speaker_notes, pictures_tiff, placeholders_picture, pictures_exif, text_picture_fill, pictures_mislabeled, emf_alphablend, placeholders_orphan, picture_fill_rect, slide_number_fields, table_builtin_styles, smartart_matrix, text_layout_unit, colors_gamma, text_latin_cjk_font, text_default_style, text_missing_font_jp, text_ea_line_break, text_ambiguous_punct, text_charset_slides, table_rowspan_tall, text_autofit_round, shapes_3d_contour, emf_clip_modes, placeholders_picture_geom, emf_gradient_fill, text_theme_font_lang, text_anchor_linespacing, table_linespacing, table_fontalgn, text_theme_font_latin, text_margin_right, text_charset_gap, slide_size_repair, fills_shape_gradient, text_shadow_runs, picture_3d_shadow, charts_axis_ea_vert, fills_tile_resample, text_shadow_dist, text_shadow_size, text_shadow_scale, text_shadow_blur, text_glow_scale, text_reflection_dist, shapes_bg_fill, text_control_chars, placeholders_no_index, text_ambiguous_missing_ea, text_missing_panose, emf_bitmap_src, fills_group, fills_rot_with_shape, fills_rot_cut, picture_bg_fill, charts_legend_manual, charts_long_cats, charts_cat_vertical, charts_cat_rot_len, charts_pie_label_sep, text_slash_break, smartart_colors, text_fontref_ph, text_hanging_unset, table_default_bold, text_missing_cjk_name, text_fakebold_width, text_br_empty_line]
 
 
 def main():

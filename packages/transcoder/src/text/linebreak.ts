@@ -15,7 +15,7 @@ function canBreakBetween(a: Atom, b: Atom, kinsoku: boolean): boolean {
 }
 
 /**
- * hang：允许标点溢出边界（a:pPr hangingPunct="1"，中文版 PowerPoint 的默认）——放不下的行首禁则标点不把前一个字带到下一行，
+ * hang：允许标点溢出边界（a:pPr hangingPunct，中文版 PowerPoint 没写时也开着）——放不下的行首禁则标点不把前一个字带到下一行，
  * 而是挂在这一行的边界外面，每行最多挂一个。
  * kinsoku：按中文习惯控制首尾字符（a:pPr eaLnBrk，默认开）；实测（text-ea-line-break）关掉时行首可以是"，。"、行尾可以是"（"，
  * 标点溢出边界也不起作用
@@ -44,7 +44,8 @@ export function breakLines(atoms: Atom[], avail: (first: boolean) => number, wra
       width = w;
     }
     if (forced >= 0) {
-      lines.push(atoms.slice(start, forced));
+      // 换行符留在这一行的末尾（空行的行高按它的字号，见 paragraph.ts）
+      lines.push(atoms.slice(start, forced + 1));
       start = forced + 1;
       if (start === atoms.length) lines.push([]);
       continue;

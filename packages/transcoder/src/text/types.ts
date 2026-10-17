@@ -54,7 +54,7 @@ export interface FontEmbedder {
   alias(face: FontFace): string | undefined;
 }
 
-/** 从一般到具体排列的列表样式（每个都可能含 a:lvl1pPr … a:lvl9pPr） */
+/** 从一般到具体排列的列表样式（每个都可能含 a:lvl1pPr … a:lvl9pPr）；第一项是母版级的默认样式（母版文字样式 / 演示文稿默认样式） */
 export type StyleChain = (XEl | undefined)[];
 
 export interface RunStyle {

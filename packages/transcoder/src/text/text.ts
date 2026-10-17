@@ -61,10 +61,11 @@ export async function renderText(
   env.gradBox = { w: outer.w, h: outer.h };
   const measurer = makeMeasurer(env);
   const lstStyle = child(txBody, 'a:lstStyle');
-  // 形状样式（p:style/a:fontRef）指定的文字颜色和主题字体：优先级高于默认文字样式，低于形状自己的列表样式和文字属性
+  // 形状样式（p:style/a:fontRef）指定的文字颜色和主题字体：只压过母版级的默认样式（样式链第一项），母版、版式占位符自己的列表样式
+  // 和形状自己的列表样式、文字属性都压过它（实测 text-fontref-ph：版式写了字体、颜色的占位符套形状样式，仍是版式的字体、颜色）
   const refFonts = styleFonts(env.fontRef);
   const fontRefStyle = env.fontRefColor || refFonts.length ? fontRefLevels(env.fontRefColor, refFonts) : undefined;
-  const fullChain: StyleChain = [...chain, fontRefStyle, lstStyle];
+  const fullChain: StyleChain = [chain[0], fontRefStyle, ...chain.slice(1), lstStyle];
 
   const layouts: ParagraphLayout[] = [];
   const ctx = { fullChain, env, measurer, fontScale, lnReduce, contentW, wrap, numbering: new BulletNumbering() };
