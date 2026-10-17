@@ -115,7 +115,7 @@ export function wrapSideLabel(t: string, maxW: number, s: number, tw: TextWidth)
 /** 画一侧的分类标签：x 是标签右端（anchor = end）或左端（start）的对齐点 */
 export function sideLabel(lines: string[], x: number, y: number, st: TextStyle, anchor: 'start' | 'end', tw: TextWidth): string {
   if (lines.length === 1) return label(lines[0], x, y, st, anchor);
-  const w = Math.max(...lines.map((l) => tw(l, st.size)));
+  const w = Math.max(...lines.map((l) => tw(l, st.size, st.font)));
   const cx = anchor === 'end' ? x - w / 2 : x + w / 2;
   return lines.map((l, k) => label(l, cx, y + (k - (lines.length - 1) / 2) * SIDE_LINE * st.size, st)).join('');
 }

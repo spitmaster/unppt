@@ -10,7 +10,7 @@ import { axesOf, axId, axisCrosses, axisReversed, tickMark } from './axis';
 import type { CategoryFrame } from './chart-type';
 import { chartTypeOf } from './chart-types';
 import { hasCjk, label, textStyle } from './draw';
-import { catBand, catCenter, PAD, SIDE_LABEL_PAD, sideAnchor, sideGap, valAnchor, topForLabel, unitBand, unitCenter, unitTop, valBand, valBandTop, emptyBottomPad, emptyLeftPad, valCenter, type TextWidth } from './layout';
+import { catBand, catCenter, PAD, SIDE_LABEL_PAD, sideAnchor, sideGap, valAnchor, topForLabel, unitBand, unitCenter, unitTop, valBand, valBandTop, emptyBottomPad, emptyLeftPad, valCenter, withFont, type TextWidth } from './layout';
 import { axisLine, axisSides, catMapping, gridLine, outward, tickLblPos, tickMarks } from './sides';
 import type { AxisMaker, AxisOpts, Plot, Rect, TextStyle, View3D } from './model';
 import { isColumn3D, renderColumn3D } from './cat3d';
@@ -102,7 +102,8 @@ export function renderCategoryChart(plots: Plot[], plotArea: XEl | undefined, ar
   // 多级分类的外层（"不显示多级标签"时不画）
   const catLevels = attr(child(catAx, 'c:noMultiLvlLbl'), 'val') === '1' ? [] : plots[0].series[0]?.catLevels ?? [];
   // 左右两侧的分类标签（条形图）太长时折行（cat-labels.ts）
-  const sideLines = cats.map((c) => wrapSideLabel(c, sideLabelMax(w, PAD), catStyle.size, tw));
+  const catTw = withFont(tw, catStyle.font);
+  const sideLines = cats.map((c) => wrapSideLabel(c, sideLabelMax(w, PAD), catStyle.size, catTw));
   // 按数值轴的长度 len 算刻度并排出绘图区（len 不给时用默认刻度）
   const place = (len?: number) => {
     const prim = makeAxis(primaryAx, primRange[0], primRange[1], { ...primRange[2], length: len, horizontal });
@@ -119,18 +120,18 @@ export function renderCategoryChart(plots: Plot[], plotArea: XEl | undefined, ar
     const unitW = unit ? unitBand(unit.style.size) : 0;
 
     // 留出坐标轴标签的空间（实测规律见 layout.ts）：左右两侧的标签从图表边 SIDE_LABEL_PAD 处排起
-    const maxW = (labels: string[], s: number) => Math.max(0, ...labels.map((t) => tw(t, s)));
+    const maxW = (labels: string[], st: TextStyle) => Math.max(0, ...labels.map((t) => tw(t, st.size, st.font)));
     const fromLeft = () => (left === PAD ? SIDE_LABEL_PAD : left);
     const fromRight = () => (right === w - PAD ? w - SIDE_LABEL_PAD : right);
     const edgeLeft = fromLeft(), edgeRight = fromRight();
     let innerBand = 0, levelBands: LevelBand[] = [];
     if (!horizontal) {
       if (valLabels) {
-        if (sides.val === 'l') left = edgeLeft + unitW + maxW(tickLabels, valStyle.size) + sideGap(valStyle.size);
-        else right = edgeRight - unitW - maxW(tickLabels, valStyle.size) - sideGap(valStyle.size);
+        if (sides.val === 'l') left = edgeLeft + unitW + maxW(tickLabels, valStyle) + sideGap(valStyle.size);
+        else right = edgeRight - unitW - maxW(tickLabels, valStyle) - sideGap(valStyle.size);
         top = Math.max(top, topForLabel(valStyle.size));
       }
-      if (sec && !sec.deleted) right = fromRight() - maxW(sec.labels, sec.style.size) - sideGap(sec.style.size);
+      if (sec && !sec.deleted) right = fromRight() - maxW(sec.labels, sec.style) - sideGap(sec.style.size);
       if (dtSize) {
         bottom -= dtSize.reserve;
         left = Math.max(left, dtSize.colRight);
@@ -145,37 +146,37 @@ export function renderCategoryChart(plots: Plot[], plotArea: XEl | undefined, ar
         else if (sides.cat === 'l') {
           // 多级分类的外层各占一列，排在内层标签左边（cat-labels.ts）
           levelBands = sideLevelBands(catLevels, catStyle.size);
-          left = edgeLeft + levelBands.reduce((a, b) => a + b.band, 0) + maxW(sideLines.flat(), catStyle.size) + sideGap(catStyle.size);
+          left = edgeLeft + levelBands.reduce((a, b) => a + b.band, 0) + maxW(sideLines.flat(), catStyle) + sideGap(catStyle.size);
         }
-        else right = edgeRight - maxW(sideLines.flat(), catStyle.size) - sideGap(catStyle.size);
+        else right = edgeRight - maxW(sideLines.flat(), catStyle) - sideGap(catStyle.size);
       }
       if (valLabels) {
         if (sides.val === 'b') bottom -= valBand(valStyle.size);
         else { top += valBandTop(valStyle.size); bottom -= emptyBottomPad(valStyle.size); }
         // 最右边的标签以网格线为中心：在可用区域（图表边 11 磅，或者右侧图例让出之后）里再让出半个标签（COM 读绘图区右沿）
-        right = Math.min(right, area.right - tw(tickLabels[tickLabels.length - 1] ?? '', valStyle.size) / 2);
+        right = Math.min(right, area.right - tw(tickLabels[tickLabels.length - 1] ?? '', valStyle.size, valStyle.font) / 2);
       }
     }
     // 分类标签落在坐标轴两端（面积图等 midCat）时，给首尾标签各留半个标签宽度
     const between = attr(child(primaryAx, 'c:crossBetween'), 'val') !== 'midCat';
     const [left0, right0] = [left, right];
     if (!between && !horizontal && catLabels && cats.length) {
-      left = Math.max(left, PAD + tw(cats[0], catStyle.size) / 2);
-      right = Math.min(right, w - PAD - tw(cats[cats.length - 1], catStyle.size) / 2);
+      left = Math.max(left, PAD + catTw(cats[0], catStyle.size) / 2);
+      right = Math.min(right, w - PAD - catTw(cats[cats.length - 1], catStyle.size) / 2);
     }
     // 底部分类标签：放不下时折行或整体转斜（cat-labels.ts），转斜时左边让出第一个标签
     let catFit: CatFit = { kind: 'line', skip: lblSkip };
     if (!horizontal && catLabels && !sides.catMid && sides.cat === 'b') {
       const bands = between ? nCat : Math.max(1, nCat - 1);
       const eaVert = attr(child(child(catAx, 'c:txPr'), 'a:bodyPr'), 'vert') === 'eaVert';
-      catFit = fitCategoryLabels(cats, (right - left) / bands, catStyle.size, tw, numAttr(child(catAx, 'c:tickLblSkip'), 'val'), eaVert);
+      catFit = fitCategoryLabels(cats, (right - left) / bands, catStyle.size, catTw, numAttr(child(catAx, 'c:tickLblSkip'), 'val'), eaVert);
       if (catFit.kind === 'rot' && cats.length) {
         // 斜标签不往右伸，不用给首尾留半个宽度；分类在端点上时右边仍留约 1.05 × 字号（面积图一个样例）
         [left, right] = [left0, between ? right0 : Math.min(right0, area.right - ROT_MIDCAT_RIGHT * catStyle.size)];
         const f = between ? 0.5 / bands : 0;
-        left = Math.max(left, (rotFirstCenter(cats[0], catStyle.size, tw) - f * right) / (1 - f));
+        left = Math.max(left, (rotFirstCenter(cats[0], catStyle.size, catTw) - f * right) / (1 - f));
       }
-      innerBand = catFitBand(catFit, catH(catStyle.size), cats, catStyle.size, tw);
+      innerBand = catFitBand(catFit, catH(catStyle.size), cats, catStyle.size, catTw);
       levelBands = outerLevelBands(catLevels, catStyle.size, (c, sz) => (c ? catBand(sz) : valBand(sz)));
       bottom -= innerBand + levelBands.reduce((a, b) => a + b.band, 0);
     }
@@ -184,7 +185,7 @@ export function renderCategoryChart(plots: Plot[], plotArea: XEl | undefined, ar
   // 自动刻度的疏密取决于轴长（axis.ts）：先按默认刻度排一遍得到轴长，再按轴长选刻度重排
   const first = place();
   // 横向数值轴（条形图）的刻度疏密按"绘图区宽 + 左右分类标签列宽的一半"算（COM 探针：长分类名的条形图刻度比按绘图区宽算的密）
-  const sideCol = horizontal && catLabels && !first.sides.catMid ? Math.max(0, ...sideLines.flat().map((t) => tw(t, catStyle.size))) + sideGap(catStyle.size) : 0;
+  const sideCol = horizontal && catLabels && !first.sides.catMid ? Math.max(0, ...sideLines.flat().map((t) => catTw(t, catStyle.size))) + sideGap(catStyle.size) : 0;
   const placed = place(horizontal ? first.right - first.left + sideCol / 2 : first.bottom - first.top);
   const { prim, sec, sides, unit, edgeLeft, edgeRight, valLabels, valStyle, tickLabels, between, catFit, innerBand, levelBands } = placed;
   const { left, top, right, bottom } = placed;

@@ -3,8 +3,11 @@
  * s 是标签字号（像素）。见 SPEC 第 7 节。
  */
 
-/** 文字宽度（像素）：有字体文件时用真实字宽，没有时估算 */
-export type TextWidth = (s: string, size: number) => number;
+/** 文字宽度（像素）：有字体文件时用真实字宽，没有时估算；font 是这段文字自己的字体（不给时按主题字体） */
+export type TextWidth = (s: string, size: number, font?: string) => number;
+
+/** 固定按某个字体量宽度（给只传字号的排版函数用） */
+export const withFont = (tw: TextWidth, font: string): TextWidth => (s, size) => tw(s, size, font);
 
 /** 图表区四周留白 */
 export const PAD = 11 * 96 / 72;

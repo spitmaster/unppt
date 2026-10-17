@@ -50,17 +50,17 @@ export function renderColumn3D(p: Plot, valAx: XEl | undefined, catAx: XEl | und
   const catStyle = textStyle(child(catAx, 'c:txPr'), colors, baseText);
   const catDeleted = attr(child(catAx, 'c:delete'), 'val') === '1';
   const edge = (l: number) => (l === PAD ? SIDE_LABEL_PAD : l);
-  const maxW = (ls: string[], s: number) => Math.max(0, ...ls.map((t) => tw(t, s)));
+  const maxW = (ls: string[], st: TextStyle) => Math.max(0, ...ls.map((t) => tw(t, st.size, st.font)));
   // 平面布局（和分类轴图同一套实测间距），按数值轴长度两遍定刻度
   const place = (len?: number) => {
     const A = makeAxis(valAx, vmin, vmax, { pct: p.grouping === 'percentStacked', margin: 0, length: len, horizontal: hz });
     let { left, top, right, bottom } = area;
     if (!hz) {
-      if (!A.deleted) { left = edge(left) + maxW(A.labels, A.style.size) + sideGap(A.style.size); top = Math.max(top, topForLabel(A.style.size)); }
+      if (!A.deleted) { left = edge(left) + maxW(A.labels, A.style) + sideGap(A.style.size); top = Math.max(top, topForLabel(A.style.size)); }
       if (!catDeleted) bottom -= catBand(catStyle.size);
     } else {
-      if (!catDeleted) left = edge(left) + maxW(cats, catStyle.size) + sideGap(catStyle.size);
-      if (!A.deleted) { bottom -= valBand(A.style.size); right = Math.min(right, w - RIGHT_LABEL_PAD - tw(A.labels[A.labels.length - 1] ?? '', A.style.size) / 2); }
+      if (!catDeleted) left = edge(left) + maxW(cats, catStyle) + sideGap(catStyle.size);
+      if (!A.deleted) { bottom -= valBand(A.style.size); right = Math.min(right, w - RIGHT_LABEL_PAD - tw(A.labels[A.labels.length - 1] ?? '', A.style.size, A.style.font) / 2); }
     }
     return { A, left, top, right, bottom };
   };
