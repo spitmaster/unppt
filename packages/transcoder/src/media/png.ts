@@ -125,15 +125,20 @@ function paeth(a: number, b: number, c: number): number {
 }
 
 /** 8 位 RGBA 像素编码成 PNG */
-export async function encodeRgba(px: Uint8Array, w: number, h: number): Promise<Uint8Array | undefined> {
-  const z = await idatOf(px, w * 4, h, 4);
+export function encodeRgba(px: Uint8Array, w: number, h: number): Promise<Uint8Array | undefined> {
+  return encodePixels(px, w, h, 4);
+}
+
+/** 8 位像素编码成 PNG：channels 4 是 RGBA，3 是 RGB（没有透明通道） */
+export async function encodePixels(px: Uint8Array, w: number, h: number, channels: 3 | 4): Promise<Uint8Array | undefined> {
+  const z = await idatOf(px, w * channels, h, channels);
   if (!z) return undefined;
   const ihdr = new Uint8Array(13);
   const dv = new DataView(ihdr.buffer);
   dv.setUint32(0, w);
   dv.setUint32(4, h);
   ihdr[8] = 8;
-  ihdr[9] = 6;
+  ihdr[9] = channels === 4 ? 6 : 2;
   return writeChunks([{ type: 'IHDR', data: ihdr }, { type: 'IDAT', data: z }, { type: 'IEND', data: new Uint8Array(0) }]);
 }
 

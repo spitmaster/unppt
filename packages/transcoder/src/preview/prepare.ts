@@ -4,7 +4,7 @@
  * 展开嵌套的 SVG 图片（inline-svg.ts；同一页里重复很多次的单独画成位图），
  * 字体名换成这一页实际用到的字体文件里的英文名（resvg 不认浏览器的字体回退）、发光的外扩拆成两遍（morphology.ts）——
  * 得到交给 paint.ts 画的 PaintJob。
- * 绘制要的字体、图片、背景层按编号从这里取（PaintResources）；超大 JPEG 先缩小（huge-images.ts）。
+ * 绘制要的字体、图片、背景层按编号从这里取（PaintResources）；超大图片先缩小（huge-images.ts）。
  */
 import type { FontFace } from '../font/font';
 import { HUGE_PIXELS, withHugeImagesShrunk } from './huge-images';
@@ -42,7 +42,7 @@ export class Preparer {
   readonly image: ImageSource;
   readonly resources: PaintResources;
 
-  /** side：整页图的长边（像素），长边是它 4 倍以上的 JPEG 先缩小（huge-images.ts） */
+  /** side：整页图的长边（像素），长边是它 4 倍以上的 JPEG、PNG 先缩小（huge-images.ts） */
   constructor(private fonts: FontResolver, source: ImageSource, side = 0) {
     this.image = withHugeImagesShrunk(source, this.shrunk, HUGE_PIXELS, side);
     this.resources = {
