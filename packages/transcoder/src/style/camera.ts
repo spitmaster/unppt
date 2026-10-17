@@ -120,17 +120,18 @@ function fitAffine(scene3d: XEl | undefined, w: number, h: number, slideW: numbe
  * 透视投影：w×h 的形状里一点（局部坐标，原点在左上角）投影后的位置（同一坐标系，投影中心是形状中心，含相机缩放）。
  * 正交预设、没有转动时返回 undefined（用 cameraTransform 的仿射就是精确的）
  */
-export function perspectiveProjector(scene3d: XEl | undefined, w: number, h: number, slideW: number): ((x: number, y: number) => [number, number]) | undefined {
+/** elev：形状平面离开原位的距离（a:sp3d 的 z，像素，朝观看者为正），和平面上的点一起转动、投影 */
+export function perspectiveProjector(scene3d: XEl | undefined, w: number, h: number, slideW: number, elev = 0): ((x: number, y: number) => [number, number]) | undefined {
   const c = cameraOf(scene3d);
   if (!c || !c.persp) return undefined;
   const M = rotationOf(c);
   const d = slideW / 2 / Math.tan((c.fov * Math.PI) / 360);
   const z = (numAttr(child(scene3d, 'a:camera'), 'zoom') ?? 100000) / 100000;
   return (x, y) => {
-    const u = x - w / 2, v = y - h / 2;
-    const Z = M[2][0] * u + M[2][1] * v;
+    const u = x - w / 2, v = y - h / 2, e = elev;
+    const Z = M[2][0] * u + M[2][1] * v + M[2][2] * e;
     const f = (d / Math.max(d * 0.05, d - Z)) * z;
-    return [w / 2 + (M[0][0] * u + M[0][1] * v) * f, h / 2 + (M[1][0] * u + M[1][1] * v) * f];
+    return [w / 2 + (M[0][0] * u + M[0][1] * v + M[0][2] * e) * f, h / 2 + (M[1][0] * u + M[1][1] * v + M[1][2] * e) * f];
   };
 }
 

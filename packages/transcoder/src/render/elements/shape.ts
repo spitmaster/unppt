@@ -75,7 +75,8 @@ export async function renderShape(r: RenderContext, el: XEl, ctx: SlideContext, 
   const av = new Map<string, string>();
   for (const g of children(child(prst ?? cust, 'a:avLst'), 'a:gd')) av.set(attr(g, 'name') ?? '', attr(g, 'fmla') ?? '');
   // 透视相机（自己的或 SmartArt 场景的）下轮廓逐点投影
-  const sp = shapeProjection(box, scene3d, ctx.scene, r.env.pres.width);
+  // 三维形状离开原平面的距离（a:sp3d 的 z）：透视相机下跟着投影（样本：一摞圆环各自抬高，斜着看时上下错开）
+  const sp = shapeProjection(box, scene3d, ctx.scene, r.env.pres.width, (numAttr(sp3d, 'z') ?? 0) / EMU_PER_PX);
   // 平面的形状：几何画在对齐整像素的外框里（pixel-snap.ts），文字仍按原来的框
   const snap = sp || hasCamera(scene3d) || ctx.scene ? undefined : snapBox(box, ctx.toSlide, line?.width ?? 0);
   const gb = snap ? { ...box, x: box.x + snap.dx, y: box.y + snap.dy, w: snap.w, h: snap.h } : box;
