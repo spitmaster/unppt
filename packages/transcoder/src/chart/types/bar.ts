@@ -45,7 +45,10 @@ export const barType: ChartType = {
           a = base; b = base + v;
           if (v >= 0) pos[i] = b; else neg[i] = b;
         } else { a = 0; b = v; }
-        const fa = stacked ? vpos(a) : zeroF, fb = vpos(b);
+        // 超出坐标轴范围的部分不画；整根都在范围外的（样本：最小值 70%，没数据的月份填了 0）柱子和数值标签都不画
+        const ra = stacked ? vpos(a) : zeroF, rb = vpos(b);
+        const fa = Math.max(0, Math.min(1, ra)), fb = Math.max(0, Math.min(1, rb));
+        if (fa === fb && ra !== rb) continue;
         const offset = i * band + (band - barW * slots) / 2 + (stacked ? 0 : si * barW * (1 - ov));
         const color = s.pointFills.get(i) ?? s.fill;
         if (!color) continue;
