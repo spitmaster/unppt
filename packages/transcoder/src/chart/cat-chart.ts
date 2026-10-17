@@ -170,14 +170,14 @@ export function renderCategoryChart(plots: Plot[], plotArea: XEl | undefined, ar
       const bands = between ? nCat : Math.max(1, nCat - 1);
       const eaVert = attr(child(child(catAx, 'c:txPr'), 'a:bodyPr'), 'vert') === 'eaVert';
       catFit = fitCategoryLabels(cats, (right - left) / bands, catStyle.size, catTw, numAttr(child(catAx, 'c:tickLblSkip'), 'val'), eaVert);
-      if (catFit.kind === 'rot' && cats.length) {
-        // 斜标签不往右伸，不用给首尾留半个宽度；分类在端点上时右边仍留约 1.05 × 字号（面积图一个样例）
-        [left, right] = [left0, between ? right0 : Math.min(right0, area.right - ROT_MIDCAT_RIGHT * catStyle.size)];
-        const f = between ? 0.5 / bands : 0;
-        left = Math.max(left, (rotFirstCenter(cats[0], catStyle.size, catTw) - f * right) / (1 - f));
-      }
       levelBands = outerLevelBands(catLevels, catStyle.size, (c, sz) => (c ? catBand(sz) : valBand(sz)));
       catFit = capVertical(catFit, cats, catStyle.size, catTw, bottom - top - levelBands.reduce((a, b) => a + b.band, 0));
+      if (catFit.kind === 'rot' && cats.length) {
+        // 斜标签不往右伸，不用给首尾留半个宽度；分类在端点上时右边仍留约 1.05 × 字号（面积图一个样例）；第一个标签按截断后的算
+        [left, right] = [left0, between ? right0 : Math.min(right0, area.right - ROT_MIDCAT_RIGHT * catStyle.size)];
+        const f = between ? 0.5 / bands : 0;
+        left = Math.max(left, (rotFirstCenter(catFit.cut?.[0] ?? cats[0], catStyle.size, catTw) - f * right) / (1 - f));
+      }
       innerBand = catFitBand(catFit, catH(catStyle.size), cats, catStyle.size, catTw);
       bottom -= innerBand + levelBands.reduce((a, b) => a + b.band, 0);
     }
