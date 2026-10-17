@@ -179,7 +179,7 @@ export interface ChartContext {
   plotArea?: XEl;
   makeAxis: AxisMaker;
   /** 量文字宽度 */
-  width: (s: string, size: number) => number;
+  width: (s: string, size: number, font?: string) => number;
   /** 整个图表区的大小 */
   box: { w: number; h: number };
   /** 图例位置（t / b / l / r，没有图例时不写）、有没有标题、绘图区是不是手动布局：雷达图按 PowerPoint 的规则自己排 */

@@ -53,8 +53,8 @@ export interface ChartType {
   readonly defaultGrouping?: string;
   /** 分类轴在左边、数值轴在下面（条形图） */
   horizontal?(plot: Plot): boolean;
-  /** 图例倒序（条形图从下往上画） */
-  legendReversed?(plot: Plot): boolean;
+  /** 图例倒序；vertical 是竖排图例（左、右）（实测 charts-basic、charts-pct-stacked） */
+  legendReversed?(plot: Plot, vertical: boolean): boolean;
   seriesRules(plotEl: XEl, tag: string): SeriesRules;
   /** 图例里这个系列的颜色、是否画成线 */
   legendKey(plot: Plot, s: Series): { color?: Rgba; line: boolean; dot?: boolean; none?: boolean };
