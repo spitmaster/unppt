@@ -56,10 +56,11 @@ export const LAYOUT_UNIT = 1 / 6;
 const snapAdvance = (w: number) => Math.round(w / LAYOUT_UNIT) * LAYOUT_UNIT;
 
 /**
- * 人工加粗（标了粗体、字体没有粗体字形）每个字多占 字号磅数 / 32（四舍五入，.5 进位）个排版单位：16 磅起每字 +1/8 磅、
- * 48 磅起 +2/8、80 磅起 +3/8、112 磅起 +4/8（实测 PowerPoint COM 二分框宽：宋体、黑体，汉字和西文都一样；有粗体字形的雅黑不加）
+ * 人工加粗（标了粗体、字体没有粗体字形）每个字多占 字号磅数 × 8 / 字体的每 em 单位数（四舍五入，.5 进位）个排版单位（1/8 磅）。
+ * 实测 PowerPoint COM 二分框宽：每 em 256 单位的老字体（宋体、黑体、楷体、仿宋、幼圆、隶书、方正舒体）16 磅起 +1/8 磅、48 磅起 +2/8、
+ * 80 磅起 +3/8；华文细黑（1000）66 磅起才 +1/8，雅黑 Light（2048）136 磅起才 +1/8；汉字和西文一样；有粗体字形的字体不加
  */
-const fakeBoldExtra = (sizePx: number) => Math.floor((sizePx * 0.75) / 32 + 0.5) * LAYOUT_UNIT;
+const fakeBoldExtra = (sizePx: number, upem: number) => Math.floor((sizePx * 0.75 * 8) / upem + 0.5) * LAYOUT_UNIT;
 
 const LATIN_SUBS = ['Calibri', 'Arial', 'Liberation Sans', 'Helvetica'];
 // 实测：字体标了中文字符集且本机缺失时，PowerPoint 用微软雅黑替代（样本换行 40/40 一致）
@@ -137,7 +138,7 @@ export async function makeAtoms(text: string, style: RunStyle, m: Measurer): Pro
     if (usedM && adv !== undefined && m.embed && cp > 0x20) m.embed.use(usedM.face, cp);
     const size = st.baseline ? st.size * 0.67 : st.size;
     const fakeBold = !!st.bold && adv !== undefined && !!usedM && !usedM.face.bold;
-    const width = snapAdvance((adv ?? fallbackAdvance(cp)) * size) + (fakeBold ? fakeBoldExtra(size) : 0) + st.spc;
+    const width = snapAdvance((adv ?? fallbackAdvance(cp)) * size) + (fakeBold ? fakeBoldExtra(size, usedM!.metrics.unitsPerEm) : 0) + st.spc;
     // 字距调整：和前一个字同一个字体时，把成对调整量加到前一个字的宽度上
     const prevAtom = out[out.length - 1];
     if (kerning && prevAtom && adv !== undefined && usedM && usedM === prevM) prevAtom.width += usedM.metrics.kern(prevAtom.cp, cp) * size;
