@@ -49,12 +49,13 @@ export function renderChart(space: XEl | undefined, w: number, h: number, env: C
   // 整个图表区的背景和边框（纯色、渐变）
   out.push(areaRect(child(space, 'c:spPr'), { left: 0, top: 0, right: w, bottom: h }, colors, env.part, env.doc, env.origin));
 
-  const baseText: TextStyle = textStyle(child(space, 'c:txPr'), colors, {
-    size: 10 * 96 / 72, color: { r: 89, g: 89, b: 89, a: 1 }, bold: false, font: theme.minorLatin || 'Calibri',
-  });
-
   // 趋势线、显示单位等默认名称跟随图表的界面语言（c:lang）
   const lang = attr(child(space, 'c:lang'), 'val') ?? 'zh-CN';
+  // 汉字用主题的东亚字体（主题里东亚字体为空时用"汉字"脚本字体，例如老主题的宋体；样本：数字 Calibri、汉字宋体）
+  const eaFont = /^zh-(cn|sg)$/i.test(lang) || lang.toLowerCase() === 'zh' ? theme.minorEa : '';
+  const baseText: TextStyle = textStyle(child(space, 'c:txPr'), colors, {
+    size: 10 * 96 / 72, color: { r: 89, g: 89, b: 89, a: 1 }, bold: false, font: theme.minorLatin || 'Calibri', ...(eaFont ? { eaFont } : {}),
+  });
   const plots: Plot[] = readPlots(plotArea, colors, env.part, baseText, env.warn, lang.startsWith('zh'));
   const blanks = attr(child(chart, 'c:dispBlanksAs'), 'val');
   for (const p of plots) p.blanks = blanks === 'zero' || blanks === 'span' ? blanks : 'gap';

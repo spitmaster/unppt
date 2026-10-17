@@ -5,7 +5,8 @@ import type { XEl } from '../io/xml';
 import type { PixelGrid } from './pixel-grid';
 
 /** 图表文字样式；rot 是文字转的角度（度，-90 是竖排从下往上，只在 txPr 写了时有），spc 是字间距（像素） */
-export interface TextStyle { size: number; color: Rgba; bold: boolean; font: string; rot?: number; spc?: number }
+/** font 是西文字体；eaFont 是汉字用的东亚字体（没有时汉字由浏览器按 font 回退） */
+export interface TextStyle { size: number; color: Rgba; bold: boolean; font: string; eaFont?: string; rot?: number; spc?: number }
 
 export interface Labels { val: boolean; pct: boolean; cat: boolean; ser: boolean; pos?: string; fmt?: string; style: TextStyle; sep?: string }
 
