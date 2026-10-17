@@ -3,6 +3,8 @@
  * 注意：WMF 记录的参数多数是"倒序"存放的（例如矩形是 下、右、上、左）。
  */
 import { groupClips } from './emf-defs';
+import { bitmapSource, partSvg, ROP_KEY } from './dib-blit';
+import { keyBmp } from './bmp';
 import { svgImage, type ImageDecoder } from './image-decoder';
 
 interface Pen { color: string; width: number; none: boolean }
@@ -40,20 +42,22 @@ function base64(bytes: Uint8Array): string {
   return btoa(s);
 }
 
-function dibToBmp(dib: Uint8Array): string | undefined {
+/** DIB -> BMP 的 data URI；key：这个颜色的像素变透明（按光栅操作，见 dib-blit.ts） */
+function dibToBmp(dib: Uint8Array, key?: number): string | undefined {
   if (dib.length < 40) return undefined;
   const v = new DataView(dib.buffer, dib.byteOffset, dib.byteLength);
   const hsize = v.getUint32(0, true);
   const bits = v.getUint16(14, true);
   const used = hsize >= 36 ? v.getUint32(32, true) : 0;
-  const palette = bits <= 8 ? (used || 1 << bits) * 4 : 0;
+  // 调色板；40 字节文件头的位域格式后面跟 3 个掩码
+  const palette = bits <= 8 ? (used || 1 << bits) * 4 : hsize === 40 && v.getUint32(16, true) === 3 ? 12 : 0;
   const out = new Uint8Array(14 + dib.length);
   const ov = new DataView(out.buffer);
   out[0] = 0x42; out[1] = 0x4d;
   ov.setUint32(2, out.length, true);
   ov.setUint32(10, 14 + hsize + palette, true);
   out.set(dib, 14);
-  return `data:image/bmp;base64,${base64(out)}`;
+  return `data:image/bmp;base64,${base64(key === undefined ? out : keyBmp(out, key) ?? out)}`;
 }
 
 /** 解析失败（文件损坏、被截断）时返回 undefined，不抛异常 */
@@ -215,12 +219,17 @@ function wmfToSvgUnsafe(bytes: Uint8Array): string | undefined {
           const o = fn === 0x0f43 ? 2 : 0;
           const dh = i16(r + 4 + o + 8), dw = i16(r + 4 + o + 10), dy = i16(r + 4 + o + 12), dx = i16(r + 4 + o + 14);
           const dibStart = r + 4 + o + 16;
-          const href = dibToBmp(bytes.subarray(dibStart, p + size));
+          const href = dibToBmp(bytes.subarray(dibStart, p + size), ROP_KEY.get(u32(r)));
+          // 源框：STRETCHDIB 从位图最下面往上数，DIBSTRETCHBLT 从左上角数（和 EMF 一样；样本里图标的掩码是两倍高、只取上半）
+          const src = bitmapSource(d, dibStart, fn === 0x0f43, i16(r + 4 + o + 6), i16(r + 4 + o + 4), i16(r + 4 + o + 2), i16(r + 4 + o));
           // 目标宽、高是负数时位图左右、上下翻转（和窗口范围是负数的翻转叠加，样本里两次翻转后是正的）
           const x0 = Math.min(dx, dx + dw), y0 = Math.min(dy, dy + dh);
           const flip = dw < 0 || dh < 0 ? ` transform="translate(${f2(dw < 0 ? 2 * x0 + Math.abs(dw) : 0)} ${f2(dh < 0 ? 2 * y0 + Math.abs(dh) : 0)}) scale(${dw < 0 ? -1 : 1} ${dh < 0 ? -1 : 1})"` : '';
           const img = `<image href="${href}" x="${f2(x0)}" y="${f2(y0)}" width="${f2(Math.abs(dw))}" height="${f2(Math.abs(dh))}" preserveAspectRatio="none"`;
-          if (href) out.push(flip ? `<g${clip()}>${img}${flip}/></g>` : `${img}${clip()}/>`);
+          if (href && src) {
+            const part = partSvg(x0, y0, Math.abs(dw), Math.abs(dh), src, `<image href="${href}" width="${src.bw}" height="${src.bh}" preserveAspectRatio="none"/>`);
+            out.push(`<g${clip()}>${flip ? `<g${flip}>${part}</g>` : part}</g>`);
+          } else if (href) out.push(flip ? `<g${clip()}>${img}${flip}/></g>` : `${img}${clip()}/>`);
           break;
         }
         default: break;

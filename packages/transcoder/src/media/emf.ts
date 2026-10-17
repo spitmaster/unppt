@@ -2,7 +2,8 @@
  * EMF（增强型图元文件）-> SVG。零依赖，按 [MS-EMF] 规范解析常用的 GDI 记录。
  * Office 生成的"双格式"EMF 里同时有 EMF+ 记录（在 GDI 注释里）和 GDI 记录，这里只画 GDI 部分。
  */
-import { EmfDefs, groupClips, type BitmapSource } from './emf-defs';
+import { EmfDefs, groupClips } from './emf-defs';
+import { bitmapSource, ROP_KEY } from './dib-blit';
 import { svgImage, type ImageDecoder } from './image-decoder';
 import { keyBmp } from './bmp';
 
@@ -49,15 +50,9 @@ function base64(bytes: Uint8Array): string {
 }
 
 /**
- * 位图记录的光栅操作 -> 按哪个颜色抠透明（实测 emf-bitmap-src：图标先用黑白掩码 SRCAND、再用彩色图 SRCINVERT / SRCPAINT 画，
- * 掩码的白色和彩色图的黑色都是"不改变底下"）；其它光栅操作照常画
- */
-const ROP_KEY = new Map([[0x008800c6, 0xffffff], [0x00660046, 0x000000], [0x00ee0086, 0x000000]]);
-
-/**
  * DIB（BITMAPINFO + 像素）-> BMP 文件的 data URI，浏览器能直接显示。
  * alpha：ALPHABLEND 的逐像素透明度（AC_SRC_ALPHA，32 位、预乘）——普通 BMP 头浏览器会忽略透明度，
- * 换成带透明通道掩码的 BITMAPV4HEADER，像素还原成不预乘的；key：这个颜色的像素变透明（见 ROP_KEY）
+ * 换成带透明通道掩码的 BITMAPV4HEADER，像素还原成不预乘的；key：这个颜色的像素变透明（按光栅操作，见 dib-blit.ts）
  */
 function dibToBmp(d: DataView, offBmi: number, cbBmi: number, offBits: number, cbBits: number, alpha = false, key?: number): string | undefined {
   if (!cbBmi || !cbBits) return undefined;
@@ -470,7 +465,7 @@ function emfToSvgUnsafe(bytes: Uint8Array): string | undefined {
         const alpha = type === 114 ? d.getUint8(r + 34) / 255 : 1;
         const rop = type === 81 ? u32(r + 60) : type === 114 ? 0 : u32(r + 32);
         const href = cbBmi ? dibToBmp(d, p + offBmi, cbBmi, p + offBits, cbBits, type === 114 && d.getUint8(r + 35) === 1, ROP_KEY.get(rop)) : undefined;
-        if (href) emit(defsOf.bitmap(href, X, Y, W, H, `${alpha < 1 ? ` opacity="${f2(alpha)}"` : ''}${clipAttr()}`, bitmapSource(d, p + offBmi, cbBmi, type === 81, sx, sy, sw, sh)));
+        if (href) emit(defsOf.bitmap(href, X, Y, W, H, `${alpha < 1 ? ` opacity="${f2(alpha)}"` : ''}${clipAttr()}`, cbBmi ? bitmapSource(d, p + offBmi, type === 81, sx, sy, sw, sh) : undefined));
         else if (type === 76 && !st.brush.none) {
           // 没有源位图的 BitBlt：用当前画刷填充（常见于背景）
           if (rop === 0x00f00021 || rop === 0x00000042 || rop === 0x00ff0062) {
@@ -490,24 +485,6 @@ function emfToSvgUnsafe(bytes: Uint8Array): string | undefined {
   }
   const body = defsOf.finish(groupClips(out));
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${vb.map(f2).join(' ')}" preserveAspectRatio="none">${defs.length ? `<defs>${defs.join('')}</defs>` : ''}${body}</svg>`;
-}
-
-/**
- * 源框不是整张位图时（样本：一张扫描页分成 4 块贴、源框比位图宽几个像素）返回要画的部分，整张时 undefined。
- * 实测（emf-bitmap-src）：STRETCHDIBITS 的源框 y 从位图最下面一行往上数（从上往下存的 DIB 也一样）；BITBLT、STRETCHBLT、
- * ALPHABLEND 从左上角数；源框超出位图的部分不算，位图里取到的部分拉满整个目标框
- */
-function bitmapSource(d: DataView, offBmi: number, cbBmi: number, dib: boolean, sx: number, sy: number, sw: number, sh: number): BitmapSource | undefined {
-  if (cbBmi < 12 || sw <= 0 || sh <= 0) return undefined;
-  const core = d.getUint32(offBmi, true) === 12;
-  const bw = core ? d.getUint16(offBmi + 4, true) : d.getInt32(offBmi + 4, true);
-  const bh = Math.abs(core ? d.getInt16(offBmi + 6, true) : d.getInt32(offBmi + 8, true));
-  const top = dib ? bh - (sy + sh) : sy;
-  const x0 = Math.max(0, sx), y0 = Math.max(0, top), x1 = Math.min(bw, sx + sw), y1 = Math.min(bh, top + sh);
-  if (x1 <= x0 || y1 <= y0) return undefined;
-  const same = (a: number, b: number) => Math.abs(a - b) < 1e-3;
-  if (same(x0, 0) && same(y0, 0) && same(x1, bw) && same(y1, bh)) return undefined;
-  return { x: x0, y: y0, w: x1 - x0, h: y1 - y0, bw, bh };
 }
 
 function bez(P: string[]): string {

@@ -3,10 +3,9 @@
  * 实测样本里有 EMF 把同一张小位图贴了 512 次、裁剪区域定义了 2.5 万次（不同的只有 208 个）：转出来的 SVG 有 59MB，
  * resvg 画这一页要 98 秒，浏览器加载也慢。只用一次的位图照旧直接写（输出不变）。
  */
-const f2 = (v: number) => (Math.round(v * 100) / 100).toString();
+import { partSvg, type BitmapSource } from './dib-blit';
 
-/** 只画位图的一部分：源框（x、y 从位图左上角算，像素）和位图的宽高 */
-export interface BitmapSource { x: number; y: number; w: number; h: number; bw: number; bh: number }
+const f2 = (v: number) => (Math.round(v * 100) / 100).toString();
 
 interface Bitmap { href: string; x: number; y: number; w: number; h: number; attrs: string; src?: BitmapSource }
 
@@ -45,7 +44,7 @@ export class EmfDefs {
       const b = this.bitmaps[Number(k)];
       // 只画一部分：外面套一层 <svg>，viewBox 是源框，里面按位图原尺寸放
       const s = b.src;
-      const part = (inner: string) => `<g${b.attrs}><svg x="${f2(b.x)}" y="${f2(b.y)}" width="${f2(b.w)}" height="${f2(b.h)}" viewBox="${s!.x} ${s!.y} ${s!.w} ${s!.h}" preserveAspectRatio="none">${inner}</svg></g>`;
+      const part = (inner: string) => `<g${b.attrs}>${partSvg(b.x, b.y, b.w, b.h, s!, inner)}</g>`;
       if (count.get(b.href) === 1) {
         if (s) return part(`<image href="${b.href}" width="${s.bw}" height="${s.bh}" preserveAspectRatio="none"/>`);
         return `<image href="${b.href}" x="${f2(b.x)}" y="${f2(b.y)}" width="${f2(b.w)}" height="${f2(b.h)}" preserveAspectRatio="none"${b.attrs}/>`;
