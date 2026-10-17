@@ -7,7 +7,8 @@ import { bitmapSource, ROP_KEY } from './dib-blit';
 import { svgImage, type ImageDecoder } from './image-decoder';
 import { keyBmp } from './bmp';
 
-interface Pen { color: string; width: number; none: boolean; cap: string; join: string; dash?: string }
+/** cosmetic：GDI 的"装饰笔"（宽 0 / 1 的 CREATEPEN、不带 PS_GEOMETRIC 的 EXTCREATEPEN），不管怎么缩放都画 1 个设备像素 */
+interface Pen { color: string; width: number; none: boolean; cap: string; join: string; dash?: string; cosmetic?: boolean }
 interface Brush { color: string; none: boolean }
 interface Font { height: number; weight: number; italic: boolean; underline: boolean; strike: boolean; face: string; escapement: number }
 
@@ -157,7 +158,9 @@ function emfToSvgUnsafe(bytes: Uint8Array): string | undefined {
   const strokeAttr = () => {
     const p = st.pen;
     if (p.none) return ' stroke="none"';
-    return ` stroke="${p.color}" stroke-width="${f2(Math.max(tlen(p.width), 0.5))}" stroke-linecap="${p.cap}" stroke-linejoin="${p.join}"${p.dash ? ` stroke-dasharray="${p.dash}"` : ''}`;
+    // 装饰笔：在显示出来的图上 1 像素宽（样本：大尺寸 EMF 表格缩小显示，表格线 PowerPoint 照样是 1 像素的黑线，按比例缩就只剩 0.15 像素）
+    const width = p.cosmetic ? '1" vector-effect="non-scaling-stroke' : f2(Math.max(tlen(p.width), 0.5));
+    return ` stroke="${p.color}" stroke-width="${width}" stroke-linecap="${p.cap}" stroke-linejoin="${p.join}"${p.dash ? ` stroke-dasharray="${p.dash}"` : ''}`;
   };
   const fillAttr = () => (st.brush.none ? ' fill="none"' : ` fill="${st.brush.color}"${st.polyFill === 1 ? ' fill-rule="evenodd"' : ''}`);
   const clipAttr = () => (st.clip ? ` clip-path="url(#${st.clip})"` : '');
@@ -217,7 +220,7 @@ function emfToSvgUnsafe(bytes: Uint8Array): string | undefined {
       }
       case 38: { // CREATEPEN
         const style = u32(r + 4);
-        objects.set(u32(r), { color: colorRef(u32(r + 16)), width: Math.max(i32(r + 8), 1), none: (style & 0xf) === 5, cap: 'round', join: 'round' });
+        objects.set(u32(r), { color: colorRef(u32(r + 16)), width: Math.max(i32(r + 8), 1), none: (style & 0xf) === 5, cap: 'round', join: 'round', ...(i32(r + 8) <= 1 ? { cosmetic: true } : {}) });
         break;
       }
       case 95: { // EXTCREATEPEN
@@ -231,6 +234,7 @@ function emfToSvgUnsafe(bytes: Uint8Array): string | undefined {
         objects.set(u32(r), {
           color: colorRef(u32(r + 32)), width, none: t === 5 || brushStyle === 1,
           cap: caps === 1 ? 'square' : caps === 2 ? 'butt' : 'round', join: joins === 1 ? 'bevel' : joins === 2 ? 'miter' : 'round', dash,
+          ...((style & 0x10000) === 0 ? { cosmetic: true } : {}),
         });
         break;
       }
