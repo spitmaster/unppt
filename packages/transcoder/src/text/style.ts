@@ -119,6 +119,7 @@ export function runStyle(r: XEl, env: TextEnv, scale: number): RunStyle {
     kern: numAttr(r, 'kern') !== undefined ? numAttr(r, 'kern')! / 100 : undefined,
     caps: (attr(r, 'cap') as RunStyle['caps']) ?? 'none',
     eaLang: /^(zh|ja|ko)/i.test(attr(r, 'lang') ?? ''),
+    eaBreak: /^(zh|ja|ko)/i.test(attr(r, 'lang') ?? '') || /^(zh|ja|ko)/i.test(attr(r, 'altLang') ?? ''),
     latinScript: scriptOf(child(r, 'a:latin'), latin, env),
     eaScript: scriptOf(child(r, 'a:ea'), ea, env),
     outline: textOutline(child(r, 'a:ln'), env),
