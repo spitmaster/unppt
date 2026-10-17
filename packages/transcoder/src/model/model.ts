@@ -2,6 +2,7 @@
  * 演示文稿模型：读取 presentation.xml、母版、版式、主题，提供继承查找。
  * 母版、版式、主题会缓存（数量少）；幻灯片逐页读取、用完即丢。
  */
+import { sysColor } from './color';
 import type { ColorContext } from './color';
 import { OpcPackage } from '../io/package';
 import { attr, child, children, expandAlternate, numAttr, path, type XEl } from '../io/xml';
@@ -72,7 +73,7 @@ function readTheme(xml: XEl | undefined, part: string): Theme {
     const key = c.name.slice(2);
     const v = c.children[0];
     if (!v) continue;
-    colors[key] = v.name === 'a:sysClr' ? (v.attrs.lastClr ?? '000000') : (v.attrs.val ?? '000000');
+    colors[key] = v.name === 'a:sysClr' ? sysColor(v.attrs.val, v.attrs.lastClr) : (v.attrs.val ?? '000000');
   }
   const fonts = child(el, 'a:fontScheme');
   const fontOf = (k: string, script: 'a:latin' | 'a:ea') => {
