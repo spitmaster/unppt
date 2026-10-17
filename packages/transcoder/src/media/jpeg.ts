@@ -6,7 +6,10 @@
 
 export interface RgbImage { width: number; height: number; data: Uint8Array }
 
-/** 像素数超过这个的不解（防止异常文件占满内存）；按 1/8 解码时每块只存一个系数，上限放宽 64 倍 */
+/**
+ * 像素数超过这个的不解（防止异常文件占满内存）；按 1/8 解码时每块只存一个系数，上限放宽 64 倍；
+ * 按 1/2、1/4 解码时系数照存、输出小，放宽 4 倍
+ */
 const MAX_PIXELS = 16_000_000;
 
 /** 之字形顺序 -> 8×8 块里的位置 */
@@ -114,8 +117,9 @@ const extend = (v: number, s: number) => (s && v < 1 << (s - 1) ? v - (1 << s) +
 interface Scan { comps: Component[]; ss: number; se: number; ah: number; al: number }
 
 /**
- * minSize：只要最长边不小于这个尺寸就够用时（缩略图、超大图缩小），按 1/8 解码——每个 8×8 块只取平均值（DC 系数），
- * 省掉反向 DCT，快好几倍；每块只存 DC，内存是全尺寸的 1/64，渐进式文件的交流扫描整段跳过。按 1/8 解出来不够大时照常全尺寸解码
+ * minSize：只要最长边不小于这个尺寸就够用时（缩略图、超大图缩小），按 1/8、1/4、1/2 里最小的够用的比例解码；都不够时全尺寸。
+ * 1/8 每个 8×8 块只取平均值（DC 系数），省掉反向 DCT，快好几倍；每块只存 DC，内存是全尺寸的 1/64，渐进式文件的交流扫描整段跳过。
+ * 1/4、1/2 用块内取平均的反变换（像全尺寸解出来再按格子缩小，见 idctMatrix）
  */
 export function decodeJpeg(b: Uint8Array, minSize?: number): RgbImage | undefined {
   try {
@@ -133,8 +137,8 @@ function decode(b: Uint8Array, minSize?: number): RgbImage | undefined {
   let width = 0, height = 0, progressive = false, restartInterval = 0, adobe = -1;
   let mcusPerLine = 0, mcusPerCol = 0, maxH = 1, maxV = 1;
   let eobrun = 0;
-  // 按 1/8 解码时每块只存 DC（stride 1），否则存 64 个系数
-  let eighth = false, stride = 64;
+  // bs：每个块在输出里占几个像素（8 全尺寸，4、2 是 1/2、1/4，1 是 1/8）；按 1/8 解码时每块只存 DC（stride 1），否则存 64 个系数
+  let bs = 8, eighth = false, stride = 64;
   const u16 = (o: number) => (b[o] << 8) | b[o + 1];
   let pos = 2;
   while (pos + 4 <= b.length) {
@@ -169,9 +173,12 @@ function decode(b: Uint8Array, minSize?: number): RgbImage | undefined {
       height = u16(seg + 1);
       width = u16(seg + 3);
       const n = b[seg + 5];
-      eighth = minSize !== undefined && Math.max(Math.ceil(width / 8), Math.ceil(height / 8)) >= minSize;
+      if (minSize !== undefined) bs = [1, 2, 4].find((k) => Math.max(Math.ceil((width * k) / 8), Math.ceil((height * k) / 8)) >= minSize) ?? 8;
+      // 太大、存不下全部系数的只能按 1/8
+      if (bs > 1 && bs < 8 && width * height > MAX_PIXELS * 4) bs = 1;
+      eighth = bs === 1;
       stride = eighth ? 1 : 64;
-      if (!width || !height || width * height > MAX_PIXELS * (eighth ? 64 : 1) || (n !== 1 && n !== 3 && n !== 4)) return undefined;
+      if (!width || !height || width * height > MAX_PIXELS * (eighth ? 64 : bs < 8 ? 4 : 1) || (n !== 1 && n !== 3 && n !== 4)) return undefined;
       comps = [];
       for (let i = 0; i < n; i++) {
         const o = seg + 6 + i * 3;
@@ -248,7 +255,7 @@ function decode(b: Uint8Array, minSize?: number): RgbImage | undefined {
     pos = end;
   }
   if (!comps.length) return undefined;
-  return toRgb(comps, qt, eighth ? Math.ceil(width / 8) : width, eighth ? Math.ceil(height / 8) : height, maxH, maxV, adobe, eighth ? 1 : 8);
+  return toRgb(comps, qt, Math.ceil((width * bs) / 8), Math.ceil((height * bs) / 8), maxH, maxV, adobe, bs);
 }
 
 type BlockFn = (c: Component, off: number) => void;
@@ -372,28 +379,59 @@ function dcPlane(c: Component, q: Int32Array): Uint8Array {
   return out;
 }
 
-/** 反量化 + 反变换，得到每个分量的像素平面（按 MCU 补齐的大小） */
-function plane(c: Component, q: Int32Array): Uint8Array {
-  const w = c.bpl * 8, out = new Uint8Array(w * c.bpc * 8);
-  const f = new Float64Array(64), tmp = new Float64Array(64);
+/** 反变换矩阵（bs 个输出 × 8 个系数）：全尺寸是 COS；bs < 8 时是 COS 每 8/bs 行的平均——反变换后块内取平均，直接从系数算，计算量小几倍 */
+const IDCT = new Map<number, Float64Array>();
+function idctMatrix(bs: number): Float64Array {
+  let m = IDCT.get(bs);
+  if (!m) {
+    const k = 8 / bs;
+    m = new Float64Array(bs * 8);
+    for (let x = 0; x < bs; x++) {
+      for (let u = 0; u < 8; u++) {
+        let s = 0;
+        for (let d = 0; d < k; d++) s += COS[(x * k + d) * 8 + u];
+        m[x * 8 + u] = s / k;
+      }
+    }
+    IDCT.set(bs, m);
+  }
+  return m;
+}
+
+/** 反量化 + 反变换，得到每个分量的像素平面（按 MCU 补齐的大小）；bs < 8 时每块出 bs×bs 个像素（块内取平均） */
+function plane(c: Component, q: Int32Array, bs: number): Uint8Array {
+  const w = c.bpl * bs, out = new Uint8Array(w * c.bpc * bs);
+  const m = idctMatrix(bs);
+  const f = new Float64Array(64), tmp = new Float64Array(8 * bs);
+  // 全是 0 的系数行跳过（照片里高频行大多是 0；加 0 不改变和，结果逐位一样）
+  const rows = new Uint8Array(8);
   for (let by = 0; by < c.bpc; by++) {
     for (let bx = 0; bx < c.bpl; bx++) {
       const off = (by * c.bpl + bx) * 64;
-      for (let i = 0; i < 64; i++) f[i] = c.coef[off + i] * q[i];
       // 先按行（u -> x），再按列（v -> y）
+      let last = -1;
       for (let v = 0; v < 8; v++) {
-        for (let x = 0; x < 8; x++) {
+        let any = 0;
+        for (let u = 0; u < 8; u++) {
+          const k = v * 8 + u, co = c.coef[off + k];
+          f[k] = co * q[k];
+          any |= co;
+        }
+        rows[v] = any ? 1 : 0;
+        if (!any) continue;
+        last = v;
+        for (let x = 0; x < bs; x++) {
           let s = 0;
-          for (let u = 0; u < 8; u++) s += COS[x * 8 + u] * f[v * 8 + u];
-          tmp[v * 8 + x] = s;
+          for (let u = 0; u < 8; u++) s += m[x * 8 + u] * f[v * 8 + u];
+          tmp[v * bs + x] = s;
         }
       }
-      for (let x = 0; x < 8; x++) {
-        for (let y = 0; y < 8; y++) {
+      for (let x = 0; x < bs; x++) {
+        for (let y = 0; y < bs; y++) {
           let s = 0;
-          for (let v = 0; v < 8; v++) s += COS[y * 8 + v] * tmp[v * 8 + x];
+          for (let v = 0; v <= last; v++) if (rows[v]) s += m[y * 8 + v] * tmp[v * bs + x];
           const p = Math.round(s + 128);
-          out[(by * 8 + y) * w + bx * 8 + x] = p < 0 ? 0 : p > 255 ? 255 : p;
+          out[(by * bs + y) * w + bx * bs + x] = p < 0 ? 0 : p > 255 ? 255 : p;
         }
       }
     }
@@ -401,11 +439,11 @@ function plane(c: Component, q: Int32Array): Uint8Array {
   return out;
 }
 
-/** bs：每个块在输出里占几个像素（8 是全尺寸，1 是 1/8 解码） */
+/** bs：每个块在输出里占几个像素（8 是全尺寸，4、2 是 1/2、1/4 解码，1 是 1/8 解码） */
 function toRgb(comps: Component[], qt: Int32Array[], width: number, height: number, maxH: number, maxV: number, adobe: number, bs: number): RgbImage | undefined {
   const planes = comps.map((c) => {
     const q = qt[c.tq];
-    return q ? (bs === 1 ? dcPlane(c, q) : plane(c, q)) : undefined;
+    return q ? (bs === 1 ? dcPlane(c, q) : plane(c, q, bs)) : undefined;
   });
   if (planes.some((p) => !p)) return undefined;
   const data = new Uint8Array(width * height * 3);
