@@ -14,6 +14,17 @@ export interface ColorContext {
   placeholder?: Rgba;
 }
 
+/**
+ * 系统颜色（a:sysClr）：PowerPoint 按显示它的电脑当前的系统颜色画，不用文件里记的 lastClr（保存时那台电脑的颜色）。
+ * 窗口底色、窗口文字按 Windows 默认的白、黑（样本：28 份课件是在把窗口底色设成护眼绿的电脑上存的，主题的 lt1 记成 C7EDCC 等，
+ * PowerPoint 照样画成白底）；其它系统颜色用 lastClr
+ */
+export function sysColor(val: string | undefined, lastClr: string | undefined): string {
+  if (val === 'window') return 'FFFFFF';
+  if (val === 'windowText') return '000000';
+  return lastClr ?? '000000';
+}
+
 const PRESET: Record<string, string> = {
   black: '000000', white: 'FFFFFF', red: 'FF0000', green: '008000', blue: '0000FF', yellow: 'FFFF00',
   gray: '808080', grey: '808080', darkGray: 'A9A9A9', lightGray: 'D3D3D3', orange: 'FFA500',
@@ -114,7 +125,7 @@ export function parseColorEl(el: XEl | undefined, ctx: ColorContext): Rgba | und
   let base: Rgba | undefined;
   switch (el.name) {
     case 'a:srgbClr': base = hex(el.attrs.val ?? '000000'); break;
-    case 'a:sysClr': base = hex(el.attrs.lastClr ?? (el.attrs.val === 'window' ? 'FFFFFF' : '000000')); break;
+    case 'a:sysClr': base = hex(sysColor(el.attrs.val, el.attrs.lastClr)); break;
     case 'a:prstClr': base = hex(PRESET[el.attrs.val ?? ''] ?? '000000'); break;
     case 'a:scrgbClr': base = {
       r: toSrgb(Number(el.attrs.r ?? 0) / 100000), g: toSrgb(Number(el.attrs.g ?? 0) / 100000),
