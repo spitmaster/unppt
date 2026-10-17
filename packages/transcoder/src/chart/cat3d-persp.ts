@@ -65,10 +65,10 @@ export function renderPersp3D(p: Plot, valAx: XEl | undefined, catAx: XEl | unde
   const serBelow = Math.abs((Math.sin(rad(view.rotX)) * Math.cos(rad(view.rotY))) / (Math.sin(rad(view.rotY)) || 1e-9)) < SER_STEEP;
   // 内框（去掉标签，和平面的分类轴图一样排）定了箱体的高宽比；刻度疏密也和平面图一样按内框的高，两遍
   const innerOf = (A: AxisInfo) => innerRect(area, {
-    val: A.deleted || A.lblPos === 'none' ? 0 : Math.max(0, ...A.labels.map((t) => tw(t, A.style.size))), valSize: A.style.size,
+    val: A.deleted || A.lblPos === 'none' ? 0 : Math.max(0, ...A.labels.map((t) => tw(t, A.style.size, A.style.font))), valSize: A.style.size,
     cat: catDeleted ? 0 : catStyle.size, catBand: cats.some(hasCjk) ? catBand(catStyle.size) : valBand(catStyle.size),
-    ends: !between && !catDeleted && cats.length ? [tw(cats[0], catStyle.size), tw(cats[cats.length - 1], catStyle.size)] : undefined,
-    ser: serDeleted || serBelow ? 0 : Math.max(0, ...names.map((t) => tw(t, serStyle.size))), serRight,
+    ends: !between && !catDeleted && cats.length ? [tw(cats[0], catStyle.size, catStyle.font), tw(cats[cats.length - 1], catStyle.size, catStyle.font)] : undefined,
+    ser: serDeleted || serBelow ? 0 : Math.max(0, ...names.map((t) => tw(t, serStyle.size, serStyle.font))), serRight,
   });
   const axisOpts = { pct: p.grouping === 'percentStacked', margin: 0 };
   const in0 = innerOf(makeAxis(valAx, vmin, vmax, axisOpts));
@@ -137,7 +137,7 @@ export function renderPersp3D(p: Plot, valAx: XEl | undefined, catAx: XEl | unde
   const below = (t: string, a: Vec3, b: Vec3, st: TextStyle) => {
     const [x, y] = cam.pt([(a[0] + b[0]) / 2, (a[1] + b[1]) / 2, (a[2] + b[2]) / 2]);
     const m = Math.abs(slope(a, b)), sz = st.size;
-    return label(t, x, y + (m * tw(t, sz)) / 2 + CAT_GAP * sz * Math.hypot(1, m) + sz / 2, st);
+    return label(t, x, y + (m * tw(t, sz, st.font)) / 2 + CAT_GAP * sz * Math.hypot(1, m) + sz / 2, st);
   };
   if (!catDeleted) cats.forEach((c, i) => out.push(below(c, [catX(i) - 0.01, fy, nz], [catX(i) + 0.01, fy, nz], catStyle)));
   if (!serDeleted) {

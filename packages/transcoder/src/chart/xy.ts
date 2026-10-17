@@ -50,12 +50,12 @@ export function renderXY(p: Plot, ctx: ChartContext, area0: Rect, marks: XYMarks
     let { left, top, right, bottom } = area;
     // 留出坐标轴标签的空间（和分类轴图同一套实测规律，见 layout.ts）
     if (!Y.deleted) {
-      left = (left === PAD ? SIDE_LABEL_PAD : left) + Math.max(0, ...Y.labels.map((t) => tw(t, Y.style.size))) + sideGap(Y.style.size);
+      left = (left === PAD ? SIDE_LABEL_PAD : left) + Math.max(0, ...Y.labels.map((t) => tw(t, Y.style.size, Y.style.font))) + sideGap(Y.style.size);
       top = Math.max(top, topForLabel(Y.style.size));
     }
     if (!X.deleted) {
       bottom -= valBand(X.style.size);
-      right = Math.min(right, area.right - tw(X.labels[X.labels.length - 1] ?? '', X.style.size) / 2);
+      right = Math.min(right, area.right - tw(X.labels[X.labels.length - 1] ?? '', X.style.size, X.style.font) / 2);
     }
     return { left, top, right, bottom, pw: Math.max(1, right - left), ph: Math.max(1, bottom - top), X, Y };
   };

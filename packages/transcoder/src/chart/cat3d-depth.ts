@@ -45,7 +45,7 @@ export function renderColumnDepth3D(p: Plot, valAx: XEl | undefined, catAx: XEl 
   const catDeleted = attr(child(catAx, 'c:delete'), 'val') === '1';
   const serDeleted = !serAx || attr(child(serAx, 'c:delete'), 'val') === '1';
   const names = p.series.map((s) => s.name);
-  const maxW = (ls: string[], s: number) => Math.max(0, ...ls.map((t) => tw(t, s)));
+  const maxW = (ls: string[], st: TextStyle) => Math.max(0, ...ls.map((t) => tw(t, st.size, st.font)));
   const sinY = Math.sin((view.rotY * Math.PI) / 180), sinX = Math.sin((view.rotX * Math.PI) / 180);
   const r = (nSer / nCat) * (view.depthPercent / 100);
   const k = 1 + r * sinY;
@@ -53,9 +53,9 @@ export function renderColumnDepth3D(p: Plot, valAx: XEl | undefined, catAx: XEl 
   const place = (len?: number) => {
     const A = makeAxis(valAx, vmin, vmax, { margin: 0, length: len });
     let { left, top, right, bottom } = area;
-    if (!A.deleted) { left = (left === PAD ? SIDE_LABEL_PAD : left) + maxW(A.labels, A.style.size) + sideGap(A.style.size); top = Math.max(top, topForLabel(A.style.size)); }
+    if (!A.deleted) { left = (left === PAD ? SIDE_LABEL_PAD : left) + maxW(A.labels, A.style) + sideGap(A.style.size); top = Math.max(top, topForLabel(A.style.size)); }
     if (!catDeleted) bottom -= catBand(catStyle.size);
-    if (!serDeleted && view.rotY < 30) right -= maxW(names, serStyle.size) + SER_BAND_GAP;
+    if (!serDeleted && view.rotY < 30) right -= maxW(names, serStyle) + SER_BAND_GAP;
     const W = Math.max(1, (right - left - FL_SHIFT) / k);
     const H = Math.max(1, view.autoScale ? (HEIGHT_K * (bottom - top)) / k : (view.hPercent / 100) * (nSer / nCat) * W);
     return { A, left, top, bottom, W, H };

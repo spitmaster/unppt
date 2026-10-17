@@ -59,7 +59,7 @@ export function renderLegend(legend: XEl | undefined, plots: Plot[], area: Rect,
     const anyLine = entries.some((e) => e.line);
     const keyW = (e: LegendEntry) => (anyLine ? LEGEND_LINE_KEY : e.line ? ks * 3 : legendSquare(sz));
     const kGap = legendKeyGap(sz, anyLine), lead = legendLead(sz, anyLine);
-    const parts = entries.map((e) => keyW(e) + kGap + tw(e.name, sz));
+    const parts = entries.map((e) => keyW(e) + kGap + tw(e.name, sz, legendText.font));
     const gap = legendItemGap(sz, anyLine, parts.reduce((a, b) => a + b, 0) / Math.max(1, parts.length));
     const total = lead + parts.reduce((a, b) => a + b, 0) + gap * Math.max(0, entries.length - 1);
     let x = (w - total) / 2 + lead;
@@ -79,7 +79,7 @@ export function renderLegend(legend: XEl | undefined, plots: Plot[], area: Rect,
     const anyLine = entries.some((e) => e.line);
     const keyW = anyLine ? LEGEND_LINE_KEY : legendSquare(sz);
     const kGap = legendKeyGap(sz, anyLine);
-    const lw = keyW + kGap + Math.max(0, ...entries.map((e) => tw(e.name, sz)));
+    const lw = keyW + kGap + Math.max(0, ...entries.map((e) => tw(e.name, sz, legendText.font)));
     const row = legendRow(sz);
     const x = legendPos === 'l' ? left : right - lw;
     let y = (top + shift + bottom) / 2 - (entries.length * row) / 2 + row / 2;
