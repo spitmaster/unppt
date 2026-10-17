@@ -3377,6 +3377,90 @@ def emf_bitmap_src(app):
     return p
 
 
+def fills_group(app):
+    """组合填充（子元素选"组合填充"，保存后改 XML）：每组三个子元素（矩形、水平翻转的平行四边形、转了 30° 的椭圆）共用组合的
+    图片填充 / 线性渐变填充；第三组是水平翻转的组合 + 图片填充"""
+    img = str((TESTCASES / "shapes-basic" / "slide-001.png").resolve())
+    p = new_pres(app)
+    s = blank(p)
+    for g in range(3):
+        x0 = 20 + g * 315
+        a = s.Shapes.AddShape(1, x0, 60, 120, 220)
+        b = s.Shapes.AddShape(2, x0 + 110, 60, 170, 220)
+        b.Flip(0)
+        c = s.Shapes.AddShape(9, x0 + 40, 300, 210, 130)
+        c.Rotation = 30
+        for sh in (b, c):
+            sh.Fill.Solid()
+            sh.Fill.ForeColor.RGB = RGB(255, 0, 0)
+        if g == 1:
+            a.Fill.TwoColorGradient(1, 1)
+            a.Fill.ForeColor.RGB = RGB(30, 80, 200)
+            a.Fill.BackColor.RGB = RGB(250, 220, 40)
+        else:
+            a.Fill.UserPicture(img)
+        for sh in (a, b, c):
+            sh.Line.Visible = 0
+        a.Name, b.Name, c.Name = f"G{g}A", f"G{g}B", f"G{g}C"
+        grp = s.Shapes.Range([a.Name, b.Name, c.Name]).Group()
+        if g == 2:
+            grp.Flip(0)
+    return p
+
+
+def _patch_fills_group(path):
+    """每个组合：子元素 A 的填充挪到组合上，三个子元素都改成组合填充"""
+    import re
+    import zipfile
+    with zipfile.ZipFile(path) as z:
+        files = {i.filename: z.read(i.filename) for i in z.infolist()}
+        infos = z.infolist()
+    name = "ppt/slides/slide1.xml"
+    x = files[name].decode("utf8")
+    fill_re = re.compile(r"(</a:prstGeom>)(<a:(solidFill|gradFill|blipFill)\b.*?</a:\3>)", re.S)
+
+    def fix_group(m):
+        g = m.group(0)
+        own = None
+        for sp in re.findall(r"<p:sp>.*?</p:sp>", g, re.S):
+            if re.search(r'name="G\dA"', sp):
+                own = fill_re.search(sp).group(2)
+        g = fill_re.sub(lambda f: f.group(1) + "<a:grpFill/>", g)
+        return re.sub(r"(<p:grpSpPr>.*?</a:xfrm>)", lambda k: k.group(1) + own, g, count=1, flags=re.S)
+
+    x = re.sub(r"<p:grpSp>.*?</p:grpSp>", fix_group, x, flags=re.S)
+    files[name] = x.encode("utf8")
+    tmp = path.with_suffix(".tmp")
+    with zipfile.ZipFile(tmp, "w", zipfile.ZIP_DEFLATED) as zout:
+        for item in infos:
+            zout.writestr(item.filename, files[item.filename])
+    tmp.replace(path)
+
+
+fills_group.patch = _patch_fills_group
+
+
+def fills_rot_with_shape(app):
+    """填充跟不跟着形状转（rotWithShape / RotateWithObject）：上排图片填充、下排线性渐变（左→右），
+    每排依次是 转 30° 跟着转、转 30° 不跟着转、转 90° 的长方形不跟着转"""
+    img = str((TESTCASES / "shapes-basic" / "slide-001.png").resolve())
+    p = new_pres(app)
+    s = blank(p)
+    for row in range(2):
+        for k, (rot, follow, w, h) in enumerate([(30, -1, 220, 160), (30, 0, 220, 160), (90, 0, 240, 120)]):
+            sh = s.Shapes.AddShape(1, 50 + k * 310, 50 + row * 250, w, h)
+            sh.Line.Visible = 0
+            if row == 0:
+                sh.Fill.UserPicture(img)
+            else:
+                sh.Fill.TwoColorGradient(2, 1)
+                sh.Fill.ForeColor.RGB = RGB(30, 80, 200)
+                sh.Fill.BackColor.RGB = RGB(250, 220, 40)
+            sh.Fill.RotateWithObject = follow
+            sh.Rotation = rot
+    return p
+
+
 def placeholders_orphan(app):
     """版式里找不到对应项的占位符（保存后改 XML），都带填充、没写形状：
     副标题 + 编号 4294967295（老 .ppt 转换常见）、正文 + 编号 77、不写类型 + 编号 4294967295、副标题 + 编号 88"""
@@ -4283,7 +4367,7 @@ def fills_tile_resample(app):
     s2.Background.Fill.UserTextured(tile(150, (17, 17, 17)))
     return p
 
-CASES = [shapes_all, text_sizes, text_align, text_spacing, text_bullets, text_missing_font, shapes_basic, fills_lines, table_basic, group_rotate, anim_basic, anim_auto, charts_basic, pictures, smartart, text_effects, text_layout, table_merge, links, emf_images, anim_advanced, charts_labels, freeform_icons, media_audio, anim_trigger, wmf_images, anim_iterate, picture_transparent, charts_more, shape_effects, equations, anim_path, anim_emphasis, transitions, fills_patterns, text_decoration, anim_entrance, svg_images, charts_markers, hidden_slides, media_background, text_glow_reflection, text_tabs, text_picture_bullets, fills_texture, transition_morph, text_embedded_fonts, text_warp, anim_repeat, charts_sizes, slide_timings, lines_compound, table_diagonal, lines_gradient, fills_radial, fills_rect_gradient, shapes_3d, table_vertical, transitions_more, anim_sound, anim_build, anim_after, anim_text_emphasis, charts_bubble, media_video, charts_options, charts_negative, shapes_bevel, charts_legend, shapes_3d_rotation, smartart_3d, charts_ofpie, charts_3d, anim_group_emphasis, activex_controls, charts_extras, charts_axis_titles, charts_fills, charts_outlines, charts_labels_more, group_scale, group_flip, charts_3d_line, charts_legend_pos, charts_crowded_labels, charts_label_skip, charts_bar_long_names, charts_multilevel, picture_recolor, text_symbols, text_numbering, lines_arrows, table_styles, shapes_styles, charts_styles, placeholders_inherit, text_bold_light, ole_objects, text_hanging_punct, speaker_notes, pictures_tiff, placeholders_picture, pictures_exif, text_picture_fill, pictures_mislabeled, emf_alphablend, placeholders_orphan, picture_fill_rect, slide_number_fields, table_builtin_styles, smartart_matrix, text_layout_unit, colors_gamma, text_latin_cjk_font, text_default_style, text_missing_font_jp, text_ea_line_break, text_ambiguous_punct, text_charset_slides, table_rowspan_tall, text_autofit_round, shapes_3d_contour, emf_clip_modes, placeholders_picture_geom, emf_gradient_fill, text_theme_font_lang, text_anchor_linespacing, table_linespacing, table_fontalgn, text_theme_font_latin, text_margin_right, text_charset_gap, slide_size_repair, fills_shape_gradient, text_shadow_runs, picture_3d_shadow, charts_axis_ea_vert, fills_tile_resample, text_shadow_dist, text_shadow_size, text_shadow_scale, text_shadow_blur, text_glow_scale, text_reflection_dist, shapes_bg_fill, text_control_chars, placeholders_no_index, text_ambiguous_missing_ea, text_missing_panose, emf_bitmap_src]
+CASES = [shapes_all, text_sizes, text_align, text_spacing, text_bullets, text_missing_font, shapes_basic, fills_lines, table_basic, group_rotate, anim_basic, anim_auto, charts_basic, pictures, smartart, text_effects, text_layout, table_merge, links, emf_images, anim_advanced, charts_labels, freeform_icons, media_audio, anim_trigger, wmf_images, anim_iterate, picture_transparent, charts_more, shape_effects, equations, anim_path, anim_emphasis, transitions, fills_patterns, text_decoration, anim_entrance, svg_images, charts_markers, hidden_slides, media_background, text_glow_reflection, text_tabs, text_picture_bullets, fills_texture, transition_morph, text_embedded_fonts, text_warp, anim_repeat, charts_sizes, slide_timings, lines_compound, table_diagonal, lines_gradient, fills_radial, fills_rect_gradient, shapes_3d, table_vertical, transitions_more, anim_sound, anim_build, anim_after, anim_text_emphasis, charts_bubble, media_video, charts_options, charts_negative, shapes_bevel, charts_legend, shapes_3d_rotation, smartart_3d, charts_ofpie, charts_3d, anim_group_emphasis, activex_controls, charts_extras, charts_axis_titles, charts_fills, charts_outlines, charts_labels_more, group_scale, group_flip, charts_3d_line, charts_legend_pos, charts_crowded_labels, charts_label_skip, charts_bar_long_names, charts_multilevel, picture_recolor, text_symbols, text_numbering, lines_arrows, table_styles, shapes_styles, charts_styles, placeholders_inherit, text_bold_light, ole_objects, text_hanging_punct, speaker_notes, pictures_tiff, placeholders_picture, pictures_exif, text_picture_fill, pictures_mislabeled, emf_alphablend, placeholders_orphan, picture_fill_rect, slide_number_fields, table_builtin_styles, smartart_matrix, text_layout_unit, colors_gamma, text_latin_cjk_font, text_default_style, text_missing_font_jp, text_ea_line_break, text_ambiguous_punct, text_charset_slides, table_rowspan_tall, text_autofit_round, shapes_3d_contour, emf_clip_modes, placeholders_picture_geom, emf_gradient_fill, text_theme_font_lang, text_anchor_linespacing, table_linespacing, table_fontalgn, text_theme_font_latin, text_margin_right, text_charset_gap, slide_size_repair, fills_shape_gradient, text_shadow_runs, picture_3d_shadow, charts_axis_ea_vert, fills_tile_resample, text_shadow_dist, text_shadow_size, text_shadow_scale, text_shadow_blur, text_glow_scale, text_reflection_dist, shapes_bg_fill, text_control_chars, placeholders_no_index, text_ambiguous_missing_ea, text_missing_panose, emf_bitmap_src, fills_group, fills_rot_with_shape]
 
 
 def main():

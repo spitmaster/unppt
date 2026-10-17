@@ -1,0 +1,171 @@
+{
+ "version": 8,
+ "level": "full",
+ "slideWidthPt": 960.0,
+ "slideHeightPt": 540.0,
+ "imageWidth": 1280,
+ "imageHeight": 720,
+ "slides": [
+  {
+   "index": 0,
+   "hidden": false,
+   "shapes": [
+    {
+     "id": 5,
+     "name": "Group 4",
+     "type": 6,
+     "x": 20.0,
+     "y": 60.0,
+     "w": 280.0,
+     "h": 370.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": -2,
+     "children": [
+      {
+       "id": 2,
+       "name": "G0A",
+       "type": 1,
+       "x": 20.0,
+       "y": 60.0,
+       "w": 120.0,
+       "h": 220.0,
+       "rot": 0.0,
+       "visible": true,
+       "autoShapeType": 1
+      },
+      {
+       "id": 3,
+       "name": "G0B",
+       "type": 1,
+       "x": 130.0,
+       "y": 60.0,
+       "w": 170.0,
+       "h": 220.0,
+       "rot": 0.0,
+       "visible": true,
+       "autoShapeType": 2
+      },
+      {
+       "id": 4,
+       "name": "G0C",
+       "type": 1,
+       "x": 60.0,
+       "y": 300.0,
+       "w": 210.0,
+       "h": 130.0,
+       "rot": 30.0,
+       "visible": true,
+       "autoShapeType": 9
+      }
+     ]
+    },
+    {
+     "id": 9,
+     "name": "Group 8",
+     "type": 6,
+     "x": 335.0,
+     "y": 60.0,
+     "w": 280.0,
+     "h": 370.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": -2,
+     "children": [
+      {
+       "id": 6,
+       "name": "G1A",
+       "type": 1,
+       "x": 335.0,
+       "y": 60.0,
+       "w": 120.0,
+       "h": 220.0,
+       "rot": 0.0,
+       "visible": true,
+       "autoShapeType": 1
+      },
+      {
+       "id": 7,
+       "name": "G1B",
+       "type": 1,
+       "x": 445.0,
+       "y": 60.0,
+       "w": 170.0,
+       "h": 220.0,
+       "rot": 0.0,
+       "visible": true,
+       "autoShapeType": 2
+      },
+      {
+       "id": 8,
+       "name": "G1C",
+       "type": 1,
+       "x": 375.0,
+       "y": 300.0,
+       "w": 210.0,
+       "h": 130.0,
+       "rot": 30.0,
+       "visible": true,
+       "autoShapeType": 9
+      }
+     ]
+    },
+    {
+     "id": 13,
+     "name": "Group 12",
+     "type": 6,
+     "x": 650.0,
+     "y": 60.0,
+     "w": 280.0,
+     "h": 370.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": -2,
+     "children": [
+      {
+       "id": 10,
+       "name": "G2A",
+       "type": 1,
+       "x": 810.0,
+       "y": 60.0,
+       "w": 120.0,
+       "h": 220.0,
+       "rot": 0.0,
+       "visible": true,
+       "autoShapeType": 1
+      },
+      {
+       "id": 11,
+       "name": "G2B",
+       "type": 1,
+       "x": 650.0,
+       "y": 60.0,
+       "w": 170.0,
+       "h": 220.0,
+       "rot": 0.0,
+       "visible": true,
+       "autoShapeType": 2
+      },
+      {
+       "id": 12,
+       "name": "G2C",
+       "type": 1,
+       "x": 680.0,
+       "y": 300.0,
+       "w": 210.0,
+       "h": 130.0,
+       "rot": 330.0,
+       "visible": true,
+       "autoShapeType": 9
+      }
+     ]
+    }
+   ],
+   "effects": [],
+   "triggerHidden": [],
+   "steps": 0,
+   "keptSlideshow": false
+  }
+ ],
+ "ok": true
+}
