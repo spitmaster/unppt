@@ -47,7 +47,9 @@ export async function renderText(
   if (!txBody) return '';
   const paras = children(txBody, 'a:p');
   if (!paras.length) return '';
-  const hasText = paras.some((p) => p.children.some((r) => (r.name === 'a:r' || r.name === 'a:fld') && (child(r, 'a:t')?.text ?? '').length > 0));
+  // 页码字段不写 a:t 也显示页码（样本：幻灯片上的页码占位符只有 <a:fld type="slidenum"/>）
+  const hasText = paras.some((p) => p.children.some((r) => (r.name === 'a:r' || r.name === 'a:fld') && ((child(r, 'a:t')?.text ?? '').length > 0
+    || (r.name === 'a:fld' && attr(r, 'type') === 'slidenum' && env.slideNumber !== undefined))));
   if (!hasText) return '';
 
   const b = readBody(bodyPrs, child(txBody, 'a:bodyPr'));

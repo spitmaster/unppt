@@ -1,0 +1,123 @@
+{
+ "version": 8,
+ "level": "full",
+ "slideWidthPt": 960.0,
+ "slideHeightPt": 540.0,
+ "imageWidth": 1280,
+ "imageHeight": 720,
+ "slides": [
+  {
+   "index": 0,
+   "hidden": false,
+   "shapes": [
+    {
+     "id": 2,
+     "name": "Slide Number Placeholder 1",
+     "type": 14,
+     "x": 678.0,
+     "y": 500.5,
+     "w": 216.0,
+     "h": 28.75,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 138,
+     "lines": [
+      {
+       "start": 0,
+       "len": 1,
+       "text": "1",
+       "x": 858.2,
+       "y": 482.475,
+       "w": 28.505,
+       "h": 64.8
+      }
+     ]
+    },
+    {
+     "id": 3,
+     "name": "TextBox 2",
+     "type": 17,
+     "x": 80.0,
+     "y": 220.0,
+     "w": 600.0,
+     "h": 80.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 7,
+       "text": "空页码字段 1",
+       "x": 87.2,
+       "y": 223.6,
+       "w": 211.755,
+       "h": 43.2
+      }
+     ]
+    }
+   ],
+   "effects": [],
+   "triggerHidden": [],
+   "steps": 0,
+   "keptSlideshow": false
+  },
+  {
+   "index": 1,
+   "hidden": false,
+   "shapes": [
+    {
+     "id": 2,
+     "name": "Slide Number Placeholder 1",
+     "type": 14,
+     "x": 678.0,
+     "y": 500.5,
+     "w": 216.0,
+     "h": 28.75,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 138,
+     "lines": [
+      {
+       "start": 0,
+       "len": 1,
+       "text": "2",
+       "x": 858.2,
+       "y": 482.475,
+       "w": 28.505,
+       "h": 64.8
+      }
+     ]
+    },
+    {
+     "id": 3,
+     "name": "TextBox 2",
+     "type": 17,
+     "x": 80.0,
+     "y": 220.0,
+     "w": 600.0,
+     "h": 80.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 7,
+       "text": "空页码字段 2",
+       "x": 87.2,
+       "y": 223.6,
+       "w": 211.755,
+       "h": 43.2
+      }
+     ]
+    }
+   ],
+   "effects": [],
+   "triggerHidden": [],
+   "steps": 0,
+   "keptSlideshow": false
+  }
+ ],
+ "ok": true
+}
