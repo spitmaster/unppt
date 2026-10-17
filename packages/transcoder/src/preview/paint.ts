@@ -11,6 +11,7 @@ import { composite, TemplateCache } from './layers';
 import { dropCrashingFilters, lightingFilters } from './crash-filters';
 import { warpPixels, type MeshWarp } from './mesh-warp';
 import { encodeRgba } from '../media/png';
+import { bmpToPng, isBmp } from '../media/bmp';
 
 export interface RgbaImage { width: number; height: number; data: Uint8Array }
 
@@ -69,6 +70,9 @@ export interface Painter {
 const JPEG_QUALITY = 85;
 /** 每个线程缓存的 <pattern> 图片 data URI 总长度上限（字符数，约等于字节数） */
 const URI_CACHE = 64_000_000;
+/** 每个线程缓存的 BMP 转出来的 PNG 总字节数上限 */
+const BMP_CACHE = 64_000_000;
+const BMP_URI = 'data:image/bmp;base64,';
 
 let ready: Promise<void> | undefined;
 /** 这个线程里 resvg 出错（Rust panic）的次数：每次会漏掉一点 WASM 栈，实测 800 次以内画别的页结果不变、2000 次后内存越界 */
@@ -91,6 +95,9 @@ export async function createPainter(wasm: Uint8Array | WebAssembly.Module): Prom
   /** <pattern> 里图片的 data URI（每页都用同一张背景图时不必每页重新编码），按长度只留最近的 URI_CACHE 个字符 */
   let uris = new Map<string, string>();
   let urisLength = 0;
+  /** BMP 图片（页面里的 .bmp、EMF / WMF 里的位图）转成的 PNG：resvg 不认 BMP */
+  let bmps = new Map<string, Promise<Uint8Array | undefined>>();
+  let bmpsLength = 0;
 
   async function dataUri(href: string, res: PaintResources, warnings: string[]): Promise<string | undefined> {
     const hit = uris.get(href);
@@ -110,9 +117,12 @@ export async function createPainter(wasm: Uint8Array | WebAssembly.Module): Prom
     return uri;
   }
 
-  /** 页面里图片地址 -> 图片字节；单独画成位图的 SVG 图片在这里画（画一次） */
+  /** 页面里图片地址 -> 图片字节（BMP 换成 PNG）；单独画成位图的 SVG 图片在这里画（画一次） */
   function imageBytes(href: string, res: PaintResources, warnings: string[]): Promise<Uint8Array | undefined> {
-    if (!href.startsWith(RASTER_PREFIX)) return res.image(href);
+    if (href.startsWith(BMP_URI)) return bmpPng(href, Promise.resolve(fromBase64(href.slice(BMP_URI.length))));
+    if (!href.startsWith(RASTER_PREFIX)) {
+      return res.image(href).then((b) => (b && isBmp(b) ? bmpPng(href, Promise.resolve(b)) : b));
+    }
     const id = href.slice(RASTER_PREFIX.length);
     let p = rasters.get(id);
     if (!p) {
@@ -124,6 +134,20 @@ export async function createPainter(wasm: Uint8Array | WebAssembly.Module): Prom
       })
         .catch((e: Error) => { warnings.push(`整页图里有图片画不出来，没画这张：${e.message}`); return undefined; });
       rasters.set(id, p);
+    }
+    return p;
+  }
+
+  /** BMP 转 PNG，按图片地址缓存（总量超过 BMP_CACHE 时清空重来） */
+  function bmpPng(href: string, bytes: Promise<Uint8Array | undefined>): Promise<Uint8Array | undefined> {
+    let p = bmps.get(href);
+    if (!p) {
+      p = bytes.then((b) => (b ? bmpToPng(b) : undefined)).catch(() => undefined);
+      void p.then((png) => {
+        bmpsLength += png?.length ?? 0;
+        if (bmpsLength > BMP_CACHE) { bmps = new Map(); bmpsLength = 0; }
+      });
+      bmps.set(href, p);
     }
     return p;
   }
@@ -219,6 +243,8 @@ export async function createPainter(wasm: Uint8Array | WebAssembly.Module): Prom
         rasters = new Map();
         uris = new Map();
         urisLength = 0;
+        bmps = new Map();
+        bmpsLength = 0;
       }
       const warnings: string[] = [], layerWarnings: string[] = [];
       const layer = () => (layerWarnings.length ? { layerWarnings } : {});
@@ -252,8 +278,9 @@ export async function createPainter(wasm: Uint8Array | WebAssembly.Module): Prom
 }
 
 /**
- * 换掉页面里的图片地址：resvg 只把 http(s) 地址报成"待解析图片"，media/…、共享图片编号换成占位地址（real：占位地址 -> 原地址），
- * 再按占位地址把原图交给它；<pattern> 里的图片 resvg 不报（实测：图片填充、背景图都画成空白），直接内联成 data URI。
+ * 换掉页面里的图片地址：resvg 只把 http(s) 地址报成"待解析图片"，media/…、共享图片编号、BMP 的 data URI（resvg 不认 BMP，
+ * 要换成 PNG）换成占位地址（real：占位地址 -> 原地址），再按占位地址把原图交给它；<pattern> 里的图片 resvg 不报
+ * （实测：图片填充、背景图都画成空白），直接内联成 data URI。
  * 一遍拼出来：大图（几十 MB 的 data URI）只复制一次
  */
 async function imageHrefs(svg: string, dataUri: (href: string) => Promise<string | undefined>): Promise<{ svg: string; real: Map<string, string> }> {
@@ -263,7 +290,7 @@ async function imageHrefs(svg: string, dataUri: (href: string) => Promise<string
   let last = 0;
   for (const m of svg.matchAll(/(<image\b[^>]*?\s(?:xlink:)?href=")([^"#][^"]*)"/g)) {
     const href = m[2];
-    if (href.startsWith('data:')) continue;
+    if (href.startsWith('data:') && !href.startsWith(BMP_URI)) continue;
     const at = m.index! + m[1].length;
     let to = patterns.some(([s, e]) => m.index! > s && at < e) ? await dataUri(href) : undefined;
     if (!to) {
@@ -275,6 +302,13 @@ async function imageHrefs(svg: string, dataUri: (href: string) => Promise<string
   }
   parts.push(svg.slice(last));
   return { svg: parts.join(''), real };
+}
+
+function fromBase64(s: string): Uint8Array {
+  const bin = atob(s);
+  const out = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+  return out;
 }
 
 function mimeOf(b: Uint8Array): string {
