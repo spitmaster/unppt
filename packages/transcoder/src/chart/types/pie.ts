@@ -2,7 +2,7 @@
 import { css, type ColorContext } from '../../model/color';
 import { n2 } from '../../common/svg';
 import { accentColor, cpart, multiLabel, strokeOf } from '../draw';
-import { labelParts, labelText, piePercents } from '../format';
+import { labelParts, labelText, piePercents, sourceFmt } from '../format';
 import { pointLabel, pointLabelText, shiftLabel } from '../point-labels';
 import type { TextWidth } from '../layout';
 import type { ChartContext, Plot, Rect } from '../model';
@@ -80,7 +80,7 @@ function renderPie(p: Plot, x: number, y: number, w: number, h: number, colors: 
     out.push(cpart(`${s.index}x${i}`, `<path d="${d}" fill="${s.pointPaints?.get(i) ?? css(color)}" fill-rule="evenodd"${strokeOf(s, i, PIE_EDGE)}${move}/>`));
     const pl = pointLabel(s, i), lb = pl.labels;
     if (lb) {
-      const vf = s.valFmt ?? 'General';
+      const vf = sourceFmt(s, i);
       // 没写分隔符时：有百分比是换行，类别名 + 值是", "（实测 charts-pie-label-sep、charts-pie-bestfit）
       const sep = lb.pct ? '\n' : ', ';
       const raw = pointLabelText(s, pl, i, () => labelText(lb, v, total, s.cats[i] ?? '', s.name, vf, pcts[i], sep), () => labelParts(lb, v, total, s.cats[i] ?? '', vf, pcts[i]));

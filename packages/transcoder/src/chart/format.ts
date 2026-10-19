@@ -1,5 +1,5 @@
 /** 图表里的数字 / 日期格式、数据标签文字、缓存数据读取 */
-import { child, children, findAll, numAttr, type XEl } from '../io/xml';
+import { attr, child, children, findAll, numAttr, type XEl } from '../io/xml';
 import type { CatLevel, Labels } from './model';
 import { formatDate } from './date-format';
 
@@ -41,10 +41,15 @@ export function piePercents(vals: number[]): number[] {
   return out;
 }
 
-export function cacheValues(ref: XEl | undefined): { pts: Map<number, string>; count: number; format: string; outer: CatLevel[] } {
+export function cacheValues(ref: XEl | undefined): { pts: Map<number, string>; count: number; format: string; outer: CatLevel[]; fmts: Map<number, string> } {
   const cache = findAll(ref, 'c:numCache')[0] ?? findAll(ref, 'c:strCache')[0] ?? findAll(ref, 'c:numLit')[0] ?? findAll(ref, 'c:strLit')[0];
   const pts = new Map<number, string>();
-  for (const pt of children(cache, 'c:pt')) pts.set(numAttr(pt, 'idx') ?? 0, child(pt, 'c:v')?.text ?? '');
+  // 单个点自己的格式（c:pt 的 formatCode：源单元格格式和整列不同的点）
+  const fmts = new Map<number, string>();
+  for (const pt of children(cache, 'c:pt')) {
+    pts.set(numAttr(pt, 'idx') ?? 0, child(pt, 'c:v')?.text ?? '');
+    if (attr(pt, 'formatCode')) fmts.set(numAttr(pt, 'idx') ?? 0, attr(pt, 'formatCode')!);
+  }
   // 多级分类：第一级是最内层（每个分类的标签），后面的是外层的分组（从里往外）
   const multi = findAll(ref, 'c:multiLvlStrCache')[0];
   const outer: CatLevel[] = [];
@@ -55,8 +60,14 @@ export function cacheValues(ref: XEl | undefined): { pts: Map<number, string>; c
       outer.push(children(l, 'c:pt').map((pt) => ({ idx: numAttr(pt, 'idx') ?? 0, text: child(pt, 'c:v')?.text ?? '' })).sort((a, b) => a.idx - b.idx));
     }
   }
-  return { pts, count: numAttr(child(cache ?? multi, 'c:ptCount'), 'val') ?? pts.size, format: child(cache, 'c:formatCode')?.text ?? 'General', outer };
+  return { pts, count: numAttr(child(cache ?? multi, 'c:ptCount'), 'val') ?? pts.size, format: child(cache, 'c:formatCode')?.text ?? 'General', outer, fmts };
 }
+
+/**
+ * 数据标签"链接到源"时第 i 个点的格式：点自己的 formatCode，没有时整列的，都没有是常规——不用数值轴的格式
+ * （实测 charts-dlbl-numfmt：数值轴设 0.0 时标签仍是 85、62.5；部分单元格 0.00 时只有那几个点是 85.00）
+ */
+export const sourceFmt = (s: { ptFmts?: Map<number, string>; valFmt?: string }, i: number) => s.ptFmts?.get(i) ?? s.valFmt ?? 'General';
 
 /** 常规格式：整数原样，小数最多 6 位有效小数 */
 function general(v: number): string {

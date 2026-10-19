@@ -5,12 +5,15 @@
  */
 import type { ColorContext } from '../model/color';
 import { attr, child, children, findAll, numAttr, path, type XEl } from '../io/xml';
-import { textStyle } from './draw';
+import { hasCjk, textStyle } from './draw';
 import type { Labels, PointLabel, Series, TextStyle } from './model';
 
 export type { PointLabel };
 
 type RichPart = NonNullable<PointLabel['rich']>[number];
+
+/** 标签自己设的数字格式；链接到源（sourceLinked="1"）的不算，按源数据的格式 */
+const ownFmt = (d: XEl | undefined) => (attr(child(d, 'c:numFmt'), 'sourceLinked') === '1' ? undefined : attr(child(d, 'c:numFmt'), 'formatCode'));
 
 /** 系列 / 整个图的数据标签设置（显示项都没开、或者删掉了时是 undefined） */
 export function readLabels(d: XEl | undefined, base: Labels | undefined, colors: ColorContext, text: TextStyle): Labels | undefined {
@@ -21,7 +24,7 @@ export function readLabels(d: XEl | undefined, base: Labels | undefined, colors:
     val: flag('showVal', base?.val ?? false), pct: flag('showPercent', base?.pct ?? false),
     cat: flag('showCatName', base?.cat ?? false), ser: flag('showSerName', base?.ser ?? false),
     pos: attr(child(d, 'c:dLblPos'), 'val') ?? base?.pos,
-    fmt: attr(child(d, 'c:numFmt'), 'formatCode') ?? base?.fmt,
+    fmt: ownFmt(d) ?? base?.fmt,
     style: textStyle(child(d, 'c:txPr'), colors, base?.style ?? text),
     sep: child(d, 'c:separator')?.text ?? base?.sep,
   };
@@ -37,7 +40,7 @@ export function readPointLabels(dLbls: XEl | undefined, series: Labels | undefin
   const base: Labels = series ?? {
     val: false, pct: false, cat: false, ser: false, style: textStyle(child(dLbls, 'c:txPr'), colors, text),
     ...(attr(child(dLbls, 'c:dLblPos'), 'val') ? { pos: attr(child(dLbls, 'c:dLblPos'), 'val') } : {}),
-    ...(attr(child(dLbls, 'c:numFmt'), 'formatCode') ? { fmt: attr(child(dLbls, 'c:numFmt'), 'formatCode') } : {}),
+    ...(ownFmt(dLbls) ? { fmt: ownFmt(dLbls) } : {}),
   };
   for (const d of list) {
     const idx = numAttr(child(d, 'c:idx'), 'val');
@@ -91,8 +94,27 @@ export function pointLabelText(s: Series, pl: PointLabel, i: number, auto: () =>
   }).join('');
 }
 
-/** 手动拖开的标签：整体平移（box 是图表的宽高） */
+/** 标签文字的大致外框（从 label() 输出的第一个 <text> 读位置、字号、对齐；宽按汉字 1、其它 0.55 个字号估） */
+function textBox(svg: string): { x0: number; x1: number; y0: number; y1: number } | undefined {
+  const m = /<text x="(-?[\d.]+)" y="(-?[\d.]+)" font-size="([\d.]+)"[^>]*?(?:text-anchor="(\w+)")?[^>]*>([^<]*)<\/text>/.exec(svg);
+  if (!m || /<g transform/.test(svg.slice(0, m.index))) return undefined;
+  const x = Number(m[1]), y = Number(m[2]), s = Number(m[3]);
+  const w = [...m[5]].reduce((a, ch) => a + (hasCjk(ch) ? 1 : 0.55), 0) * s;
+  const x0 = m[4] === 'end' ? x - w : m[4] === 'start' ? x : x - w / 2;
+  return { x0, x1: x0 + w, y0: y - 0.6 * s, y1: y + 0.6 * s };
+}
+
+/**
+ * 手动拖开的标签：整体平移（box 是图表的宽高）；拖到图表外面的夹回图表里（实测 charts-dlbl-clamp：往左、往右、往上拖出图表的
+ * 标签都贴着图表边画）
+ */
 export function shiftLabel(svg: string, pl: PointLabel, box: { w: number; h: number }): string {
   if (!svg || (!pl.dx && !pl.dy)) return svg;
-  return `<g transform="translate(${(pl.dx * box.w).toFixed(2)} ${(pl.dy * box.h).toFixed(2)})">${svg}</g>`;
+  let tx = pl.dx * box.w, ty = pl.dy * box.h;
+  const b = box.w > 0 && box.h > 0 ? textBox(svg) : undefined;
+  if (b) {
+    tx = Math.min(Math.max(tx, -b.x0), box.w - b.x1);
+    ty = Math.min(Math.max(ty, -b.y0), box.h - b.y1);
+  }
+  return `<g transform="translate(${tx.toFixed(2)} ${ty.toFixed(2)})">${svg}</g>`;
 }

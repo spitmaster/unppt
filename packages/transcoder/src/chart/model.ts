@@ -46,6 +46,8 @@ export interface Series {
   vals: (number | null)[];
   /** 数值的源数据格式（c:numCache 的 formatCode，常规时不写）：数据表按它显示 */
   valFmt?: string;
+  /** 单个点自己的源数据格式（c:pt 的 formatCode） */
+  ptFmts?: Map<number, string>;
   /** 散点图的 X 值 */
   xs?: (number | null)[];
   /** 气泡图的气泡大小；bubble3D 时画成有高光的球 */

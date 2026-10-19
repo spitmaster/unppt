@@ -6512,7 +6512,159 @@ def _patch_fontalgn_tall(path):
 table_fontalgn_tall.patch = _patch_fontalgn_tall
 
 
-CASES = [shapes_all, text_sizes, text_align, text_spacing, text_bullets, text_missing_font, shapes_basic, fills_lines, table_basic, group_rotate, anim_basic, anim_auto, charts_basic, pictures, smartart, text_effects, text_layout, table_merge, links, emf_images, anim_advanced, charts_labels, freeform_icons, media_audio, anim_trigger, wmf_images, anim_iterate, picture_transparent, charts_more, shape_effects, equations, anim_path, anim_emphasis, transitions, fills_patterns, text_decoration, anim_entrance, svg_images, charts_markers, hidden_slides, media_background, text_glow_reflection, text_tabs, text_picture_bullets, fills_texture, transition_morph, text_embedded_fonts, text_warp, anim_repeat, charts_sizes, slide_timings, lines_compound, table_diagonal, lines_gradient, fills_radial, fills_rect_gradient, shapes_3d, table_vertical, transitions_more, anim_sound, anim_build, anim_after, anim_text_emphasis, charts_bubble, media_video, charts_options, charts_negative, shapes_bevel, charts_legend, shapes_3d_rotation, smartart_3d, charts_ofpie, charts_3d, anim_group_emphasis, activex_controls, charts_extras, charts_axis_titles, charts_fills, charts_outlines, charts_labels_more, group_scale, group_flip, charts_3d_line, charts_legend_pos, charts_crowded_labels, charts_label_skip, charts_bar_long_names, charts_multilevel, picture_recolor, text_symbols, text_numbering, lines_arrows, table_styles, shapes_styles, charts_styles, placeholders_inherit, text_bold_light, ole_objects, text_hanging_punct, speaker_notes, pictures_tiff, placeholders_picture, pictures_exif, text_picture_fill, pictures_mislabeled, emf_alphablend, placeholders_orphan, picture_fill_rect, slide_number_fields, table_builtin_styles, smartart_matrix, text_layout_unit, colors_gamma, text_latin_cjk_font, text_default_style, text_missing_font_jp, text_ea_line_break, text_ambiguous_punct, text_charset_slides, table_rowspan_tall, text_autofit_round, shapes_3d_contour, emf_clip_modes, placeholders_picture_geom, emf_gradient_fill, text_theme_font_lang, text_anchor_linespacing, table_linespacing, table_fontalgn, text_theme_font_latin, text_margin_right, text_charset_gap, slide_size_repair, fills_shape_gradient, text_shadow_runs, picture_3d_shadow, charts_axis_ea_vert, fills_tile_resample, text_shadow_dist, text_shadow_size, text_shadow_scale, text_shadow_blur, text_glow_scale, text_reflection_dist, shapes_bg_fill, text_control_chars, placeholders_no_index, text_ambiguous_missing_ea, text_missing_panose, emf_bitmap_src, fills_group, fills_rot_with_shape, fills_rot_cut, charts_pct_stacked, picture_bg_fill, charts_legend_manual, charts_long_cats, charts_cat_vertical, charts_cat_rot_len, charts_cat_rot_short, charts_cat_rot_threshold, charts_pie_label_sep, text_slash_break, smartart_colors, text_fontref_ph, text_hanging_unset, table_default_bold, text_missing_cjk_name, text_fakebold_width, text_br_empty_line, text_ea_lang, slide_number_bare_field, text_neg_indent, text_mix_wrap_lines, text_theme_ea_altlang, charts_inner_titles, charts_line_dash, charts_rich_title, text_ea_slot_symbols, charts_date_extra_vals, shape_shadow_nofill_text, text_fontalgn, charts_legend_overflow, group_effects, charts_point_labels, picture_bevel_border, text_outline_fakebold, text_just_hang, text_just_spaces, charts_axis_ea_vert_latin, charts_title_moved, charts_dtable_fonts, charts_pie_manual_labels, charts_axis_title_moved, charts_pie_bestfit, charts_dtable_wrap, charts_axis_min_offset, text_bullet_pos_indent, text_spcpts_round, charts_na_values, lines_dash_caps, text_anchor_ctr, custgeom_no_wh, text_link_kinds, fills_blip_no_mode, text_buchar_multi, text_font_substitutes, charts_empty_series_name, charts_cat_custom_rot, text_ea_latin_cjk, placeholders_footer_base, table_no_style_other, lines_thin_dash, text_super_spc, text_pua_nosym, text_vert_insets, table_fontalgn_tall]
+def charts_dlbl_numfmt(app):
+    """数据标签的数字格式：1 数值轴设成 "0.0"（不链接源）、标签默认；2 部分单元格格式 "0.00"、标签默认；3 标签设 "0%"；
+    4 数值轴删掉（85、62、40、77，看刻度单位）；5 折线系列在次坐标轴上、次坐标轴删掉（看折线按哪个刻度画）"""
+    import time
+    p = new_pres(app, window=True)
+    s = blank(p)
+    vals = [85, 62.5, 40, 77]
+    for k in range(5):
+        ch = s.Shapes.AddChart2(-1, 51, 10 + (k % 3) * 315, 20 + (k // 3) * 260, 300, 240)
+        rows = [["", "系列 1"] + (["系列 2"] if k == 4 else [])] + [[c, v] + ([0.3] if k == 4 else []) for c, v in zip(["甲", "乙", "丙", "丁"], vals)]
+        _chart_values(ch, rows)
+        if k == 1:
+            ws = ch.Chart.ChartData.Workbook.Worksheets(1)
+            ws.Cells(2, 2).NumberFormat = "0.00"
+            ws.Cells(4, 2).NumberFormat = "0.00"
+        _close_data(ch)
+        time.sleep(1)
+        c = ch.Chart
+        c.HasTitle = False
+        c.HasLegend = False
+        if k < 3:
+            c.SeriesCollection(1).HasDataLabels = True
+        if k == 0:
+            c.Axes(2).TickLabels.NumberFormat = "0.0"
+        if k == 2:
+            c.SeriesCollection(1).DataLabels().NumberFormat = "0%"
+        if k == 3:
+            c.Axes(2).Format.Line.Visible = True
+        if k == 4:
+            sr = c.SeriesCollection(2)
+            sr.ChartType = 65
+            sr.AxisGroup = 2
+    return p
+
+
+def _patch_dlbl_numfmt(path):
+    """没有数据标签、只有一根数值轴的图删掉数值轴；有两根数值轴的删掉次坐标轴"""
+    import re
+    import zipfile
+    tmp = path.with_suffix(".tmp")
+    with zipfile.ZipFile(path) as zin, zipfile.ZipFile(tmp, "w", zipfile.ZIP_DEFLATED) as zout:
+        for item in zin.infolist():
+            data = zin.read(item.filename)
+            if re.match(r"ppt/charts/chart\d+\.xml$", item.filename):
+                xml = data.decode("utf8")
+                axes = re.findall(r"<c:valAx>.*?</c:valAx>", xml, flags=re.S)
+                target = axes[1] if len(axes) == 2 else axes[0] if len(axes) == 1 and "<c:showVal val=\"1\"/>" not in xml else None
+                if target:
+                    xml = xml.replace(target, target.replace('<c:delete val="0"/>', '<c:delete val="1"/>', 1))
+                data = xml.encode("utf8")
+            zout.writestr(item, data)
+    tmp.replace(path)
+
+
+charts_dlbl_numfmt.patch = _patch_dlbl_numfmt
+
+
+def charts_user_shapes(app):
+    """图表里画的形状（保存后加 c:userShapes 和绘图部件，PowerPoint 的 COM 加不了）：相对锚点的文本框、半透明矩形、箭头线，
+    绝对锚点的一个圆角矩形"""
+    import time
+    p = new_pres(app, window=True)
+    s = blank(p)
+    ch = s.Shapes.AddChart2(-1, 51, 60, 40, 600, 420)
+    _close_data(ch)
+    time.sleep(1)
+    ch.Chart.HasTitle = False
+    return p
+
+
+_USER_SHAPES = """<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<c:userShapes xmlns:c="http://schemas.openxmlformats.org/drawingml/2006/chart" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:cdr="http://schemas.openxmlformats.org/drawingml/2006/chartDrawing">
+<cdr:relSizeAnchor><cdr:from><cdr:x>0.05</cdr:x><cdr:y>0.02</cdr:y></cdr:from><cdr:to><cdr:x>0.35</cdr:x><cdr:y>0.10</cdr:y></cdr:to>
+<cdr:sp macro="" textlink=""><cdr:nvSpPr><cdr:cNvPr id="2" name="TextBox 1"/><cdr:cNvSpPr txBox="1"/></cdr:nvSpPr><cdr:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="0" cy="0"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom><a:noFill/></cdr:spPr>
+<cdr:txBody><a:bodyPr wrap="square" rtlCol="0"/><a:lstStyle/><a:p><a:r><a:rPr lang="zh-CN" altLang="en-US" sz="1400"/><a:t>单位：万元</a:t></a:r></a:p></cdr:txBody></cdr:sp></cdr:relSizeAnchor>
+<cdr:relSizeAnchor><cdr:from><cdr:x>0.5</cdr:x><cdr:y>0.2</cdr:y></cdr:from><cdr:to><cdr:x>0.75</cdr:x><cdr:y>0.7</cdr:y></cdr:to>
+<cdr:sp macro="" textlink=""><cdr:nvSpPr><cdr:cNvPr id="3" name="Rect 2"/><cdr:cNvSpPr/></cdr:nvSpPr><cdr:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="0" cy="0"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom><a:solidFill><a:srgbClr val="F06060"><a:alpha val="40000"/></a:srgbClr></a:solidFill><a:ln><a:noFill/></a:ln></cdr:spPr></cdr:sp></cdr:relSizeAnchor>
+<cdr:relSizeAnchor><cdr:from><cdr:x>0.75</cdr:x><cdr:y>0.15</cdr:y></cdr:from><cdr:to><cdr:x>0.87</cdr:x><cdr:y>0.35</cdr:y></cdr:to>
+<cdr:cxnSp macro=""><cdr:nvCxnSpPr><cdr:cNvPr id="4" name="Arrow 3"/><cdr:cNvCxnSpPr/></cdr:nvCxnSpPr><cdr:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="0" cy="0"/></a:xfrm><a:prstGeom prst="straightConnector1"><a:avLst/></a:prstGeom><a:ln w="31750"><a:solidFill><a:srgbClr val="C00000"/></a:solidFill><a:tailEnd type="triangle"/></a:ln></cdr:spPr></cdr:cxnSp></cdr:relSizeAnchor>
+<cdr:absSizeAnchor><cdr:from><cdr:x>0.1</cdr:x><cdr:y>0.75</cdr:y></cdr:from><cdr:ext cx="1270000" cy="381000"/>
+<cdr:sp macro="" textlink=""><cdr:nvSpPr><cdr:cNvPr id="5" name="RoundRect 4"/><cdr:cNvSpPr/></cdr:nvSpPr><cdr:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="0" cy="0"/></a:xfrm><a:prstGeom prst="roundRect"><a:avLst/></a:prstGeom><a:solidFill><a:srgbClr val="70AD47"/></a:solidFill></cdr:spPr>
+<cdr:txBody><a:bodyPr anchor="ctr"/><a:lstStyle/><a:p><a:pPr algn="ctr"/><a:r><a:rPr lang="zh-CN" altLang="en-US" sz="1200"><a:solidFill><a:srgbClr val="FFFFFF"/></a:solidFill></a:rPr><a:t>标注</a:t></a:r></a:p></cdr:txBody></cdr:sp></cdr:absSizeAnchor>
+</c:userShapes>"""
+
+
+def _patch_user_shapes(path):
+    import re
+    import zipfile
+    tmp = path.with_suffix(".tmp")
+    with zipfile.ZipFile(path) as zin, zipfile.ZipFile(tmp, "w", zipfile.ZIP_DEFLATED) as zout:
+        for item in zin.infolist():
+            data = zin.read(item.filename)
+            if item.filename == "ppt/charts/chart1.xml":
+                xml = data.decode("utf8")
+                xml = xml.replace("</c:chartSpace>", '<c:userShapes r:id="rIdUS1"/></c:chartSpace>')
+                data = xml.encode("utf8")
+            elif item.filename == "ppt/charts/_rels/chart1.xml.rels":
+                xml = data.decode("utf8")
+                xml = xml.replace("</Relationships>", '<Relationship Id="rIdUS1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/chartUserShapes" Target="../drawings/drawing1.xml"/></Relationships>')
+                data = xml.encode("utf8")
+            elif item.filename == "[Content_Types].xml":
+                xml = data.decode("utf8")
+                xml = xml.replace("</Types>", '<Override PartName="/ppt/drawings/drawing1.xml" ContentType="application/vnd.openxmlformats-officedocument.drawingml.chartshapes+xml"/></Types>')
+                data = xml.encode("utf8")
+            zout.writestr(item, data)
+        zout.writestr("ppt/drawings/drawing1.xml", _USER_SHAPES.encode("utf8"))
+    tmp.replace(path)
+
+
+charts_user_shapes.patch = _patch_user_shapes
+
+
+def charts_dlbl_clamp(app):
+    """拖开的数据标签移到图表外面（保存后改 manualLayout：第 1 个点 x −0.5、第 4 个点 x +0.5、第 2 个点 y −0.6）：
+    PowerPoint 是不是把标签夹回图表里、画不画引导线；折线图和柱形图"""
+    import time
+    p = new_pres(app, window=True)
+    s = blank(p)
+    for k, kind in enumerate([65, 51]):
+        ch = s.Shapes.AddChart2(-1, kind, 40 + k * 450, 80, 400, 300)
+        _chart_values(ch, [["", "系列 1"]] + [[c, v] for c, v in zip(["甲", "乙", "丙", "丁"], [76.1, 60, 45, 70])])
+        _close_data(ch)
+        time.sleep(1)
+        c = ch.Chart
+        c.HasTitle = False
+        c.HasLegend = False
+        c.SeriesCollection(1).HasDataLabels = True
+    return p
+
+
+def _patch_dlbl_clamp(path):
+    import re
+    import zipfile
+    tmp = path.with_suffix(".tmp")
+    moves = {0: (-0.5, 0), 3: (0.5, 0), 1: (0, -0.6)}
+    def dlbl(i, x, y):
+        return (f'<c:dLbl><c:idx val="{i}"/><c:layout><c:manualLayout><c:x val="{x}"/><c:y val="{y}"/></c:manualLayout></c:layout>'
+                '<c:showLegendKey val="0"/><c:showVal val="1"/><c:showCatName val="0"/><c:showSerName val="0"/><c:showPercent val="0"/><c:showBubbleSize val="0"/></c:dLbl>')
+    with zipfile.ZipFile(path) as zin, zipfile.ZipFile(tmp, "w", zipfile.ZIP_DEFLATED) as zout:
+        for item in zin.infolist():
+            data = zin.read(item.filename)
+            if re.match(r"ppt/charts/chart\d+\.xml$", item.filename):
+                xml = data.decode("utf8")
+                xml = xml.replace("<c:dLbls>", "<c:dLbls>" + "".join(dlbl(i, x, y) for i, (x, y) in moves.items()), 1)
+                data = xml.encode("utf8")
+            zout.writestr(item, data)
+    tmp.replace(path)
+
+
+charts_dlbl_clamp.patch = _patch_dlbl_clamp
+
+
+CASES = [shapes_all, text_sizes, text_align, text_spacing, text_bullets, text_missing_font, shapes_basic, fills_lines, table_basic, group_rotate, anim_basic, anim_auto, charts_basic, pictures, smartart, text_effects, text_layout, table_merge, links, emf_images, anim_advanced, charts_labels, freeform_icons, media_audio, anim_trigger, wmf_images, anim_iterate, picture_transparent, charts_more, shape_effects, equations, anim_path, anim_emphasis, transitions, fills_patterns, text_decoration, anim_entrance, svg_images, charts_markers, hidden_slides, media_background, text_glow_reflection, text_tabs, text_picture_bullets, fills_texture, transition_morph, text_embedded_fonts, text_warp, anim_repeat, charts_sizes, slide_timings, lines_compound, table_diagonal, lines_gradient, fills_radial, fills_rect_gradient, shapes_3d, table_vertical, transitions_more, anim_sound, anim_build, anim_after, anim_text_emphasis, charts_bubble, media_video, charts_options, charts_negative, shapes_bevel, charts_legend, shapes_3d_rotation, smartart_3d, charts_ofpie, charts_3d, anim_group_emphasis, activex_controls, charts_extras, charts_axis_titles, charts_fills, charts_outlines, charts_labels_more, group_scale, group_flip, charts_3d_line, charts_legend_pos, charts_crowded_labels, charts_label_skip, charts_bar_long_names, charts_multilevel, picture_recolor, text_symbols, text_numbering, lines_arrows, table_styles, shapes_styles, charts_styles, placeholders_inherit, text_bold_light, ole_objects, text_hanging_punct, speaker_notes, pictures_tiff, placeholders_picture, pictures_exif, text_picture_fill, pictures_mislabeled, emf_alphablend, placeholders_orphan, picture_fill_rect, slide_number_fields, table_builtin_styles, smartart_matrix, text_layout_unit, colors_gamma, text_latin_cjk_font, text_default_style, text_missing_font_jp, text_ea_line_break, text_ambiguous_punct, text_charset_slides, table_rowspan_tall, text_autofit_round, shapes_3d_contour, emf_clip_modes, placeholders_picture_geom, emf_gradient_fill, text_theme_font_lang, text_anchor_linespacing, table_linespacing, table_fontalgn, text_theme_font_latin, text_margin_right, text_charset_gap, slide_size_repair, fills_shape_gradient, text_shadow_runs, picture_3d_shadow, charts_axis_ea_vert, fills_tile_resample, text_shadow_dist, text_shadow_size, text_shadow_scale, text_shadow_blur, text_glow_scale, text_reflection_dist, shapes_bg_fill, text_control_chars, placeholders_no_index, text_ambiguous_missing_ea, text_missing_panose, emf_bitmap_src, fills_group, fills_rot_with_shape, fills_rot_cut, charts_pct_stacked, picture_bg_fill, charts_legend_manual, charts_long_cats, charts_cat_vertical, charts_cat_rot_len, charts_cat_rot_short, charts_cat_rot_threshold, charts_pie_label_sep, text_slash_break, smartart_colors, text_fontref_ph, text_hanging_unset, table_default_bold, text_missing_cjk_name, text_fakebold_width, text_br_empty_line, text_ea_lang, slide_number_bare_field, text_neg_indent, text_mix_wrap_lines, text_theme_ea_altlang, charts_inner_titles, charts_line_dash, charts_rich_title, text_ea_slot_symbols, charts_date_extra_vals, shape_shadow_nofill_text, text_fontalgn, charts_legend_overflow, group_effects, charts_point_labels, picture_bevel_border, text_outline_fakebold, text_just_hang, text_just_spaces, charts_axis_ea_vert_latin, charts_title_moved, charts_dtable_fonts, charts_pie_manual_labels, charts_axis_title_moved, charts_pie_bestfit, charts_dtable_wrap, charts_axis_min_offset, text_bullet_pos_indent, text_spcpts_round, charts_na_values, lines_dash_caps, text_anchor_ctr, custgeom_no_wh, text_link_kinds, fills_blip_no_mode, text_buchar_multi, text_font_substitutes, charts_empty_series_name, charts_cat_custom_rot, text_ea_latin_cjk, placeholders_footer_base, table_no_style_other, lines_thin_dash, text_super_spc, text_pua_nosym, text_vert_insets, table_fontalgn_tall, charts_dlbl_numfmt, charts_user_shapes, charts_dlbl_clamp]
 
 
 def main():

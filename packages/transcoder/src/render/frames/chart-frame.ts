@@ -6,6 +6,7 @@ import { fallbackAdvance, isWide, type FontLibrary, type FontMetrics } from '../
 import type { SlideMapping, Theme } from '../../model/model';
 import { chartUid } from '../../common/uid';
 import type { FrameHandler } from './frame-handler';
+import { chartUserShapes } from './chart-user-shapes';
 
 /**
  * 图表文字的宽度：按文字自己的字体（图表里写的字体先全部读好，量宽度时同步取真实字宽），没写字体的按主题字体；
@@ -52,8 +53,10 @@ export const chartFrame: FrameHandler = {
     const colors = ov ? { ...ctx.colors, scheme: theme.colors } : ctx.colors;
     const measure = await chartMeasure(r.env.fonts, theme, xml);
     const svg = renderChart(xml, box.w, box.h, { colors, theme, part: rel!.target, warn: (m) => r.env.pres.warn(m), measure, defs: { id: (k) => r.doc.id(k), add: (x) => r.doc.addDef(x) }, doc: r.doc, origin: chartOrigin(ctx.toSlide, box) });
+    // 图表里画的形状（c:userShapes）盖在图表上面
+    const shapes = await chartUserShapes(rel!.target, xml, box, r, ctx);
     // 数据部分的标记换成动画编号（"按系列""按类别"动画用）；不是幻灯片自己的图表就去掉
-    return { svg: svg.replace(/ data-cpart="([0-9a-z]{1,16})"/g, (_m, key: string) => (uid ? ` data-uid="${chartUid(uid, key)}"` : '')) };
+    return { svg: svg.replace(/ data-cpart="([0-9a-z]{1,16})"/g, (_m, key: string) => (uid ? ` data-uid="${chartUid(uid, key)}"` : '')) + shapes };
   },
 };
 
