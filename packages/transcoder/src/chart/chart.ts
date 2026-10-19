@@ -4,7 +4,7 @@
  * 每种图表怎么画由 ChartType 决定（chart-type.ts，注册在 chart-types.ts）。
  * 布局按 PowerPoint 默认的自动布局近似实现。
  */
-import type { ColorContext } from '../model/color';
+import { colorIn, type ColorContext } from '../model/color';
 import type { Theme } from '../model/model';
 import type { SvgDoc } from '../common/svg';
 import { areaRect } from './area-fill';
@@ -13,7 +13,7 @@ import { axesOf, axisMaker } from './axis';
 import { renderCategoryChart } from './cat-chart';
 import { pixelGrid } from './pixel-grid';
 import { chartTypeOf } from './chart-types';
-import { gradientRef, label, textStyle, textWidth } from './draw';
+import { gradientRef, label, richStyle, textStyle, textWidth } from './draw';
 import { BOTTOM_PAD, PAD, pieLegendBand, type TextWidth } from './layout';
 import { renderLegend } from './legend';
 import type { ChartContext, PattFill, Plot, Rect, SvgDefs, TextStyle, View3D } from './model';
@@ -101,9 +101,17 @@ export function renderChart(space: XEl | undefined, w: number, h: number, env: C
     // 总是 18.62 磅（图表文字整体改成 16 磅时自动标题不变，导出图实测）
     const refSize = titleEl ? textStyle(child(child(chart, 'c:legend'), 'c:txPr'), colors, baseText).size : (11.97 * 96) / 72;
     const ts = textStyle(child(titleEl, 'c:txPr'), colors, { ...baseText, size: refSize * 1862 / 1197 });
+    // 写成 rich 的标题：标题自己的 txPr 不用，字号、粗细、颜色、字体按第一个 run 的 rPr → 段落 defRPr 取，都没写时
+    // 字号 = 1.2 × 图表文字字号（图表 txPr 没写字号时 18 磅）、粗体、颜色用图表 txPr 的（没写时 tx1）（实测 charts-rich-title、COM 探针）
     const rich = path(titleEl, 'c:tx', 'c:rich');
-    const rr = rich ? findAll(rich, 'a:rPr')[0] ?? findAll(rich, 'a:defRPr')[0] : undefined;
-    const tst: TextStyle = rr ? { ...ts, size: numAttr(rr, 'sz') ? numAttr(rr, 'sz')! / 100 * 96 / 72 : ts.size } : ts;
+    const spaceDef = path(space, 'c:txPr', 'a:p', 'a:pPr', 'a:defRPr');
+    const spaceSz = numAttr(spaceDef, 'sz');
+    const tx1 = { name: 'x', attrs: {}, text: '', children: [{ name: 'a:schemeClr', attrs: { val: 'tx1' }, text: '', children: [] }] };
+    const richBase: TextStyle = {
+      ...baseText, size: spaceSz ? (1.2 * spaceSz / 100) * 96 / 72 : 24, bold: true,
+      color: colorIn(child(spaceDef, 'a:solidFill'), colors) ?? colorIn(tx1, colors) ?? { r: 0, g: 0, b: 0, a: 1 },
+    };
+    const tst = rich ? richStyle(rich, colors, richBase) : ts;
     // 实测（12~32 磅标题的导出图，柱形图、饼图）：标题字的中心离图表上边 8.68 + 0.675 × 字号像素，
     // label 的 y 比字的墨迹中心低约 0.04 × 字号
     out.push(label(titleText, w / 2, TITLE_Y0 + TITLE_Y * tst.size, tst));

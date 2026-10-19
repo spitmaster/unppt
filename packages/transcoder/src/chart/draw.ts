@@ -12,12 +12,18 @@ export const ACCENTS = ['accent1', 'accent2', 'accent3', 'accent4', 'accent5', '
 export function textStyle(txPr: XEl | undefined, ctx: ColorContext, base: TextStyle): TextStyle {
   const def = path(txPr, 'a:p', 'a:pPr', 'a:defRPr');
   if (!def) return base;
+  // bodyPr rot = -60000000 表示"自动"（不转）
+  const rot = numAttr(child(txPr, 'a:bodyPr'), 'rot');
+  return { ...rprStyle(def, ctx, base), ...(rot !== undefined && rot !== -60000000 && rot !== 0 ? { rot: rot / 60000 } : {}) };
+}
+
+/** 一个 a:defRPr / a:rPr 盖在 base 上（字号、颜色、粗细、字体没写的沿用 base；字间距、转角不沿用） */
+export function rprStyle(def: XEl | undefined, ctx: ColorContext, base: TextStyle): TextStyle {
+  if (!def) return base;
   const sz = numAttr(def, 'sz');
   const fill = child(def, 'a:solidFill');
   const latin = attr(child(def, 'a:latin'), 'typeface');
   const ea = attr(child(def, 'a:ea'), 'typeface');
-  // bodyPr rot = -60000000 表示"自动"（不转）
-  const rot = numAttr(child(txPr, 'a:bodyPr'), 'rot');
   const spc = numAttr(def, 'spc');
   return {
     size: sz ? (sz / 100) * 96 / 72 : base.size,
@@ -25,9 +31,15 @@ export function textStyle(txPr: XEl | undefined, ctx: ColorContext, base: TextSt
     bold: attr(def, 'b') === '1' ? true : attr(def, 'b') === '0' ? false : base.bold,
     font: latin && !latin.startsWith('+') ? latin : base.font,
     ...(ea && !ea.startsWith('+') ? { eaFont: ea } : base.eaFont ? { eaFont: base.eaFont } : {}),
-    ...(rot !== undefined && rot !== -60000000 && rot !== 0 ? { rot: rot / 60000 } : {}),
     ...(spc ? { spc: ((spc / 100) * 96) / 72 } : {}),
   };
+}
+
+/** 标题这类写成 c:tx/c:rich 的文字：先 txPr，再第一段的 pPr/defRPr，再第一个 run 的 rPr（没写的沿用上一层） */
+export function richStyle(rich: XEl | undefined, ctx: ColorContext, base: TextStyle): TextStyle {
+  const p0 = child(rich, 'a:p');
+  const r0 = p0?.children.find((c) => c.name === 'a:r' || c.name === 'a:fld');
+  return rprStyle(child(r0, 'a:rPr'), ctx, rprStyle(path(p0, 'a:pPr', 'a:defRPr'), ctx, base));
 }
 
 export function textWidth(s: string, size: number): number {
