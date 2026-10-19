@@ -22,6 +22,8 @@ import { readPlots } from './read';
 
 /** 实测：标题文字的 y（像素，离图表上边）= TITLE_Y0 + TITLE_Y × 字号 */
 const TITLE_Y0 = 8.68, TITLE_Y = 0.715;
+/** 实测：手动摆放的标题，纵向按存的位置减 6 磅对齐自动时的位置、文字从存的位置右边 3.2 磅处开始（像素） */
+const TITLE_TOP = 6 * 96 / 72, TITLE_INSET = 3.2 * 96 / 72;
 
 export interface ChartEnv {
   colors: ColorContext;
@@ -96,6 +98,7 @@ export function renderChart(space: XEl | undefined, w: number, h: number, env: C
   } else if (!autoDeleted && plots.length === 1 && plots[0].series.length === 1) {
     titleText = plots[0].series[0].name;
   }
+  let lateTitle = '';
   if (titleText) {
     // 没写字号时：新版 Office 图表标题和其它文字的默认字号比例是 18.62 : 11.97；没有标题元素的自动标题
     // 总是 18.62 磅（图表文字整体改成 16 磅时自动标题不变，导出图实测）
@@ -114,7 +117,16 @@ export function renderChart(space: XEl | undefined, w: number, h: number, env: C
     const tst = rich ? richStyle(rich, colors, richBase) : ts;
     // 实测（12~32 磅标题的导出图，柱形图、饼图）：标题字的中心离图表上边 8.68 + 0.675 × 字号像素，
     // label 的 y 比字的墨迹中心低约 0.04 × 字号
-    out.push(label(titleText, w / 2, TITLE_Y0 + TITLE_Y * tst.size, tst));
+    // 手动挪过的标题（c:layout 的 manualLayout，edge 模式是标题框位置占图表宽高的比例）：文字从存的位置右边 3.2 磅处排，纵向比自动时
+    // 下移 (存的位置 − 6 磅)（存的位置比 COM 的 Left / Top 大 4 磅，自动时 Top 是 2 磅）；绘图区照样给标题留位置（COM 探针：挪到图表
+    // 中间、下面，内框都不变）；画在绘图区上面（实测 charts-title-moved：挪到柱子上的标题不被柱子盖住）
+    const tml = path(titleEl, 'c:layout', 'c:manualLayout');
+    const edge = (n: 'x' | 'y') => attr(child(tml, `c:${n}Mode`), 'val') === 'edge' ? numAttr(child(tml, `c:${n}`), 'val') : undefined;
+    const tx = edge('x'), ty = edge('y');
+    const titleX = tx !== undefined ? tx * w + TITLE_INSET + tw(titleText, tst.size, tst.font) / 2 : w / 2;
+    const titleY = TITLE_Y0 + TITLE_Y * tst.size + (ty !== undefined ? ty * h - TITLE_TOP : 0);
+    if (tx !== undefined || ty !== undefined) lateTitle = label(titleText, titleX, titleY, tst);
+    else out.push(label(titleText, titleX, titleY, tst));
     // 实测（COM 读绘图区上沿：标题 12~32 磅 × 数值标签 9~20 磅）：带坐标轴的图，标题占 1.3545 × 标题字号，
     // 下面再留 max(12, 0.521 × 竖轴标签字号 + 4) 像素（最上面的标签以网格线为中心要露出半个）；饼图按以前的
     // 1.2 × 字号 + 6（COM 读 18.62 磅标题校准）。图例不分图表类型都按带坐标轴的算（饼图的上方、左右图例以前高 10、5 像素）
@@ -151,10 +163,12 @@ export function renderChart(space: XEl | undefined, w: number, h: number, env: C
     };
     // 雷达、散点的网格和坐标轴在类型自己的输出里：整段当背景，数据部分嵌在里面（背景总是第一步显示，不影响逐个出现）
     out.push(type0.render!(plots[0], { left, top, right, bottom }, ctx));
+    if (lateTitle) out.push(lateTitle);
     return groupBackground(out);
   }
 
   renderCategoryChart(plots, plotArea, { left, top, right, bottom }, { colors, part: env.part, baseText, makeAxis, tw, w, h, view: view3D, zh: lang.startsWith('zh'), plotBg, snap, inner: innerLayout }, out);
+  if (lateTitle) out.push(lateTitle);
   return groupBackground(out);
 }
 
