@@ -299,7 +299,7 @@ export function renderCategoryChart(plots: Plot[], plotArea: XEl | undefined, ar
     out.push(tickMarks(prim.minor.map((t) => frame.valPx(prim.pos(t))), at, dir, outward(sides.val), prim.minorMark, prim.axisLine, g));
   }
   out.push(...axisText);
-  renderAxisTitles(titles, box, area0, out, titleAt);
+  renderAxisTitles(titles, box, area0, out, titleAt, { w, h: env.h ?? 0 }, tw);
   if (dt) renderDataTable(dt, plots, cats, colors, tw, bottom, left, right, band, g, out);
   out.push(...labelsOut);
 }
