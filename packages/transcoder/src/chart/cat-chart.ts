@@ -18,7 +18,7 @@ import { isColumnDepth3D, renderColumnDepth3D } from './cat3d-depth';
 import { isPersp3D, renderPersp3D } from './cat3d-persp';
 import { lineType } from './types/line-area';
 import { extraValues, trendlines } from './extras';
-import { dataTableSize, readDataTable, renderDataTable } from './data-table';
+import { dataTableSize, headerLines, headerLineStep, readDataTable, renderDataTable } from './data-table';
 import { innerTitleAt, readAxisTitle, renderAxisTitles, reserveAxisTitles, type AxisTitles } from './axis-title';
 import { NO_GRID, type PixelGrid } from './pixel-grid';
 import { catFitBand, categoryLabel, fitCategoryLabels, outerLevelBands, outerLevels, ROT_MIDCAT_RIGHT, rotFirstCenter, sideLabel, sideLabelMax, sideLevelBands, sideOuterLevels, wrapSideLabel, type CatFit, type LevelBand, capVertical } from './cat-labels';
@@ -134,8 +134,10 @@ export function renderCategoryChart(plots: Plot[], plotArea: XEl | undefined, ar
       }
       if (sec && !sec.deleted) right = fromRight() - maxW(sec.labels, sec.style) - sideGap(sec.style.size);
       if (dtSize) {
-        bottom -= dtSize.reserve;
         left = Math.max(left, dtSize.colRight);
+        // 表头分类名放不下时折行，表头行加高、绘图区让出（实测 charts-dtable-wrap）
+        const heads = headerLines(dt!, cats, (right - left) / Math.max(1, nCat), tw);
+        bottom -= dtSize.reserve + (Math.max(1, ...heads.map((l) => l.length)) - 1) * headerLineStep(dt!, tw);
       }
       if (catLabels) {
         if (sides.catMid) bottom -= emptyBottomPad(catStyle.size);

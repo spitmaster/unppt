@@ -56,6 +56,25 @@ export function dataTableSize(dt: DataTable, plots: Plot[], colors: ColorContext
   return { rowH, colRight: TABLE_LEFT + keyW + nameW + 0.5 * s + 4, height, reserve: height - TABLE_DROP };
 }
 
+/** 表头分类名比列宽长时折行：每格可用宽度 = 列宽 − 4 像素，汉字之间都能断，西文按词（实测 charts-dtable-wrap） */
+export function headerLines(dt: DataTable, cats: string[], band: number, tw: TextWidth): string[][] {
+  const max = band - 4, s = dt.style.size;
+  return cats.map((c) => {
+    const tokens = c.match(/[\u2e80-\u9fff\uf900-\ufaff\uff00-\uffef]|[^\s\u2e80-\u9fff\uf900-\ufaff\uff00-\uffef]+|\s+/g) ?? [c];
+    const lines: string[] = [];
+    let cur = '';
+    for (const t of tokens) {
+      if (cur && tw((cur + t).trimEnd(), s, dt.style.font) > max) { lines.push(cur.trimEnd()); cur = t.trimStart(); }
+      else cur += t;
+    }
+    if (cur || !lines.length) lines.push(cur.trimEnd());
+    return lines;
+  });
+}
+
+/** 表头每多一行加高的量：和行高公式的斜率一样，1.305 × 字号 × 东亚字体 em 高（实测：10 磅时每行 18 像素） */
+export const headerLineStep = (dt: DataTable, tw: TextWidth) => 1.305 * dt.style.size * (tw.eaEm?.(dt.style.eaFont) ?? 1.042);
+
 /** 画数据表：top 是绘图区底边（表头上沿），left/right 是绘图区左右，band 是每个分类的宽度 */
 export function renderDataTable(
   dt: DataTable, plots: Plot[], cats: string[], colors: ColorContext, tw: TextWidth,
@@ -65,10 +84,12 @@ export function renderDataTable(
   const entries = seriesEntries(plots, colors);
   const series = plots.flatMap((p) => p.series);
   const { rowH } = dataTableSize(dt, plots, colors, tw);
-  const bottom = top + rowH * (entries.length + 1);
-  const rowsTop = top + rowH;
-  // 文字：表头的分类名、每行的系列名和数值
-  cats.forEach((c, i) => out.push(label(c, left + (i + 0.5) * band, top + rowH / 2, dt.style)));
+  const heads = headerLines(dt, cats, band, tw), step = headerLineStep(dt, tw);
+  const extra = (Math.max(1, ...heads.map((l) => l.length)) - 1) * step;
+  const bottom = top + extra + rowH * (entries.length + 1);
+  const rowsTop = top + rowH + extra;
+  // 文字：表头的分类名（折成几行时整体在表头行里居中）、每行的系列名和数值
+  heads.forEach((lines, i) => lines.forEach((t, k) => out.push(label(t, left + (i + 0.5) * band, top + (rowH + extra) / 2 + (k - (lines.length - 1) / 2) * step, dt.style))));
   const anyLine = entries.some((e) => e.line);
   const keyW = dt.keys ? (anyLine ? LINE_KEY : legendSquare(s)) : 0;
   entries.forEach((e, k) => {
