@@ -1,7 +1,8 @@
 /**
  * 图表的数据表（c:dTable，柱形、折线、面积图的绘图区下方）。PowerPoint 实测（COM 生成 9~20 磅、有无图例、柱形和折线的数据表，量导出图上的表格线）：
  *   - 表头一行（分类名，代替分类轴标签）贴着绘图区底边，只占绘图区那几列；下面每个系列一行；
- *     行高 = 1.36 × 字号 + 4.3；表格底边比图例上方（没有图例时是底部留白处）低约 1 像素（COM 读 12 磅的绘图区下沿校准）；
+ *     行高 = 1.305 × 字号 × 东亚字体的(上伸 + 下伸) + 4.3（东亚字体没有汉字时按雅黑；等线时就是以前校准的 1.36 × 字号 + 4.3；
+ *     10/19 探针：Calibri / 雅黑 / 等线 / 宋体 × 9、12 磅，误差 ≤ 0.2 磅）；表格底边比图例上方（没有图例时是底部留白处）低约 1 像素（COM 读 12 磅的绘图区下沿校准）；
  *   - 左边一列放图例键和系列名：从图表边 22.3 像素处开始，宽 = 键宽 + 系列名宽 + 0.5 × 字号 + 4
  *     （键：色块 0.48 × 字号，线条约 26 像素）；绘图区左边至少让到这一列右边；
  *   - 表格线：外框、横线、竖线可以分别关掉（showOutline / showHorzBorder / showVertBorder），颜色取 c:spPr 的线条；
@@ -27,7 +28,8 @@ export interface DataTable {
 /** 实测常数（像素） */
 const TABLE_LEFT = PAD + 7.66;
 const LINE_KEY = 26;
-export const rowHeight = (s: number) => 1.36 * s + 4.3;
+/** 行高（像素）：em 是东亚字体的上伸 + 下伸，不知道时按等线（1.042） */
+export const rowHeight = (s: number, em = 1.042) => 1.305 * s * em + 4.3;
 /** 表格底边比留给它的位置低出的距离 */
 const TABLE_DROP = 1.04;
 
@@ -49,7 +51,7 @@ export function dataTableSize(dt: DataTable, plots: Plot[], colors: ColorContext
   const anyLine = entries.some((e) => e.line);
   const keyW = dt.keys ? (anyLine ? LINE_KEY : legendSquare(s)) : 0;
   const nameW = Math.max(0, ...entries.map((e) => tw(e.name, s)));
-  const rowH = rowHeight(s);
+  const rowH = rowHeight(s, tw.eaEm?.(dt.style.eaFont));
   const height = rowH * (entries.length + 1);
   return { rowH, colRight: TABLE_LEFT + keyW + nameW + 0.5 * s + 4, height, reserve: height - TABLE_DROP };
 }
