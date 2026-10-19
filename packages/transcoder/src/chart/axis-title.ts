@@ -43,12 +43,28 @@ export function reserveAxisTitles(area: Rect, t: AxisTitles): Rect {
   return { ...area, left, bottom };
 }
 
-/** 画标题：plot 是绘图区，area 是让出标题之前的可用区域 */
-export function renderAxisTitles(t: AxisTitles, plot: Rect, area: Rect, out: string[]): void {
+/** 标题框给定的位置：左侧标题的右边、下方标题的上边 */
+export interface TitleAt { right: number; top: number }
+
+/**
+ * 绘图区是手动内框（layoutTarget inner）时标题放在哪：PowerPoint 的绘图区外框 = 内框加上和自动布局一样宽的标签带，
+ * 标题贴在外框外面——左侧标题的右边是外框左边、下方标题的上边是外框下边（实测：COM 读手动内框和自动布局的外框、标题框）。
+ * area 是让出标题之后的区域，auto 是从它自动排出来的绘图区（标签带 = 两者之差）
+ */
+export function innerTitleAt(inner: Rect, area: Rect, auto: { left: number; bottom: number }): TitleAt {
+  return { right: inner.left - (auto.left - area.left + LEFT_GAP), top: inner.bottom + (area.bottom - auto.bottom) };
+}
+
+/** 画标题：plot 是绘图区，area 是让出标题之前的可用区域；at 给了时按它放（手动内框） */
+export function renderAxisTitles(t: AxisTitles, plot: Rect, area: Rect, out: string[], at?: TitleAt): void {
   const bottom = area.bottom;
   if (t.left) {
-    const cx = titleLeft(area) + thickness(t.left.style.size) / 2 + 0.2 * t.left.style.size, cy = (plot.top + plot.bottom) / 2;
+    const th = thickness(t.left.style.size);
+    const cx = (at ? at.right - th : titleLeft(area)) + th / 2 + 0.2 * t.left.style.size, cy = (plot.top + plot.bottom) / 2;
     out.push(`<g transform="rotate(-90 ${n2(cx)} ${n2(cy)})">${label(t.left.text, cx, cy, t.left.style)}</g>`);
   }
-  if (t.bottom) out.push(label(t.bottom.text, (plot.left + plot.right) / 2, bottom - GAP - thickness(t.bottom.style.size) / 2 + 0.11 * t.bottom.style.size, t.bottom.style));
+  if (t.bottom) {
+    const th = thickness(t.bottom.style.size);
+    out.push(label(t.bottom.text, (plot.left + plot.right) / 2, (at ? at.top : bottom - GAP - th) + th / 2 + 0.11 * t.bottom.style.size, t.bottom.style));
+  }
 }
