@@ -6,6 +6,9 @@ import { attr, child, children, type XEl } from '../io/xml';
 import { PRESETS, WARPS } from './presets';
 import type { GeomCmd, GeomDef, GeomPath } from './types';
 
+/** 每像素的 EMU（96 DPI；几何层不依赖 model，这里单独写） */
+const EMU_PER_PX = 9525;
+
 export type { GeomCmd, GeomDef, GeomPath } from './types';
 
 
@@ -62,8 +65,8 @@ function evalFormula(f: string, v: (s: string) => number): number {
   }
 }
 
-/** 从 XML（a:custGeom，或预设定义）读几何定义 */
-export function parseGeomXml(el: XEl): GeomDef {
+/** 从 XML（a:custGeom，或预设定义）读几何定义；doc：文档里的 custGeom（路径没写 w / h 时坐标是 EMU） */
+export function parseGeomXml(el: XEl, doc = false): GeomDef {
   const gdList = (name: string) => children(child(el, name), 'a:gd').map((g) => [attr(g, 'name') ?? '', attr(g, 'fmla') ?? 'val 0'] as [string, string]);
   const paths: GeomPath[] = children(child(el, 'a:pathLst'), 'a:path').map((p) => {
     const cmds: GeomCmd[] = [];
@@ -81,6 +84,8 @@ export function parseGeomXml(el: XEl): GeomDef {
     return {
       w: attr(p, 'w') ? Number(attr(p, 'w')) : undefined,
       h: attr(p, 'h') ? Number(attr(p, 'h')) : undefined,
+      // 诊断样本：SmartArt 缓存里的弧线 custGeom 路径没写 w / h，坐标是 EMU（以前当像素画到了几百万像素外）
+      ...(doc && !Number(attr(p, 'w')) && !Number(attr(p, 'h')) ? { emu: true } : {}),
       fill: (attr(p, 'fill') as GeomPath['fill']) ?? 'norm',
       stroke: attr(p, 'stroke') !== '0' && attr(p, 'stroke') !== 'false',
       cmds,
@@ -120,8 +125,8 @@ function variables(def: GeomDef, w: number, h: number, overrides: Map<string, st
 
 /** 遍历一条路径，把各段交给 sink */
 function walkPath(p: GeomPath, w: number, h: number, v: (s: string) => number, sink: PathSink) {
-  const sx = p.w ? w / p.w : 1;
-  const sy = p.h ? h / p.h : 1;
+  const sx = p.w ? w / p.w : p.emu ? 1 / EMU_PER_PX : 1;
+  const sy = p.h ? h / p.h : p.emu ? 1 / EMU_PER_PX : 1;
   let cx = 0, cy = 0;
   for (const c of p.cmds) {
     const a = c.args.map(v);

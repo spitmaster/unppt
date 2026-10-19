@@ -94,7 +94,7 @@ export async function renderShape(r: RenderContext, el: XEl, ctx: SlideContext, 
   const orphan = !!ph && !layoutPh && ph.idx !== '4294967295';
   const prst = child(spPr, 'a:prstGeom') ?? child(lSpPr, 'a:prstGeom') ?? (orphan ? undefined : child(mSpPr, 'a:prstGeom'));
   const cust = child(spPr, 'a:custGeom');
-  let def = cust ? parseGeomXml(cust) : prst ? presetGeometry(attr(prst, 'prst') ?? 'rect') : presetGeometry('rect');
+  let def = cust ? parseGeomXml(cust, true) : prst ? presetGeometry(attr(prst, 'prst') ?? 'rect') : presetGeometry('rect');
   if (!def) {
     r.env.pres.warn(`未支持的预设形状：${attr(prst, 'prst')}`);
     def = presetGeometry('rect')!;

@@ -43,7 +43,7 @@ export async function renderPicture(r: RenderContext, el: XEl, ctx: SlideContext
   const custEl = child(geomSp, 'a:custGeom');
   if (!prstEl && !custEl) return '';
   const prst = attr(prstEl, 'prst') ?? 'rect';
-  const gdef = (custEl ? parseGeomXml(custEl) : presetGeometry(prst)) ?? presetGeometry('rect')!;
+  const gdef = (custEl ? parseGeomXml(custEl, true) : presetGeometry(prst)) ?? presetGeometry('rect')!;
   const av = new Map<string, string>();
   for (const g of children(child(prstEl ?? custEl, 'a:avLst'), 'a:gd')) av.set(attr(g, 'name') ?? '', attr(g, 'fmla') ?? '');
   const outlineD = buildGeometry(gdef, box.w, box.h, av).paths.map((p) => p.d).join('');
