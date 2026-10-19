@@ -86,23 +86,21 @@ export function placeLines(
       const free = line.avail - line.width;
       if (pl.algn === 'ctr') x += free / 2;
       else if (pl.algn === 'r') x += free;
-      // 两端对齐：多出的宽度分到空格和中文字后面；分散对齐：平均分到每两个字之间（西文单词里的字母之间、空格也算，实测）
-      let extra = 0;
+      // 分散对齐：多出的宽度平均分到每两个字之间（西文单词里的字母之间、空格也算，实测）。两端对齐见 justAdds
       let lastInk = line.atoms.length - 1;
       while (lastInk > 0 && line.atoms[lastInk].space) lastInk--;
-      const stretch = (a: Atom, k: number) => (pl.algn === 'dist' ? k < lastInk : k < line.atoms.length - 1 && (a.space || a.wide));
       // 行尾标点悬挂在框外的行：除去这个标点按放满算，段末行也拉开（实测：两端对齐的段末行 10 字 + 悬挂的句号，10 个字拉开到框宽）
       const hung = pl.algn === 'just' && free < -0.01 && lastInk === line.atoms.length - 1 && hangable(line.atoms[lastInk].text);
       const room = hung ? free + line.atoms[lastInk].width : free;
-      if (((pl.algn === 'just' && (li < pl.lines.length - 1 || hung)) || pl.algn === 'dist') && wrap && room > 0) {
-        const gaps = line.atoms.filter(stretch).length;
-        extra = gaps ? room / gaps : 0;
-      }
+      let adds: number[] | undefined;
+      if (pl.algn === 'dist' && wrap && room > 0 && lastInk > 0) adds = line.atoms.map((_a, k) => (k < lastInk ? room / lastInk : 0));
+      else if (pl.algn === 'just' && (li < pl.lines.length - 1 || hung) && wrap && room > 0) adds = justAdds(line.atoms, lastInk, room);
+      const extra = adds?.some((v) => v > 0) ? 1 : 0;
       const xs: number[] = [];
       let cx = x;
       line.atoms.forEach((a, k) => {
         xs.push(cx);
-        cx += a.width + (extra && stretch(a, k) ? extra : 0);
+        cx += a.width + (adds?.[k] ?? 0);
       });
       placed.push({ pi, li, line, baseline, top: linesLeftToRight ? outer.h - y - lh : y, lh, x, xs, extra, colX });
       y += lh;
@@ -196,6 +194,40 @@ function scaleReflection(refl: XEl, size: number): XEl {
 }
 
 const REFL_PT = 17.5;
+
+/**
+ * 两端对齐时每个字后面加多少（实测 text-just-spaces：COM 读字的位置）：只有最后一个字之前的位置参与，行首空格不算；
+ * 空格优先，先各补到半个字号宽；剩下的平均分给空格和中日韩字后面——只有 lang（不看 altLang）是中日韩的字才算，
+ * lang 写 en-US 的中文段落只拉开空格，没有空格就不拉开
+ */
+function justAdds(atoms: Atom[], lastInk: number, room: number): number[] {
+  const adds = atoms.map(() => 0);
+  let lead = 0;
+  while (lead < lastInk && atoms[lead].space) lead++;
+  const sp: number[] = [], ea: number[] = [];
+  for (let k = lead; k < lastInk; k++) {
+    if (atoms[k].space) sp.push(k);
+    else if (atoms[k].wide && atoms[k].style.eaLang) ea.push(k);
+  }
+  if (!ea.length) {
+    for (const k of sp) adds[k] = room / sp.length;
+    return adds;
+  }
+  let left = room;
+  if (sp.length) {
+    const share = room / sp.length;
+    for (const k of sp) {
+      const give = Math.min(share, Math.max(0, atoms[k].style.size / 2 - atoms[k].width));
+      adds[k] = give;
+      left -= give;
+    }
+  }
+  if (left > 1e-6) {
+    const per = left / (sp.length + ea.length);
+    for (const k of [...sp, ...ea]) adds[k] += per;
+  }
+  return adds;
+}
 
 /**
  * 相邻、用同一个文字效果滤镜（阴影、发光、棱台……）的 <text> 收进一组，滤镜放在组上，和整段没拆开的文字一样（一段 <text> 的
