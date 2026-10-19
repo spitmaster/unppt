@@ -169,8 +169,10 @@ export function renderCategoryChart(plots: Plot[], plotArea: XEl | undefined, ar
     let catFit: CatFit = { kind: 'line', skip: lblSkip };
     if (!horizontal && catLabels && !sides.catMid && sides.cat === 'b') {
       const bands = between ? nCat : Math.max(1, nCat - 1);
+      // 日期轴：放不放得下按 绘图区宽 / 分类数 算，分类在端点上（面积图）也是（实测 charts-pct-stacked：5 个日期、标签宽 0.97 倍时转斜）
+      const fitBands = catAx?.name === 'c:dateAx' ? nCat : bands;
       const eaVert = attr(child(child(catAx, 'c:txPr'), 'a:bodyPr'), 'vert') === 'eaVert';
-      catFit = fitCategoryLabels(cats, (right - left) / bands, catStyle.size, catTw, numAttr(child(catAx, 'c:tickLblSkip'), 'val'), eaVert);
+      catFit = fitCategoryLabels(cats, (right - left) / fitBands, catStyle.size, catTw, numAttr(child(catAx, 'c:tickLblSkip'), 'val'), eaVert);
       levelBands = outerLevelBands(catLevels, catStyle.size, (c, sz) => (c ? catBand(sz) : valBand(sz)));
       catFit = capVertical(catFit, cats, catStyle.size, catTw, bottom - top - levelBands.reduce((a, b) => a + b.band, 0));
       if (catFit.kind === 'rot' && cats.length) {
@@ -182,7 +184,7 @@ export function renderCategoryChart(plots: Plot[], plotArea: XEl | undefined, ar
       innerBand = catFitBand(catFit, catH(catStyle.size), cats, catStyle.size, catTw);
       bottom -= innerBand + levelBands.reduce((a, b) => a + b.band, 0);
       // 手动布局的内框：绘图区就是给的框，分类标签按它的宽度排、画在框外，不截断（样本：矮图表的斜标签以前被截成两个字）
-      if (env.inner) catFit = fitCategoryLabels(cats, (area.right - area.left) / bands, catStyle.size, catTw, numAttr(child(catAx, 'c:tickLblSkip'), 'val'), eaVert);
+      if (env.inner) catFit = fitCategoryLabels(cats, (area.right - area.left) / fitBands, catStyle.size, catTw, numAttr(child(catAx, 'c:tickLblSkip'), 'val'), eaVert);
     }
     if (env.inner) ({ left, top, right, bottom } = area);
     return { prim, sec, left, top, right, bottom, sides, unit, edgeLeft, edgeRight, valLabels, valStyle, tickLabels, between, catFit, innerBand, levelBands };
