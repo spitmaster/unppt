@@ -77,11 +77,14 @@ export async function layoutParagraph(p: XEl, pi: number, ctx: ParagraphContext)
   // 项目符号
   let bullet: ParagraphLayout['bullet'];
   const bu = ctx.numbering.textFor(pPr, lvl, atoms.length > 0);
-  if (bu) bullet = await makeBullet(bu.text, pPr, baseStyle, atoms, fontScale, marL + indent, env, measurer, bu.bu, bu.font);
+  // 有项目符号、marL + indent < 0：整个第一行右移到项目符号从内边距起（文字在 -indent 处；实测 text-neg-indent）
+  const buShift = bu ? Math.max(0, -(marL + indent)) : 0;
+  if (bu) bullet = await makeBullet(bu.text, pPr, baseStyle, atoms, fontScale, marL + indent + buShift, env, measurer, bu.bu, bu.font);
 
-  let firstX = marL + (indent >= 0 ? indent : 0);
+  let firstX = marL + (indent >= 0 ? indent : 0) + buShift;
   if (bullet && bullet.x + bullet.width > firstX) firstX = bullet.x + bullet.width + (indent >= 0 ? 0 : 0);
-  if (!bullet && indent < 0) firstX = marL + indent;
+  // 负首行缩进：第一行往左伸，但不出文本框的内边距（实测 text-neg-indent：marL 0 + 负 indent 第一行仍从内边距排、能放的字数也一样）
+  if (!bullet && indent < 0) firstX = Math.max(0, marL + indent);
   const availFirst = contentW - firstX - marR;
   const availRest = contentW - marL - marR;
 
@@ -95,12 +98,15 @@ export async function layoutParagraph(p: XEl, pi: number, ctx: ParagraphContext)
     // 只有一个换行的空行（两个 a:br 之间没有字）：行高按结束这一行的换行自己的字号（实测 text-br-empty-line）；
     // 有字的行不管行尾换行的字号，段末的空行按段末字号
     const br = vis.length ? undefined : row.find((a) => a.text === '\n');
+    // 混排行高只管有段落标记（段末一行）、换行符的行；折行折出来的行，宋体这类字用自己的上伸、下伸（实测 text-mix-wrap-lines：
+    // 宋体 + Arial 折成多行，中间的行基线比末行低 1 磅）
+    const own = row.length > 0 && row[row.length - 1].text !== '\n' && i < rows.length - 1;
     return {
       atoms: vis,
       width: trimmedWidth(vis),
       size: vis.length ? Math.max(...vis.map((a) => (a.style.baseline ? a.style.size * 0.67 : a.style.size))) : br ? br.style.size : endStyle.size,
-      ascent: vis.length ? Math.max(...vis.map((a) => a.ascent)) : br ? br.ascent : emptyAsc,
-      descent: vis.length ? Math.max(...vis.map((a) => a.descent)) : br ? br.descent : emptyDesc,
+      ascent: vis.length ? Math.max(...vis.map((a) => (own ? a.ownAscent ?? a.ascent : a.ascent))) : br ? br.ascent : emptyAsc,
+      descent: vis.length ? Math.max(...vis.map((a) => (own ? a.ownDescent ?? a.descent : a.descent))) : br ? br.descent : emptyDesc,
       x0: i === 0 ? firstX : marL,
       avail: i === 0 ? availFirst : availRest,
     };

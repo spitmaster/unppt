@@ -49,13 +49,14 @@ function scriptOfLang(lang: string | undefined): string | undefined {
 
 /**
  * 主题字体（+mn-lt、+mj-ea 等）-> 字体名。lang 是文字语言：实测主题的东亚字体为空时，PowerPoint 按语言选主题里对应脚本的字体
- * （zh-CN 用 Hans、ja-JP 用 Jpan、zh-TW 用 Hant、ko-KR 用 Hang），英文或没写语言时不用主题字体——返回空串（runStyle 改用西文字体）
+ * （zh-CN 用 Hans、ja-JP 用 Jpan、zh-TW 用 Hant、ko-KR 用 Hang），lang 不是中日韩时看 altLang（实测 text-theme-ea-altlang：
+ * en-US + altLang zh-CN 用 Hans）；都不是时不用主题字体——返回空串（runStyle 改用西文字体）
  */
-export function resolveTypeface(tf: string | undefined, theme: Theme, lang?: string): string | undefined {
+export function resolveTypeface(tf: string | undefined, theme: Theme, lang?: string, altLang?: string): string | undefined {
   if (!tf) return undefined;
   const ea = (own: string, scripts: Record<string, string>) => {
     if (own) return own;
-    const s = scriptOfLang(lang);
+    const s = scriptOfLang(lang) ?? scriptOfLang(altLang);
     return (s && scripts[s]) || '';
   };
   switch (tf) {
@@ -78,10 +79,12 @@ function textOutline(ln: XEl | undefined, env: TextEnv): RunStyle['outline'] {
 
 export function runStyle(r: XEl, env: TextEnv, scale: number): RunStyle {
   const sz = (numAttr(r, 'sz') ?? 1800) / 100;
-  const latin = resolveTypeface(attr(child(r, 'a:latin'), 'typeface'), env.theme) ?? env.theme.minorLatin ?? 'Calibri';
-  const lang = attr(r, 'lang');
+  const lang = attr(r, 'lang'), altLang = attr(r, 'altLang');
+  // 西文槽写主题东亚字体（+mn-ea）、主题东亚字体又为空：按语言选脚本字体，语言不是中日韩时用 Arial（实测 text-theme-ea-altlang）
+  const latinTf = resolveTypeface(attr(child(r, 'a:latin'), 'typeface'), env.theme, lang, altLang);
+  const latin = latinTf === '' ? 'Arial' : latinTf ?? env.theme.minorLatin ?? 'Calibri';
   const eaTf = attr(child(r, 'a:ea'), 'typeface') ?? '+mn-ea';
-  const byLang = resolveTypeface(eaTf, env.theme, lang);
+  const byLang = resolveTypeface(eaTf, env.theme, lang, altLang);
   // 英文或没写语言时主题东亚字体为空：东亚字体就用西文字体——中文字形和行高都按它（楷体、宋体、Yu Gothic 等自带中文字形），
   // 它没有的字用默认东亚字体补（雅黑，Arial 这类西文字体就全是雅黑，见 measure.ts）（实测）
   const ea = byLang || latin;
