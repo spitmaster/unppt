@@ -56,7 +56,13 @@
 | 设了"水平居中"的文本框文字贴左 | anchorCtr 没实现 | 整块文字的外接框居中：text-anchor-ctr 0.961 → 0.996 | 45f54c4 |
 | SmartArt 里的弧线不见了 | custGeom 路径没写 w / h 时坐标当像素用 | 没写时按 EMU：custgeom-no-wh 0.977 → 1.000 | 6acc753 |
 | 链接到文件的文字是黑色、没下划线 | 只有播放器能跳的链接才画成超链接样式 | 有链接关系或 ppaction://hlink 动作的都画：text-link-kinds | c5bffdc |
-| 表格单元格的图片填充拉伸成一整张，PowerPoint 是小图平铺 | 图片填充没写 stretch 也没写 tile 时按拉伸 | 按原尺寸平铺，表格从表格左上角起铺（对齐按单元格大小）；顺带修了居中平铺被当成右对齐：fills-blip-no-mode 0.833 → 0.998；样本 A/B（这类填充的课件 43 份里产物有变化的 31 份、1547 页）79 页变好、0 页变差（合计 +6.51），通过 1159 → 1223 | — |
+| 表格单元格的图片填充拉伸成一整张，PowerPoint 是小图平铺 | 图片填充没写 stretch 也没写 tile 时按拉伸 | 按原尺寸平铺，表格从表格左上角起铺（对齐按单元格大小）；顺带修了居中平铺被当成右对齐：fills-blip-no-mode 0.833 → 0.998；样本 A/B（这类填充的课件 43 份里产物有变化的 31 份、1547 页）79 页变好、0 页变差（合计 +6.51），通过 1159 → 1223 | 1ee9297 |
+| Helvetica Neue 的西文画成 Calibri，PowerPoint 是 Arial | 缺字体一律按 Calibri | Helvetica / Helvetica Neue / Helv → Arial、Times / Tms Rmn → Times New Roman、Courier → Courier New；楷体_GB2312 西文用雅黑：text-font-substitutes 0.815 → 0.951 | — |
+| 东亚字体写成 Times New Roman 时汉字是雅黑，PowerPoint 是宋体 | 西文字体没有的汉字一律用雅黑补 | 按字体的 PANOSE 大类：衬线、手写体用宋体补：text-ea-latin-cjk 0.910 → 0.962 | — |
+| SmartArt 里的项目符号画成两个点 | buChar 的 "••" 整串画 | 以 • 开头的只画一个 •：text-buchar-multi 0.980 → 0.983 | — |
+| 系列名为空的图表画出"系列 1"标题和图例 | 名字缓存为空时用默认名 | 空名字：标题留位置不写字、图例只画键：charts-empty-series-name 0.989 → 0.995 | — |
+| 设了 −64° 的分类标签画成 −45° | 斜排角度写死 −45° | 按 bodyPr rot 的角度斜排、按 \|sin\| 算间隔：charts-cat-custom-rot 0.801 → 0.943 | — |
+| ↑ 字体替代、项目符号、空系列名、自定义角度几条一起在样本上 A/B（相关 XML 的课件随机 80 份里产物有变化的 13 份、868 页） | — | 52 页变好、0 页变差（合计 +0.80），通过 681 → 687 | — |
 | ↑ 日期轴、形状阴影、fontAlgn 三条一起在样本上 A/B（写了 fontAlgn 的课件随机 60 份里产物有变化的 56 份、2431 页） | — | 172 页变好、62 页变差（合计 +2.38），通过 1705 → 1723、平均 0.9579 → 0.9588；变差的多是表格小字差 1 像素（记进 todo） | — |
 
 ## 2026-10-17 夜：随机抽查未通过页，修了十几条文字、图表规则

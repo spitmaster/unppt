@@ -67,7 +67,8 @@ export class BulletNumbering {
     if (bu && bu.name !== 'a:buNone' && hasAtoms) {
       let text = '';
       let font: string | undefined;
-      if (bu.name === 'a:buChar') text = attr(bu, 'char') ?? '•';
+      // 多个字的符号照样都画，只有以 • 开头的只画一个 •（实测 text-buchar-multi："••"、"•••"、"•a" 都是一个 •，"ab"、"→•"、"a•" 都画全）
+      if (bu.name === 'a:buChar') text = (attr(bu, 'char') ?? '•').replace(/^•.+/su, '•');
       else if (bu.name === 'a:buAutoNum') {
         const scheme = attr(bu, 'type') ?? 'arabicPeriod';
         const key = `${lvl}|${scheme}`;

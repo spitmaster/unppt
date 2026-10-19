@@ -99,7 +99,9 @@ export function renderChart(space: XEl | undefined, w: number, h: number, env: C
     titleText = plots[0].series[0].name;
   }
   let lateTitle = '';
-  if (titleText) {
+  // 有标题元素、自动标题取的系列名是空的：标题不写字，位置照样留（实测 charts-empty-series-name）
+  const hasTitle = !!titleText || !!titleEl;
+  if (hasTitle) {
     // 没写字号时：新版 Office 图表标题和其它文字的默认字号比例是 18.62 : 11.97；没有标题元素的自动标题
     // 总是 18.62 磅（图表文字整体改成 16 磅时自动标题不变，导出图实测）
     const refSize = titleEl ? textStyle(child(child(chart, 'c:legend'), 'c:txPr'), colors, baseText).size : (11.97 * 96) / 72;
@@ -125,8 +127,9 @@ export function renderChart(space: XEl | undefined, w: number, h: number, env: C
     const tx = edge('x'), ty = edge('y');
     const titleX = tx !== undefined ? tx * w + TITLE_INSET + tw(titleText, tst.size, tst.font) / 2 : w / 2;
     const titleY = TITLE_Y0 + TITLE_Y * tst.size + (ty !== undefined ? ty * h - TITLE_TOP : 0);
-    if (tx !== undefined || ty !== undefined) lateTitle = label(titleText, titleX, titleY, tst);
-    else out.push(label(titleText, titleX, titleY, tst));
+    const titleSvg = titleText ? label(titleText, titleX, titleY, tst) : '';
+    if (tx !== undefined || ty !== undefined) lateTitle = titleSvg;
+    else out.push(titleSvg);
     // 实测（COM 读绘图区上沿：标题 12~32 磅 × 数值标签 9~20 磅）：带坐标轴的图，标题占 1.3545 × 标题字号，
     // 下面再留 max(12, 0.521 × 竖轴标签字号 + 4) 像素（最上面的标签以网格线为中心要露出半个）；饼图按以前的
     // 1.2 × 字号 + 6（COM 读 18.62 磅标题校准）。图例不分图表类型都按带坐标轴的算（饼图的上方、左右图例以前高 10、5 像素）
@@ -158,7 +161,7 @@ export function renderChart(space: XEl | undefined, w: number, h: number, env: C
     const legendEl = child(chart, 'c:legend');
     const ctx: ChartContext = {
       colors, part: env.part, baseText, plotArea, makeAxis, width: tw, box: { w, h }, defs: env.defs,
-      legendPos: legendEl ? attr(child(legendEl, 'c:legendPos'), 'val') ?? 'r' : undefined, hasTitle: !!titleText, manual: !!(ml && numAttr(child(ml, 'c:w'), 'val') !== undefined),
+      legendPos: legendEl ? attr(child(legendEl, 'c:legendPos'), 'val') ?? 'r' : undefined, hasTitle, manual: !!(ml && numAttr(child(ml, 'c:w'), 'val') !== undefined),
       view3D, zh: lang.startsWith('zh'), plotBg, snap,
     };
     // 雷达、散点的网格和坐标轴在类型自己的输出里：整段当背景，数据部分嵌在里面（背景总是第一步显示，不影响逐个出现）

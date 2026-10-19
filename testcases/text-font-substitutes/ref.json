@@ -1,0 +1,564 @@
+{
+ "version": 8,
+ "level": "full",
+ "slideWidthPt": 960.0,
+ "slideHeightPt": 540.0,
+ "imageWidth": 1280,
+ "imageHeight": 720,
+ "slides": [
+  {
+   "index": 0,
+   "hidden": false,
+   "shapes": [
+    {
+     "id": 2,
+     "name": "TextBox 1",
+     "type": 17,
+     "x": 10.0,
+     "y": 10.0,
+     "w": 305.0,
+     "h": 29.081,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 19,
+       "text": "汉字永和 ABCDabcd 0123 ",
+       "x": 17.2,
+       "y": 13.6,
+       "w": 239.02,
+       "h": 24.0
+      },
+      {
+       "start": 19,
+       "len": 6,
+       "text": "(WMQ)\r",
+       "x": 17.2,
+       "y": 37.6,
+       "w": 69.75,
+       "h": 24.0
+      },
+      {
+       "start": 25,
+       "len": 18,
+       "text": "Hamburgefonstiv 测试",
+       "x": 17.2,
+       "y": 61.6,
+       "w": 196.63,
+       "h": 24.0
+      }
+     ]
+    },
+    {
+     "id": 3,
+     "name": "TextBox 2",
+     "type": 17,
+     "x": 325.0,
+     "y": 10.0,
+     "w": 305.0,
+     "h": 29.081,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 19,
+       "text": "汉字永和 ABCDabcd 0123 ",
+       "x": 332.2,
+       "y": 13.6,
+       "w": 239.02,
+       "h": 24.0
+      },
+      {
+       "start": 19,
+       "len": 6,
+       "text": "(WMQ)\r",
+       "x": 332.2,
+       "y": 37.6,
+       "w": 69.75,
+       "h": 24.0
+      },
+      {
+       "start": 25,
+       "len": 18,
+       "text": "Hamburgefonstiv 测试",
+       "x": 332.2,
+       "y": 61.6,
+       "w": 196.63,
+       "h": 24.0
+      }
+     ]
+    },
+    {
+     "id": 4,
+     "name": "TextBox 3",
+     "type": 17,
+     "x": 640.0,
+     "y": 10.0,
+     "w": 305.0,
+     "h": 29.081,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 25,
+       "text": "汉字永和 ABCDabcd 0123 (WMQ)\r",
+       "x": 647.2,
+       "y": 13.6,
+       "w": 296.77,
+       "h": 24.0
+      },
+      {
+       "start": 25,
+       "len": 18,
+       "text": "Hamburgefonstiv 测试",
+       "x": 647.2,
+       "y": 37.6,
+       "w": 184.395,
+       "h": 24.0
+      }
+     ]
+    },
+    {
+     "id": 5,
+     "name": "TextBox 4",
+     "type": 17,
+     "x": 10.0,
+     "y": 115.0,
+     "w": 305.0,
+     "h": 29.081,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 25,
+       "text": "汉字永和 ABCDabcd 0123 (WMQ)\r",
+       "x": 17.2,
+       "y": 118.6,
+       "w": 296.77,
+       "h": 24.0
+      },
+      {
+       "start": 25,
+       "len": 18,
+       "text": "Hamburgefonstiv 测试",
+       "x": 17.2,
+       "y": 142.6,
+       "w": 184.395,
+       "h": 24.0
+      }
+     ]
+    },
+    {
+     "id": 6,
+     "name": "TextBox 5",
+     "type": 17,
+     "x": 325.0,
+     "y": 115.0,
+     "w": 305.0,
+     "h": 29.081,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 19,
+       "text": "汉字永和 ABCDabcd 0123 ",
+       "x": 332.2,
+       "y": 118.6,
+       "w": 239.02,
+       "h": 24.0
+      },
+      {
+       "start": 19,
+       "len": 6,
+       "text": "(WMQ)\r",
+       "x": 332.2,
+       "y": 142.6,
+       "w": 69.75,
+       "h": 24.0
+      },
+      {
+       "start": 25,
+       "len": 18,
+       "text": "Hamburgefonstiv 测试",
+       "x": 332.2,
+       "y": 166.6,
+       "w": 196.63,
+       "h": 24.0
+      }
+     ]
+    },
+    {
+     "id": 7,
+     "name": "TextBox 6",
+     "type": 17,
+     "x": 640.0,
+     "y": 115.0,
+     "w": 305.0,
+     "h": 29.081,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 19,
+       "text": "汉字永和 ABCDabcd 0123 ",
+       "x": 647.2,
+       "y": 118.6,
+       "w": 260.0,
+       "h": 24.0
+      },
+      {
+       "start": 19,
+       "len": 6,
+       "text": "(WMQ)\r",
+       "x": 647.2,
+       "y": 142.6,
+       "w": 72.0,
+       "h": 24.0
+      },
+      {
+       "start": 25,
+       "len": 18,
+       "text": "Hamburgefonstiv 测试",
+       "x": 647.2,
+       "y": 166.6,
+       "w": 232.005,
+       "h": 24.0
+      }
+     ]
+    },
+    {
+     "id": 8,
+     "name": "TextBox 7",
+     "type": 17,
+     "x": 10.0,
+     "y": 220.0,
+     "w": 305.0,
+     "h": 29.081,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 19,
+       "text": "汉字永和 ABCDabcd 0123 ",
+       "x": 17.2,
+       "y": 223.6,
+       "w": 246.375,
+       "h": 24.0
+      },
+      {
+       "start": 19,
+       "len": 6,
+       "text": "(WMQ)\r",
+       "x": 17.2,
+       "y": 247.6,
+       "w": 75.25,
+       "h": 24.0
+      },
+      {
+       "start": 25,
+       "len": 18,
+       "text": "Hamburgefonstiv 测试",
+       "x": 17.2,
+       "y": 271.6,
+       "w": 212.345,
+       "h": 24.0
+      }
+     ]
+    },
+    {
+     "id": 9,
+     "name": "TextBox 8",
+     "type": 17,
+     "x": 325.0,
+     "y": 220.0,
+     "w": 305.0,
+     "h": 29.081,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 25,
+       "text": "汉字永和 ABCDabcd 0123 (WMQ)\r",
+       "x": 332.2,
+       "y": 223.6,
+       "w": 283.92,
+       "h": 24.0
+      },
+      {
+       "start": 25,
+       "len": 18,
+       "text": "Hamburgefonstiv 测试",
+       "x": 332.2,
+       "y": 247.6,
+       "w": 184.12,
+       "h": 24.0
+      }
+     ]
+    },
+    {
+     "id": 10,
+     "name": "TextBox 9",
+     "type": 17,
+     "x": 640.0,
+     "y": 220.0,
+     "w": 305.0,
+     "h": 29.081,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 19,
+       "text": "汉字永和 ABCDabcd 0123 ",
+       "x": 647.2,
+       "y": 223.6,
+       "w": 246.375,
+       "h": 24.0
+      },
+      {
+       "start": 19,
+       "len": 6,
+       "text": "(WMQ)\r",
+       "x": 647.2,
+       "y": 247.6,
+       "w": 75.25,
+       "h": 24.0
+      },
+      {
+       "start": 25,
+       "len": 18,
+       "text": "Hamburgefonstiv 测试",
+       "x": 647.2,
+       "y": 271.6,
+       "w": 212.345,
+       "h": 24.0
+      }
+     ]
+    },
+    {
+     "id": 11,
+     "name": "TextBox 10",
+     "type": 17,
+     "x": 10.0,
+     "y": 325.0,
+     "w": 305.0,
+     "h": 29.081,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 25,
+       "text": "汉字永和 ABCDabcd 0123 (WMQ)\r",
+       "x": 17.2,
+       "y": 328.6,
+       "w": 283.92,
+       "h": 24.0
+      },
+      {
+       "start": 25,
+       "len": 18,
+       "text": "Hamburgefonstiv 测试",
+       "x": 17.2,
+       "y": 352.6,
+       "w": 184.12,
+       "h": 24.0
+      }
+     ]
+    },
+    {
+     "id": 12,
+     "name": "TextBox 11",
+     "type": 17,
+     "x": 325.0,
+     "y": 325.0,
+     "w": 305.0,
+     "h": 29.081,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 19,
+       "text": "汉字永和 ABCDabcd 0123 ",
+       "x": 332.2,
+       "y": 328.6,
+       "w": 239.02,
+       "h": 24.0
+      },
+      {
+       "start": 19,
+       "len": 6,
+       "text": "(WMQ)\r",
+       "x": 332.2,
+       "y": 352.6,
+       "w": 69.75,
+       "h": 24.0
+      },
+      {
+       "start": 25,
+       "len": 18,
+       "text": "Hamburgefonstiv 测试",
+       "x": 332.2,
+       "y": 376.6,
+       "w": 196.63,
+       "h": 24.0
+      }
+     ]
+    },
+    {
+     "id": 13,
+     "name": "TextBox 12",
+     "type": 17,
+     "x": 640.0,
+     "y": 325.0,
+     "w": 305.0,
+     "h": 29.081,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 25,
+       "text": "汉字永和 ABCDabcd 0123 (WMQ)\r",
+       "x": 647.2,
+       "y": 328.6,
+       "w": 283.92,
+       "h": 24.0
+      },
+      {
+       "start": 25,
+       "len": 18,
+       "text": "Hamburgefonstiv 测试",
+       "x": 647.2,
+       "y": 352.6,
+       "w": 184.12,
+       "h": 24.0
+      }
+     ]
+    },
+    {
+     "id": 14,
+     "name": "TextBox 13",
+     "type": 17,
+     "x": 10.0,
+     "y": 430.0,
+     "w": 305.0,
+     "h": 29.081,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 25,
+       "text": "汉字永和 ABCDabcd 0123 (WMQ)\r",
+       "x": 17.2,
+       "y": 433.6,
+       "w": 290.0,
+       "h": 24.0
+      },
+      {
+       "start": 25,
+       "len": 18,
+       "text": "Hamburgefonstiv 测试",
+       "x": 17.2,
+       "y": 457.6,
+       "w": 200.005,
+       "h": 24.0
+      }
+     ]
+    },
+    {
+     "id": 15,
+     "name": "TextBox 14",
+     "type": 17,
+     "x": 325.0,
+     "y": 430.0,
+     "w": 305.0,
+     "h": 29.081,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 25,
+       "text": "汉字永和 ABCDabcd 0123 (WMQ)\r",
+       "x": 332.2,
+       "y": 433.6,
+       "w": 290.0,
+       "h": 24.0
+      },
+      {
+       "start": 25,
+       "len": 18,
+       "text": "Hamburgefonstiv 测试",
+       "x": 332.2,
+       "y": 457.6,
+       "w": 200.005,
+       "h": 24.0
+      }
+     ]
+    },
+    {
+     "id": 16,
+     "name": "TextBox 15",
+     "type": 17,
+     "x": 640.0,
+     "y": 430.0,
+     "w": 305.0,
+     "h": 29.081,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 25,
+       "text": "汉字永和 ABCDabcd 0123 (WMQ)\r",
+       "x": 647.2,
+       "y": 433.6,
+       "w": 283.92,
+       "h": 24.0
+      },
+      {
+       "start": 25,
+       "len": 18,
+       "text": "Hamburgefonstiv 测试",
+       "x": 647.2,
+       "y": 457.6,
+       "w": 184.12,
+       "h": 24.0
+      }
+     ]
+    }
+   ],
+   "effects": [],
+   "triggerHidden": [],
+   "steps": 0,
+   "keptSlideshow": false
+  }
+ ],
+ "ok": true
+}
