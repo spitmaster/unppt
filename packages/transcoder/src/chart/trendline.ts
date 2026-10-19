@@ -124,3 +124,8 @@ export function dashAttr(line: Line): string {
   const v = line.dash.split(' ').map(Number).map((x, i) => (i % 2 === 0 ? Math.max(0.01, x - line.width) : x + line.width));
   return ` stroke-dasharray="${v.map(n2).join(' ')}"`;
 }
+
+/** 虚线连同线端（短划的长度和线端有关，两个要一起写）；不是虚线时空串 */
+export function dashCap(line: Line): string {
+  return line.dash ? `${dashAttr(line)} stroke-linecap="${line.cap}"` : '';
+}
