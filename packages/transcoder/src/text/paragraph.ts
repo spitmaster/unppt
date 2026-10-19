@@ -117,7 +117,8 @@ export async function layoutParagraph(p: XEl, pi: number, ctx: ParagraphContext)
   const spc = (el: XEl | undefined) => {
     const pct = child(el, 'a:spcPct');
     const pts = child(el, 'a:spcPts');
-    if (pts) return { pts: (numAttr(pts, 'val') ?? 0) / 100 };
+    // 固定的行距、段前段后按整磅算（四舍五入：13.5 → 14、21.38 → 21、0.7 → 1、0.49 → 0；实测 text-spcpts-round）
+    if (pts) return { pts: Math.round((numAttr(pts, 'val') ?? 0) / 100) };
     if (pct) return { pct: (numAttr(pct, 'val') ?? 100000) / 100000 };
     return undefined;
   };
