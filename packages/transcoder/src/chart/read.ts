@@ -60,7 +60,9 @@ export function readPlots(plotArea: XEl | undefined, colors: ColorContext, part:
         const c = cat.pts.get(i);
         cats.push(c === undefined ? String(i + 1) : cat.format !== 'General' && c !== '' && !isNaN(Number(c)) ? formatNumber(Number(c), cat.format) : c);
         const v = val.pts.get(i);
-        vals.push(v === undefined || v === '' ? null : Number(v));
+        // 不是数字的（Excel 错误值 #N/A 等）当空值：柱子不画、折线断开（实测 charts-na-values）
+        const num = v === undefined || v === '' ? NaN : Number(v);
+        vals.push(Number.isFinite(num) ? num : null);
       }
       const catLevels = cat.outer.length ? cat.outer : undefined;
       const pointFills = new Map<number, Rgba>();
