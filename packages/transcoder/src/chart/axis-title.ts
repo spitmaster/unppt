@@ -7,9 +7,9 @@
  * 文字没写时显示"坐标轴标题"（英文界面 Axis Title）。
  */
 import type { ColorContext } from '../model/color';
-import { attr, child, findAll, numAttr, path, type XEl } from '../io/xml';
+import { attr, child, findAll, path, type XEl } from '../io/xml';
 import { n2 } from '../common/svg';
-import { label, textStyle } from './draw';
+import { label, richStyle, textStyle } from './draw';
 import { PAD } from './layout';
 import type { Rect, TextStyle } from './model';
 
@@ -26,10 +26,7 @@ export function readAxisTitle(ax: XEl | undefined, colors: ColorContext, baseTex
   if (!t || attr(child(ax, 'c:delete'), 'val') === '1') return undefined;
   const text = findAll(child(t, 'c:tx'), 'a:t').map((x) => x.text).join('') || (zh ? '坐标轴标题' : 'Axis Title');
   const st = textStyle(child(t, 'c:txPr'), colors, { ...baseText, size: (baseText.size * 1330) / 1197 });
-  const rich = path(t, 'c:tx', 'c:rich');
-  const rr = rich ? findAll(rich, 'a:rPr')[0] ?? findAll(rich, 'a:defRPr')[0] : undefined;
-  const style = rr && numAttr(rr, 'sz') ? { ...st, size: (numAttr(rr, 'sz')! / 100) * PT } : st;
-  return { text, style };
+  return { text, style: richStyle(path(t, 'c:tx', 'c:rich'), colors, st) };
 }
 
 /** 左侧标题的左边：一般是图表边 7 磅；左边已经被别的东西（左侧图例）占了时紧接着它 */
