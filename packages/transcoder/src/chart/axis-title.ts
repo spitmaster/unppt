@@ -7,13 +7,14 @@
  * 文字没写时显示"坐标轴标题"（英文界面 Axis Title）。
  */
 import type { ColorContext } from '../model/color';
-import { attr, child, findAll, path, type XEl } from '../io/xml';
+import { attr, child, findAll, numAttr, path, type XEl } from '../io/xml';
 import { n2 } from '../common/svg';
 import { label, richStyle, textStyle } from './draw';
-import { PAD } from './layout';
+import { PAD, type TextWidth } from './layout';
 import type { Rect, TextStyle } from './model';
 
-export interface AxisTitle { text: string; style: TextStyle }
+/** pos：手动挪过的位置（manualLayout edge，标题框左上角占图表宽高的比例） */
+export interface AxisTitle { text: string; style: TextStyle; pos?: { x: number; y: number } }
 export interface AxisTitles { left?: AxisTitle; bottom?: AxisTitle }
 
 const PT = 4 / 3;
@@ -26,7 +27,10 @@ export function readAxisTitle(ax: XEl | undefined, colors: ColorContext, baseTex
   if (!t || attr(child(ax, 'c:delete'), 'val') === '1') return undefined;
   const text = findAll(child(t, 'c:tx'), 'a:t').map((x) => x.text).join('') || (zh ? '坐标轴标题' : 'Axis Title');
   const st = textStyle(child(t, 'c:txPr'), colors, { ...baseText, size: (baseText.size * 1330) / 1197 });
-  return { text, style: richStyle(path(t, 'c:tx', 'c:rich'), colors, st) };
+  const ml = path(t, 'c:layout', 'c:manualLayout');
+  const edge = (n: 'x' | 'y') => (attr(child(ml, `c:${n}Mode`), 'val') === 'edge' ? numAttr(child(ml, `c:${n}`), 'val') : undefined);
+  const px = edge('x'), py = edge('y');
+  return { text, style: richStyle(path(t, 'c:tx', 'c:rich'), colors, st), ...(px !== undefined && py !== undefined ? { pos: { x: px, y: py } } : {}) };
 }
 
 /** 左侧标题的左边：一般是图表边 7 磅；左边已经被别的东西（左侧图例）占了时紧接着它 */
@@ -52,16 +56,27 @@ export function innerTitleAt(inner: Rect, area: Rect, auto: { left: number; bott
   return { right: inner.left - (auto.left - area.left + LEFT_GAP), top: inner.bottom + (area.bottom - auto.bottom) };
 }
 
-/** 画标题：plot 是绘图区，area 是让出标题之前的可用区域；at 给了时按它放（手动内框） */
-export function renderAxisTitles(t: AxisTitles, plot: Rect, area: Rect, out: string[], at?: TitleAt): void {
+/**
+ * 画标题：plot 是绘图区，area 是让出标题之前的可用区域；at 给了时按它放（手动内框）；chart 是图表宽高（手动挪过的标题用）。
+ * 手动挪过的标题按存的位置放（常数见 MOVED_ALONG），绘图区不跟着变
+ */
+export function renderAxisTitles(t: AxisTitles, plot: Rect, area: Rect, out: string[], at?: TitleAt, chart?: { w: number; h: number }, tw?: TextWidth): void {
   const bottom = area.bottom;
+  const moved = (a: AxisTitle) => (a.pos && chart ? { x: a.pos.x * chart.w, y: a.pos.y * chart.h, half: (tw ? tw(a.text, a.style.size, a.style.font) : 0) / 2 } : undefined);
   if (t.left) {
-    const th = thickness(t.left.style.size);
-    const cx = (at ? at.right - th : titleLeft(area)) + th / 2 + 0.2 * t.left.style.size, cy = (plot.top + plot.bottom) / 2;
+    const th = thickness(t.left.style.size), m = moved(t.left);
+    const cx = (m ? m.x - MOVED_ACROSS : at ? at.right - th : titleLeft(area)) + th / 2 + 0.2 * t.left.style.size;
+    const cy = m ? m.y + MOVED_ALONG + m.half : (plot.top + plot.bottom) / 2;
     out.push(`<g transform="rotate(-90 ${n2(cx)} ${n2(cy)})">${label(t.left.text, cx, cy, t.left.style)}</g>`);
   }
   if (t.bottom) {
-    const th = thickness(t.bottom.style.size);
-    out.push(label(t.bottom.text, (plot.left + plot.right) / 2, (at ? at.top : bottom - GAP - th) + th / 2 + 0.11 * t.bottom.style.size, t.bottom.style));
+    const th = thickness(t.bottom.style.size), m = moved(t.bottom);
+    out.push(label(t.bottom.text, m ? m.x + MOVED_ALONG + m.half : (plot.left + plot.right) / 2, (m ? m.y - MOVED_DOWN : at ? at.top : bottom - GAP - th) + th / 2 + 0.11 * t.bottom.style.size, t.bottom.style));
   }
 }
+
+/**
+ * 实测（charts-axis-title-moved，导出图上和我们的逐像素对位）：手动挪过的坐标轴标题，文字从存的位置沿文字方向 3.2 磅处排起
+ * （和图表标题一样）；横排标题在厚度方向按框顶 = 存的 y − 1 磅、竖排标题按框左 = 存的 x − 2.5 磅放（像素）
+ */
+const MOVED_ALONG = 3.2 * PT, MOVED_DOWN = 1 * PT, MOVED_ACROSS = 2.5 * PT;
