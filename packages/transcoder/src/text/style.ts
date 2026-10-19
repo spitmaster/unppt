@@ -122,8 +122,8 @@ export function runStyle(r: XEl, env: TextEnv, scale: number): RunStyle {
     dblStrike: attr(r, 'strike') === 'dblStrike' || undefined,
     highlight: colorIn(child(r, 'a:highlight'), env.colors),
     baseline: (numAttr(r, 'baseline') ?? 0) / 1000,
-    // 自动缩小时字间距也按同样比例缩小
-    spc: ((numAttr(r, 'spc') ?? 0) / 100) * scale * 96 / 72,
+    // 自动缩小时字间距也按同样比例缩小；上标、下标的字间距和字号一样缩到 0.67 倍（实测 text-super-spc）
+    spc: ((numAttr(r, 'spc') ?? 0) / 100) * scale * 96 / 72 * (numAttr(r, 'baseline') ? 0.67 : 1),
     kern: numAttr(r, 'kern') !== undefined ? numAttr(r, 'kern')! / 100 : undefined,
     caps: (attr(r, 'cap') as RunStyle['caps']) ?? 'none',
     eaLang: /^(zh|ja|ko)/i.test(attr(r, 'lang') ?? ''),

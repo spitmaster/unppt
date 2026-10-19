@@ -254,7 +254,8 @@ export class FontLibrary {
 
 /** 没有字体文件时的估算字宽（单位 em） */
 export function fallbackAdvance(cp: number): number {
-  if (isWide(cp)) return 1;
+  // 私用区的字（符号字体的 U+F0xx 等）字体里没有、又不是 a:sym 时 PowerPoint 占 1 个字号宽（实测 text-pua-nosym：雅黑、Arial、宋体、Calibri 都是）
+  if (isWide(cp) || (cp >= 0xe000 && cp <= 0xf8ff)) return 1;
   if (cp === 0x20) return 0.25;
   if (cp >= 0x30 && cp <= 0x39) return 0.55;
   if ('ilI.,:;\'!|'.includes(String.fromCodePoint(cp))) return 0.25;

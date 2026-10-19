@@ -161,8 +161,14 @@ export class Presentation {
   /** 放映设置（presProps.xml 的 p:showPr）：循环放映、是否使用计时；都是默认值时为 undefined */
   show?: { loop?: boolean; useTimings?: boolean };
   defaultTextStyle?: XEl;
-  /** 幻灯片像素 -> 对齐像素的比例（DISPLAY_WIDTH / 宽度；标准 16:9 是 1） */
+  /** 幻灯片像素 -> 对齐像素的比例（DISPLAY_WIDTH / 真实宽度，不取整；标准 16:9 是 1） */
   displayScale = 1;
+  /**
+   * SVG 的 viewBox（幻灯片像素）：宽度接近 1280 时是真实宽度（12188825 EMU 是 1279.67，不取整），高按输出尺寸 width × height 的比例配，
+   * 整页等比缩放到输出尺寸——同 PowerPoint 按宽度导出（样本：宽 12188825 EMU 的课件图片在 PowerPoint 的像素格上低 1 像素）；其它时候就是 width × height
+   */
+  viewWidth = 0;
+  viewHeight = 0;
   /** 每页渲染时各字体名的字符集（见 font-charsets.ts），按页序：小写字体名 -> charset */
   fontCharsets: Map<string, string>[] = [];
   presPart = '';
@@ -185,9 +191,15 @@ export class Presentation {
     const pres = await this.pkg.xml(this.presPart);
     if (!pres) throw new Error('演示文稿主部件为空');
     const sz = child(pres, 'p:sldSz');
-    this.width = Math.round(slideSide(numAttr(sz, 'cx'), 9144000) / EMU_PER_PX);
-    this.height = Math.round(slideSide(numAttr(sz, 'cy'), 6858000) / EMU_PER_PX);
-    this.displayScale = this.width > 0 ? Math.round(96 * DISPLAY_WIDTH / this.width) / 96 : 1;
+    const cx = slideSide(numAttr(sz, 'cx'), 9144000) / EMU_PER_PX, cy = slideSide(numAttr(sz, 'cy'), 6858000) / EMU_PER_PX;
+    this.width = Math.round(cx);
+    this.height = Math.round(cy);
+    // 宽度接近 1280（±10%，如 12188825、12858750 EMU）时按真实宽度等比缩放、在真实的像素格上对齐（样本 A/B 变好）；
+    // 离得远的（宽 606~1075、1814 以上、竖版）按取整的宽度和 1/96 取整的比例更接近导出图（样本 A/B：真实宽度在这些尺寸上变差）
+    const exact = Math.abs(DISPLAY_WIDTH / cx - 1) <= 0.1;
+    this.viewWidth = exact ? cx : this.width;
+    this.viewHeight = exact ? this.height * cx / this.width : this.height;
+    this.displayScale = exact ? DISPLAY_WIDTH / cx : Math.round(96 * DISPLAY_WIDTH / this.width) / 96;
     this.defaultTextStyle = child(pres, 'p:defaultTextStyle');
     this.firstSlideNum = numAttr(pres, 'firstSlideNum') ?? 1;
     const rels = await this.pkg.rels(this.presPart);

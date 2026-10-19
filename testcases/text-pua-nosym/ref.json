@@ -1,0 +1,113 @@
+{
+ "version": 8,
+ "level": "full",
+ "slideWidthPt": 960.0,
+ "slideHeightPt": 540.0,
+ "imageWidth": 1280,
+ "imageHeight": 720,
+ "slides": [
+  {
+   "index": 0,
+   "hidden": false,
+   "shapes": [
+    {
+     "id": 2,
+     "name": "TextBox 1",
+     "type": 17,
+     "x": 20.0,
+     "y": 20.0,
+     "w": 94.186,
+     "h": 29.081,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 22,
+       "text": "| 文字  文字  文字  文字 |",
+       "x": 27.2,
+       "y": 23.6,
+       "w": 417.005,
+       "h": 33.6
+      }
+     ]
+    },
+    {
+     "id": 3,
+     "name": "TextBox 2",
+     "type": 17,
+     "x": 20.0,
+     "y": 140.0,
+     "w": 94.186,
+     "h": 29.081,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 22,
+       "text": "| 文字  文字  文字  文字 |",
+       "x": 27.2,
+       "y": 143.6,
+       "w": 412.505,
+       "h": 33.6
+      }
+     ]
+    },
+    {
+     "id": 4,
+     "name": "TextBox 3",
+     "type": 17,
+     "x": 20.0,
+     "y": 260.0,
+     "w": 94.186,
+     "h": 29.081,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 22,
+       "text": "| 文字  文字  文字  文字 |",
+       "x": 27.2,
+       "y": 263.6,
+       "w": 476.005,
+       "h": 33.6
+      }
+     ]
+    },
+    {
+     "id": 5,
+     "name": "TextBox 4",
+     "type": 17,
+     "x": 20.0,
+     "y": 380.0,
+     "w": 94.186,
+     "h": 29.081,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 22,
+       "text": "| 文字  文字  文字  文字 |",
+       "x": 27.2,
+       "y": 383.6,
+       "w": 412.755,
+       "h": 33.6
+      }
+     ]
+    }
+   ],
+   "effects": [],
+   "triggerHidden": [],
+   "steps": 0,
+   "keptSlideshow": false
+  }
+ ],
+ "ok": true
+}

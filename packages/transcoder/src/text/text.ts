@@ -52,7 +52,13 @@ export async function renderText(
     || (r.name === 'a:fld' && attr(r, 'type') === 'slidenum' && env.slideNumber !== undefined))));
   if (!hasText) return '';
 
-  const b = readBody(bodyPrs, child(txBody, 'a:bodyPr'));
+  const b0 = readBody(bodyPrs, child(txBody, 'a:bodyPr'));
+  // 竖排时内边距不跟着文字转，仍在屏幕的左、上、右、下（实测 text-vert-insets）：排版在转过的框里做，
+  // 转 90° 的（eaVert 等）行首是屏幕上边、框的"上"是屏幕右边；vert270 行首是屏幕下边、框的"上"是屏幕左边
+  // （mongolianVert 的列从左往右排，emit.ts 把框的"上"镜像到了屏幕左边）
+  const b = !b0.vertical ? b0 : b0.vert === 'vert270' || b0.linesLeftToRight
+    ? { ...b0, lIns: b0.vert === 'vert270' ? b0.bIns : b0.tIns, rIns: b0.vert === 'vert270' ? b0.tIns : b0.bIns, tIns: b0.lIns, bIns: b0.rIns }
+    : { ...b0, lIns: b0.tIns, rIns: b0.bIns, tIns: b0.rIns, bIns: b0.lIns };
   // 文字的三维效果（棱台等）：颜色按三维光照提亮
   if (has3d(b.sp3d) || hasCamera(b.scene3d)) env = { ...env, lit3d: faceLighting(attr(child(b.scene3d, 'a:lightRig'), 'rig'), attr(b.sp3d, 'prstMaterial')), sp3d: b.sp3d };
   const { lIns, rIns, wrap, vert, fontScale, lnReduce, vertical, numCol, spcCol } = b;

@@ -1,0 +1,177 @@
+{
+ "version": 8,
+ "level": "full",
+ "slideWidthPt": 960.0,
+ "slideHeightPt": 540.0,
+ "imageWidth": 1280,
+ "imageHeight": 720,
+ "slides": [
+  {
+   "index": 0,
+   "hidden": false,
+   "shapes": [
+    {
+     "id": 2,
+     "name": "Straight Connector 1",
+     "type": 9,
+     "x": 30.0,
+     "y": 40.0,
+     "w": 200.0,
+     "h": 0.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": -2
+    },
+    {
+     "id": 3,
+     "name": "Straight Connector 2",
+     "type": 9,
+     "x": 260.0,
+     "y": 40.0,
+     "w": 200.0,
+     "h": 0.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": -2
+    },
+    {
+     "id": 4,
+     "name": "Straight Connector 3",
+     "type": 9,
+     "x": 490.0,
+     "y": 40.0,
+     "w": 200.0,
+     "h": 0.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": -2
+    },
+    {
+     "id": 5,
+     "name": "Straight Connector 4",
+     "type": 9,
+     "x": 720.0,
+     "y": 40.0,
+     "w": 200.0,
+     "h": 0.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": -2
+    },
+    {
+     "id": 6,
+     "name": "Straight Connector 5",
+     "type": 9,
+     "x": 30.0,
+     "y": 90.0,
+     "w": 200.0,
+     "h": 0.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": -2
+    },
+    {
+     "id": 7,
+     "name": "Straight Connector 6",
+     "type": 9,
+     "x": 260.0,
+     "y": 90.0,
+     "w": 200.0,
+     "h": 0.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": -2
+    },
+    {
+     "id": 8,
+     "name": "Straight Connector 7",
+     "type": 9,
+     "x": 490.0,
+     "y": 90.0,
+     "w": 200.0,
+     "h": 0.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": -2
+    },
+    {
+     "id": 9,
+     "name": "Straight Connector 8",
+     "type": 9,
+     "x": 720.0,
+     "y": 90.0,
+     "w": 200.0,
+     "h": 0.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": -2
+    },
+    {
+     "id": 10,
+     "name": "Straight Connector 9",
+     "type": 9,
+     "x": 30.0,
+     "y": 140.0,
+     "w": 200.0,
+     "h": 0.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": -2
+    },
+    {
+     "id": 11,
+     "name": "Straight Connector 10",
+     "type": 9,
+     "x": 260.0,
+     "y": 140.0,
+     "w": 200.0,
+     "h": 0.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": -2
+    },
+    {
+     "id": 12,
+     "name": "Straight Connector 11",
+     "type": 9,
+     "x": 490.0,
+     "y": 140.0,
+     "w": 200.0,
+     "h": 0.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": -2
+    },
+    {
+     "id": 13,
+     "name": "Straight Connector 12",
+     "type": 9,
+     "x": 720.0,
+     "y": 140.0,
+     "w": 200.0,
+     "h": 0.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": -2
+    },
+    {
+     "id": 14,
+     "name": "Table 13",
+     "type": 19,
+     "x": 40.0,
+     "y": 220.0,
+     "w": 880.0,
+     "h": 240.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": -2
+    }
+   ],
+   "effects": [],
+   "triggerHidden": [],
+   "steps": 0,
+   "keptSlideshow": false
+  }
+ ],
+ "ok": true
+}

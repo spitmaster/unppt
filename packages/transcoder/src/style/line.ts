@@ -26,8 +26,12 @@ const DASH: Record<string, number[]> = {
 };
 
 /** 合并线条定义（主题样式 -> 形状自己的 a:ln），返回最终线条；noFill 返回 undefined */
-/** pixel：当前坐标 -> 对齐像素的比例（线宽按对齐像素取整，见 model.ts 的 DISPLAY_WIDTH；图表不给） */
-export function parseLine(lns: (XEl | undefined)[], ctxs: ColorContext[], part: string, pixel = 1): Line | undefined {
+/**
+ * pixel：当前坐标 -> 对齐像素的比例（线宽按对齐像素取整，见 model.ts 的 DISPLAY_WIDTH；图表不给）。
+ * realDash：虚线的线宽、段长按真实线宽算，不取整（表格边框；实测 lines-thin-dash：0.5 磅圆点虚线的表格边框周期 2.67 像素、很淡，
+ * 形状的线周期 4 像素、1 像素宽）
+ */
+export function parseLine(lns: (XEl | undefined)[], ctxs: ColorContext[], part: string, pixel = 1, realDash = false): Line | undefined {
   let width = 9525;
   let fill: Fill | undefined;
   let dash: string | undefined;
@@ -58,11 +62,13 @@ export function parseLine(lns: (XEl | undefined)[], ctxs: ColorContext[], part: 
   });
   if (!any || !fill || fill.kind === 'none') return undefined;
   // 不到 1 像素的细线（0.25、0.5 磅）PowerPoint 画成 1 像素宽、颜色不变淡（实测）
-  const px = width > 0 ? Math.max(1, Math.round(width / EMU_PER_PX * pixel)) / pixel : 0;
+  const dashed = !!dash && dash !== 'solid' && !!DASH[dash];
+  // 表格的虚线边框（realDash）线宽也不取整：0.5 磅的圆点虚线 PowerPoint 画得很淡
+  const px = realDash && dashed ? width / EMU_PER_PX : width > 0 ? Math.max(1, Math.round(width / EMU_PER_PX * pixel)) / pixel : 0;
   const color = fill.kind === 'solid' ? fill.color : fill.kind === 'grad' ? fill.stops[0]?.color : undefined;
   return {
     color, fill, width: px,
-    dash: dash && dash !== 'solid' && DASH[dash] ? DASH[dash].map((d) => n2(d * px)).join(' ') : undefined,
+    dash: dashed ? DASH[dash!].map((d) => n2(d * px)).join(' ') : undefined,
     cap: cap === 'rnd' ? 'round' : cap === 'sq' ? 'square' : 'butt',
     join, head, tail,
     ...(cmpd !== 'sng' && ['dbl', 'thickThin', 'thinThick', 'tri'].includes(cmpd) ? { cmpd } : {}),

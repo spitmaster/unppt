@@ -1,0 +1,93 @@
+{
+ "version": 8,
+ "level": "full",
+ "slideWidthPt": 960.0,
+ "slideHeightPt": 540.0,
+ "imageWidth": 1280,
+ "imageHeight": 720,
+ "slides": [
+  {
+   "index": 0,
+   "hidden": false,
+   "shapes": [
+    {
+     "id": 2,
+     "name": "Table 1",
+     "type": 19,
+     "x": 20.0,
+     "y": 20.0,
+     "w": 290.0,
+     "h": 119.685,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": -2
+    },
+    {
+     "id": 3,
+     "name": "Table 2",
+     "type": 19,
+     "x": 335.0,
+     "y": 20.0,
+     "w": 290.0,
+     "h": 123.24,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": -2
+    },
+    {
+     "id": 4,
+     "name": "Table 3",
+     "type": 19,
+     "x": 650.0,
+     "y": 20.0,
+     "w": 290.0,
+     "h": 129.6,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": -2
+    },
+    {
+     "id": 5,
+     "name": "Table 4",
+     "type": 19,
+     "x": 20.0,
+     "y": 280.0,
+     "w": 290.0,
+     "h": 217.785,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": -2
+    },
+    {
+     "id": 6,
+     "name": "Table 5",
+     "type": 19,
+     "x": 335.0,
+     "y": 280.0,
+     "w": 290.0,
+     "h": 224.88,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": -2
+    },
+    {
+     "id": 7,
+     "name": "Table 6",
+     "type": 19,
+     "x": 650.0,
+     "y": 280.0,
+     "w": 290.0,
+     "h": 237.6,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": -2
+    }
+   ],
+   "effects": [],
+   "triggerHidden": [],
+   "steps": 0,
+   "keptSlideshow": false
+  }
+ ],
+ "ok": true
+}
