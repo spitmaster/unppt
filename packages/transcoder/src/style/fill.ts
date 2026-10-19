@@ -69,7 +69,9 @@ export function parseFill(f: XEl | undefined, ctx: ColorContext, part: string, g
       const sr = child(f, 'a:srcRect');
       const fr = child(child(f, 'a:stretch'), 'a:fillRect');
       return {
-        kind: 'image', rid, part, alpha: (numAttr(amf, 'amt') ?? 100000) / 100000, tile: parseTile(child(f, 'a:tile')),
+        kind: 'image', rid, part, alpha: (numAttr(amf, 'amt') ?? 100000) / 100000,
+        // 既没写 a:stretch 也没写 a:tile：PowerPoint 按原尺寸平铺（实测 fills-blip-no-mode）
+        tile: parseTile(child(f, 'a:tile')) ?? (child(f, 'a:stretch') ? undefined : { sx: 1, sy: 1, tx: 0, ty: 0, algn: 'tl', flip: 'none' }),
         ...(noRotate(f) ? { upright: true } : {}),
         effects: parseBlipEffects(blip, ctx),
         srcRect: sr ? {
@@ -167,7 +169,8 @@ async function tileFill(fill: Extract<Fill, { kind: 'image' }>, tile: Tile, href
   if (!info || !info.width || !info.height) return undefined;
   const tw = info.width * 96 / (info.dpiX || 96) * tile.sx, th = info.height * 96 / (info.dpiY || 96) * tile.sy;
   if (!(tw > 0.5 && th > 0.5)) return undefined;
-  const fx = /r$/.test(tile.algn) ? 1 : /^(t|b|ctr)$/.test(tile.algn) ? 0.5 : 0;
+  // ctr 也以 r 结尾，要先判断（实测 fills-blip-no-mode 第 2 页：居中平铺）
+  const fx = /^(t|b|ctr)$/.test(tile.algn) ? 0.5 : /r$/.test(tile.algn) ? 1 : 0;
   const fy = /^b/.test(tile.algn) ? 1 : /^(l|r|ctr)$/.test(tile.algn) ? 0.5 : 0;
   const mx = tile.flip === 'x' || tile.flip === 'xy', my = tile.flip === 'y' || tile.flip === 'xy';
   const pw = tw * (mx ? 2 : 1), ph = th * (my ? 2 : 1);

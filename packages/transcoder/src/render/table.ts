@@ -112,8 +112,10 @@ export async function renderTable(tbl: XEl | undefined, origin: { x: number; y: 
     const fill = own ?? c.style.fill;
     if (fill && fill.kind === 'solid') fills.push(`<rect x="${n2(x)}" y="${n2(y)}" width="${n2(w)}" height="${n2(h)}"${await fillAttrs(fill, r.doc, w, h, 'norm', r.images)}/>`);
     else if (fill && fill.kind !== 'none') {
-      // 渐变、图片、图案的坐标以单元格左上角为原点
-      const fa = await fillAttrs(fill, r.doc, w, h, 'norm', r.images, { x: origin.x + x, y: origin.y + y });
+      // 渐变、图片、图案的坐标以单元格左上角为原点；平铺的图片从表格左上角起铺，对齐方式按单元格的大小算
+      // （实测 fills-blip-no-mode：相邻单元格的花纹连续，居中平铺也是）
+      const f2 = fill.kind === 'image' && fill.tile ? { ...fill, tile: { ...fill.tile, tx: fill.tile.tx - x, ty: fill.tile.ty - y } } : fill;
+      const fa = await fillAttrs(f2, r.doc, w, h, 'norm', r.images, { x: origin.x + x, y: origin.y + y });
       fills.push(`<g transform="translate(${n2(x)} ${n2(y)})"><rect width="${n2(w)}" height="${n2(h)}"${fa}/></g>`);
     }
     // 文字：行高可能被撑高了，按最终高度重排（垂直对齐需要）
