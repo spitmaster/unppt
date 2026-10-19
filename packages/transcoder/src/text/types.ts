@@ -106,8 +106,12 @@ export interface Atom {
   style: RunStyle;
   family: string;
   face?: FontFace;
+  /** 上伸、下伸（像素）：混排字体（见 measure.ts MIX_GAP）是和另一种字体比过取较大的，只在有段落标记、换行符的行里用 */
   ascent: number;
   descent: number;
+  /** 混排字体自己的上伸、下伸（折行折出来、没有段落标记和换行符的行用；不混排的字没有） */
+  ownAscent?: number;
+  ownDescent?: number;
   /** 删除线中心离基线的高度（像素） */
   strikeY: number;
   space: boolean;
