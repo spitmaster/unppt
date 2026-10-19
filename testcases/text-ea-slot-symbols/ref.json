@@ -1,0 +1,159 @@
+{
+ "version": 8,
+ "level": "full",
+ "slideWidthPt": 960.0,
+ "slideHeightPt": 540.0,
+ "imageWidth": 1280,
+ "imageHeight": 720,
+ "slides": [
+  {
+   "index": 0,
+   "hidden": false,
+   "shapes": [
+    {
+     "id": 2,
+     "name": "TextBox 1",
+     "type": 17,
+     "x": 20.0,
+     "y": 20.0,
+     "w": 85.855,
+     "h": 29.081,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 37,
+       "text": "§¨°±×÷™↔①②■□▲△◆●○★☆♀♂♪|·–—…←→≤≥√∞αΩ©½",
+       "x": 27.2,
+       "y": 23.6,
+       "w": 524.13,
+       "h": 24.0
+      }
+     ]
+    },
+    {
+     "id": 3,
+     "name": "TextBox 2",
+     "type": 17,
+     "x": 20.0,
+     "y": 100.0,
+     "w": 85.855,
+     "h": 29.081,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 37,
+       "text": "§¨°±×÷™↔①②■□▲△◆●○★☆♀♂♪|·–—…←→≤≥√∞αΩ©½",
+       "x": 27.2,
+       "y": 103.6,
+       "w": 524.13,
+       "h": 24.0
+      }
+     ]
+    },
+    {
+     "id": 4,
+     "name": "TextBox 3",
+     "type": 17,
+     "x": 20.0,
+     "y": 180.0,
+     "w": 85.855,
+     "h": 29.081,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 37,
+       "text": "§¨°±×÷™↔①②■□▲△◆●○★☆♀♂♪|·–—…←→≤≥√∞αΩ©½",
+       "x": 27.2,
+       "y": 183.6,
+       "w": 614.755,
+       "h": 24.0
+      }
+     ]
+    },
+    {
+     "id": 5,
+     "name": "TextBox 4",
+     "type": 17,
+     "x": 20.0,
+     "y": 260.0,
+     "w": 85.855,
+     "h": 29.081,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 37,
+       "text": "§¨°±×÷™↔①②■□▲△◆●○★☆♀♂♪|·–—…←→≤≥√∞αΩ©½",
+       "x": 27.2,
+       "y": 263.6,
+       "w": 614.755,
+       "h": 24.0
+      }
+     ]
+    },
+    {
+     "id": 6,
+     "name": "TextBox 5",
+     "type": 17,
+     "x": 20.0,
+     "y": 340.0,
+     "w": 85.855,
+     "h": 29.081,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 37,
+       "text": "§¨°±×÷™↔①②■□▲△◆●○★☆♀♂♪|·–—…←→≤≥√∞αΩ©½",
+       "x": 27.2,
+       "y": 343.6,
+       "w": 618.13,
+       "h": 24.0
+      }
+     ]
+    },
+    {
+     "id": 7,
+     "name": "TextBox 6",
+     "type": 17,
+     "x": 20.0,
+     "y": 420.0,
+     "w": 85.855,
+     "h": 29.081,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 37,
+       "text": "§¨°±×÷™↔①②■□▲△◆●○★☆♀♂♪|·–—…←→≤≥√∞αΩ©½",
+       "x": 27.2,
+       "y": 423.6,
+       "w": 622.88,
+       "h": 24.0
+      }
+     ]
+    }
+   ],
+   "effects": [],
+   "triggerHidden": [],
+   "steps": 0,
+   "keptSlideshow": false
+  }
+ ],
+ "ok": true
+}
