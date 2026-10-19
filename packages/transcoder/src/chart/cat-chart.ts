@@ -19,7 +19,7 @@ import { isPersp3D, renderPersp3D } from './cat3d-persp';
 import { lineType } from './types/line-area';
 import { extraValues, trendlines } from './extras';
 import { dataTableSize, readDataTable, renderDataTable } from './data-table';
-import { readAxisTitle, renderAxisTitles, reserveAxisTitles, type AxisTitles } from './axis-title';
+import { innerTitleAt, readAxisTitle, renderAxisTitles, reserveAxisTitles, type AxisTitles } from './axis-title';
 import { NO_GRID, type PixelGrid } from './pixel-grid';
 import { catFitBand, categoryLabel, fitCategoryLabels, outerLevelBands, outerLevels, ROT_MIDCAT_RIGHT, rotFirstCenter, sideLabel, sideLabelMax, sideLevelBands, sideOuterLevels, wrapSideLabel, type CatFit, type LevelBand, capVertical } from './cat-labels';
 
@@ -184,17 +184,19 @@ export function renderCategoryChart(plots: Plot[], plotArea: XEl | undefined, ar
       innerBand = catFitBand(catFit, catH(catStyle.size), cats, catStyle.size, catTw);
       bottom -= innerBand + levelBands.reduce((a, b) => a + b.band, 0);
       // 手动布局的内框：绘图区就是给的框，分类标签按它的宽度排、画在框外，不截断（样本：矮图表的斜标签以前被截成两个字）
-      if (env.inner) catFit = fitCategoryLabels(cats, (area.right - area.left) / fitBands, catStyle.size, catTw, numAttr(child(catAx, 'c:tickLblSkip'), 'val'), eaVert);
+      if (env.inner) catFit = fitCategoryLabels(cats, (area0.right - area0.left) / fitBands, catStyle.size, catTw, numAttr(child(catAx, 'c:tickLblSkip'), 'val'), eaVert);
     }
-    if (env.inner) ({ left, top, right, bottom } = area);
-    return { prim, sec, left, top, right, bottom, sides, unit, edgeLeft, edgeRight, valLabels, valStyle, tickLabels, between, catFit, innerBand, levelBands };
+    // 手动内框：绘图区就是给的框（不给坐标轴标题让位置），标题贴在"内框 + 标签带"外面
+    const titleAt = env.inner ? innerTitleAt(area0, area, { left, bottom }) : undefined;
+    if (env.inner) ({ left, top, right, bottom } = area0);
+    return { prim, sec, left, top, right, bottom, sides, unit, edgeLeft, edgeRight, valLabels, valStyle, tickLabels, between, catFit, innerBand, levelBands, titleAt };
   };
   // 自动刻度的疏密取决于轴长（axis.ts）：先按默认刻度排一遍得到轴长，再按轴长选刻度重排
   const first = place();
   // 横向数值轴（条形图）的刻度疏密按"绘图区宽 + 左右分类标签列宽的一半"算（COM 探针：长分类名的条形图刻度比按绘图区宽算的密）
   const sideCol = horizontal && catLabels && !first.sides.catMid ? Math.max(0, ...sideLines.flat().map((t) => catTw(t, catStyle.size))) + sideGap(catStyle.size) : 0;
   const placed = place(horizontal ? first.right - first.left + sideCol / 2 : first.bottom - first.top);
-  const { prim, sec, sides, unit, edgeLeft, edgeRight, valLabels, valStyle, tickLabels, between, catFit, innerBand, levelBands } = placed;
+  const { prim, sec, sides, unit, edgeLeft, edgeRight, valLabels, valStyle, tickLabels, between, catFit, innerBand, levelBands, titleAt } = placed;
   const { left, top, right, bottom } = placed;
   // 网格线、坐标轴线、柱子按像素中心的规则对齐整像素（pixel-grid.ts）
   const g = env.snap ?? NO_GRID;
@@ -296,7 +298,7 @@ export function renderCategoryChart(plots: Plot[], plotArea: XEl | undefined, ar
     out.push(tickMarks(prim.minor.map((t) => frame.valPx(prim.pos(t))), at, dir, outward(sides.val), prim.minorMark, prim.axisLine, g));
   }
   out.push(...axisText);
-  renderAxisTitles(titles, box, area0, out);
+  renderAxisTitles(titles, box, area0, out, titleAt);
   if (dt) renderDataTable(dt, plots, cats, colors, tw, bottom, left, right, band, g, out);
   out.push(...labelsOut);
 }
