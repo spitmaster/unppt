@@ -8,6 +8,9 @@ import { textEl } from './svg-text';
 import { hangable } from './linebreak';
 import type { Atom, Line, ParagraphLayout, TextEnv } from './types';
 
+/** 竖排正立的字往基线方向挪的距离（× 字号，实测 text-vert-insets） */
+const UPRIGHT_DROP = 0.14;
+
 /** 基线对齐整像素的最大字号（像素，20 磅） */
 const SNAP_MAX_SIZE = 20 * 96 / 72 + 0.01;
 
@@ -57,7 +60,10 @@ export function placeLines(
   const lastP = layouts[layouts.length - 1], last = lastP?.lines[lastP.lines.length - 1];
   const lastLh = last ? lineHeight(last, lastP.lineSpc) : 0, lastBox = last ? last.size * 1.2 : 0;
   const full = lastP?.fontAlgn === 'ctr' || lastP?.fontAlgn === 't';
-  const trim = last && !full && lastLh > lastBox + 0.01 ? lastLh * (1 - TALL_BASELINE) - lastBox * last.descent / (last.ascent + last.descent || 1) : 0;
+  // fontAlgn="b" 的按比例加大的行基线上移了半个下伸，块的底也跟着上移（table-fontalgn-tall：150% 行距的表格行比 PowerPoint 高半个下伸；
+  // 固定行距的不减，样本：9 磅字 18 磅固定行距的表格行高按不减的对）
+  const trim = last && !full && lastLh > lastBox + 0.01 ? lastLh * (1 - TALL_BASELINE) - lastBox * last.descent / (last.ascent + last.descent || 1)
+    + (lastP.fontAlgn === 'b' && lastP.lineSpc.pts === undefined ? last.descent / 2 : 0) : 0;
   const availH = outer.h - tIns - bIns, shown = total - Math.max(0, trim);
   if (out) out.height = shown + tIns + bIns;
   let y = tIns + (numCol > 1 ? 0 : anchor === 'ctr' ? (availH - shown) / 2 : anchor === 'b' ? availH - shown : 0);
@@ -166,10 +172,12 @@ export function emitParagraphs(
         const st = thin ? { ...sized, bold: false, fakeBold: true } : sized;
         const alias = seg[0].face && env.embed ? env.embed.alias(seg[0].face) : undefined;
         if (seg.length === 1 && upright(seg[0])) {
-          // 竖排里正立的字：以字的中心为轴转回来
+          // 竖排里正立的字：以字的中心为轴转回来；整个字再往基线那边挪 0.14 个字号（实测 text-vert-insets：eaVert、mongolianVert 的
+          // 雅黑 28 磅正立汉字比按字身居中的位置靠屏幕左边 5 像素，整体转的 vert 不差）
           const cx = xs[s0] + seg[0].width / 2;
-          const cy = baseline - st.size * 0.38;
-          pParts.push(`<g transform="rotate(-90 ${n2(cx)} ${n2(cy)})">${textEl(txt, cx, baseline + shift, st, seg[0].family, false, alias, env, 'middle')}</g>`);
+          const up = UPRIGHT_DROP * st.size;
+          const cy = baseline - st.size * 0.38 + up;
+          pParts.push(`<g transform="rotate(-90 ${n2(cx)} ${n2(cy)})">${textEl(txt, cx, baseline + shift + up, st, seg[0].family, false, alias, env, 'middle')}</g>`);
         } else if (txt.trim().length || s.underline || s.strike) pParts.push(textEl(txt, perChar(seg) ? xs.slice(s0, k) : xs[s0], baseline + shift, st, seg[0].family, false, alias, env));
         decorate(seg, s, xs[s0], xs[k - 1] + seg[seg.length - 1].width - xs[s0], baseline + shift, st.size, under, over);
         s0 = k;

@@ -170,7 +170,7 @@ export async function renderSlide(ref: SlideRef, env: RenderEnv): Promise<Render
   const toSlide = s === 1 ? undefined : { x: 0, y: 0, sx: s, sy: s };
   const mk = (part: string, own: boolean): SlideContext => ({ pres, part, layout, master, theme, colors, ownSlide: own, slideNumber: ref.index + pres.firstSlideNum, toSlide, fontCharsets: pres.fontCharsets[ref.index] });
   const r = new SlideRenderer(env, ref.index);
-  const W = pres.width, H = pres.height;
+  const W = pres.viewWidth, H = pres.viewHeight;
 
   const parts: string[] = [];
   r.bgSvg = await r.background([
@@ -191,7 +191,7 @@ export async function renderSlide(ref: SlideRef, env: RenderEnv): Promise<Render
   parts.push(await r.shapes(controlPictures(path(xml, 'p:cSld', 'p:controls')), mk(ref.part, true)));
   const groups = new Set(findAll(tree, 'p:grpSp').map((g) => r.uidOf(g, mk(ref.part, true))).filter((u): u is string => !!u));
 
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}">${r.doc.defsXml()}${parts.join('')}</svg>`;
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${+W.toFixed(3)} ${+H.toFixed(3)}" width="${pres.width}" height="${pres.height}">${r.doc.defsXml()}${parts.join('')}</svg>`;
   return {
     svg,
     colors,

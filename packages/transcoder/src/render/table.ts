@@ -131,7 +131,7 @@ export async function renderTable(tbl: XEl | undefined, origin: { x: number; y: 
     // 都没写才用表格样式（样本：下面的单元格没写 lnT、上面的写了虚线 lnB，PowerPoint 画虚线，不画样式的网格线）
     const side = (own: string, styleSide: Line | undefined, shared = false) => {
       const ln = child(tcPr, own);
-      if (ln) return parseLine([ln], [colors], ctx.part, ctx.pres.displayScale);
+      if (ln) return parseLine([ln], [colors], ctx.part, ctx.pres.displayScale, true);
       return shared ? undefined : styleSide;
     };
     const across = (n: number, from: number, f: (k: number) => boolean) => Array.from({ length: n }, (_, k) => from + k).some(f);
@@ -156,7 +156,9 @@ export async function renderTable(tbl: XEl | undefined, origin: { x: number; y: 
   const W = colX[nC], H = rowY[nR];
   const bgRect = bg.fill && bg.fill.kind !== 'none'
     ? `<rect width="${n2(W)}" height="${n2(H)}"${await fillAttrs(bg.fill, r.doc, W, H, 'norm', r.images, { x: origin.x, y: origin.y })}/>` : '';
-  const body = bgRect + fills.join('') + borders.join('');
+  // 相邻单元格公共边上一模一样的线只画一次（画两遍抗锯齿的边更深；PowerPoint 一条边只画一次），留最后画的那次
+  const uniq = [...new Set([...borders].reverse())].reverse();
+  const body = bgRect + fills.join('') + uniq.join('');
   const fx = bg.effect && body ? effectFilter(bg.effect.lst, bg.effect.colors, r.doc, W, H) : undefined;
   return (fx ? `<g filter="url(#${fx})">${body}</g>` : body) + texts.join('');
 }
