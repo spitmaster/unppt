@@ -96,7 +96,9 @@ export function readPlots(plotArea: XEl | undefined, colors: ColorContext, part:
       const mkFill = parseFill(findFillEl(child(mk, 'c:spPr')), colors, part);
       const mkLine = parseLine([child(child(mk, 'c:spPr'), 'a:ln')], [colors], part);
       const marker = rules.marker(symbol);
-      const name = findAll(child(s, 'c:tx'), 'c:v')[0]?.text ?? child(child(s, 'c:tx'), 'c:v')?.text ?? `系列 ${idx + 1}`;
+      // 名字的缓存是空的（strCache 里没有 pt）：名字就是空的，自动标题、图例都不写字（实测 charts-empty-series-name）
+      const tx = child(s, 'c:tx');
+      const name = findAll(tx, 'c:v')[0]?.text ?? (findAll(tx, 'c:strCache').length ? '' : `系列 ${idx + 1}`);
       const serLabels = readLabels(child(s, 'c:dLbls'), plotLabels, colors, baseText);
       const pts = readPointLabels(child(s, 'c:dLbls'), serLabels, colors, baseText, s);
       return {

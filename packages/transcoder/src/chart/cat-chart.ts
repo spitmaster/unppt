@@ -173,20 +173,26 @@ export function renderCategoryChart(plots: Plot[], plotArea: XEl | undefined, ar
       const bands = between ? nCat : Math.max(1, nCat - 1);
       // 日期轴：放不放得下按 绘图区宽 / 分类数 算，分类在端点上（面积图）也是（实测 charts-pct-stacked：5 个日期、标签宽 0.97 倍时转斜）
       const fitBands = catAx?.name === 'c:dateAx' ? nCat : bands;
-      const eaVert = attr(child(child(catAx, 'c:txPr'), 'a:bodyPr'), 'vert') === 'eaVert';
-      catFit = fitCategoryLabels(cats, (right - left) / fitBands, catStyle.size, catTw, numAttr(child(catAx, 'c:tickLblSkip'), 'val'), eaVert);
+      const bodyPr = child(child(catAx, 'c:txPr'), 'a:bodyPr');
+      const eaVert = attr(bodyPr, 'vert') === 'eaVert';
+      // 自定义角度：rot 在 ±90° 以内、不是 0（PowerPoint 写的 −60000000 是"自动"）
+      const rot = numAttr(bodyPr, 'rot');
+      const deg = rot !== undefined && rot !== 0 && Math.abs(rot) < 5400000 ? rot / 60000 : undefined;
+      catFit = fitCategoryLabels(cats, (right - left) / fitBands, catStyle.size, catTw, numAttr(child(catAx, 'c:tickLblSkip'), 'val'), eaVert, deg);
       levelBands = outerLevelBands(catLevels, catStyle.size, (c, sz) => (c ? catBand(sz) : valBand(sz)));
       catFit = capVertical(catFit, cats, catStyle.size, catTw, bottom - top - levelBands.reduce((a, b) => a + b.band, 0));
       if (catFit.kind === 'rot' && cats.length) {
         // 斜标签不往右伸，不用给首尾留半个宽度；分类在端点上时右边仍留约 1.05 × 字号（面积图一个样例）；第一个标签按截断后的算
         [left, right] = [left0, between ? right0 : Math.min(right0, area.right - ROT_MIDCAT_RIGHT * catStyle.size)];
         const f = between ? 0.5 / bands : 0;
-        left = Math.max(left, (rotFirstCenter(catFit.cut?.[0] ?? cats[0], catStyle.size, catTw) - f * right) / (1 - f));
+        // 往右斜（顺时针）的标签伸向右边：最后一个分类中心离右边留够（实测 charts-cat-custom-rot）
+        if (catFit.deg !== undefined && catFit.deg > 0) right = Math.min(right, (w - rotFirstCenter(catFit.cut?.[cats.length - 1] ?? cats[cats.length - 1], catStyle.size, catTw, catFit.deg) - f * left) / (1 - f));
+        else left = Math.max(left, (rotFirstCenter(catFit.cut?.[0] ?? cats[0], catStyle.size, catTw, catFit.deg) - f * right) / (1 - f));
       }
       innerBand = catFitBand(catFit, catH(catStyle.size), cats, catStyle.size, catTw);
       bottom -= innerBand + levelBands.reduce((a, b) => a + b.band, 0);
       // 手动布局的内框：绘图区就是给的框，分类标签按它的宽度排、画在框外，不截断（样本：矮图表的斜标签以前被截成两个字）
-      if (env.inner) catFit = fitCategoryLabels(cats, (area0.right - area0.left) / fitBands, catStyle.size, catTw, numAttr(child(catAx, 'c:tickLblSkip'), 'val'), eaVert);
+      if (env.inner) catFit = fitCategoryLabels(cats, (area0.right - area0.left) / fitBands, catStyle.size, catTw, numAttr(child(catAx, 'c:tickLblSkip'), 'val'), eaVert, deg);
     }
     // 手动内框：绘图区就是给的框（不给坐标轴标题让位置），标题贴在"内框 + 标签带"外面
     const titleAt = env.inner ? innerTitleAt(area0, area, { left, bottom }) : undefined;

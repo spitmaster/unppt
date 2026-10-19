@@ -73,6 +73,13 @@ const JP_SUBS = ['Yu Gothic', '游ゴシック', ...EA_SUBS];
  * （手工拼的 EOT PowerPoint 不认），按样本定
  */
 const SONG_SUBS = ['SimSun', '宋体', 'NSimSun', '新宋体', 'Songti SC', 'Noto Serif CJK SC', 'Source Han Serif SC'];
+/**
+ * 没装时 PowerPoint 换成别的字体的名字（实测 text-font-substitutes：Helvetica、Helvetica Neue、Helv 画成 Arial，Times、Tms Rmn 画成
+ * Times New Roman，Courier 画成 Courier New；楷体_GB2312、仿宋_GB2312 不换成楷体、仿宋）
+ */
+const ALIAS: Record<string, string> = {
+  helvetica: 'Arial', 'helvetica neue': 'Arial', helv: 'Arial', times: 'Times New Roman', 'tms rmn': 'Times New Roman', courier: 'Courier New',
+};
 /** 不走宋体的嵌入字体：样本里嵌入的 PingFang SC（CFF）PowerPoint 用雅黑画（像一般缺字体），大概 Office 自带苹果字体的替代表 */
 const MAPPED = /^pingfang/i;
 /**
@@ -102,6 +109,9 @@ export async function makeAtoms(text: string, style: RunStyle, m: Measurer): Pro
   const pick = async (family: string, subs: string[]): Promise<[Measured | undefined, string]> => {
     const mm = await m.metrics(family, style.bold, style.italic);
     if (mm) return [mm, family];
+    const alias = ALIAS[family.toLowerCase()];
+    const am = alias ? await m.metrics(alias, style.bold, style.italic) : undefined;
+    if (am) return [am, alias!];
     const [sm, sub] = await substitute(m.unusable?.(family) && !MAPPED.test(family) ? [...SONG_SUBS, ...subs] : subs);
     return sm ? [sm, sub] : [undefined, family];
   };
@@ -136,7 +146,10 @@ export async function makeAtoms(text: string, style: RunStyle, m: Measurer): Pro
     // EA_SLOT 的字东亚字体里没有时先用雅黑补，再退回西文字体（实测：宋体没有 ↔、楷体没有 ™，PowerPoint 排成雅黑的宽度）
     const slotFirst = eaSlot(cp) && !isWide(cp);
     const tryCjk = async () => {
-      const [cm, cf] = await (cjk ??= substitute(EA_SUBS));
+      // 东亚字体是没有汉字的西文字体时，衬线体、手写体用宋体补，其它用雅黑（实测 text-ea-latin-cjk：Times New Roman、Georgia、Cambria、
+      // Palatino、Garamond、Comic Sans 是宋体；Arial、Calibri、Verdana、Segoe UI、Courier New、Consolas 是雅黑）
+      const g = eaM?.metrics.generic;
+      const [cm, cf] = await (cjk ??= substitute(g === 'roman' || g === 'script' ? [...SONG_SUBS, ...EA_SUBS] : EA_SUBS));
       adv = cm?.metrics.advance(cp);
       if (adv !== undefined) { usedM = cm; family = cf; }
     };

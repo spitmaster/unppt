@@ -36,6 +36,8 @@ export interface FontMetrics {
   strikeSize?: number;
   /** 小写字母 x 的高度（单位 em，OS/2 第 2 版起才有） */
   xHeight?: number;
+  /** Windows 给字体归的大类（按 OS/2 的 PANOSE 推，同 GDI 的 lfPitchAndFamily）：roman 衬线、swiss 无衬线、modern 等宽、script 手写、decorative 装饰 */
+  generic?: 'roman' | 'swiss' | 'modern' | 'script' | 'decorative';
   /** 两个字符之间的字距调整（单位 em，负数是挤近）；字体没有字距数据时为 0 */
   kern(left: number, right: number): number;
   /** 字形轮廓（单位 em，y 向上）；字体里没有这个字、或不是 TrueType 轮廓时为 undefined */
@@ -50,6 +52,16 @@ const be32 = (b: Uint8Array, o: number) => (b[o] * 0x1000000) + ((b[o + 1] << 16
 const tag = (b: Uint8Array, o: number) => String.fromCharCode(b[o], b[o + 1], b[o + 2], b[o + 3]);
 
 interface TableRec { offset: number; length: number; }
+
+/** PANOSE 的字体类型、衬线样式、比例 -> GDI 的字体大类（按 Wine 的 GetTextMetrics 写法：等宽优先，再看衬线样式） */
+function genericFamily(family: number, serif: number, proportion: number): FontMetrics['generic'] {
+  if (family === 3) return 'script';
+  if (family === 4 || family === 5) return 'decorative';
+  if (proportion === 9) return 'modern';
+  if (serif >= 2 && serif <= 10) return 'roman';
+  if (serif >= 11 && serif <= 15) return 'swiss';
+  return undefined;
+}
 
 async function readTables(src: RandomAccessSource, faceOffset: number): Promise<Map<string, TableRec>> {
   const head = await src.read(faceOffset, 12);
@@ -151,6 +163,7 @@ async function loadMetrics(src: RandomAccessSource, tables: Map<string, TableRec
     strikeTop: os2b && os2b.length >= 30 ? bes16(os2b, 28) / upem : undefined,
     strikeSize: os2b && os2b.length >= 30 ? bes16(os2b, 26) / upem : undefined,
     xHeight: os2b && os2b.length >= 88 && be16(os2b, 0) >= 2 ? bes16(os2b, 86) / upem : undefined,
+    generic: os2b && os2b.length >= 42 ? genericFamily(os2b[32], os2b[33], os2b[35]) : undefined,
     advance(cp) {
       if (cache.has(cp)) return cache.get(cp);
       const gid = lookup(cp);

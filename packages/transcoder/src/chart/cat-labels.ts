@@ -18,13 +18,16 @@ import { hasCjk, label } from './draw';
 import type { TextWidth } from './layout';
 import type { CatLevel, TextStyle } from './model';
 
-export type CatFit = ({ kind: 'line' } | { kind: 'wrap'; lines: string[][]; n: number } | { kind: 'rot'; cut?: string[] } | { kind: 'vert'; cut?: string[] } | { kind: 'ea' }) & { skip: number };
+/** rot 的 deg：文件里写的自定义角度（度，负数逆时针）；没写时是自动的 −45° */
+export type CatFit = ({ kind: 'line' } | { kind: 'wrap'; lines: string[][]; n: number } | { kind: 'rot'; cut?: string[]; deg?: number } | { kind: 'vert'; cut?: string[] } | { kind: 'ea' }) & { skip: number };
 
 const SIN45 = Math.SQRT1_2;
 /** 实测：折行每多一行的高度、斜标签带的常数项、斜标签末端的位置、第一个斜标签的中心离图表左边的距离（像素，s 是字号） */
 const WRAP_LINE = 1.044, ROT_BAND = 1.54, ROT_X = 0.02, ROT_Y = 1.27, ROT_Y0 = 4.2, ROT_EDGE = 15.4, ROT_SPAN = 0.667;
 /** 实测：斜排、竖排要求的行距（× 字号）、竖排文字末端离轴、竖排标签带的常数项 */
 const ROT45_ROOM = 1.33, VERT_ROOM = 1, VERT_Y = 0.7, VERT_Y0 = 2, VERT_BAND = 0.62;
+/** 实测（charts-cat-custom-rot，12 磅）：自定义角度斜排要求的垂直间距在 0.90~1.23 倍字号之间（30° 时 0.90 倍隔一个、−20° 隔一个时 1.23 倍够），取中间 */
+const ROT_CUSTOM_ROOM = 1.05;
 /**
  * 实测（charts-axis-ea-vert：12 磅、1~6 个汉字）：文字设成东亚竖排（bodyPr vert="eaVert"）时每个字往下排、字距 1 个字号，
  * 第一个字的上沿在轴下 0.56 × 字号；标签带比横排一行的高 (最多的字数 − 1.375) × 字号
@@ -61,9 +64,15 @@ function wrapWords(t: string, width: number, s: number, tw: TextWidth): string[]
   return lines;
 }
 
-export function fitCategoryLabels(cats: string[], catW: number, s: number, tw: TextWidth, fixedSkip?: number, eaVert = false): CatFit {
+export function fitCategoryLabels(cats: string[], catW: number, s: number, tw: TextWidth, fixedSkip?: number, eaVert = false, deg?: number): CatFit {
   const first = fixedSkip && fixedSkip > 0 ? fixedSkip : 1, last = fixedSkip ? first : Math.max(1, cats.length);
   if (eaVert) return { kind: 'ea', skip: first };
+  // 自定义角度（txPr 的 bodyPr rot）：不管放不放得下都按这个角度斜排，相邻标签的垂直间距（分类宽 × 间隔 × |sin|）不够时隔几个显示
+  // （实测 charts-cat-custom-rot：64° 全显示、30° 和 20° 隔一个）
+  if (deg !== undefined) {
+    const sin = Math.abs(Math.sin((deg * Math.PI) / 180));
+    for (let skip = first; ; skip++) if (catW * skip * sin >= ROT_CUSTOM_ROOM * s || skip >= last) return { kind: 'rot', skip, deg };
+  }
   for (let skip = first; ; skip++) {
     const w = catW * skip;
     const shown = cats.filter((_, i) => i % skip === 0);
@@ -83,7 +92,7 @@ export function catFitBand(fit: CatFit, base: number, cats: string[], s: number,
   const shownW = (list: string[]) => Math.max(0, ...list.filter((_, i) => i % fit.skip === 0).map((c) => tw(c, s)));
   const widest = () => shownW(fit.kind === 'rot' || fit.kind === 'vert' ? fit.cut ?? cats : cats);
   if (fit.kind === 'wrap') return base + (fit.n - 1) * WRAP_LINE * s;
-  if (fit.kind === 'rot') return (cats.some(hasCjk) ? SIN45 : ROT_SPAN) * widest() + ROT_BAND * s;
+  if (fit.kind === 'rot') { const r = rotSpan(fit, cats); return r.k * widest() + r.c * s; }
   if (fit.kind === 'vert') return widest() + VERT_BAND * s;
   if (fit.kind === 'ea') return base + (Math.max(1, ...cats.filter((_, i) => i % fit.skip === 0).map((c) => eaLength(c, s, tw))) - EA_LINE) * s;
   return base;
@@ -96,7 +105,8 @@ export function catFitBand(fit: CatFit, base: number, cats: string[], s: number,
  */
 export function capVertical(fit: CatFit, cats: string[], s: number, tw: TextWidth, room: number): CatFit {
   if ((fit.kind !== 'vert' && fit.kind !== 'rot') || catFitBand(fit, 0, cats, s, tw) <= room / 2) return fit;
-  const max = fit.kind === 'vert' ? room / 2 - VERT_BAND * s : (room / 2 - ROT_BAND * s) / (cats.some(hasCjk) ? SIN45 : ROT_SPAN);
+  const r = fit.kind === 'rot' ? rotSpan(fit, cats) : undefined;
+  const max = !r ? room / 2 - VERT_BAND * s : (room / 2 - r.c * s) / r.k;
   const cut = cats.map((c) => {
     if (tw(c, s) <= max) return c;
     const chars = [...c];
@@ -106,11 +116,23 @@ export function capVertical(fit: CatFit, cats: string[], s: number, tw: TextWidt
   return { ...fit, cut };
 }
 
+/**
+ * 斜标签带高 = k × 最宽标签 + c × 字号。−45° 是实测的；自定义角度按转过的文字框推：框高 1.2 × 字号，竖向占 |sin| × 宽 + cos × 框高，
+ * 常数项和 −45° 的对上（不带中文的标签宽度系数同样打 0.667 / 0.707 的折扣）
+ */
+function rotSpan(fit: { deg?: number }, cats: string[]): { k: number; c: number } {
+  const cjk = cats.some(hasCjk);
+  if (fit.deg === undefined) return { k: cjk ? SIN45 : ROT_SPAN, c: ROT_BAND };
+  const a = (fit.deg * Math.PI) / 180;
+  return { k: Math.abs(Math.sin(a)) * (cjk ? 1 : ROT_SPAN / SIN45), c: ROT_BAND + 1.2 * (Math.abs(Math.cos(a)) - SIN45) };
+}
+
 /** 实测：分类在端点上（面积图）转斜时绘图区右边留的空（× 字号，一个样例） */
 export const ROT_MIDCAT_RIGHT = 1.05;
 
-/** 斜排时第一个分类中心离图表左边至少要多远 */
-export const rotFirstCenter = (first: string, s: number, tw: TextWidth) => ROT_EDGE + ROT_SPAN * tw(first, s);
+/** 斜排时第一个分类中心离图表左边（自定义角度往右斜时是最后一个离右边）至少要多远：标签水平方向伸出的长度 + 常数 */
+export const rotFirstCenter = (first: string, s: number, tw: TextWidth, deg?: number) =>
+  ROT_EDGE + (deg === undefined ? ROT_SPAN : (ROT_SPAN / SIN45) * Math.abs(Math.cos((deg * Math.PI) / 180))) * tw(first, s);
 
 /** 画第 i 个分类标签：x 是分类中心，axisY 是轴线，centerY 是横排时标签中心 */
 export function categoryLabel(fit: CatFit, i: number, text: string, x: number, axisY: number, centerY: number, st: TextStyle, tw?: TextWidth): string {
@@ -132,7 +154,10 @@ export function categoryLabel(fit: CatFit, i: number, text: string, x: number, a
     }).join('');
   }
   if (fit.kind === 'rot') {
-    return `<g transform="translate(${n2(x - ROT_X * s)} ${n2(axisY + ROT_Y * s - ROT_Y0)}) rotate(-45)">${label(fit.cut?.[i] ?? text, 0, 0, st, 'end')}</g>`;
+    // 逆时针（往上读）的文字末端、顺时针的开头在分类中心；文字框最高的角离轴的距离和 −45° 时一样
+    const a = fit.deg ?? -45, up = a < 0;
+    const y = axisY + ROT_Y * s - ROT_Y0 + 0.6 * s * (Math.abs(Math.cos((a * Math.PI) / 180)) - SIN45);
+    return `<g transform="translate(${n2(x + (up ? -ROT_X : ROT_X) * s)} ${n2(y)}) rotate(${n2(a)})">${label(fit.cut?.[i] ?? text, 0, 0, st, up ? 'end' : 'start')}</g>`;
   }
   if (fit.kind === 'wrap') return fit.lines[i].map((t, k) => label(t, x, centerY + k * WRAP_LINE * s, st)).join('');
   return label(text, x, centerY, st);
