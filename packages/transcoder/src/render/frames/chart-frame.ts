@@ -20,7 +20,13 @@ async function chartMeasure(fonts: FontLibrary, theme: Theme, xml: XEl): Promise
     const name = attr(el, 'typeface');
     if (name && !name.startsWith('+') && !own.has(name)) own.set(name, await load(name));
   }
-  return (s, size, font) => {
+  const yahei = await load('Microsoft YaHei');
+  const eaEm = (font?: string) => {
+    let f = font ? own.get(font) ?? (font === (theme.minorEa || theme.minorLatin) ? ea : undefined) : ea;
+    if (!f || f.advance(0x4e00) === undefined) f = yahei;
+    return f ? f.ascent + f.descent : undefined;
+  };
+  return Object.assign((s: string, size: number, font?: string) => {
     const f = font ? own.get(font) : undefined;
     let w = 0;
     for (const ch of s) {
@@ -29,7 +35,7 @@ async function chartMeasure(fonts: FontLibrary, theme: Theme, xml: XEl): Promise
       w += f?.advance(cp) ?? a?.advance(cp) ?? b?.advance(cp) ?? fallbackAdvance(cp);
     }
     return w * size;
-  };
+  }, { eaEm });
 }
 
 export const chartFrame: FrameHandler = {
