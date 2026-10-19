@@ -1,0 +1,45 @@
+{
+ "version": 8,
+ "level": "full",
+ "slideWidthPt": 960.0,
+ "slideHeightPt": 540.0,
+ "imageWidth": 1280,
+ "imageHeight": 720,
+ "slides": [
+  {
+   "index": 0,
+   "hidden": false,
+   "shapes": [
+    {
+     "id": 2,
+     "name": "CGWH0",
+     "type": 5,
+     "x": 100.0,
+     "y": 98.817,
+     "w": 200.0,
+     "h": 301.183,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 138
+    },
+    {
+     "id": 3,
+     "name": "CGWH1",
+     "type": 5,
+     "x": 500.0,
+     "y": 98.817,
+     "w": 200.0,
+     "h": 301.183,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 138
+    }
+   ],
+   "effects": [],
+   "triggerHidden": [],
+   "steps": 0,
+   "keptSlideshow": false
+  }
+ ],
+ "ok": true
+}
