@@ -79,7 +79,8 @@ export async function layoutParagraph(p: XEl, pi: number, ctx: ParagraphContext)
   const bu = ctx.numbering.textFor(pPr, lvl, atoms.length > 0);
   // 有项目符号、marL + indent < 0：整个第一行右移到项目符号从内边距起（文字在 -indent 处；实测 text-neg-indent）
   const buShift = bu ? Math.max(0, -(marL + indent)) : 0;
-  if (bu) bullet = await makeBullet(bu.text, pPr, baseStyle, atoms, fontScale, marL + indent + buShift, env, measurer, bu.bu, bu.font);
+  // 项目符号在 marL + min(0, indent)：正的首行缩进时符号仍在 marL，文字在 marL + indent（实测 text-bullet-pos-indent）
+  if (bu) bullet = await makeBullet(bu.text, pPr, baseStyle, atoms, fontScale, marL + Math.min(0, indent) + buShift, env, measurer, bu.bu, bu.font);
 
   let firstX = marL + (indent >= 0 ? indent : 0) + buShift;
   if (bullet && bullet.x + bullet.width > firstX) firstX = bullet.x + bullet.width + (indent >= 0 ? 0 : 0);
