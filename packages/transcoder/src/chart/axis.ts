@@ -102,14 +102,13 @@ export function axisMaker(colors: ColorContext, baseText: TextStyle, part: strin
       const sc = niceScale(vmin, vmax, pctMin, pctMax, numAttr(child(ax, 'c:majorUnit'), 'val'), margin, maxLabels);
       ({ lo, hi } = sc);
       raw = (v) => (v - lo) / (hi - lo);
-      for (let v = lo; v <= hi + sc.unit * 1e-6; v += sc.unit) ticks.push(Math.round(v / sc.unit) * sc.unit);
+      // 刻度从最小值起按单位加（固定的最小值不是单位的整数倍时也是，样本：最小值 25、单位 2 → 25、27、29……），只去掉浮点误差
+      const steps = (u: number) => Array.from({ length: Math.floor((hi - lo) / u + 1e-6) + 1 }, (_v, k) => +(lo + k * u).toPrecision(12));
+      ticks.push(...steps(sc.unit));
       // 次要单位默认是主要单位的 1/5
       const mu = numAttr(child(ax, 'c:minorUnit'), 'val') ?? sc.unit / 5;
       if (child(ax, 'c:minorGridlines') || tickMark(ax, 'c:minorTickMark') !== 'none') {
-        for (let v = lo; v <= hi + mu * 1e-6; v += mu) {
-          const r = Math.round(v / mu) * mu;
-          if (!ticks.some((t) => Math.abs(t - r) < mu * 1e-6)) minor.push(r);
-        }
+        for (const r of steps(mu)) if (!ticks.some((t) => Math.abs(t - r) < mu * 1e-6)) minor.push(r);
       }
     }
     const reversed = axisReversed(ax);
