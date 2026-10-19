@@ -36,6 +36,12 @@ export function placeLines(
   layouts: ParagraphLayout[], b: BodyProps, outer: { w: number; h: number }, contentW: number, out?: { height: number }, snapY?: (y: number) => number, pixelScale = 1,
 ): PlacedLine[] {
   const { tIns, bIns, lIns, numCol, spcCol, anchor, wrap, linesLeftToRight } = b;
+  // 水平居中（anchorCtr）：按全宽折好的行，整块（最宽一行的外接框）在框里水平居中，各段自己的对齐在这个块里（诊断样本：左对齐的三段文字
+  // 整体右移 (内宽 − 最宽行) / 2）
+  // 两端 / 分散对齐的非末行会拉满可用宽度，按拉满后的宽度算
+  const stretched = (pl: ParagraphLayout, li: number) => (pl.algn === 'just' && li < pl.lines.length - 1) || pl.algn === 'dist';
+  const blockW = b.anchorCtr && numCol === 1 ? Math.max(0, ...layouts.flatMap((pl) => pl.lines.map((l, li) => l.x0 + (stretched(pl, li) ? l.avail : l.width)))) : 0;
+  const blockShift = blockW ? Math.max(0, (contentW - blockW) / 2) : 0;
   // 计算总高度
   const lineHeight = (l: Line, s: ParagraphLayout['lineSpc']) =>
     s.pts !== undefined ? s.pts * 96 / 72 : l.size * 1.2 * (s.pct ?? 1);
@@ -82,10 +88,11 @@ export function placeLines(
       if (linesLeftToRight) baseline = outer.h - y - lh + (baseline - y);
       // 横排文字的基线对齐整像素（TextEnv.pixelTop）：只对 20 磅以下的行（更大的字 PowerPoint 纵向按 1/4 像素抗锯齿，实测）
       else if (snapY && line.size * pixelScale <= SNAP_MAX_SIZE) baseline = snapY(baseline);
-      let x = lIns + colX + line.x0;
+      let x = lIns + colX + line.x0 + blockShift;
       const free = line.avail - line.width;
-      if (pl.algn === 'ctr') x += free / 2;
-      else if (pl.algn === 'r') x += free;
+      const alignFree = (blockW ? blockW - line.x0 : line.avail) - line.width;
+      if (pl.algn === 'ctr') x += alignFree / 2;
+      else if (pl.algn === 'r') x += alignFree;
       // 分散对齐：多出的宽度平均分到每两个字之间（西文单词里的字母之间、空格也算，实测）。两端对齐见 justAdds
       let lastInk = line.atoms.length - 1;
       while (lastInk > 0 && line.atoms[lastInk].space) lastInk--;
