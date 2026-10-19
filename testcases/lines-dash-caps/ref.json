@@ -1,0 +1,117 @@
+{
+ "version": 8,
+ "level": "full",
+ "slideWidthPt": 960.0,
+ "slideHeightPt": 540.0,
+ "imageWidth": 1280,
+ "imageHeight": 720,
+ "slides": [
+  {
+   "index": 0,
+   "hidden": false,
+   "shapes": [
+    {
+     "id": 2,
+     "name": "DASHCAP0",
+     "type": 9,
+     "x": 60.0,
+     "y": 40.0,
+     "w": 840.0,
+     "h": 0.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": -2
+    },
+    {
+     "id": 3,
+     "name": "DASHCAP1",
+     "type": 9,
+     "x": 60.0,
+     "y": 100.0,
+     "w": 840.0,
+     "h": 0.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": -2
+    },
+    {
+     "id": 4,
+     "name": "DASHCAP2",
+     "type": 9,
+     "x": 60.0,
+     "y": 160.0,
+     "w": 840.0,
+     "h": 0.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": -2
+    },
+    {
+     "id": 5,
+     "name": "DASHCAP3",
+     "type": 9,
+     "x": 60.0,
+     "y": 220.0,
+     "w": 840.0,
+     "h": 0.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": -2
+    },
+    {
+     "id": 6,
+     "name": "DASHCAP4",
+     "type": 9,
+     "x": 60.0,
+     "y": 280.0,
+     "w": 840.0,
+     "h": 0.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": -2
+    },
+    {
+     "id": 7,
+     "name": "DASHCAP5",
+     "type": 9,
+     "x": 60.0,
+     "y": 340.0,
+     "w": 840.0,
+     "h": 0.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": -2
+    },
+    {
+     "id": 8,
+     "name": "DASHCAP6",
+     "type": 9,
+     "x": 60.0,
+     "y": 400.0,
+     "w": 840.0,
+     "h": 0.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": -2
+    },
+    {
+     "id": 9,
+     "name": "DASHCAP7",
+     "type": 9,
+     "x": 60.0,
+     "y": 460.0,
+     "w": 840.0,
+     "h": 0.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": -2
+    }
+   ],
+   "effects": [],
+   "triggerHidden": [],
+   "steps": 0,
+   "keptSlideshow": false
+  }
+ ],
+ "ok": true
+}

@@ -21,7 +21,7 @@ export interface Line {
 }
 
 const DASH: Record<string, number[]> = {
-  dash: [4, 3], sysDash: [3, 1], dot: [1, 1], sysDot: [1, 1], lgDash: [8, 3], dashDot: [4, 3, 1, 3],
+  dash: [4, 3], sysDash: [3, 1], dot: [1, 3], sysDot: [1, 1], lgDash: [8, 3], dashDot: [4, 3, 1, 3],
   lgDashDot: [8, 3, 1, 3], lgDashDotDot: [8, 3, 1, 3, 1, 3], sysDashDot: [3, 1, 1, 1], sysDashDotDot: [3, 1, 1, 1, 1, 1],
 };
 
@@ -102,7 +102,11 @@ export function strokeAttrs(line: Line | undefined, doc: SvgDoc, mode: string, b
   const grad = box && line.fill?.kind === 'grad' ? line.fill : undefined;
   let s = ` stroke="${grad ? gradientPaint(grad, doc, box!.w, box!.h, 'norm') : css(c)}" stroke-width="${n2(line.width)}"`;
   if (!grad && c.a < 0.999) s += ` stroke-opacity="${n2(c.a)}"`;
-  if (line.dash) s += ` stroke-dasharray="${line.dash}"`;
+  if (line.dash) {
+    // 圆头：PowerPoint 的短划长度包含圆头，SVG 的圆头画在短划外面——短划减一个线宽、间隔加一个线宽（否则间隔被填满，样本）
+    const v = line.cap === 'round' ? line.dash.split(' ').map(Number).map((x, i) => (i % 2 === 0 ? Math.max(0.01, x - line.width) : x + line.width)).map(n2).join(' ') : line.dash;
+    s += ` stroke-dasharray="${v}"`;
+  }
   if (line.cap !== 'butt') s += ` stroke-linecap="${line.cap}"`;
   if (line.join !== 'miter') s += ` stroke-linejoin="${line.join}"`;
   return s;
