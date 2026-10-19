@@ -80,6 +80,12 @@ const MAPPED = /^pingfang/i;
  * （破折号、省略号、间隔号在中文里也用西文字体）
  */
 const AMBIGUOUS = new Set([0x2018, 0x2019, 0x201c, 0x201d]);
+/**
+ * 宽度不定的字里，不管文字语言都用东亚字体排的（西文字体里有字形也不用；实测 text-ea-slot-symbols：§ ¨ ° ± × ÷ ™ ↔、
+ * 带圈数字、几何图形、杂项符号；· – — … ← → ≤ ≥ √ 希腊字母等仍用西文字体）
+ */
+const EA_SLOT = new Set([0xa7, 0xa8, 0xb0, 0xb1, 0xd7, 0xf7, 0x2122, 0x2194]);
+const eaSlot = (cp: number) => EA_SLOT.has(cp) || (cp >= 0x2460 && cp <= 0x24ff) || (cp >= 0x25a0 && cp <= 0x26ff);
 const subsFor = (script: 'jp' | 'ea' | undefined, latin: boolean) => (script === 'jp' ? JP_SUBS : script === 'ea' || !latin ? EA_SUBS : LATIN_SUBS);
 
 export async function makeAtoms(text: string, style: RunStyle, m: Measurer): Promise<Atom[]> {
@@ -118,22 +124,28 @@ export async function makeAtoms(text: string, style: RunStyle, m: Measurer): Pro
     const ch = lower ? raw.toUpperCase() : raw;
     const st = lower ? smallCaps! : style;
     const cp = ch.codePointAt(0)!;
-    const wide = isWide(cp) || (ambiguousEa && AMBIGUOUS.has(cp));
+    // eaFont：用东亚字体排；wide：按中日韩字断行、两端对齐时拉开（EA_SLOT 的字只在中日韩语言里算）
+    const eaFont = isWide(cp) || (ambiguousEa && AMBIGUOUS.has(cp)) || eaSlot(cp);
+    const wide = isWide(cp) || (ambiguousEa && AMBIGUOUS.has(cp)) || (eaSlot(cp) && style.eaBreak);
     const isSym = !!symM && cp >= 0xf000 && cp <= 0xf0ff;
-    const primary = isSym ? symM : wide ? eaM : latinM;
-    const secondary = wide ? latinM : eaM;
+    const primary = isSym ? symM : eaFont ? eaM : latinM;
+    const secondary = eaFont ? latinM : eaM;
     let adv = primary?.metrics.advance(cp);
     let usedM = primary;
-    let family = isSym ? symFam : wide ? eaFam : latinFam;
-    if (adv === undefined && secondary) {
-      adv = secondary.metrics.advance(cp);
-      if (adv !== undefined) { usedM = secondary; family = wide ? latinFam : eaFam; }
-    }
-    if (adv === undefined && wide) {
+    let family = isSym ? symFam : eaFont ? eaFam : latinFam;
+    // EA_SLOT 的字东亚字体里没有时先用雅黑补，再退回西文字体（实测：宋体没有 ↔、楷体没有 ™，PowerPoint 排成雅黑的宽度）
+    const slotFirst = eaSlot(cp) && !isWide(cp);
+    const tryCjk = async () => {
       const [cm, cf] = await (cjk ??= substitute(EA_SUBS));
       adv = cm?.metrics.advance(cp);
       if (adv !== undefined) { usedM = cm; family = cf; }
+    };
+    if (adv === undefined && slotFirst) await tryCjk();
+    if (adv === undefined && secondary) {
+      adv = secondary.metrics.advance(cp);
+      if (adv !== undefined) { usedM = secondary; family = eaFont ? latinFam : eaFam; }
     }
+    if (adv === undefined && eaFont && !slotFirst) await tryCjk();
     const used = usedM?.metrics;
     if (usedM && adv !== undefined && m.embed && cp > 0x20) m.embed.use(usedM.face, cp);
     const size = st.baseline ? st.size * 0.67 : st.size;
