@@ -12,6 +12,8 @@ export function readBody(bodyPrs: (XEl | undefined)[], own: XEl | undefined) {
   const lIns = ins('lIns', 91440), rIns = ins('rIns', 91440), tIns = ins('tIns', 45720), bIns = ins('bIns', 45720);
   const wrap = attr(bp, 'wrap') !== 'none';
   const anchor = attr(bp, 'anchor') ?? 't';
+  // 水平居中（anchorCtr）：先按全宽折行，再把整块文字的外接框在框里水平居中（emit.ts）
+  const anchorCtr = attr(bp, 'anchorCtr') === '1' || attr(bp, 'anchorCtr') === 'true';
   const vert = attr(bp, 'vert') ?? 'horz';
   const norm = child(bp, 'a:normAutofit');
   const fontScale = (numAttr(norm, 'fontScale') ?? 100000) / 100000;
@@ -24,5 +26,5 @@ export function readBody(bodyPrs: (XEl | undefined)[], own: XEl | undefined) {
   const linesLeftToRight = vert === 'mongolianVert';
   const numCol = vertical ? 1 : Math.max(1, numAttr(bp, 'numCol') ?? 1);
   const spcCol = (numAttr(bp, 'spcCol') ?? 0) / EMU_PER_PX;
-  return { lIns, rIns, tIns, bIns, wrap, anchor, vert, fontScale, lnReduce, vertical, uprightWide, uprightAll, linesLeftToRight, numCol, spcCol, sp3d: child(bp, 'a:sp3d'), scene3d: child(bp, 'a:scene3d') };
+  return { lIns, rIns, tIns, bIns, wrap, anchor, anchorCtr, vert, fontScale, lnReduce, vertical, uprightWide, uprightAll, linesLeftToRight, numCol, spcCol, sp3d: child(bp, 'a:sp3d'), scene3d: child(bp, 'a:scene3d') };
 }
