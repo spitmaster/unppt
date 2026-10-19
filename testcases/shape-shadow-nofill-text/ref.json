@@ -1,0 +1,136 @@
+{
+ "version": 8,
+ "level": "full",
+ "slideWidthPt": 960.0,
+ "slideHeightPt": 540.0,
+ "imageWidth": 1280,
+ "imageHeight": 720,
+ "slides": [
+  {
+   "index": 0,
+   "hidden": false,
+   "shapes": [
+    {
+     "id": 2,
+     "name": "Rectangle 1",
+     "type": 1,
+     "x": 30.0,
+     "y": 40.0,
+     "w": 280.0,
+     "h": 180.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 11,
+       "text": "阴影文字 Shadow",
+       "x": 62.438,
+       "y": 113.2,
+       "w": 215.13,
+       "h": 33.6
+      }
+     ]
+    },
+    {
+     "id": 3,
+     "name": "Rectangle 2",
+     "type": 1,
+     "x": 340.0,
+     "y": 40.0,
+     "w": 280.0,
+     "h": 180.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 11,
+       "text": "阴影文字 Shadow",
+       "x": 372.438,
+       "y": 113.2,
+       "w": 215.13,
+       "h": 33.6
+      }
+     ]
+    },
+    {
+     "id": 4,
+     "name": "Rectangle 3",
+     "type": 1,
+     "x": 650.0,
+     "y": 40.0,
+     "w": 280.0,
+     "h": 180.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 11,
+       "text": "阴影文字 Shadow",
+       "x": 682.438,
+       "y": 113.2,
+       "w": 215.13,
+       "h": 33.6
+      }
+     ]
+    },
+    {
+     "id": 5,
+     "name": "Rectangle 4",
+     "type": 1,
+     "x": 30.0,
+     "y": 280.0,
+     "w": 280.0,
+     "h": 180.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 11,
+       "text": "阴影文字 Shadow",
+       "x": 62.438,
+       "y": 353.2,
+       "w": 215.13,
+       "h": 33.6
+      }
+     ]
+    },
+    {
+     "id": 6,
+     "name": "Rectangle 5",
+     "type": 1,
+     "x": 340.0,
+     "y": 280.0,
+     "w": 280.0,
+     "h": 180.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 11,
+       "text": "阴影文字 Shadow",
+       "x": 372.438,
+       "y": 353.2,
+       "w": 215.13,
+       "h": 33.6
+      }
+     ]
+    }
+   ],
+   "effects": [],
+   "triggerHidden": [],
+   "steps": 0,
+   "keptSlideshow": false
+  }
+ ],
+ "ok": true
+}
