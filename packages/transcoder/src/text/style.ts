@@ -98,7 +98,9 @@ export function runStyle(r: XEl, env: TextEnv, scale: number): RunStyle {
   // 带超链接的文字：PowerPoint 用主题的超链接颜色并加下划线
   const h = child(r, 'a:hlinkClick');
   const link = h && env.rels ? linkAttr(h, env.rels) : '';
-  if (link) {
+  // 样式和能不能点分开：链接到文件这类播放器跳不了的也画成超链接（实测 text-link-kinds）
+  const styledLink = !!link || (!!h && (!!attr(h, 'r:id') || (attr(h, 'action') ?? '').startsWith('ppaction://hlink')));
+  if (styledLink) {
     const hl = colorIn({ name: 'x', attrs: {}, text: '', children: [{ name: 'a:schemeClr', attrs: { val: 'hlink' }, text: '', children: [] }] }, env.colors);
     if (hl) color = hl;
     if (!u || u === 'none') u = 'sng';
