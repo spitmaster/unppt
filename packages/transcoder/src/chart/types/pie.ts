@@ -39,8 +39,8 @@ const LABEL_MAX_W = 0.173;
  */
 function wrapLabel(text: string, maxW: number, size: number, tw: TextWidth, font?: string): string {
   return text.split('\n').map((para) => {
-    // 断点：", " 之后、汉字前后；token 是不能拆开的一段
-    const tokens = para.match(/, |[⺀-鿿豈-﫿＀-￯]|[^,\s⺀-鿿豈-﫿＀-￯]+|[,\s]/g) ?? [para];
+    // 断点：", " 之后、汉字前后；token 是不能拆开的一段，逗号跟着前面的字（不放在行首：窄图里折成"甲 / 乙, / 2"，实测）
+    const tokens = para.match(/[⺀-鿿豈-﫿＀-￯](?:, ?)?|[^,\s⺀-鿿豈-﫿＀-￯]+(?:, ?)?|, ?|\s+/g) ?? [para];
     const lines: string[] = [];
     let cur = '';
     for (const t of tokens) {
