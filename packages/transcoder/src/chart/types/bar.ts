@@ -1,7 +1,8 @@
 /** 柱形图、条形图（簇状、堆积、百分比堆积）：画在共享的分类轴上 */
 import { n2 } from '../../common/svg';
 import { cpart, label, lineOf, paintOf, strokeOf } from '../draw';
-import { labelText } from '../format';
+import { labelParts, labelText } from '../format';
+import { pointLabel, pointLabelText, shiftLabel } from '../point-labels';
 import { errRanges, errSvg } from '../error-bars';
 import type { ChartType } from '../chart-type';
 import type { Plot } from '../model';
@@ -56,9 +57,10 @@ export const barType: ChartType = {
         const offset = i * band + (band - barW * slots) / 2 + (stacked ? 0 : si * barW * (1 - ov));
         const color = s.pointFills.get(i) ?? s.fill;
         if (!color) continue;
-        const lb = s.labels;
+        const pl = pointLabel(s, i), lb = pl.labels;
         const raw = s.vals[i] ?? 0;
-        const text = lb ? labelText(lb, raw, totals[i], s.cats[i] ?? '', s.name, valFmt) : '';
+        const text = lb ? pointLabelText(s, pl, i, () => labelText(lb, raw, totals[i], s.cats[i] ?? '', s.name, valFmt), () => labelParts(lb, raw, totals[i], s.cats[i] ?? '', valFmt)) : '';
+        const lbl = (svg: string) => shiftLabel(svg, pl, f.chart);
         const inside = stacked || lb?.pos === 'ctr' || lb?.pos === 'inEnd' || lb?.pos === 'inBase';
         // 柱子在分类方向上的一段、在数值方向上的两端（坐标轴逆序时由 frame 换算）
         // 柱子的边对齐整像素（pixel-grid.ts）：没有边框时填充的边对齐像素边界，有边框时矩形放在边框线（按线的规则对齐）的中心
@@ -80,14 +82,14 @@ export const barType: ChartType = {
           if (text && lb!.style.rot && !at && !inside) {
             // 竖排的数据标签（txPr 转 ±90°）：文字从柱子顶端往上排，离顶端 2.5 + 0.4 × 字号（ChartStyle 202 的导出图量）
             const r = lb!.style.rot;
-            labelsOut.push(cpart(`${s.index}x${i}l`, `<g transform="translate(${n2(c1 + cl / 2)} ${n2(v1 - ROT_LABEL_GAP - ROT_LABEL_GAP_S * sz)}) rotate(${n2(r)})">${label(text, 0, 0, lb!.style, r < 0 ? 'start' : 'end')}</g>`));
-          } else if (text) labelsOut.push(cpart(`${s.index}x${i}l`, label(text, c1 + cl / 2, y, lb!.style)));
+            labelsOut.push(cpart(`${s.index}x${i}l`, lbl(`<g transform="translate(${n2(c1 + cl / 2)} ${n2(v1 - ROT_LABEL_GAP - ROT_LABEL_GAP_S * sz)}) rotate(${n2(r)})">${label(text, 0, 0, lb!.style, r < 0 ? 'start' : 'end')}</g>`)));
+          } else if (text) labelsOut.push(cpart(`${s.index}x${i}l`, lbl(label(text, c1 + cl / 2, y, lb!.style))));
         } else {
           out.push(cpart(`${s.index}x${i}`, `<rect x="${n2(v1)}" y="${n2(c1)}" width="${n2(v2 - v1)}" height="${n2(cl)}" fill="${paintOf(s, i, color)}"${strokeOf(s, i)}/>`));
           const endRight = (vb > va) === (at === 'inEnd');
           const x = at ? (endRight ? v2 - 0.5 * sz : v1 + 0.5 * sz) : inside ? (v1 + v2) / 2 : v2 + 4;
           const anchor = at ? (endRight ? 'end' : 'start') : inside ? 'middle' : 'start';
-          if (text) labelsOut.push(cpart(`${s.index}x${i}l`, label(text, x, c1 + cl / 2, lb!.style, anchor)));
+          if (text) labelsOut.push(cpart(`${s.index}x${i}l`, lbl(label(text, x, c1 + cl / 2, lb!.style, anchor))));
         }
         // 误差线（堆积时以这一段的顶端为中心）
         s.errBars.forEach((e, k) => {

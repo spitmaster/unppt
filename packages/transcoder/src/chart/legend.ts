@@ -85,8 +85,12 @@ function manualLegend(entries: LegendEntry[], box: Rect, w: number, st: TextStyl
   const cap = Math.min(legendTextCap(w, sz), bw - legendPad(sz));
   const lines = entries.map((e) => wrapLegendText(e.name, cap, sz, st.font, tw));
   const cell = Math.max(...entries.map((e, i) => keyW(e) + kGap + Math.max(...lines[i].map((l) => tw(l, sz, st.font)))));
-  const cols = Math.max(1, Math.min(entries.length, Math.floor(bw / cell)));
-  const rows = Math.ceil(entries.length / cols);
+  // 列数：框宽里按"格宽 + 项间距"最多放几列，再按行数把各行平衡（实测 charts-legend-overflow：5 项最多放 4 列时排成 3 + 2；
+  // 放不下的行照样画在框外）。项间距最少 0.4 倍字号（两个手动图例用例的 6 张图把它夹在 0.2~0.6 倍字号之间）
+  const minGap = 0.4 * sz;
+  const maxCols = Math.max(1, Math.min(entries.length, Math.floor((bw + minGap) / (cell + minGap))));
+  const rows = Math.ceil(entries.length / maxCols);
+  const cols = Math.ceil(entries.length / rows);
   const gap = (bw - cols * cell) / (cols + 1);
   const rowH = (box.bottom - box.top) / rows, extra = legendWrapLine(sz);
   entries.forEach((e, i) => {

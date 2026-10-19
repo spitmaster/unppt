@@ -8,12 +8,18 @@ import { formatDate } from './date-format';
  * 饼图是换行——实测）；pct 给了时用它（饼图按总和 100% 取整好的百分比）
  */
 export function labelText(l: Labels, v: number, total: number, cat: string, ser: string, valFmt: string, pct?: number, sep = ', '): string {
+  const p = labelParts(l, v, total, cat, valFmt, pct);
   const parts: string[] = [];
   if (l.ser) parts.push(ser);
   if (l.cat) parts.push(cat);
-  if (l.val) parts.push(formatNumber(v, l.fmt && l.fmt !== 'General' ? l.fmt : valFmt));
-  if (l.pct) parts.push(`${pct ?? Math.round((total ? v / total : 0) * 100)}%`);
+  if (l.val) parts.push(p.val);
+  if (l.pct) parts.push(p.pct);
   return parts.join(l.sep ?? sep);
+}
+
+/** 标签里的几项（按格式写好的值、分类名、百分比），自定义文字的字段也用（point-labels.ts） */
+export function labelParts(l: Labels, v: number, total: number, cat: string, valFmt: string, pct?: number): { val: string; cat: string; pct: string } {
+  return { val: formatNumber(v, l.fmt && l.fmt !== 'General' ? l.fmt : valFmt), cat, pct: `${pct ?? Math.round((total ? v / total : 0) * 100)}%` };
 }
 
 /**

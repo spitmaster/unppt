@@ -2,7 +2,8 @@
 import { css, type ColorContext } from '../../model/color';
 import { n2 } from '../../common/svg';
 import { accentColor, cpart, multiLabel, strokeOf } from '../draw';
-import { labelText, piePercents } from '../format';
+import { labelParts, labelText, piePercents } from '../format';
+import { pointLabel, pointLabelText, shiftLabel } from '../point-labels';
 import type { TextWidth } from '../layout';
 import type { ChartContext, Plot, Rect } from '../model';
 import type { Line } from '../../style/line';
@@ -28,7 +29,7 @@ export function slicePath(cx: number, cy: number, r: number, ri: number, a1: num
 /** 没写边框时扇区之间的白线 */
 const PIE_EDGE: Line = { color: { r: 255, g: 255, b: 255, a: 1 }, width: 1.5, cap: 'butt', join: 'round' };
 
-function renderPie(p: Plot, x: number, y: number, w: number, h: number, colors: ColorContext, tw: TextWidth): string {
+function renderPie(p: Plot, x: number, y: number, w: number, h: number, colors: ColorContext, tw: TextWidth, box: { w: number; h: number }): string {
   const s = p.series[0];
   if (!s) return '';
   const vals = s.vals.map((v) => Math.max(0, v ?? 0));
@@ -38,7 +39,7 @@ function renderPie(p: Plot, x: number, y: number, w: number, h: number, colors: 
   const cx = x + w / 2, cy = y + h / 2;
   // 实测：没有数据标签时饼图直径等于绘图区的短边（chart.ts 排出的绘图区）；
   // 有标签时 PowerPoint 会缩小给标签留空间（约宽的 84%、高的 86.7%）
-  const r = (s.labels ? Math.min(w * 0.84, h * 0.867) : Math.min(w, h)) / 2;
+  const r = (s.labels || [...(s.pointLabels?.values() ?? [])].some((l) => l.labels) ? Math.min(w * 0.84, h * 0.867) : Math.min(w, h)) / 2;
   const ri = p.kind === 'doughnut' ? r * p.holeSize / 100 : 0;
   let ang = (p.firstSliceAng - 90) * Math.PI / 180;
   const out: string[] = [];
@@ -52,12 +53,14 @@ function renderPie(p: Plot, x: number, y: number, w: number, h: number, colors: 
     const ex = v === total ? 0 : s.explosion(i) / 100 * r, mid = (ang + a2) / 2;
     const move = ex ? ` transform="translate(${n2(ex * Math.cos(mid))} ${n2(ex * Math.sin(mid))})"` : '';
     out.push(cpart(`${s.index}x${i}`, `<path d="${d}" fill="${s.pointPaints?.get(i) ?? css(color)}" fill-rule="evenodd"${strokeOf(s, i, PIE_EDGE)}${move}/>`));
-    const lb = s.labels;
+    const pl = pointLabel(s, i), lb = pl.labels;
     if (lb) {
-      const text = labelText(lb, v, total, s.cats[i] ?? '', s.name, s.valFmt ?? 'General', pcts[i], '\n');
+      const vf = s.valFmt ?? 'General';
+      const text = pointLabelText(s, pl, i, () => labelText(lb, v, total, s.cats[i] ?? '', s.name, vf, pcts[i], '\n'), () => labelParts(lb, v, total, s.cats[i] ?? '', vf, pcts[i]));
       const cos = Math.cos(mid), sin = Math.sin(mid);
       let lx: number, ly: number;
-      if (!ri && lb.pos === 'outEnd') {
+      // 手动拖开的标签：偏移是相对外侧的位置算的（实测 charts-point-labels）
+      if (!ri && (lb.pos === 'outEnd' || ((pl.dx || pl.dy) && lb.pos !== 'ctr' && lb.pos !== 'inEnd'))) {
         // 外侧：从圆心沿角平分线走到"半径 + 1.25 × 字号"处，标签往外摆（右边的从这里往右、上面的往上，实测）
         const lines = text.split('\n');
         const bw = Math.max(...lines.map((t) => tw(t, lb.style.size))), bh = lines.length * 1.44 * lb.style.size;
@@ -68,7 +71,7 @@ function renderPie(p: Plot, x: number, y: number, w: number, h: number, colors: 
         const rr = (ri ? (r + ri) / 2 : lb.pos === 'ctr' ? r * 0.5 : r * 0.8) + ex;
         lx = cx + rr * cos; ly = cy + rr * sin;
       }
-      labels.push(cpart(`${s.index}x${i}l`, multiLabel(text, lx, ly, lb.style)));
+      labels.push(cpart(`${s.index}x${i}l`, shiftLabel(multiLabel(text, lx, ly, lb.style), pl, box)));
     }
     ang = a2;
   });
@@ -81,7 +84,7 @@ const pieBase = {
   legendByCategory: true,
   seriesRules: () => ({ xy: false, defaultLine: false, marker: () => false }),
   legendKey: (_p: Plot, s: Plot['series'][number]) => ({ color: s.fill, line: false }),
-  render: (p: Plot, a: Rect, ctx: ChartContext) => (p.is3D && p.kind === 'pie' && ctx.view3D ? renderPie3D(p, a, ctx.view3D, ctx.colors, ctx.defs) : renderPie(p, a.left, a.top, a.right - a.left, a.bottom - a.top, ctx.colors, ctx.width)),
+  render: (p: Plot, a: Rect, ctx: ChartContext) => (p.is3D && p.kind === 'pie' && ctx.view3D ? renderPie3D(p, a, ctx.view3D, ctx.colors, ctx.defs, ctx.box) : renderPie(p, a.left, a.top, a.right - a.left, a.bottom - a.top, ctx.colors, ctx.width, ctx.box)),
 };
 
 export const pieType: ChartType = { ...pieBase, kind: 'pie', tags: ['pieChart', 'pie3DChart'] };

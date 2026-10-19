@@ -27,7 +27,7 @@ import { catFitBand, categoryLabel, fitCategoryLabels, outerLevelBands, outerLev
 const SIDE_ROOM = 1.2;
 
 /** inner：area 就是绘图区内框（手动布局的 layoutTarget="inner"），坐标轴标签画在它外面，不再从里面让位置 */
-export interface CatEnv { colors: ColorContext; part: string; baseText: TextStyle; makeAxis: AxisMaker; tw: TextWidth; w: number; view?: View3D; zh?: boolean; plotBg?: (r: Rect) => string; snap?: PixelGrid; inner?: boolean }
+export interface CatEnv { colors: ColorContext; part: string; baseText: TextStyle; makeAxis: AxisMaker; tw: TextWidth; w: number; h?: number; view?: View3D; zh?: boolean; plotBg?: (r: Rect) => string; snap?: PixelGrid; inner?: boolean }
 
 export function renderCategoryChart(plots: Plot[], plotArea: XEl | undefined, area0: Rect, env: CatEnv, out: string[]): void {
   const { colors, baseText, makeAxis, tw, w } = env;
@@ -209,6 +209,7 @@ export function renderCategoryChart(plots: Plot[], plotArea: XEl | undefined, ar
     ...catMapping(box, horizontal, sides.catRev),
     valPx: horizontal ? (f) => left + f * pw : (f) => bottom - f * ph,
     snap: g,
+    chart: { w, h: env.h ?? 0 },
   };
 
   // 坐标轴标签画在系列和轴线上面（实测：分类轴在中间时标签盖在柱子上）
