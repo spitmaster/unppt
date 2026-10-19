@@ -3130,6 +3130,46 @@ def _patch_hanging_unset(path):
 
 text_hanging_unset.patch = _patch_hanging_unset
 
+# 段落字体对齐：字体 × 行距 × fontAlgn，每格两行
+FONTALGN_CASES = [(f, sp, a) for f in ("微软雅黑", "宋体", "等线", "Calibri") for sp in (100000, 150000) for a in ("auto", "ctr", "t", "b")]
+
+
+def text_fontalgn(app):
+    """段落字体对齐（fontAlgn auto / ctr / t / b）时字在行里的纵向位置：微软雅黑、宋体、等线、Calibri × 单倍、1.5 倍行距，
+    18 磅两行（保存后改 XML）"""
+    p = new_pres(app)
+    s = p.Slides.Add(1, 12)
+    for k in range(len(FONTALGN_CASES)):
+        tb = s.Shapes.AddTextbox(1, 10 + (k % 8) * 118, 10 + (k // 8) * 130, 112, 120)
+        tb.TextFrame.WordWrap = 0
+        tb.TextFrame.AutoSize = 0
+        tb.Line.Visible = -1
+        tb.Line.ForeColor.RGB = RGB(220, 220, 220)
+        tb.TextFrame.TextRange.Text = f"FAMARK{k}"
+    return p
+
+
+def _patch_fontalgn(path):
+    import re
+    import zipfile
+    tmp = path.with_suffix(".tmp")
+    with zipfile.ZipFile(path) as zin, zipfile.ZipFile(tmp, "w", zipfile.ZIP_DEFLATED) as zout:
+        for item in zin.infolist():
+            data = zin.read(item.filename)
+            if item.filename == "ppt/slides/slide1.xml":
+                xml = data.decode("utf8")
+                for k, (f, sp, a) in enumerate(FONTALGN_CASES):
+                    rpr = f'<a:rPr lang="zh-CN" altLang="en-US" sz="1800"><a:latin typeface="{f}"/><a:ea typeface="{f}"/></a:rPr>'
+                    para = f'<a:p><a:pPr fontAlgn="{a}"><a:lnSpc><a:spcPct val="{sp}"/></a:lnSpc></a:pPr><a:r>{rpr}<a:t>文字 Hg</a:t></a:r></a:p>'
+                    xml = re.sub(rf"<a:p>(?:(?!</a:p>).)*?FAMARK{k}(?:(?!</a:p>).)*?</a:p>", lambda m, para=para: para + para, xml, count=1, flags=re.S)
+                data = xml.encode("utf8")
+            zout.writestr(item, data)
+    tmp.replace(path)
+
+
+text_fontalgn.patch = _patch_fontalgn
+
+
 # 宽度不定的符号：前一半不管语言都用东亚字体，后一半用西文字体
 EA_SLOT_TEXT = "§¨°±×÷™↔①②■□▲△◆●○★☆♀♂♪|·–—…←→≤≥√∞αΩ©½"
 EA_SLOT_ROWS = [("zh-CN", "Arial", "微软雅黑"), ("en-US", "Arial", "微软雅黑"), ("zh-CN", "Calibri", "宋体"), ("en-US", "Calibri", "宋体"),
@@ -5361,6 +5401,70 @@ def picture_bevel_border(app):
     return p
 
 
+def text_outline_fakebold(app):
+    """没有粗体字形的字体（宋体、楷体）标粗体又加文字轮廓：人工加粗和轮廓都要有；对照：不加轮廓、有粗体字形的微软雅黑加轮廓"""
+    p = new_pres(app)
+    s = blank(p)
+    bg = s.Shapes.AddShape(1, 0, 0, 960, 540)
+    bg.Fill.ForeColor.RGB = RGB(40, 60, 100)
+    bg.Line.Visible = 0
+    specs = [("SimSun", 1.0), ("KaiTi", 1.5), ("SimSun", 0), ("Microsoft YaHei", 1.0)]
+    for k, (font, ow) in enumerate(specs):
+        tb = s.Shapes.AddTextbox(1, 40, 30 + k * 120, 880, 100)
+        tr = tb.TextFrame2.TextRange
+        tr.Text = "粗体轮廓文字 Bold 123"
+        tr.Font.Name = font
+        tr.Font.NameFarEast = font
+        tr.Font.Size = 48
+        tr.Font.Bold = -1
+        tr.Font.Fill.ForeColor.RGB = RGB(255, 192, 0)
+        if ow:
+            tr.Font.Line.Visible = -1
+            tr.Font.Line.Weight = ow
+            tr.Font.Line.ForeColor.RGB = RGB(255, 255, 255)
+    return p
+
+
+JUST_HANG_TEXTS = ["一二三四五六七八九十" + "甲乙丙丁戊己庚辛壬。", "一二三四五六七八九十" + "甲乙丙丁戊己庚辛壬癸。",
+                   "一二三四五六七八九十" + "甲乙丙丁戊己。", "一二三四五六七八九十" + "甲乙丙丁戊己庚辛壬癸，" + "子丑寅卯辰巳午未申酉，戌亥"]
+
+
+def text_just_hang(app):
+    """两端对齐的段落，行尾标点悬挂在框外：段末行 10 字 + 句号悬挂（拉开）、9 字 + 句号放得下（不拉开）、段末行不满（不拉开）、
+    中间行悬挂逗号；框宽正好放 10 个 24 磅雅黑汉字多一点（保存后改 XML）"""
+    p = new_pres(app)
+    s = p.Slides.Add(1, 12)
+    for k in range(len(JUST_HANG_TEXTS)):
+        tb = s.Shapes.AddTextbox(1, 20 + (k % 2) * 470, 20 + (k // 2) * 200, 245, 150)
+        tb.TextFrame.MarginLeft = tb.TextFrame.MarginRight = 0
+        tb.TextFrame.WordWrap = -1
+        tb.Line.Visible = -1
+        tb.Line.ForeColor.RGB = RGB(200, 200, 200)
+        tb.TextFrame.TextRange.Text = f"JHMARK{k}"
+    return p
+
+
+def _patch_just_hang(path):
+    import re
+    import zipfile
+    tmp = path.with_suffix(".tmp")
+    with zipfile.ZipFile(path) as zin, zipfile.ZipFile(tmp, "w", zipfile.ZIP_DEFLATED) as zout:
+        for item in zin.infolist():
+            data = zin.read(item.filename)
+            if item.filename == "ppt/slides/slide1.xml":
+                xml = data.decode("utf8")
+                for k, t in enumerate(JUST_HANG_TEXTS):
+                    rpr = '<a:rPr lang="zh-CN" altLang="en-US" sz="2400"><a:latin typeface="微软雅黑"/><a:ea typeface="微软雅黑"/></a:rPr>'
+                    xml = re.sub(rf"<a:p>(?:(?!</a:p>).)*?JHMARK{k}(?:(?!</a:p>).)*?</a:p>",
+                                 lambda m, t=t, rpr=rpr: f'<a:p><a:pPr algn="just" hangingPunct="1"/><a:r>{rpr}<a:t>{t}</a:t></a:r></a:p>', xml, count=1, flags=re.S)
+                data = xml.encode("utf8")
+            zout.writestr(item, data)
+    tmp.replace(path)
+
+
+text_just_hang.patch = _patch_just_hang
+
+
 def charts_axis_ea_vert(app):
     """图表坐标轴文字东亚竖排（bodyPr vert="eaVert"，COM 设不了，保存后改 XML）：柱形图分类标签两字、四字、六字，
     条形图数值轴也竖排（对照：第 2 张图横排）"""
@@ -5428,7 +5532,7 @@ def fills_tile_resample(app):
     s2.Background.Fill.UserTextured(tile(150, (17, 17, 17)))
     return p
 
-CASES = [shapes_all, text_sizes, text_align, text_spacing, text_bullets, text_missing_font, shapes_basic, fills_lines, table_basic, group_rotate, anim_basic, anim_auto, charts_basic, pictures, smartart, text_effects, text_layout, table_merge, links, emf_images, anim_advanced, charts_labels, freeform_icons, media_audio, anim_trigger, wmf_images, anim_iterate, picture_transparent, charts_more, shape_effects, equations, anim_path, anim_emphasis, transitions, fills_patterns, text_decoration, anim_entrance, svg_images, charts_markers, hidden_slides, media_background, text_glow_reflection, text_tabs, text_picture_bullets, fills_texture, transition_morph, text_embedded_fonts, text_warp, anim_repeat, charts_sizes, slide_timings, lines_compound, table_diagonal, lines_gradient, fills_radial, fills_rect_gradient, shapes_3d, table_vertical, transitions_more, anim_sound, anim_build, anim_after, anim_text_emphasis, charts_bubble, media_video, charts_options, charts_negative, shapes_bevel, charts_legend, shapes_3d_rotation, smartart_3d, charts_ofpie, charts_3d, anim_group_emphasis, activex_controls, charts_extras, charts_axis_titles, charts_fills, charts_outlines, charts_labels_more, group_scale, group_flip, charts_3d_line, charts_legend_pos, charts_crowded_labels, charts_label_skip, charts_bar_long_names, charts_multilevel, picture_recolor, text_symbols, text_numbering, lines_arrows, table_styles, shapes_styles, charts_styles, placeholders_inherit, text_bold_light, ole_objects, text_hanging_punct, speaker_notes, pictures_tiff, placeholders_picture, pictures_exif, text_picture_fill, pictures_mislabeled, emf_alphablend, placeholders_orphan, picture_fill_rect, slide_number_fields, table_builtin_styles, smartart_matrix, text_layout_unit, colors_gamma, text_latin_cjk_font, text_default_style, text_missing_font_jp, text_ea_line_break, text_ambiguous_punct, text_charset_slides, table_rowspan_tall, text_autofit_round, shapes_3d_contour, emf_clip_modes, placeholders_picture_geom, emf_gradient_fill, text_theme_font_lang, text_anchor_linespacing, table_linespacing, table_fontalgn, text_theme_font_latin, text_margin_right, text_charset_gap, slide_size_repair, fills_shape_gradient, text_shadow_runs, picture_3d_shadow, charts_axis_ea_vert, fills_tile_resample, text_shadow_dist, text_shadow_size, text_shadow_scale, text_shadow_blur, text_glow_scale, text_reflection_dist, shapes_bg_fill, text_control_chars, placeholders_no_index, text_ambiguous_missing_ea, text_missing_panose, emf_bitmap_src, fills_group, fills_rot_with_shape, fills_rot_cut, charts_pct_stacked, picture_bg_fill, charts_legend_manual, charts_long_cats, charts_cat_vertical, charts_cat_rot_len, charts_cat_rot_short, charts_cat_rot_threshold, charts_pie_label_sep, text_slash_break, smartart_colors, text_fontref_ph, text_hanging_unset, table_default_bold, text_missing_cjk_name, text_fakebold_width, text_br_empty_line, text_ea_lang, slide_number_bare_field, text_neg_indent, text_mix_wrap_lines, text_theme_ea_altlang, charts_inner_titles, charts_line_dash, charts_rich_title, text_ea_slot_symbols, charts_date_extra_vals, shape_shadow_nofill_text, charts_legend_overflow, group_effects, charts_point_labels, picture_bevel_border]
+CASES = [shapes_all, text_sizes, text_align, text_spacing, text_bullets, text_missing_font, shapes_basic, fills_lines, table_basic, group_rotate, anim_basic, anim_auto, charts_basic, pictures, smartart, text_effects, text_layout, table_merge, links, emf_images, anim_advanced, charts_labels, freeform_icons, media_audio, anim_trigger, wmf_images, anim_iterate, picture_transparent, charts_more, shape_effects, equations, anim_path, anim_emphasis, transitions, fills_patterns, text_decoration, anim_entrance, svg_images, charts_markers, hidden_slides, media_background, text_glow_reflection, text_tabs, text_picture_bullets, fills_texture, transition_morph, text_embedded_fonts, text_warp, anim_repeat, charts_sizes, slide_timings, lines_compound, table_diagonal, lines_gradient, fills_radial, fills_rect_gradient, shapes_3d, table_vertical, transitions_more, anim_sound, anim_build, anim_after, anim_text_emphasis, charts_bubble, media_video, charts_options, charts_negative, shapes_bevel, charts_legend, shapes_3d_rotation, smartart_3d, charts_ofpie, charts_3d, anim_group_emphasis, activex_controls, charts_extras, charts_axis_titles, charts_fills, charts_outlines, charts_labels_more, group_scale, group_flip, charts_3d_line, charts_legend_pos, charts_crowded_labels, charts_label_skip, charts_bar_long_names, charts_multilevel, picture_recolor, text_symbols, text_numbering, lines_arrows, table_styles, shapes_styles, charts_styles, placeholders_inherit, text_bold_light, ole_objects, text_hanging_punct, speaker_notes, pictures_tiff, placeholders_picture, pictures_exif, text_picture_fill, pictures_mislabeled, emf_alphablend, placeholders_orphan, picture_fill_rect, slide_number_fields, table_builtin_styles, smartart_matrix, text_layout_unit, colors_gamma, text_latin_cjk_font, text_default_style, text_missing_font_jp, text_ea_line_break, text_ambiguous_punct, text_charset_slides, table_rowspan_tall, text_autofit_round, shapes_3d_contour, emf_clip_modes, placeholders_picture_geom, emf_gradient_fill, text_theme_font_lang, text_anchor_linespacing, table_linespacing, table_fontalgn, text_theme_font_latin, text_margin_right, text_charset_gap, slide_size_repair, fills_shape_gradient, text_shadow_runs, picture_3d_shadow, charts_axis_ea_vert, fills_tile_resample, text_shadow_dist, text_shadow_size, text_shadow_scale, text_shadow_blur, text_glow_scale, text_reflection_dist, shapes_bg_fill, text_control_chars, placeholders_no_index, text_ambiguous_missing_ea, text_missing_panose, emf_bitmap_src, fills_group, fills_rot_with_shape, fills_rot_cut, charts_pct_stacked, picture_bg_fill, charts_legend_manual, charts_long_cats, charts_cat_vertical, charts_cat_rot_len, charts_cat_rot_short, charts_cat_rot_threshold, charts_pie_label_sep, text_slash_break, smartart_colors, text_fontref_ph, text_hanging_unset, table_default_bold, text_missing_cjk_name, text_fakebold_width, text_br_empty_line, text_ea_lang, slide_number_bare_field, text_neg_indent, text_mix_wrap_lines, text_theme_ea_altlang, charts_inner_titles, charts_line_dash, charts_rich_title, text_ea_slot_symbols, charts_date_extra_vals, shape_shadow_nofill_text, text_fontalgn, charts_legend_overflow, group_effects, charts_point_labels, picture_bevel_border, text_outline_fakebold, text_just_hang]
 
 
 def main():

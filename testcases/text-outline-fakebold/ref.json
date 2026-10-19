@@ -1,0 +1,125 @@
+{
+ "version": 8,
+ "level": "full",
+ "slideWidthPt": 960.0,
+ "slideHeightPt": 540.0,
+ "imageWidth": 1280,
+ "imageHeight": 720,
+ "slides": [
+  {
+   "index": 0,
+   "hidden": false,
+   "shapes": [
+    {
+     "id": 2,
+     "name": "Rectangle 1",
+     "type": 1,
+     "x": 0.0,
+     "y": 0.0,
+     "w": 960.0,
+     "h": 540.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1
+    },
+    {
+     "id": 3,
+     "name": "TextBox 2",
+     "type": 17,
+     "x": 40.0,
+     "y": 30.0,
+     "w": 880.0,
+     "h": 65.433,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 15,
+       "text": "粗体轮廓文字 Bold 123",
+       "x": 47.2,
+       "y": 33.6,
+       "w": 507.755,
+       "h": 57.6
+      }
+     ]
+    },
+    {
+     "id": 4,
+     "name": "TextBox 3",
+     "type": 17,
+     "x": 40.0,
+     "y": 150.0,
+     "w": 880.0,
+     "h": 65.433,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 15,
+       "text": "粗体轮廓文字 Bold 123",
+       "x": 47.2,
+       "y": 153.6,
+       "w": 507.755,
+       "h": 57.6
+      }
+     ]
+    },
+    {
+     "id": 5,
+     "name": "TextBox 4",
+     "type": 17,
+     "x": 40.0,
+     "y": 270.0,
+     "w": 880.0,
+     "h": 65.433,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 15,
+       "text": "粗体轮廓文字 Bold 123",
+       "x": 47.2,
+       "y": 273.6,
+       "w": 507.755,
+       "h": 57.6
+      }
+     ]
+    },
+    {
+     "id": 6,
+     "name": "TextBox 5",
+     "type": 17,
+     "x": 40.0,
+     "y": 390.0,
+     "w": 880.0,
+     "h": 65.433,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 15,
+       "text": "粗体轮廓文字 Bold 123",
+       "x": 47.2,
+       "y": 393.6,
+       "w": 515.88,
+       "h": 57.6
+      }
+     ]
+    }
+   ],
+   "effects": [],
+   "triggerHidden": [],
+   "steps": 0,
+   "keptSlideshow": false
+  }
+ ],
+ "ok": true
+}

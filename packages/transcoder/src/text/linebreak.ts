@@ -5,6 +5,9 @@ import { LAYOUT_UNIT } from './measure';
 const NO_START = new Set([...'、。，．・：；？！゛゜ヽヾゝゞ々ー）］｝」』〕〉》】〙〗〟’”｠»,.:;?!)]}%…‥']);
 const NO_END = new Set([...'（［｛「『〔〈《【〘〖〝‘“｟«([{']);
 
+/** 可以悬挂在行外的字（行首禁则的标点） */
+export const hangable = (t: string) => NO_START.has(t);
+
 function canBreakBetween(a: Atom, b: Atom, kinsoku: boolean): boolean {
   if (kinsoku && (a.style.eaBreak || b.style.eaBreak) && (NO_START.has(b.text) || NO_END.has(a.text))) return false;
   if (a.space || a.tab) return true;

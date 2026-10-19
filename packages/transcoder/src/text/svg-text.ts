@@ -34,15 +34,28 @@ export function textEl(txt: string, x: number | number[], y: number, s: RunStyle
   // 浏览器默认会做字距调整；PowerPoint 没开的地方关掉，保持和排版时算的宽度一致
   if (!kernOn(s)) css2.push('font-kerning:none');
   if (css2.length) a += ` style="${css2.join(';')}"`;
-  if (s.outline) a += ` stroke="${css(s.outline.color)}" stroke-width="${n2(s.outline.width)}"${s.outline.color.a < 0.999 ? ` stroke-opacity="${n2(s.outline.color.a)}"` : ''}`;
-  // 人工加粗：描边宽度是字号的 1/56（实测 text-bold-light：按加粗前后笔画浓度的增量对齐）
-  else if (s.fakeBold) a += ` stroke="${css(s.color)}" stroke-width="${n2(s.size / 56)}" stroke-linejoin="round"${s.color.a < 0.999 ? ` stroke-opacity="${n2(s.color.a)}"` : ''}`;
   if (env?.doc && s.grad) a = a.replace(/ fill="[^"]*"( fill-opacity="[^"]*")?/, ` fill="${textGradient(s.grad, env)}"`);
   const pic = env && s.blip ? textPicture(s.blip, env) : '';
   if (pic) a = a.replace(/ fill="[^"]*"( fill-opacity="[^"]*")?/, ` fill="${pic}"`);
+  const outline = s.outline ? ` stroke="${css(s.outline.color)}" stroke-width="${n2(s.outline.width)}"${s.outline.color.a < 0.999 ? ` stroke-opacity="${n2(s.outline.color.a)}"` : ''}` : '';
+  // 人工加粗：描边宽度是字号的 1/56（实测 text-bold-light：按加粗前后笔画浓度的增量对齐）
+  const bold = s.fakeBold ? ` stroke="${css(s.color)}" stroke-width="${n2(s.size / 56)}" stroke-linejoin="round"${s.color.a < 0.999 ? ` stroke-opacity="${n2(s.color.a)}"` : ''}` : '';
   const fid = env ? textFilter(s, env) : '';
+  const t = esc(txt);
+  // 既有轮廓又要人工加粗：轮廓以加粗后的字形边缘为中心（实测 text-outline-fakebold：宋体、楷体粗体加白轮廓，字的颜色基本完整、
+  // 白边在外面）。一个 text 只有一种描边，分两层近似：下层轮廓色描边宽 = 加粗宽 + 线宽（外沿对），上层字色描边宽 = 加粗宽 − 线宽（内沿对）
+  if (outline && bold && s.outline) {
+    const b = s.size / 56, w = s.outline.width;
+    const under = outline.replace(/stroke-width="[^"]*"/, `stroke-width="${n2(b + w)}" stroke-linejoin="round"`);
+    const top = b - w > 0.05 ? bold.replace(/stroke-width="[^"]*"/, `stroke-width="${n2(b - w)}"`) : '';
+    // 线宽比加粗宽大时轮廓的内沿压进字里：再盖一层只有轮廓的
+    const inner = w - b > 0.05 ? `<text ${a.replace(/ fill="[^"]*"( fill-opacity="[^"]*")?/, ' fill="none"')}${outline.replace(/stroke-width="[^"]*"/, `stroke-width="${n2(w - b)}"`)} xml:space="preserve">${t}</text>` : '';
+    const pair = `<text ${a}${under} xml:space="preserve">${t}</text><text ${a}${top} xml:space="preserve">${t}</text>${inner}`;
+    return fid ? `<g filter="url(#${fid})">${pair}</g>` : pair;
+  }
+  a += outline || bold;
   if (fid) a += ` filter="url(#${fid})"`;
-  return `<text ${a} xml:space="preserve">${esc(txt)}</text>`;
+  return `<text ${a} xml:space="preserve">${t}</text>`;
 }
 
 /** 渐变、图片填充的文字铺在哪个范围：有行框时按行（横向是这一行文字的宽度、竖向是行高），艺术字变形时铺满整个文本框 */
