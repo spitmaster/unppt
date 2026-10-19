@@ -6245,7 +6245,90 @@ def _patch_ea_latin_cjk(path):
 text_ea_latin_cjk.patch = _patch_ea_latin_cjk
 
 
-CASES = [shapes_all, text_sizes, text_align, text_spacing, text_bullets, text_missing_font, shapes_basic, fills_lines, table_basic, group_rotate, anim_basic, anim_auto, charts_basic, pictures, smartart, text_effects, text_layout, table_merge, links, emf_images, anim_advanced, charts_labels, freeform_icons, media_audio, anim_trigger, wmf_images, anim_iterate, picture_transparent, charts_more, shape_effects, equations, anim_path, anim_emphasis, transitions, fills_patterns, text_decoration, anim_entrance, svg_images, charts_markers, hidden_slides, media_background, text_glow_reflection, text_tabs, text_picture_bullets, fills_texture, transition_morph, text_embedded_fonts, text_warp, anim_repeat, charts_sizes, slide_timings, lines_compound, table_diagonal, lines_gradient, fills_radial, fills_rect_gradient, shapes_3d, table_vertical, transitions_more, anim_sound, anim_build, anim_after, anim_text_emphasis, charts_bubble, media_video, charts_options, charts_negative, shapes_bevel, charts_legend, shapes_3d_rotation, smartart_3d, charts_ofpie, charts_3d, anim_group_emphasis, activex_controls, charts_extras, charts_axis_titles, charts_fills, charts_outlines, charts_labels_more, group_scale, group_flip, charts_3d_line, charts_legend_pos, charts_crowded_labels, charts_label_skip, charts_bar_long_names, charts_multilevel, picture_recolor, text_symbols, text_numbering, lines_arrows, table_styles, shapes_styles, charts_styles, placeholders_inherit, text_bold_light, ole_objects, text_hanging_punct, speaker_notes, pictures_tiff, placeholders_picture, pictures_exif, text_picture_fill, pictures_mislabeled, emf_alphablend, placeholders_orphan, picture_fill_rect, slide_number_fields, table_builtin_styles, smartart_matrix, text_layout_unit, colors_gamma, text_latin_cjk_font, text_default_style, text_missing_font_jp, text_ea_line_break, text_ambiguous_punct, text_charset_slides, table_rowspan_tall, text_autofit_round, shapes_3d_contour, emf_clip_modes, placeholders_picture_geom, emf_gradient_fill, text_theme_font_lang, text_anchor_linespacing, table_linespacing, table_fontalgn, text_theme_font_latin, text_margin_right, text_charset_gap, slide_size_repair, fills_shape_gradient, text_shadow_runs, picture_3d_shadow, charts_axis_ea_vert, fills_tile_resample, text_shadow_dist, text_shadow_size, text_shadow_scale, text_shadow_blur, text_glow_scale, text_reflection_dist, shapes_bg_fill, text_control_chars, placeholders_no_index, text_ambiguous_missing_ea, text_missing_panose, emf_bitmap_src, fills_group, fills_rot_with_shape, fills_rot_cut, charts_pct_stacked, picture_bg_fill, charts_legend_manual, charts_long_cats, charts_cat_vertical, charts_cat_rot_len, charts_cat_rot_short, charts_cat_rot_threshold, charts_pie_label_sep, text_slash_break, smartart_colors, text_fontref_ph, text_hanging_unset, table_default_bold, text_missing_cjk_name, text_fakebold_width, text_br_empty_line, text_ea_lang, slide_number_bare_field, text_neg_indent, text_mix_wrap_lines, text_theme_ea_altlang, charts_inner_titles, charts_line_dash, charts_rich_title, text_ea_slot_symbols, charts_date_extra_vals, shape_shadow_nofill_text, text_fontalgn, charts_legend_overflow, group_effects, charts_point_labels, picture_bevel_border, text_outline_fakebold, text_just_hang, text_just_spaces, charts_axis_ea_vert_latin, charts_title_moved, charts_dtable_fonts, charts_pie_manual_labels, charts_axis_title_moved, charts_pie_bestfit, charts_dtable_wrap, charts_axis_min_offset, text_bullet_pos_indent, text_spcpts_round, charts_na_values, lines_dash_caps, text_anchor_ctr, custgeom_no_wh, text_link_kinds, fills_blip_no_mode, text_buchar_multi, text_font_substitutes, charts_empty_series_name, charts_cat_custom_rot, text_ea_latin_cjk]
+def placeholders_footer_base(app):
+    """页码、页脚、日期占位符的基础样式（保存后改 XML）：母版里这三个占位符不写字号，母版 otherStyle 一级 40 磅，演示文稿默认样式一级 24 磅，
+    母版正文样式一级保持默认；对照一个文本框（默认样式）和一个表格（otherStyle）"""
+    p = new_pres(app)
+    s = blank(p)
+    hf = s.HeadersFooters
+    hf.SlideNumber.Visible = -1
+    hf.Footer.Visible = -1
+    hf.Footer.Text = "页脚 Footer"
+    hf.DateAndTime.Visible = -1
+    hf.DateAndTime.UseFormat = 0
+    hf.DateAndTime.Text = "日期 Date"
+    textbox(s, 60, 60, 400, 60, "文本框 Textbox")
+    t = s.Shapes.AddTable(1, 2, 520, 60, 380, 80).Table
+    t.Cell(1, 1).Shape.TextFrame.TextRange.Text = "表格"
+    t.Cell(1, 2).Shape.TextFrame.TextRange.Text = "Table"
+    return p
+
+
+def _patch_footer_base(path):
+    import re
+    import zipfile
+    tmp = path.with_suffix(".tmp")
+    with zipfile.ZipFile(path) as zin, zipfile.ZipFile(tmp, "w", zipfile.ZIP_DEFLATED) as zout:
+        for item in zin.infolist():
+            data = zin.read(item.filename)
+            if re.match(r"ppt/(slideMasters/slideMaster|slideLayouts/slideLayout|slides/slide)\d+\.xml$", item.filename):
+                xml = data.decode("utf8")
+                # 页码、页脚、日期占位符里写的字号都去掉
+                xml = re.sub(r'<p:sp>(?:(?!</p:sp>).)*?<p:ph type="(?:dt|ftr|sldNum)"(?:(?!</p:sp>).)*</p:sp>',
+                             lambda m: re.sub(r' sz="\d+"', "", m.group(0)), xml, flags=re.S)
+                xml = re.sub(r"(<p:otherStyle>(?:(?!</p:otherStyle>).)*?<a:lvl1pPr(?:(?!</a:lvl1pPr>).)*?<a:defRPr)( sz=\"\d+\")?",
+                             r'\1 sz="4000"', xml, count=1, flags=re.S)
+                data = xml.encode("utf8")
+            elif item.filename == "ppt/presentation.xml":
+                xml = data.decode("utf8")
+                xml = re.sub(r"(<p:defaultTextStyle>(?:(?!</p:defaultTextStyle>).)*?<a:lvl1pPr(?:(?!</a:lvl1pPr>).)*?<a:defRPr)( sz=\"\d+\")?",
+                             r'\1 sz="2400"', xml, count=1, flags=re.S)
+                data = xml.encode("utf8")
+            zout.writestr(item, data)
+    tmp.replace(path)
+
+
+placeholders_footer_base.patch = _patch_footer_base
+
+
+def table_no_style_other(app):
+    """没有表格样式的表格（保存后删掉 tableStyleId，tblPr 留空）和母版 otherStyle：otherStyle 一级写了加粗、红色、28 磅，
+    看表格文字用了其中哪些；对照一个用了中度样式 2 的表格"""
+    p = new_pres(app)
+    s = blank(p)
+    for k in range(2):
+        t = s.Shapes.AddTable(2, 2, 40 + k * 460, 80, 420, 160).Table
+        for r in (1, 2):
+            for c in (1, 2):
+                t.Cell(r, c).Shape.TextFrame.TextRange.Text = f"单元格 {r}{c} Cell"
+    return p
+
+
+def _patch_no_style_other(path):
+    import re
+    import zipfile
+    tmp = path.with_suffix(".tmp")
+    with zipfile.ZipFile(path) as zin, zipfile.ZipFile(tmp, "w", zipfile.ZIP_DEFLATED) as zout:
+        for item in zin.infolist():
+            data = zin.read(item.filename)
+            if item.filename == "ppt/slides/slide1.xml":
+                xml = data.decode("utf8")
+                # 第一个表格：去掉样式和 firstRow / bandRow 标记
+                xml = re.sub(r"<a:tblPr[^>]*>(?:(?!</a:tblPr>).)*</a:tblPr>", "<a:tblPr/>", xml, count=1, flags=re.S)
+                data = xml.encode("utf8")
+            elif item.filename == "ppt/slideMasters/slideMaster1.xml":
+                xml = data.decode("utf8")
+                xml = re.sub(r"(<p:otherStyle>(?:(?!</p:otherStyle>).)*?<a:lvl1pPr(?:(?!</a:lvl1pPr>).)*?)<a:defRPr[^>]*>(?:(?!</a:defRPr>).)*?<a:solidFill>(?:(?!</a:solidFill>).)*</a:solidFill>",
+                             r'\1<a:defRPr sz="2800" b="1" kern="1200"><a:solidFill><a:srgbClr val="FF0000"/></a:solidFill>', xml, count=1, flags=re.S)
+                data = xml.encode("utf8")
+            zout.writestr(item, data)
+    tmp.replace(path)
+
+
+table_no_style_other.patch = _patch_no_style_other
+
+
+CASES = [shapes_all, text_sizes, text_align, text_spacing, text_bullets, text_missing_font, shapes_basic, fills_lines, table_basic, group_rotate, anim_basic, anim_auto, charts_basic, pictures, smartart, text_effects, text_layout, table_merge, links, emf_images, anim_advanced, charts_labels, freeform_icons, media_audio, anim_trigger, wmf_images, anim_iterate, picture_transparent, charts_more, shape_effects, equations, anim_path, anim_emphasis, transitions, fills_patterns, text_decoration, anim_entrance, svg_images, charts_markers, hidden_slides, media_background, text_glow_reflection, text_tabs, text_picture_bullets, fills_texture, transition_morph, text_embedded_fonts, text_warp, anim_repeat, charts_sizes, slide_timings, lines_compound, table_diagonal, lines_gradient, fills_radial, fills_rect_gradient, shapes_3d, table_vertical, transitions_more, anim_sound, anim_build, anim_after, anim_text_emphasis, charts_bubble, media_video, charts_options, charts_negative, shapes_bevel, charts_legend, shapes_3d_rotation, smartart_3d, charts_ofpie, charts_3d, anim_group_emphasis, activex_controls, charts_extras, charts_axis_titles, charts_fills, charts_outlines, charts_labels_more, group_scale, group_flip, charts_3d_line, charts_legend_pos, charts_crowded_labels, charts_label_skip, charts_bar_long_names, charts_multilevel, picture_recolor, text_symbols, text_numbering, lines_arrows, table_styles, shapes_styles, charts_styles, placeholders_inherit, text_bold_light, ole_objects, text_hanging_punct, speaker_notes, pictures_tiff, placeholders_picture, pictures_exif, text_picture_fill, pictures_mislabeled, emf_alphablend, placeholders_orphan, picture_fill_rect, slide_number_fields, table_builtin_styles, smartart_matrix, text_layout_unit, colors_gamma, text_latin_cjk_font, text_default_style, text_missing_font_jp, text_ea_line_break, text_ambiguous_punct, text_charset_slides, table_rowspan_tall, text_autofit_round, shapes_3d_contour, emf_clip_modes, placeholders_picture_geom, emf_gradient_fill, text_theme_font_lang, text_anchor_linespacing, table_linespacing, table_fontalgn, text_theme_font_latin, text_margin_right, text_charset_gap, slide_size_repair, fills_shape_gradient, text_shadow_runs, picture_3d_shadow, charts_axis_ea_vert, fills_tile_resample, text_shadow_dist, text_shadow_size, text_shadow_scale, text_shadow_blur, text_glow_scale, text_reflection_dist, shapes_bg_fill, text_control_chars, placeholders_no_index, text_ambiguous_missing_ea, text_missing_panose, emf_bitmap_src, fills_group, fills_rot_with_shape, fills_rot_cut, charts_pct_stacked, picture_bg_fill, charts_legend_manual, charts_long_cats, charts_cat_vertical, charts_cat_rot_len, charts_cat_rot_short, charts_cat_rot_threshold, charts_pie_label_sep, text_slash_break, smartart_colors, text_fontref_ph, text_hanging_unset, table_default_bold, text_missing_cjk_name, text_fakebold_width, text_br_empty_line, text_ea_lang, slide_number_bare_field, text_neg_indent, text_mix_wrap_lines, text_theme_ea_altlang, charts_inner_titles, charts_line_dash, charts_rich_title, text_ea_slot_symbols, charts_date_extra_vals, shape_shadow_nofill_text, text_fontalgn, charts_legend_overflow, group_effects, charts_point_labels, picture_bevel_border, text_outline_fakebold, text_just_hang, text_just_spaces, charts_axis_ea_vert_latin, charts_title_moved, charts_dtable_fonts, charts_pie_manual_labels, charts_axis_title_moved, charts_pie_bestfit, charts_dtable_wrap, charts_axis_min_offset, text_bullet_pos_indent, text_spcpts_round, charts_na_values, lines_dash_caps, text_anchor_ctr, custgeom_no_wh, text_link_kinds, fills_blip_no_mode, text_buchar_multi, text_font_substitutes, charts_empty_series_name, charts_cat_custom_rot, text_ea_latin_cjk, placeholders_footer_base, table_no_style_other]
 
 
 def main():

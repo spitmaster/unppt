@@ -60,8 +60,9 @@ class SlideRenderer implements RenderContext {
     // 实测（text-default-style）：不是占位符的文字（文本框、形状）只用演示文稿默认样式，母版 otherStyle 不参与（表格才用它，见 table.ts）
     if (!ph) return [this.env.pres.defaultTextStyle];
     const t = ph.type;
+    // 日期、页脚、页码占位符的基础样式是演示文稿默认样式，不是母版 otherStyle（实测 placeholders-footer-base：COM 读字号）
     const base = t === 'title' || t === 'ctrTitle' ? ctx.master.txStyles.title
-      : ['dt', 'ftr', 'sldNum', 'hdr'].includes(t) ? ctx.master.txStyles.other
+      : ['dt', 'ftr', 'sldNum', 'hdr'].includes(t) ? this.env.pres.defaultTextStyle
         : ctx.master.txStyles.body;
     return [base, path(masterPh, 'p:txBody', 'a:lstStyle'), path(layoutPh, 'p:txBody', 'a:lstStyle')];
   }

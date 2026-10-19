@@ -1,0 +1,125 @@
+{
+ "version": 8,
+ "level": "full",
+ "slideWidthPt": 960.0,
+ "slideHeightPt": 540.0,
+ "imageWidth": 1280,
+ "imageHeight": 720,
+ "slides": [
+  {
+   "index": 0,
+   "hidden": false,
+   "shapes": [
+    {
+     "id": 2,
+     "name": "Slide Number Placeholder 1",
+     "type": 14,
+     "x": 678.0,
+     "y": 500.5,
+     "w": 216.0,
+     "h": 28.75,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 138,
+     "lines": [
+      {
+       "start": 0,
+       "len": 1,
+       "text": "1",
+       "x": 874.075,
+       "y": 500.475,
+       "w": 12.63,
+       "h": 28.8
+      }
+     ]
+    },
+    {
+     "id": 3,
+     "name": "Footer Placeholder 2",
+     "type": 14,
+     "x": 318.0,
+     "y": 500.5,
+     "w": 324.0,
+     "h": 28.75,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 138,
+     "lines": [
+      {
+       "start": 0,
+       "len": 9,
+       "text": "页脚 Footer",
+       "x": 419.125,
+       "y": 500.475,
+       "w": 121.755,
+       "h": 28.8
+      }
+     ]
+    },
+    {
+     "id": 4,
+     "name": "Date Placeholder 3",
+     "type": 14,
+     "x": 66.0,
+     "y": 500.5,
+     "w": 216.0,
+     "h": 28.75,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 138,
+     "lines": [
+      {
+       "start": 0,
+       "len": 7,
+       "text": "日期 Date",
+       "x": 73.2,
+       "y": 500.475,
+       "w": 103.13,
+       "h": 28.8
+      }
+     ]
+    },
+    {
+     "id": 5,
+     "name": "TextBox 4",
+     "type": 17,
+     "x": 60.0,
+     "y": 60.0,
+     "w": 400.0,
+     "h": 60.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 11,
+       "text": "文本框 Textbox",
+       "x": 67.2,
+       "y": 63.6,
+       "w": 167.395,
+       "h": 28.8
+      }
+     ]
+    },
+    {
+     "id": 6,
+     "name": "Table 5",
+     "type": 19,
+     "x": 520.0,
+     "y": 60.0,
+     "w": 380.0,
+     "h": 80.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": -2
+    }
+   ],
+   "effects": [],
+   "triggerHidden": [],
+   "steps": 0,
+   "keptSlideshow": false
+  }
+ ],
+ "ok": true
+}
