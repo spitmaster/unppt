@@ -29,7 +29,7 @@ export function slicePath(cx: number, cy: number, r: number, ri: number, a1: num
 /** 没写边框时扇区之间的白线 */
 const PIE_EDGE: Line = { color: { r: 255, g: 255, b: 255, a: 1 }, width: 1.5, cap: 'butt', join: 'round' };
 
-function renderPie(p: Plot, x: number, y: number, w: number, h: number, colors: ColorContext, tw: TextWidth, box: { w: number; h: number }): string {
+function renderPie(p: Plot, x: number, y: number, w: number, h: number, colors: ColorContext, tw: TextWidth, box: { w: number; h: number }, manual = false): string {
   const s = p.series[0];
   if (!s) return '';
   const vals = s.vals.map((v) => Math.max(0, v ?? 0));
@@ -38,8 +38,9 @@ function renderPie(p: Plot, x: number, y: number, w: number, h: number, colors: 
   if (!total) return '';
   const cx = x + w / 2, cy = y + h / 2;
   // 实测：没有数据标签时饼图直径等于绘图区的短边（chart.ts 排出的绘图区）；
-  // 有标签时 PowerPoint 会缩小给标签留空间（约宽的 84%、高的 86.7%）
-  const r = (s.labels || [...(s.pointLabels?.values() ?? [])].some((l) => l.labels) ? Math.min(w * 0.84, h * 0.867) : Math.min(w, h)) / 2;
+  // 有标签时 PowerPoint 会缩小给标签留空间（约宽的 84%、高的 86.7%）；绘图区手动摆放时不缩（样本：标签拖到饼外的饼图铺满手动内框）
+  const labeled = s.labels || [...(s.pointLabels?.values() ?? [])].some((l) => l.labels);
+  const r = (labeled && !manual ? Math.min(w * 0.84, h * 0.867) : Math.min(w, h)) / 2;
   const ri = p.kind === 'doughnut' ? r * p.holeSize / 100 : 0;
   let ang = (p.firstSliceAng - 90) * Math.PI / 180;
   const out: string[] = [];
@@ -84,7 +85,7 @@ const pieBase = {
   legendByCategory: true,
   seriesRules: () => ({ xy: false, defaultLine: false, marker: () => false }),
   legendKey: (_p: Plot, s: Plot['series'][number]) => ({ color: s.fill, line: false }),
-  render: (p: Plot, a: Rect, ctx: ChartContext) => (p.is3D && p.kind === 'pie' && ctx.view3D ? renderPie3D(p, a, ctx.view3D, ctx.colors, ctx.defs, ctx.box) : renderPie(p, a.left, a.top, a.right - a.left, a.bottom - a.top, ctx.colors, ctx.width, ctx.box)),
+  render: (p: Plot, a: Rect, ctx: ChartContext) => (p.is3D && p.kind === 'pie' && ctx.view3D ? renderPie3D(p, a, ctx.view3D, ctx.colors, ctx.defs, ctx.box) : renderPie(p, a.left, a.top, a.right - a.left, a.bottom - a.top, ctx.colors, ctx.width, ctx.box, ctx.manual)),
 };
 
 export const pieType: ChartType = { ...pieBase, kind: 'pie', tags: ['pieChart', 'pie3DChart'] };
