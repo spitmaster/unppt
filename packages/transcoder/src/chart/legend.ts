@@ -5,7 +5,7 @@ import { chartTypeOf } from './chart-types';
 import { accentColor, label, legendKey, strokeOf, textStyle } from './draw';
 import { LEGEND_LINE_KEY, legendBand, legendCenter, legendItemGap, legendKeyGap, legendLead, legendPlotGap, legendRow, legendSquare, legendTopBand, legendTopCenter, PAD, type TextWidth } from './layout';
 import type { Plot, Rect, Series, TextStyle } from './model';
-import { dashAttr } from './trendline';
+import { dashCap } from './trendline';
 import { legendPad, legendTextCap, legendWrapLine, wrapLegendText } from './legend-wrap';
 
 export interface LegendEntry { name: string; color: Rgba; line: boolean; marker: boolean; series?: Series; width?: number; dash?: string; none?: boolean; paint?: string; stroke?: string }
@@ -18,7 +18,7 @@ export function seriesEntries(plots: Plot[], colors: ColorContext): LegendEntry[
     for (const s of p.series) {
       const k = t.legendKey(p, s);
       // 图例里的线和系列一样粗（实测）
-      entries.push({ name: s.name, color: k.color ?? accentColor(0, colors), line: k.line, marker: s.marker || !!k.dot, ...(k.dot ? {} : { series: s }), ...(k.line && s.line ? { width: s.line.width } : {}), ...(k.none ? { none: true } : {}), ...(s.paint && !k.line ? { paint: s.paint } : {}), ...(!k.line && !k.dot ? { stroke: strokeOf(s, -1) } : {}) });
+      entries.push({ name: s.name, color: k.color ?? accentColor(0, colors), line: k.line, marker: s.marker || !!k.dot, ...(k.dot ? {} : { series: s }), ...(k.line && s.line ? { width: s.line.width } : {}), ...(k.line && s.line?.dash ? { dash: dashCap(s.line) } : {}), ...(k.none ? { none: true } : {}), ...(s.paint && !k.line ? { paint: s.paint } : {}), ...(!k.line && !k.dot ? { stroke: strokeOf(s, -1) } : {}) });
     }
   }
   return entries;
@@ -41,7 +41,7 @@ function entriesOf(plots: Plot[], colors: ColorContext, vertical: boolean): Lege
   // 趋势线排在所有系列后面
   for (const p of plots) {
     for (const s of p.series) {
-      for (const t of s.trendlines) if (t.line.color) entries.push({ name: t.name, color: t.line.color, line: true, marker: false, width: t.line.width, dash: dashAttr(t.line) });
+      for (const t of s.trendlines) if (t.line.color) entries.push({ name: t.name, color: t.line.color, line: true, marker: false, width: t.line.width, dash: dashCap(t.line) });
     }
   }
   return entries;

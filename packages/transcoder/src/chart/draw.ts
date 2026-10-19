@@ -56,7 +56,7 @@ export function legendKey(e: { color: Rgba; line: boolean; marker: boolean; seri
   const mark = (cx: number) => (e.series ? markerSvg(e.series, cx, y, 8) : `<circle cx="${n2(cx)}" cy="${n2(y)}" r="3" fill="${css(e.color)}"/>`);
   const len = wide ?? ks * 3;
   if (e.line) {
-    return `<line x1="${n2(x)}" y1="${n2(y)}" x2="${n2(x + len)}" y2="${n2(y)}" stroke="${css(e.color)}" stroke-width="${n2(e.width ?? 2)}"${e.dash ?? ''}${e.dash ? ' stroke-linecap="round"' : ''}/>`
+    return `<line x1="${n2(x)}" y1="${n2(y)}" x2="${n2(x + len)}" y2="${n2(y)}" stroke="${css(e.color)}" stroke-width="${n2(e.width ?? 2)}"${e.dash ?? ''}/>`
       + (e.marker ? mark(x + len / 2) : '');
   }
   if (e.marker) return mark(x + (wide ?? ks) / 2);
