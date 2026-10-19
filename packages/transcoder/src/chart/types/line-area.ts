@@ -4,7 +4,7 @@ import { n2 } from '../../common/svg';
 import { attr, child } from '../../io/xml';
 import { cpart, label, linePath, markerSvg } from '../draw';
 import { dashCap } from '../trendline';
-import { labelParts, labelText } from '../format';
+import { labelParts, labelText, sourceFmt } from '../format';
 import { pointLabel, pointLabelText, shiftLabel } from '../point-labels';
 import { errRanges, errSvg } from '../error-bars';
 import type { ChartType, CategoryFrame } from '../chart-type';
@@ -14,7 +14,6 @@ import { renderLineExtras, renderUpDownBars } from './line-extras';
 function renderLineArea(p: Plot, f: CategoryFrame, A: AxisInfo, out: string[], labelsOut: string[]): void {
   const { nCat, catCenter } = f;
   const vpos = A.pos;
-  const valFmt = A.fmt;
   const acc = new Array(nCat).fill(0);
   // 百分比堆积：每个分类按各系列的合计归一（和柱形图一样）
   const totals = new Array(nCat).fill(0).map((_, i) => p.series.reduce((a, s) => a + Math.abs(s.vals[i] ?? 0), 0) || 1);
@@ -70,7 +69,7 @@ function renderLineArea(p: Plot, f: CategoryFrame, A: AxisInfo, out: string[], l
           const pl = pointLabel(s, i), lb = pl.labels;
           if (!lb) continue;
           const q = pts[k];
-          const text = pointLabelText(s, pl, i, () => labelText(lb, v, 0, s.cats[i] ?? '', s.name, valFmt), () => labelParts(lb, v, 0, s.cats[i] ?? '', valFmt));
+          const text = pointLabelText(s, pl, i, () => labelText(lb, v, 0, s.cats[i] ?? '', s.name, sourceFmt(s, i)), () => labelParts(lb, v, 0, s.cats[i] ?? '', sourceFmt(s, i)));
           const pos = lb.pos ?? 'r';
           const key = `${s.index}x${i}l`;
           const at = (svg: string) => labelsOut.push(cpart(key, shiftLabel(svg, pl, f.chart)));

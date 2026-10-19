@@ -8,7 +8,7 @@
 import { css, type ColorContext, type Rgba } from '../../model/color';
 import { n2 } from '../../common/svg';
 import { accentColor, cpart, label } from '../draw';
-import { labelParts, labelText } from '../format';
+import { labelParts, labelText, sourceFmt } from '../format';
 import { pointLabel, pointLabelText, shiftLabel } from '../point-labels';
 import type { Plot, Rect, SvgDefs, View3D } from '../model';
 
@@ -111,7 +111,7 @@ export function renderPie3D(p: Plot, area: Rect, view: View3D, colors: ColorCont
     if (lb) {
       const rr = lb.pos === 'ctr' ? 0.5 : lb.pos === 'outEnd' ? 1.15 : 0.8;
       const q = proj(rr * Math.cos(mid) + ex[0], 0, rr * Math.sin(mid) + ex[1]);
-      const vf = s.valFmt ?? 'General';
+      const vf = sourceFmt(s, i);
       const text = pointLabelText(s, pl, i, () => labelText(lb, v, total, s.cats[i] ?? '', s.name, vf), () => labelParts(lb, v, total, s.cats[i] ?? '', vf));
       labels.push(cpart(`${s.index}x${i}l`, shiftLabel(label(text, ox + S * q[0], oy + S * q[1], lb.style), pl, box)));
     }

@@ -1,7 +1,7 @@
 /** 柱形图、条形图（簇状、堆积、百分比堆积）：画在共享的分类轴上 */
 import { n2 } from '../../common/svg';
 import { cpart, label, lineOf, paintOf, strokeOf } from '../draw';
-import { labelParts, labelText } from '../format';
+import { labelParts, labelText, sourceFmt } from '../format';
 import { pointLabel, pointLabelText, shiftLabel } from '../point-labels';
 import { errRanges, errSvg } from '../error-bars';
 import type { ChartType } from '../chart-type';
@@ -29,7 +29,6 @@ export const barType: ChartType = {
     const { band, nCat, horizontal } = f;
     const nSer = p.series.length;
     const vpos = A.pos;
-    const valFmt = A.fmt;
     const zeroF = vpos(Math.max(A.lo, Math.min(A.hi, 0)));
     const stacked = p.grouping === 'stacked' || p.grouping === 'percentStacked';
     const ov = stacked ? 1 : p.overlap / 100;
@@ -59,7 +58,7 @@ export const barType: ChartType = {
         if (!color) continue;
         const pl = pointLabel(s, i), lb = pl.labels;
         const raw = s.vals[i] ?? 0;
-        const text = lb ? pointLabelText(s, pl, i, () => labelText(lb, raw, totals[i], s.cats[i] ?? '', s.name, valFmt), () => labelParts(lb, raw, totals[i], s.cats[i] ?? '', valFmt)) : '';
+        const text = lb ? pointLabelText(s, pl, i, () => labelText(lb, raw, totals[i], s.cats[i] ?? '', s.name, sourceFmt(s, i)), () => labelParts(lb, raw, totals[i], s.cats[i] ?? '', sourceFmt(s, i))) : '';
         const lbl = (svg: string) => shiftLabel(svg, pl, f.chart);
         const inside = stacked || lb?.pos === 'ctr' || lb?.pos === 'inEnd' || lb?.pos === 'inBase';
         // 柱子在分类方向上的一段、在数值方向上的两端（坐标轴逆序时由 frame 换算）

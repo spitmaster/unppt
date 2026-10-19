@@ -85,7 +85,9 @@ export function renderCategoryChart(plots: Plot[], plotArea: XEl | undefined, ar
   };
   // 主坐标轴和次坐标轴（组合图里某些系列画在右侧的次坐标轴上）
   const primaryAx = axisOf(plots[0]);
-  const secondaryAx = valAxes.find((a) => a !== primaryAx && plots.some((p) => axisOf(p) === a));
+  // 删掉了、又是自动刻度的次坐标轴：上面的系列按主坐标轴的刻度画（实测 charts-dlbl-numfmt：次坐标轴上 0.3 的折线贴着底，不是自己撑满）
+  const autoDeleted = (a: XEl) => attr(child(a, 'c:delete'), 'val') === '1' && !child(child(a, 'c:scaling'), 'c:min') && !child(child(a, 'c:scaling'), 'c:max');
+  const secondaryAx = valAxes.find((a) => a !== primaryAx && !autoDeleted(a) && plots.some((p) => axisOf(p) === a));
   const onSecondary = (p: Plot) => !!secondaryAx && axisOf(p) === secondaryAx;
   const primRange = rangeOf(plots.filter((p) => !onSecondary(p)));
   const secRange = rangeOf(plots.filter(onSecondary));
