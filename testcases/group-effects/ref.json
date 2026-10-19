@@ -1,0 +1,157 @@
+{
+ "version": 8,
+ "level": "full",
+ "slideWidthPt": 960.0,
+ "slideHeightPt": 540.0,
+ "imageWidth": 1280,
+ "imageHeight": 720,
+ "slides": [
+  {
+   "index": 0,
+   "hidden": false,
+   "shapes": [
+    {
+     "id": 4,
+     "name": "GRPFX0",
+     "type": 6,
+     "x": 40.0,
+     "y": 120.0,
+     "w": 240.0,
+     "h": 200.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": -2,
+     "children": [
+      {
+       "id": 2,
+       "name": "Rectangle 1",
+       "type": 1,
+       "x": 40.0,
+       "y": 120.0,
+       "w": 180.0,
+       "h": 120.0,
+       "rot": 0.0,
+       "visible": true,
+       "autoShapeType": 1
+      },
+      {
+       "id": 3,
+       "name": "Oval 2",
+       "type": 1,
+       "x": 140.0,
+       "y": 180.0,
+       "w": 140.0,
+       "h": 140.0,
+       "rot": 0.0,
+       "visible": true,
+       "autoShapeType": 9
+      }
+     ]
+    },
+    {
+     "id": 7,
+     "name": "GRPFX1",
+     "type": 6,
+     "x": 350.0,
+     "y": 120.0,
+     "w": 340.0,
+     "h": 200.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": -2,
+     "children": [
+      {
+       "id": 5,
+       "name": "Rectangle 4",
+       "type": 1,
+       "x": 350.0,
+       "y": 120.0,
+       "w": 180.0,
+       "h": 120.0,
+       "rot": 0.0,
+       "visible": true,
+       "autoShapeType": 1
+      },
+      {
+       "id": 6,
+       "name": "Oval 5",
+       "type": 1,
+       "x": 550.0,
+       "y": 180.0,
+       "w": 140.0,
+       "h": 140.0,
+       "rot": 0.0,
+       "visible": true,
+       "autoShapeType": 9
+      }
+     ]
+    },
+    {
+     "id": 10,
+     "name": "GRPFX2",
+     "type": 6,
+     "x": 660.0,
+     "y": 120.0,
+     "w": 240.0,
+     "h": 200.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": -2,
+     "children": [
+      {
+       "id": 8,
+       "name": "Rectangle 7",
+       "type": 1,
+       "x": 660.0,
+       "y": 120.0,
+       "w": 180.0,
+       "h": 120.0,
+       "rot": 0.0,
+       "visible": true,
+       "autoShapeType": 1,
+       "lines": [
+        {
+         "start": 0,
+         "len": 2,
+         "text": "组合",
+         "x": 732.0,
+         "y": 169.2,
+         "w": 36.005,
+         "h": 21.6
+        }
+       ]
+      },
+      {
+       "id": 9,
+       "name": "Oval 8",
+       "type": 1,
+       "x": 760.0,
+       "y": 180.0,
+       "w": 140.0,
+       "h": 140.0,
+       "rot": 0.0,
+       "visible": true,
+       "autoShapeType": 9,
+       "lines": [
+        {
+         "start": 0,
+         "len": 2,
+         "text": "阴影",
+         "x": 812.0,
+         "y": 239.2,
+         "w": 36.005,
+         "h": 21.6
+        }
+       ]
+      }
+     ]
+    }
+   ],
+   "effects": [],
+   "triggerHidden": [],
+   "steps": 0,
+   "keptSlideshow": false
+  }
+ ],
+ "ok": true
+}

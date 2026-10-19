@@ -5,6 +5,7 @@ import { child, numAttr, type XEl } from '../../io/xml';
 import { boxTransform, pc, px, readXfrm, withUid, type Box } from '../box';
 import type { RenderContext } from '../context';
 import { mapChild } from '../group-map';
+import { effectFilter } from '../../effects/effect-filter';
 
 export async function renderGroup(r: RenderContext, el: XEl, ctx: SlideContext, parentFill?: Fill): Promise<string> {
   const gp = pc(el, 'grpSpPr');
@@ -35,8 +36,11 @@ export async function renderGroup(r: RenderContext, el: XEl, ctx: SlideContext, 
   };
   const inner = await r.shapes(kids.map((k) => mapChild(k, map)), { ...ctx, toSlide: childMapping(ctx.toSlide, box) }, groupFill);
   if (!inner) return '';
+  // 组合自己的效果（阴影、发光等）：按合起来的整体做，子元素之间不互相投影（样本；实测 group-effects）
+  const filter = effectFilter(child(gp, 'a:effectLst'), ctx.colors, r.doc, box.w, box.h);
+  const body = filter ? `<g filter="url(#${filter})">${inner}</g>` : inner;
   // 翻转已经下放到子元素（group-map.ts），这里只有平移和转动
-  return withUid(uid, `<g transform="${boxTransform(box)}">${inner}</g>`, el);
+  return withUid(uid, `<g transform="${boxTransform(box)}">${body}</g>`, el);
 }
 
 /** 组合里子元素坐标（以组合左上角为原点）到幻灯片像素的换算：组合转动时是 null（翻转已经下放到子元素） */

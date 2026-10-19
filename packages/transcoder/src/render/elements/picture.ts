@@ -3,6 +3,7 @@ import type { SlideContext } from '../../model/model';
 import { blipImage, fillAttrs, findFillEl, imagePlacement, parseFill, styleRef } from '../../style/fill';
 import { parseLine, strokeAttrs } from '../../style/line';
 import { effectFilter } from '../../effects/effect-filter';
+import { bevelLayer } from '../../effects/bevel';
 import { reflection } from '../../effects/reflection';
 import { buildGeometry, parseGeomXml, presetGeometry } from '../../geometry/geometry';
 import { esc, n2 } from '../../common/svg';
@@ -105,8 +106,11 @@ export async function renderPicture(r: RenderContext, el: XEl, ctx: SlideContext
   }
   const lnStyle = styleRef(child(style, 'a:lnRef'), ctx.theme.lineStyles, ctx.colors);
   const line = parseLine([lnStyle.el, child(spPr, 'a:ln')], [lnStyle.ctx, ctx.colors], ctx.part, r.env.pres.displayScale);
-  if (line) {
-    // 实测：图片的边框整个画在图片外侧（按线宽外扩半个线宽再描边），不压住图片
+  // 开了三维（棱台等）：正面按灯光提亮，边框和形状一样骑在边上画，棱台的明暗盖在上面（实测 picture-bevel-border）
+  const sp3d = child(spPr, 'a:sp3d') ?? child(effRef.el, 'a:sp3d');
+  if (line && has3d(sp3d)) parts.push(`<path d="${outlineD}" fill="none"${strokeAttrs(line, r.doc, 'norm')}/>`);
+  else if (line) {
+    // 实测：平面图片的边框整个画在图片外侧（按线宽外扩半个线宽再描边），不压住图片
     const lw = line.width;
     const d = buildGeometry(gdef, box.w + lw, box.h + lw, av).paths.map((p) => p.d).join('');
     parts.push(`<path d="${d}" transform="translate(${n2(-lw / 2)} ${n2(-lw / 2)})" fill="none"${strokeAttrs(line, r.doc, 'norm')}/>`);
@@ -120,7 +124,7 @@ export async function renderPicture(r: RenderContext, el: XEl, ctx: SlideContext
   // 透视（自己的相机，或者所在 SmartArt 场景的）：图片按网格三角形画，阴影、发光等效果在投影以后对整张图做（和形状一样）——
   // 每个三角形各带一份效果时，半透明的阴影在三角形重叠处叠深，露出网格接缝
   const proj = baseProjection(box, scene3d, ctx.scene, r.env.pres.width)?.base;
-  const filter = visual ? effectFilter(effect, effect === child(spPr, 'a:effectLst') ? ctx.colors : effRef.ctx, r.doc, box.w, box.h, undefined, undefined, proj && projectedBounds(proj, box.w, box.h)) : undefined;
+  const filter = visual ? effectFilter(effect, effect === child(spPr, 'a:effectLst') ? ctx.colors : effRef.ctx, r.doc, box.w, box.h, undefined, [has3d(sp3d) ? bevelLayer(sp3d) : undefined], proj && projectedBounds(proj, box.w, box.h)) : undefined;
   if (filter && !proj) visual = `<g filter="url(#${filter})">${visual}</g>`;
   let media = mediaParts.join('');
   if (media && (box.flipH || box.flipV)) media = `<g${flipTransform(box)}>${media}</g>`;
@@ -131,7 +135,6 @@ export async function renderPicture(r: RenderContext, el: XEl, ctx: SlideContext
   const cam = cameraTransform(scene3d, box.w, box.h, r.env.pres.width);
   const light = cameraLightTransfer(scene3d);
   // 开了三维（相机或棱台）的图片和形状一样，正面按灯光提亮（实测：透视正面下灰 128 -> 139）
-  const sp3d = child(spPr, 'a:sp3d') ?? child(effRef.el, 'a:sp3d');
   const lit3d = hasCamera(scene3d) || has3d(sp3d) ? faceLightTransfer(attr(child(scene3d, 'a:lightRig'), 'rig'), attr(sp3d, 'prstMaterial')) : undefined;
 
   // 正面光照、转动后的明暗合成一个滤镜（分两层套，Chrome 会把里面的阴影画丢）

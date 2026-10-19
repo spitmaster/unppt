@@ -6,14 +6,15 @@ import { arrowheads } from '../../style/arrowheads';
 import { faceLighting, has3d, litFill } from '../../style/lighting';
 import { cameraLightFilter, cameraTransform, extrusionOffset, extrusionScreenOffset, extrusionSides, hasCamera } from '../../style/camera';
 import { EMU_PER_PX } from '../../model/model';
-import { n2 } from '../../common/svg';
+import { n2, type SvgDoc } from '../../common/svg';
 import { bevelLayer } from '../../effects/bevel';
 import { contour } from '../../effects/contour';
 import { effectFilter } from '../../effects/effect-filter';
+import { outerShadow } from '../../effects/outer-shadow';
 import { reflection } from '../../effects/reflection';
 import { buildGeometry, parseGeomXml, presetGeometry } from '../../geometry/geometry';
 import { turnedBounds } from '../../geometry/turned-bounds';
-import { colorIn, css } from '../../model/color';
+import { colorIn, css, type ColorContext } from '../../model/color';
 import { renderText, type TextEnv } from '../../text/text';
 import { attr, child, children, numAttr, path, type XEl } from '../../io/xml';
 import { boxTransform, flipTransform, pc, placeBox, readXfrm, withUid } from '../box';
@@ -21,6 +22,31 @@ import type { RenderContext } from '../context';
 import { projectedBounds, projectedPath, shapeProjection } from '../projection';
 import { pixelRow, snapBox } from '../pixel-snap';
 import { backgroundFill } from './bg-fill';
+
+/** 填充的不透明度（没填充 0；渐变取最不透明的光圈；图片按透明度） */
+function fillOpacity(fill: Fill | undefined): number {
+  if (!fill || fill.kind === 'none') return 0;
+  if (fill.kind === 'solid') return fill.color.a;
+  if (fill.kind === 'grad') return Math.max(...fill.stops.map((g) => g.color.a));
+  if (fill.kind === 'image') return fill.alpha;
+  return 1;
+}
+
+/**
+ * 形状的外阴影是"填充 + 文字"合起来投的（实测 shape-shadow-nofill-text）：没填充、半透明填充时文字也有阴影。
+ * 透过半透明填充看到的那部分按 (1 − 填充不透明度) 淡化，近似画在填充上面；实心填充时文字的阴影被填充盖住，不画
+ */
+function textShadow(text: string, effect: XEl | undefined, colors: ColorContext, opacity: number, gb: { w: number; h: number }, doc: SvgDoc): string {
+  const el = child(effect, 'a:outerShdw');
+  if (!text || !el || opacity > 0.999) return text;
+  const layer = outerShadow.build(el, colors);
+  if (!layer) return text;
+  const k = 1 - opacity;
+  const faded = k < 0.999 ? { ...layer, primitives: `${layer.primitives}<feComponentTransfer in="${layer.result}" result="osf"><feFuncA type="linear" slope="${n2(k)}"/></feComponentTransfer>`, result: 'osf' } : layer;
+  // 滤镜区域放大到形状的三倍：溢出框外的文字也要有阴影、不被裁掉
+  const id = effectFilter(undefined, colors, doc, gb.w, gb.h, [], [faded], { x: -gb.w, y: -gb.h, w: 3 * gb.w, h: 3 * gb.h });
+  return id ? `<g filter="url(#${id})">${text}</g>` : text;
+}
 
 export async function renderShape(r: RenderContext, el: XEl, ctx: SlideContext, groupFill?: Fill): Promise<string> {
   const { layoutPh, masterPh, ph } = r.inherited(el, ctx);
@@ -155,7 +181,8 @@ export async function renderShape(r: RenderContext, el: XEl, ctx: SlideContext, 
   // 垂直翻转（包括同时水平翻转）的形状，文字绕形状中心转 180°；水平翻转时文字不变（实测）
   const textAbs = ownText && laid ? `<g transform="${boxTransform({ ...txXfrm!, rot: box.rot + txXfrm!.rot, flipH: false, flipV: false })}">${laid}</g>` : '';
   const inner = ownText ? '' : laid;
-  const text = inner && box.flipV ? `<g transform="rotate(180 ${n2(box.w / 2)} ${n2(box.h / 2)})">${inner}</g>` : inner;
+  const flipped = inner && box.flipV ? `<g transform="rotate(180 ${n2(box.w / 2)} ${n2(box.h / 2)})">${inner}</g>` : inner;
+  const text = textShadow(flipped, effect, effect === child(effRef.el, 'a:effectLst') ? effRef.ctx : colors, bgLayer ? 1 : fillOpacity(fill), gb, r.doc);
   if (!geom && !text && !textAbs && !bgLayer) return '';
   const cam = cameraTransform(scene3d, box.w, box.h, r.env.pres.width);
   const light = cameraLightFilter(scene3d, r.doc);
