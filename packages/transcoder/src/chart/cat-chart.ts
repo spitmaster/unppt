@@ -252,7 +252,7 @@ export function renderCategoryChart(plots: Plot[], plotArea: XEl | undefined, ar
       const at = frame.catPx(bandCenter(i));
       if (i % catFit.skip || i % sideSkip) return;
       if (!horizontal) {
-        axisText.push(sides.cat === 'b' && !sides.catMid ? categoryLabel(catFit, i, c, at, edge, edge + catC(catStyle.size), catStyle)
+        axisText.push(sides.cat === 'b' && !sides.catMid ? categoryLabel(catFit, i, c, at, edge, edge + catC(catStyle.size), catStyle, catTw)
           : label(c, at, sides.cat === 'b' ? edge + catC(catStyle.size) : edge - catC(catStyle.size), catStyle));
       }
       else axisText.push(sides.cat === 'l' ? sideLabel(sideLines[i], edge - sideAnchor(catStyle.size), at, catStyle, 'end', tw) : sideLabel(sideLines[i], edge + sideAnchor(catStyle.size), at, catStyle, 'start', tw));

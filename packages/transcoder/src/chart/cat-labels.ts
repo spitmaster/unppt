@@ -30,6 +30,21 @@ const ROT45_ROOM = 1.33, VERT_ROOM = 1, VERT_Y = 0.7, VERT_Y0 = 2, VERT_BAND = 0
  * 第一个字的上沿在轴下 0.56 × 字号；标签带比横排一行的高 (最多的字数 − 1.375) × 字号
  */
 const EA_TOP = 0.56, EA_LINE = 1.375;
+
+/** 东亚竖排的标签拆成段：中日韩字一个一段（正立、各占一个字号），连续的西文是一段（顺时针转 90° 躺着排，占它的文字宽度） */
+function eaRuns(text: string): { t: string; upright: boolean }[] {
+  const runs: { t: string; upright: boolean }[] = [];
+  for (const ch of text) {
+    const up = hasCjk(ch);
+    const last = runs[runs.length - 1];
+    if (!up && last && !last.upright) last.t += ch;
+    else runs.push({ t: ch, upright: up });
+  }
+  return runs;
+}
+
+/** 东亚竖排标签的长度（× 字号）：中日韩字各 1，西文段按文字宽度 */
+const eaLength = (text: string, s: number, tw?: TextWidth) => eaRuns(text).reduce((a, r) => a + (r.upright || !tw ? [...r.t].length : tw(r.t, s) / s), 0);
 /** 实测：多级分类外层每级的标签带比单级的少的高度 */
 const LEVEL_TRIM = 0.6;
 
@@ -70,7 +85,7 @@ export function catFitBand(fit: CatFit, base: number, cats: string[], s: number,
   if (fit.kind === 'wrap') return base + (fit.n - 1) * WRAP_LINE * s;
   if (fit.kind === 'rot') return (cats.some(hasCjk) ? SIN45 : ROT_SPAN) * widest() + ROT_BAND * s;
   if (fit.kind === 'vert') return widest() + VERT_BAND * s;
-  if (fit.kind === 'ea') return base + (Math.max(1, ...cats.filter((_, i) => i % fit.skip === 0).map((c) => [...c].length)) - EA_LINE) * s;
+  if (fit.kind === 'ea') return base + (Math.max(1, ...cats.filter((_, i) => i % fit.skip === 0).map((c) => eaLength(c, s, tw))) - EA_LINE) * s;
   return base;
 }
 
@@ -98,11 +113,24 @@ export const ROT_MIDCAT_RIGHT = 1.05;
 export const rotFirstCenter = (first: string, s: number, tw: TextWidth) => ROT_EDGE + ROT_SPAN * tw(first, s);
 
 /** 画第 i 个分类标签：x 是分类中心，axisY 是轴线，centerY 是横排时标签中心 */
-export function categoryLabel(fit: CatFit, i: number, text: string, x: number, axisY: number, centerY: number, st: TextStyle): string {
+export function categoryLabel(fit: CatFit, i: number, text: string, x: number, axisY: number, centerY: number, st: TextStyle, tw?: TextWidth): string {
   const s = st.size;
   if (i % fit.skip) return '';
   if (fit.kind === 'vert') return `<g transform="translate(${n2(x)} ${n2(axisY + VERT_Y * s - VERT_Y0)}) rotate(-90)">${label(fit.cut?.[i] ?? text, 0, 0, st, 'end')}</g>`;
-  if (fit.kind === 'ea') return [...text].map((ch, k) => label(ch, x, axisY + (EA_TOP + k + 0.5) * s, st)).join('');
+  if (fit.kind === 'ea') {
+    // 西文段顺时针转 90° 从上往下读（诊断样本：竖排分类标签里的数字、字母是躺着的）
+    let y = axisY + EA_TOP * s;
+    return eaRuns(text).map((r) => {
+      if (r.upright || !tw) {
+        const n = [...r.t].length, out = [...r.t].map((ch, k) => label(ch, x, y + (k + 0.5) * s, st)).join('');
+        y += n * s;
+        return out;
+      }
+      const len = tw(r.t, s), out = `<g transform="translate(${n2(x)} ${n2(y)}) rotate(90)">${label(r.t, 0, 0, st, 'start')}</g>`;
+      y += len;
+      return out;
+    }).join('');
+  }
   if (fit.kind === 'rot') {
     return `<g transform="translate(${n2(x - ROT_X * s)} ${n2(axisY + ROT_Y * s - ROT_Y0)}) rotate(-45)">${label(fit.cut?.[i] ?? text, 0, 0, st, 'end')}</g>`;
   }
