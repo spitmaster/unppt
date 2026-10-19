@@ -4,7 +4,8 @@ import { n2 } from '../../common/svg';
 import { attr, child } from '../../io/xml';
 import { cpart, label, linePath, markerSvg } from '../draw';
 import { dashCap } from '../trendline';
-import { labelText } from '../format';
+import { labelParts, labelText } from '../format';
+import { pointLabel, pointLabelText, shiftLabel } from '../point-labels';
 import { errRanges, errSvg } from '../error-bars';
 import type { ChartType, CategoryFrame } from '../chart-type';
 import type { AxisInfo, Plot } from '../model';
@@ -63,19 +64,21 @@ function renderLineArea(p: Plot, f: CategoryFrame, A: AxisInfo, out: string[], l
           });
         }
       }
-      const lb = s.labels;
-      if (lb) {
+      if (s.labels || s.pointLabels) {
         for (let k = 0; k < pts.length; k++) {
           const i = ptCat[k], v = s.vals[i] ?? 0;
+          const pl = pointLabel(s, i), lb = pl.labels;
+          if (!lb) continue;
           const q = pts[k];
-          const text = labelText(lb, v, 0, s.cats[i] ?? '', s.name, valFmt);
+          const text = pointLabelText(s, pl, i, () => labelText(lb, v, 0, s.cats[i] ?? '', s.name, valFmt), () => labelParts(lb, v, 0, s.cats[i] ?? '', valFmt));
           const pos = lb.pos ?? 'r';
           const key = `${s.index}x${i}l`;
-          if (pos === 't') labelsOut.push(cpart(key, label(text, q[0], q[1] - 6 - lb.style.size * 0.5, lb.style)));
-          else if (pos === 'b') labelsOut.push(cpart(key, label(text, q[0], q[1] + 6 + lb.style.size * 0.5, lb.style)));
-          else if (pos === 'l') labelsOut.push(cpart(key, label(text, q[0] - 6, q[1], lb.style, 'end')));
-          else if (pos === 'ctr') labelsOut.push(cpart(key, label(text, q[0], q[1], lb.style)));
-          else labelsOut.push(cpart(key, label(text, q[0] + 6, q[1], lb.style, 'start')));
+          const at = (svg: string) => labelsOut.push(cpart(key, shiftLabel(svg, pl, f.chart)));
+          if (pos === 't') at(label(text, q[0], q[1] - 6 - lb.style.size * 0.5, lb.style));
+          else if (pos === 'b') at(label(text, q[0], q[1] + 6 + lb.style.size * 0.5, lb.style));
+          else if (pos === 'l') at(label(text, q[0] - 6, q[1], lb.style, 'end'));
+          else if (pos === 'ctr') at(label(text, q[0], q[1], lb.style));
+          else at(label(text, q[0] + 6, q[1], lb.style, 'start'));
         }
       }
     }

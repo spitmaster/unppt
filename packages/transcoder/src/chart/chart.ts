@@ -154,7 +154,7 @@ export function renderChart(space: XEl | undefined, w: number, h: number, env: C
     return groupBackground(out);
   }
 
-  renderCategoryChart(plots, plotArea, { left, top, right, bottom }, { colors, part: env.part, baseText, makeAxis, tw, w, view: view3D, zh: lang.startsWith('zh'), plotBg, snap, inner: innerLayout }, out);
+  renderCategoryChart(plots, plotArea, { left, top, right, bottom }, { colors, part: env.part, baseText, makeAxis, tw, w, h, view: view3D, zh: lang.startsWith('zh'), plotBg, snap, inner: innerLayout }, out);
   return groupBackground(out);
 }
 

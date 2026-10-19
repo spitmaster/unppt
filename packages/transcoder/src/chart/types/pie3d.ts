@@ -8,7 +8,8 @@
 import { css, type ColorContext, type Rgba } from '../../model/color';
 import { n2 } from '../../common/svg';
 import { accentColor, cpart, label } from '../draw';
-import { labelText } from '../format';
+import { labelParts, labelText } from '../format';
+import { pointLabel, pointLabelText, shiftLabel } from '../point-labels';
 import type { Plot, Rect, SvgDefs, View3D } from '../model';
 
 /** 厚度、相机距离（半径的倍数）、俯角系数和侧壁明暗（实测） */
@@ -18,7 +19,7 @@ const TILT = 28.25 / 30;
 const shade = (t: number) => Math.max(0.4, 0.573 - 0.313 * Math.cos(t));
 const darker = (c: Rgba, k: number): Rgba => ({ r: Math.round(c.r * k), g: Math.round(c.g * k), b: Math.round(c.b * k), a: c.a });
 
-export function renderPie3D(p: Plot, area: Rect, view: View3D, colors: ColorContext, defs?: SvgDefs): string {
+export function renderPie3D(p: Plot, area: Rect, view: View3D, colors: ColorContext, defs?: SvgDefs, box = { w: 0, h: 0 }): string {
   const s = p.series[0];
   if (!s) return '';
   const vals = s.vals.map((v) => Math.max(0, v ?? 0));
@@ -106,11 +107,13 @@ export function renderPie3D(p: Plot, area: Rect, view: View3D, colors: ColorCont
     // 顶面
     const top = `M${pt(proj(ex[0], 0, ex[1]))}${arc.map((t) => `L${pt(onRim(t, 0, ex))}`).join('')}Z`;
     tops.push(cpart(`${s.index}x${i}`, `<path d="${top}" fill="${css(color)}" stroke="#fff" stroke-width="1.5" stroke-linejoin="round"/>`));
-    const lb = s.labels;
+    const pl = pointLabel(s, i), lb = pl.labels;
     if (lb) {
       const rr = lb.pos === 'ctr' ? 0.5 : lb.pos === 'outEnd' ? 1.15 : 0.8;
       const q = proj(rr * Math.cos(mid) + ex[0], 0, rr * Math.sin(mid) + ex[1]);
-      labels.push(cpart(`${s.index}x${i}l`, label(labelText(lb, v, total, s.cats[i] ?? '', s.name, s.valFmt ?? 'General'), ox + S * q[0], oy + S * q[1], lb.style)));
+      const vf = s.valFmt ?? 'General';
+      const text = pointLabelText(s, pl, i, () => labelText(lb, v, total, s.cats[i] ?? '', s.name, vf), () => labelParts(lb, v, total, s.cats[i] ?? '', vf));
+      labels.push(cpart(`${s.index}x${i}l`, shiftLabel(label(text, ox + S * q[0], oy + S * q[1], lb.style), pl, box)));
     }
     ang = a2;
   });

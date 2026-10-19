@@ -8,6 +8,8 @@ import type { PixelGrid } from './pixel-grid';
 /** font 是西文字体；eaFont 是汉字用的东亚字体（没有时汉字由浏览器按 font 回退） */
 export interface TextStyle { size: number; color: Rgba; bold: boolean; font: string; eaFont?: string; rot?: number; spc?: number }
 
+/** 单个数据点的标签（point-labels.ts）：labels 是 undefined 时不显示；dx / dy 是手动拖开的偏移（图表宽、高的比例）；rich 是自定义文字 */
+export interface PointLabel { labels?: Labels; dx: number; dy: number; rich?: ({ text: string } | { field: string; text: string })[] }
 export interface Labels { val: boolean; pct: boolean; cat: boolean; ser: boolean; pos?: string; fmt?: string; style: TextStyle; sep?: string }
 
 /** 渐变填充（色标和角度，角度是度） */
@@ -34,6 +36,9 @@ export interface Series {
   /** 单个数据点的边框（c:dPt 的 a:ln）；null 是"无线条" */
   pointLines?: Map<number, Line | null>;
   labels?: Labels;
+  /** 单个数据点的标签（c:dLbl，point-labels.ts）；labelCells 是"单元格中的值"字段的缓存 */
+  pointLabels?: Map<number, PointLabel>;
+  labelCells?: Map<number, string>;
   name: string;
   cats: string[];
   /** 多级分类的外层（从里往外），每级是各组的起始分类序号和名称 */

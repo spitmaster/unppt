@@ -3,28 +3,14 @@ import { colorIn, type ColorContext, type Rgba } from '../model/color';
 import { findFillEl, parseFill } from '../style/fill';
 import { parseLine, type Line } from '../style/line';
 import { attr, child, children, findAll, numAttr, type XEl } from '../io/xml';
-import { ACCENTS, textStyle } from './draw';
+import { ACCENTS } from './draw';
 import { cacheValues, formatNumber } from './format';
 import { chartTypeOfTag } from './chart-types';
 import { axesOf, axId, axisReversed } from './axis';
 import { readErrBars } from './error-bars';
 import { readTrendlines } from './trendline';
-import type { GradFill, Labels, PattFill, Plot, Series, TextStyle } from './model';
-
-export function readLabels(d: XEl | undefined, base: Labels | undefined, colors: ColorContext, text: TextStyle): Labels | undefined {
-  if (!d) return base;
-  if (attr(child(d, 'c:delete'), 'val') === '1') return undefined;
-  const flag = (n: string, def: boolean) => { const v = attr(child(d, `c:${n}`), 'val'); return v === undefined ? def : v === '1'; };
-  const l: Labels = {
-    val: flag('showVal', base?.val ?? false), pct: flag('showPercent', base?.pct ?? false),
-    cat: flag('showCatName', base?.cat ?? false), ser: flag('showSerName', base?.ser ?? false),
-    pos: attr(child(d, 'c:dLblPos'), 'val') ?? base?.pos,
-    fmt: attr(child(d, 'c:numFmt'), 'formatCode') ?? base?.fmt,
-    style: textStyle(child(d, 'c:txPr'), colors, base?.style ?? text),
-    sep: child(d, 'c:separator')?.text ?? base?.sep,
-  };
-  return l.val || l.pct || l.cat || l.ser ? l : undefined;
-}
+import type { GradFill, PattFill, Plot, Series, TextStyle } from './model';
+import { readLabels, readPointLabels } from './point-labels';
 
 /** spPr 里的纯色填充 */
 function solidOf(spPr: XEl | undefined, colors: ColorContext, part: string): Rgba | undefined {
@@ -55,6 +41,9 @@ export function readPlots(plotArea: XEl | undefined, colors: ColorContext, part:
     const kind = type.kind;
     const rules = type.seriesRules(p, local);
     const plotLabels = readLabels(child(p, 'c:dLbls'), undefined, colors, baseText);
+    // 日期轴：只画有日期的点，数值比日期多出来的不画、也不参与坐标轴范围（样本：38 个日期、50 个数值的折线）
+    const ids = children(p, 'c:axId').map((a) => attr(a, 'val') ?? '');
+    const dateCats = !rules.xy && children(plotArea, 'c:dateAx').some((a) => ids.includes(axId(a)));
     const series: Series[] = children(p, 'c:ser').map((s) => {
       const idx = numAttr(child(s, 'c:idx'), 'val') ?? serialIdx;
       const index = serialIdx++;
@@ -64,7 +53,7 @@ export function readPlots(plotArea: XEl | undefined, colors: ColorContext, part:
       const line = parseLine([child(spPr, 'a:ln')], [colors], part);
       const cat = cacheValues(child(s, rules.xy ? 'c:xVal' : 'c:cat'));
       const val = cacheValues(child(s, rules.xy ? 'c:yVal' : 'c:val'));
-      const n = Math.max(cat.count, val.count);
+      const n = dateCats && cat.count ? cat.count : Math.max(cat.count, val.count);
       const cats: string[] = [];
       const vals: (number | null)[] = [];
       for (let i = 0; i < n; i++) {
@@ -106,9 +95,12 @@ export function readPlots(plotArea: XEl | undefined, colors: ColorContext, part:
       const mkLine = parseLine([child(child(mk, 'c:spPr'), 'a:ln')], [colors], part);
       const marker = rules.marker(symbol);
       const name = findAll(child(s, 'c:tx'), 'c:v')[0]?.text ?? child(child(s, 'c:tx'), 'c:v')?.text ?? `系列 ${idx + 1}`;
+      const serLabels = readLabels(child(s, 'c:dLbls'), plotLabels, colors, baseText);
+      const pts = readPointLabels(child(s, 'c:dLbls'), serLabels, colors, baseText, s);
       return {
         index,
-        labels: readLabels(child(s, 'c:dLbls'), plotLabels, colors, baseText),
+        labels: serLabels,
+        ...(pts ? { pointLabels: pts.points, ...(pts.cells ? { labelCells: pts.cells } : {}) } : {}),
         name,
         cats, vals, ...(catLevels ? { catLevels } : {}), ...(val.format && !/^general$/i.test(val.format) ? { valFmt: val.format } : {}),
         xs: rules.xy ? cats.map((_c, i) => { const v = Number(cat.pts.get(i)); return cat.pts.has(i) && !isNaN(v) ? v : i + 1; }) : undefined,

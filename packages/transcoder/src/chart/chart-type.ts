@@ -37,6 +37,8 @@ export interface CategoryFrame {
   valPx(f: number): number;
   /** 整像素对齐（柱子的边用） */
   snap: PixelGrid;
+  /** 图表的宽高（手动拖开的数据标签按它的比例偏移） */
+  chart: { w: number; h: number };
 }
 
 export interface ChartType {
