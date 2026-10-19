@@ -22,6 +22,9 @@ async function tableStyles(r: FrameRenderer): Promise<XEl | undefined> {
   return rel ? pres.pkg.xml(rel.target) : undefined;
 }
 
+/** 内置的"无样式，网格型" */
+const NO_STYLE_GRID = '{5940675A-B579-460E-94D1-54222C63F5DA}';
+
 /** origin 是表格在幻灯片上的位置（图案填充从幻灯片原点对齐） */
 export async function renderTable(tbl: XEl | undefined, origin: { x: number; y: number }, r: FrameRenderer, ctx: SlideContext): Promise<string> {
   if (!tbl) return '';
@@ -29,7 +32,8 @@ export async function renderTable(tbl: XEl | undefined, origin: { x: number; y: 
   const tblPr = child(tbl, 'a:tblPr');
   const flags = tableFlags(tblPr);
   const styleId = child(tblPr, 'a:tableStyleId')?.text.trim();
-  const style = findTableStyle(await tableStyles(r), styleId);
+  // 没写表格样式：PowerPoint 按内置的"无样式，网格型"画（黑色 1 磅网格线，文字 tx1 色，盖过母版 otherStyle 的颜色；实测 table-no-style-other）
+  const style = findTableStyle(await tableStyles(r), styleId || NO_STYLE_GRID);
   if (styleId && !style) r.env.pres.warn('表格样式缺失');
 
   const cols = children(child(tbl, 'a:tblGrid'), 'a:gridCol').map((c) => px(numAttr(c, 'w')));
@@ -71,6 +75,9 @@ export async function renderTable(tbl: XEl | undefined, origin: { x: number; y: 
     return renderText(child(c.tc, 'a:txBody'), [ctx.master.txStyles.other, defaults], [bodyPr], box, env, out);
   };
   const cells: Cell[] = [];
+  const tcGrid = rows.map((tr) => children(tr, 'a:tc'));
+  /** 网格 (ri, ci) 处的单元格（含被合并掉的）自己写了某条边 */
+  const hasLn = (ri: number, ci: number, name: string) => !!child(child(tcGrid[ri]?.[ci], 'a:tcPr'), name);
   const rowH = rows.map((tr) => px(numAttr(tr, 'h')));
   for (let ri = 0; ri < nR; ri++) {
     const tcs = children(rows[ri], 'a:tc');
@@ -120,17 +127,19 @@ export async function renderTable(tbl: XEl | undefined, origin: { x: number; y: 
     }
     // 文字：行高可能被撑高了，按最终高度重排（垂直对齐需要）
     if (c.text) texts.push(await cellText(c, { x, y, w, h }));
-    // 边框：单元格自己的 lnL/lnR/lnT/lnB 优先，否则用表格样式
-    const side = (own: string, styleSide: Line | undefined) => {
+    // 边框：单元格自己的 lnL/lnR/lnT/lnB 优先；自己没写、相邻单元格在这条公共边上写了时由相邻的画（一条边只有一种线），
+    // 都没写才用表格样式（样本：下面的单元格没写 lnT、上面的写了虚线 lnB，PowerPoint 画虚线，不画样式的网格线）
+    const side = (own: string, styleSide: Line | undefined, shared = false) => {
       const ln = child(tcPr, own);
       if (ln) return parseLine([ln], [colors], ctx.part, ctx.pres.displayScale);
-      return styleSide;
+      return shared ? undefined : styleSide;
     };
+    const across = (n: number, from: number, f: (k: number) => boolean) => Array.from({ length: n }, (_, k) => from + k).some(f);
     const sb = c.style.borders;
-    const left = side('a:lnL', sb.left);
-    const right = side('a:lnR', sb.right);
-    const top = side('a:lnT', sb.top);
-    const bottom = side('a:lnB', sb.bottom);
+    const left = side('a:lnL', sb.left, across(c.rowSpan, c.ri, (k) => hasLn(k, c.ci - 1, 'a:lnR')));
+    const right = side('a:lnR', sb.right, across(c.rowSpan, c.ri, (k) => hasLn(k, c.ci + c.span, 'a:lnL')));
+    const top = side('a:lnT', sb.top, across(c.span, c.ci, (k) => hasLn(c.ri - 1, k, 'a:lnB')));
+    const bottom = side('a:lnB', sb.bottom, across(c.span, c.ci, (k) => hasLn(c.ri + c.rowSpan, k, 'a:lnT')));
     const seg = (l: Line | undefined, x1: number, y1: number, x2: number, y2: number) => {
       if (l) borders.push(`<line x1="${n2(x1)}" y1="${n2(y1)}" x2="${n2(x2)}" y2="${n2(y2)}"${strokeAttrs({ ...l, head: undefined, tail: undefined }, r.doc, 'norm')}/>`);
     };
