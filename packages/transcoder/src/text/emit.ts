@@ -5,6 +5,7 @@ import { reflection } from '../effects/reflection';
 import { child, type XEl } from '../io/xml';
 import { decorate } from './decorations';
 import { textEl } from './svg-text';
+import { hangable } from './linebreak';
 import type { Atom, Line, ParagraphLayout, TextEnv } from './types';
 
 /** 基线对齐整像素的最大字号（像素，20 磅） */
@@ -69,6 +70,14 @@ export function placeLines(
       const box = line.size * 1.2;
       const natural = line.ascent + line.descent || 1;
       let baseline = lh > box + 0.01 ? y + TALL_BASELINE * lh : y + (lh - box) + box * (line.ascent / natural);
+      // 字体对齐（fontAlgn）：行高不小于单倍时，ctr 把字的上伸 + 下伸框居中放进行底那个单倍行框，t 让它的顶对齐单倍行框的顶，
+      // b 在加大的行里比自动再上移半个下伸（实测 text-fontalgn：8 种字体 × 80/100/150% 行距逐行量墨迹，单倍和加大的行误差 ≤ 0.25 磅；
+      // 行高小于单倍的没管）
+      if (lh >= box - 0.01) {
+        if (pl.fontAlgn === 'ctr') baseline = y + lh - box / 2 + (line.ascent - line.descent) / 2;
+        else if (pl.fontAlgn === 't') baseline = y + lh - box + line.ascent;
+        else if (pl.fontAlgn === 'b' && lh > box + 0.01) baseline -= line.descent / 2;
+      }
       // 列从左往右排的竖排：把行的位置翻过来（行内基线位置不变）
       if (linesLeftToRight) baseline = outer.h - y - lh + (baseline - y);
       // 横排文字的基线对齐整像素（TextEnv.pixelTop）：只对 20 磅以下的行（更大的字 PowerPoint 纵向按 1/4 像素抗锯齿，实测）
@@ -82,9 +91,12 @@ export function placeLines(
       let lastInk = line.atoms.length - 1;
       while (lastInk > 0 && line.atoms[lastInk].space) lastInk--;
       const stretch = (a: Atom, k: number) => (pl.algn === 'dist' ? k < lastInk : k < line.atoms.length - 1 && (a.space || a.wide));
-      if (((pl.algn === 'just' && li < pl.lines.length - 1) || pl.algn === 'dist') && wrap && free > 0) {
+      // 行尾标点悬挂在框外的行：除去这个标点按放满算，段末行也拉开（实测：两端对齐的段末行 10 字 + 悬挂的句号，10 个字拉开到框宽）
+      const hung = pl.algn === 'just' && free < -0.01 && lastInk === line.atoms.length - 1 && hangable(line.atoms[lastInk].text);
+      const room = hung ? free + line.atoms[lastInk].width : free;
+      if (((pl.algn === 'just' && (li < pl.lines.length - 1 || hung)) || pl.algn === 'dist') && wrap && room > 0) {
         const gaps = line.atoms.filter(stretch).length;
-        extra = gaps ? free / gaps : 0;
+        extra = gaps ? room / gaps : 0;
       }
       const xs: number[] = [];
       let cx = x;
