@@ -64,7 +64,7 @@ function renderPie(p: Plot, x: number, y: number, w: number, h: number, colors: 
   // 有标签时 PowerPoint 会缩小给标签留空间（约宽的 84%、高的 86.7%，"最佳位置"的标签放在扇区里也缩）；绘图区手动摆放时不缩
   // （样本：标签拖到饼外的饼图铺满手动内框）
   const labeled = s.labels || [...(s.pointLabels?.values() ?? [])].some((l) => l.labels);
-  const r = (labeled && !manual ? Math.min(w * 0.84, h * 0.867) : Math.min(w, h)) / 2;
+  const r = (labeled && !manual ? (p.kind === 'doughnut' ? Math.min(w * 0.84, h * 0.867) : Math.min(w, h) * 0.865) : Math.min(w, h)) / 2;
   const ri = p.kind === 'doughnut' ? r * p.holeSize / 100 : 0;
   let ang = (p.firstSliceAng - 90) * Math.PI / 180;
   const out: string[] = [];
