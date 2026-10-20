@@ -12,6 +12,7 @@ import { BulletNumbering } from './bullets';
 import { emitParagraphs, placeLines } from './emit';
 import { makeMeasurer } from './measure';
 import { layoutParagraph } from './paragraph';
+import { splitBreaks } from './split-breaks';
 import { fontRefLevels, styleFonts } from './style';
 import type { ParagraphLayout, StyleChain, TextBox, TextEnv } from './types';
 import { warpOf, warpText } from './warp';
@@ -45,7 +46,7 @@ export async function renderText(
   out?: { height: number },
 ): Promise<string> {
   if (!txBody) return '';
-  const paras = children(txBody, 'a:p');
+  const paras = children(txBody, 'a:p').flatMap(splitBreaks);
   if (!paras.length) return '';
   // 页码字段不写 a:t 也显示页码（样本：幻灯片上的页码占位符只有 <a:fld type="slidenum"/>）
   const hasText = paras.some((p) => p.children.some((r) => (r.name === 'a:r' || r.name === 'a:fld') && ((child(r, 'a:t')?.text ?? '').length > 0
