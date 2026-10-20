@@ -4,13 +4,13 @@
 
 - 转码器是纯函数：字节进、文件出，不读写磁盘、不联网，不依赖外部程序和原生插件，可以直接放进云函数；
 - 产物里自带播放器（零依赖），观看只需要浏览器；
-- 当前版本 0.1.0（第一个公开试用版）。
+- 当前版本 0.2.0。
 
 ## 安装
 
 ```bash
 npm install @unppt/unppt                   # 在代码里调用
-npx -p @unppt/unppt unppt convert 课件.pptx  # 或者不安装，直接用命令行
+npx -p @unppt/unppt unppt 课件.pptx  # 或者不安装，直接用命令行
 ```
 
 需要 Node.js 20.12 及以上。
@@ -18,8 +18,8 @@ npx -p @unppt/unppt unppt convert 课件.pptx  # 或者不安装，直接用命�
 ## 命令行
 
 ```bash
-unppt convert 课件.pptx -o out/index.html --system-fonts
-unppt convert 课件.pptx -o out --output paged            # 按需加载：入口 HTML + 每页单独的数据文件
+unppt 课件.pptx -o out/index.html --system-fonts
+unppt 课件.pptx -o out --output paged            # 按需加载：入口 HTML + 每页单独的数据文件
 ```
 
 | 选项 | 说明 |

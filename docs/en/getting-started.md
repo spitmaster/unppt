@@ -56,21 +56,21 @@ The npm package is **`@unppt/unppt`** and the command it installs is **`unppt`**
 flowchart TD
   Q{"How will you use it?"} -->|"Convert often from the command line"| G["Global install<br/>npm install -g @unppt/unppt"]
   Q -->|"Call it from your project code"| L["Project install<br/>npm install @unppt/unppt"]
-  Q -->|"Just try it, no install"| X["Run directly<br/>npx @unppt/unppt convert ..."]
+  Q -->|"Just try it, no install"| X["Run directly<br/>npx @unppt/unppt ..."]
 ```
 
 **Option 1: global install (recommended for command-line users)**
 
 ```bash
 npm install -g @unppt/unppt
-unppt convert deck.pptx -o out/index.html
+unppt deck.pptx -o out/index.html
 ```
 
 **Option 2: install into your project**
 
 ```bash
 npm install @unppt/unppt
-npx unppt convert deck.pptx -o out/index.html
+npx unppt deck.pptx -o out/index.html
 ```
 
 In your code you can then `import { convert } from '@unppt/unppt'`; see [Usage](usage.md#3-javascript-api).
@@ -78,7 +78,7 @@ In your code you can then `import { convert } from '@unppt/unppt'`; see [Usage](
 **Option 3: run without installing**
 
 ```bash
-npx @unppt/unppt convert deck.pptx -o out/index.html
+npx @unppt/unppt deck.pptx -o out/index.html
 ```
 
 The first run downloads the package temporarily, so give it a moment.
@@ -100,7 +100,7 @@ mkdir out
 **Step 2: convert**
 
 ```bash
-unppt convert demo.pptx -o out/index.html --system-fonts
+unppt demo.pptx -o out/index.html --system-fonts
 ```
 
 - `convert`: the sub-command (currently the only one).
@@ -133,7 +133,7 @@ sequenceDiagram
   participant CLI as unppt CLI
   participant T as transcoder convert()
   participant Disk
-  You->>CLI: unppt convert demo.pptx -o out/index.html
+  You->>CLI: unppt demo.pptx -o out/index.html
   CLI->>Disk: read demo.pptx and font folders
   CLI->>T: file contents + options
   T->>CLI: write("index.html", data stream), each slide appended once converted
@@ -168,7 +168,7 @@ sequenceDiagram
 ### 5.2 single (default)
 
 ```bash
-unppt convert demo.pptx -o out/index.html
+unppt demo.pptx -o out/index.html
 ```
 
 ```text
@@ -190,7 +190,7 @@ out/
 ### 5.3 paged (load on demand)
 
 ```bash
-unppt convert demo.pptx -o out --output paged
+unppt demo.pptx -o out --output paged
 ```
 
 Note: for `paged` / `pages`, `-o` is a **folder** (the entry is `index.html` inside it). Without `-o`, the default is a folder named after the input (e.g. `demo/`).
@@ -212,7 +212,7 @@ Slide data is loaded with `<script>` tags (not fetch), so it works when double-c
 ### 5.4 pages (on demand + one HTML per slide)
 
 ```bash
-unppt convert demo.pptx -o out --output pages
+unppt demo.pptx -o out --output pages
 ```
 
 On top of `paged` you get:
@@ -229,7 +229,7 @@ A single-slide HTML knows only its own slide, so links in the deck that jump to 
 ### 5.5 data (data only)
 
 ```bash
-unppt convert demo.pptx --data -o out/deck.json
+unppt demo.pptx --data -o out/deck.json
 ```
 
 ```text
@@ -392,13 +392,13 @@ Recommended:
 
 ```bash
 # Converting on your own computer; viewers use the same kind of system
-unppt convert demo.pptx -o out/index.html --system-fonts
+unppt demo.pptx -o out/index.html --system-fonts
 
 # Viewers may not have the fonts (e.g. phones)
-unppt convert demo.pptx -o out/index.html --system-fonts --embed-fonts
+unppt demo.pptx -o out/index.html --system-fonts --embed-fonts
 
 # On a Linux server with fonts in /opt/fonts
-unppt convert demo.pptx -o out/index.html --fonts /opt/fonts --embed-fonts
+unppt demo.pptx -o out/index.html --fonts /opt/fonts --embed-fonts
 ```
 
 ---
@@ -426,7 +426,7 @@ Known gaps: time scaling on chart date axes (min/max, month/year intervals), ver
 
 | Symptom | Cause and fix |
 |---|---|
-| `unppt` is not recognized / command not found | Not installed globally, or the npm global folder is not on PATH. Use `npx @unppt/unppt convert ...`, or reinstall with `npm install -g @unppt/unppt` |
+| `unppt` is not recognized / command not found | Not installed globally, or the npm global folder is not on PATH. Use `npx @unppt/unppt ...`, or reinstall with `npm install -g @unppt/unppt` |
 | Node version error or syntax error on install/run | Node is older than 20.12. Check with `node -v` and upgrade |
 | It only prints a long "usage" text | The command is wrong: the first argument must be `convert`, followed by the input file; a misspelled option also prints usage. See [Usage](usage.md#2-cli-reference) |
 | Line breaks differ from PowerPoint | Fonts missing at conversion time. Check the `缺少字体` (missing fonts) line and provide them with `--system-fonts` or `--fonts <dir>` |

@@ -47,10 +47,10 @@ PowerPoint 的替代规则（代码里实测得到的）：
 
 ```bash
 # 用本机系统字体（Windows 上还会用到 Office 自带的私有字体、云字体，例如 Aptos）
-npx @unppt/unppt convert 演示文稿.pptx -o out/index.html --system-fonts
+npx @unppt/unppt 演示文稿.pptx -o out/index.html --system-fonts
 
 # 指定字体目录（可以写多次；会递归查找 .ttf / .otf / .ttc）
-npx @unppt/unppt convert 演示文稿.pptx -o out/index.html --fonts ./fonts --fonts ./more-fonts
+npx @unppt/unppt 演示文稿.pptx -o out/index.html --fonts ./fonts --fonts ./more-fonts
 ```
 
 **代码里（例如云函数，Linux 上通常没有微软字体，必须自己带）：**
@@ -126,11 +126,11 @@ console.log(result.report.missingFonts);  // 还缺哪些字体
 
 ```bash
 # 在主线程画图，最省内存
-npx @unppt/unppt convert 演示文稿.pptx -o out/index.html --jobs 1
+npx @unppt/unppt 演示文稿.pptx -o out/index.html --jobs 1
 # 或者干脆不出图
-npx @unppt/unppt convert 演示文稿.pptx -o out/index.html --no-images
+npx @unppt/unppt 演示文稿.pptx -o out/index.html --no-images
 # 看用时和峰值内存
-npx @unppt/unppt convert 演示文稿.pptx -o out/index.html --stats
+npx @unppt/unppt 演示文稿.pptx -o out/index.html --stats
 ```
 
 ---
@@ -255,7 +255,7 @@ flowchart TD
 Issue 里请写明：
 
 1. unppt 版本（`npx @unppt/unppt` 不带参数运行时第一行就是版本号）；
-2. 完整的转码命令，例如 `unppt convert demo.pptx -o out/index.html --system-fonts --embed-fonts`；
+2. 完整的转码命令，例如 `unppt demo.pptx -o out/index.html --system-fonts --embed-fonts`；
 3. 命令行输出的 `缺少字体：` 和 `提示：` 两类信息；
 4. 用的浏览器和版本；
 5. 对照截图：PowerPoint 放映的画面和 unppt 播放的画面（截图同样只能用可以公开的内容）。
@@ -266,9 +266,9 @@ Issue 里请写明：
 
 ## 版本号
 
-- 当前版本 **0.1.0**，npm 包名 `@unppt/unppt`，需要 Node.js 20.12 或更高版本；
+- 当前版本 **0.2.0**，npm 包名 `@unppt/unppt`，需要 Node.js 20.12 或更高版本；
 - 版本号格式是"主版本.次版本.修订号"。0.x 表示还在早期阶段，接口和选项可能随版本调整，升级前请看 GitHub 上的发布说明；
 - 每个发布版本在 GitHub 上有对应的标签（`v0.1.0` 这样的格式）；同一个版本号在 npm 上只发布一次；
-- 想固定版本：`npm install @unppt/unppt@0.1.0`，或 `npx @unppt/unppt@0.1.0 convert ...`；查看 npm 上的最新版本：`npm view @unppt/unppt version`；
+- 想固定版本：`npm install @unppt/unppt@0.2.0`，或 `npx @unppt/unppt@0.2.0 ...`；查看 npm 上的最新版本：`npm view @unppt/unppt version`；
 - **产物格式有自己的版本号**：`deck.json` 里的 `"format": "unppt-deck", "version": 1`。格式有变化时增加这个数字，播放器遇到比自己新的版本会明确报错（提示升级播放器）；
 - 每份产物都**带着自己的播放器**，所以已经转好的课件不受以后升级影响；想用新版本的效果，重新转码即可。

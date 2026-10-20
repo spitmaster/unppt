@@ -213,7 +213,7 @@ sequenceDiagram
   participant O as OutputForm（output/）
   participant W as write 回调
 
-  U->>CLI: unppt convert 课件.pptx
+  U->>CLI: unppt 课件.pptx
   CLI->>CLI: 读 resvg.wasm，按 CPU 和内存建出图线程池
   CLI->>C: convert(数据源, 选项)
   C->>C: 打开 ZIP，读 OPC 包，加载 Presentation（主题、母版、版式）

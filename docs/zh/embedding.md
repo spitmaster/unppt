@@ -61,8 +61,8 @@ flowchart LR
 
 ```bash
 npm install -g @unppt/unppt
-unppt convert 课件.pptx                     # 得到 课件.html（single 形式，一个文件）
-unppt convert 课件.pptx --output paged      # 得到 课件/ 目录，入口 课件/index.html
+unppt 课件.pptx                     # 得到 课件.html（single 形式，一个文件）
+unppt 课件.pptx --output paged      # 得到 课件/ 目录，入口 课件/index.html
 ```
 
 然后：
@@ -493,7 +493,7 @@ ref.current.injectJavaScript(`window.unppt.handle('{"id":1,"cmd":"next"}'); true
 
 ### 7.3 自己托管播放器：`mount`（高级）
 
-如果你想把转码和播放拆开——转码只输出数据（`unppt convert 课件.pptx --data` 得到 `deck.json`），播放器由你自己的页面加载——可以用播放器的 `mount` 函数：
+如果你想把转码和播放拆开——转码只输出数据（`unppt 课件.pptx --data` 得到 `deck.json`），播放器由你自己的页面加载——可以用播放器的 `mount` 函数：
 
 ```js
 // player.js 是 IIFE 格式，全局名 UnpptPlayer

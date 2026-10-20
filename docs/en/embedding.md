@@ -61,8 +61,8 @@ The simplest option. Convert first (see the usage guide for all options):
 
 ```bash
 npm install -g @unppt/unppt
-unppt convert deck.pptx                     # produces deck.html (single form, one file)
-unppt convert deck.pptx --output paged      # produces the deck/ folder, entry deck/index.html
+unppt deck.pptx                     # produces deck.html (single form, one file)
+unppt deck.pptx --output paged      # produces the deck/ folder, entry deck/index.html
 ```
 
 Then:
@@ -495,7 +495,7 @@ ref.current.injectJavaScript(`window.unppt.handle('{"id":1,"cmd":"next"}'); true
 
 ### 7.3 Hosting the player yourself: `mount` (advanced)
 
-If you want to separate converting and playing (the converter outputs data only, `unppt convert deck.pptx --data` gives `deck.json`, and your own page loads the player), use the player's `mount` function:
+If you want to separate converting and playing (the converter outputs data only, `unppt deck.pptx --data` gives `deck.json`, and your own page loads the player), use the player's `mount` function:
 
 ```js
 // player.js is an IIFE bundle with the global name UnpptPlayer

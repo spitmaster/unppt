@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 /**
- * 命令行：unppt convert <输入.pptx> [-o 输出.html] [--fonts 目录]... [--system-fonts] [--output 形式] [--inline-limit 字节]
+ * 命令行：unppt <输入.pptx> [-o 输出.html] [--fonts 目录]... [--system-fonts] [--output 形式] [--inline-limit 字节]
+ * （旧写法 unppt convert <输入.pptx> 仍然可用）
  *
  * 这一层负责读写文件；转码本身（convert）不碰文件系统。
  */
@@ -94,9 +95,11 @@ async function writeTo(base: string, rel: string, data: WriteData) {
   await done;
 }
 
-function usage(): never {
+function usage(code = 1): never {
   console.log(`unppt ${UNPPT_VERSION}
-用法：unppt convert <输入.pptx> [-o 输出.html] [选项]
+用法：unppt <输入.pptx> [选项]
+      不加选项时转成和输入同名的 .html，放在 pptx 所在的文件夹（整页图 pic/、缩略图 thum/、prop.json 也在那里）
+      （旧写法 unppt convert <输入.pptx> [选项] 仍然可用）
 
 选项：
   -o, --out <文件>        输出文件，默认和输入同名的 .html（--data 时为 .json）；
@@ -111,14 +114,20 @@ function usage(): never {
   --jobs <n|auto>         出图用几个线程同时画，默认 auto（按 CPU 数和可用内存自动定）；1 是在主线程画
   --inline-limit <字节>   小于这个大小的图片内联进 HTML，默认 2097152
   --stats                 结束时显示用时和峰值内存
-  -q, --quiet             不显示进度`);
-  process.exit(1);
+  -q, --quiet             不显示进度
+  -v, --version           显示版本号
+  -h, --help              显示这份说明`);
+  process.exit(code);
 }
 
 async function main() {
-  const args = process.argv.slice(2);
-  if (args[0] !== 'convert' || !args[1]) usage();
-  const input = resolve(args[1]);
+  let args = process.argv.slice(2);
+  if (args[0] === '-v' || args[0] === '--version') { console.log(UNPPT_VERSION); return; }
+  if (args[0] === '-h' || args[0] === '--help') usage(0);
+  // 旧写法：unppt convert <输入.pptx>
+  if (args[0] === 'convert') args = args.slice(1);
+  if (!args[0] || args[0].startsWith('-')) usage();
+  const input = resolve(args[0]);
   let out = '';
   const fontDirs: string[] = [];
   const privateDirs: string[] = [];
@@ -129,7 +138,7 @@ async function main() {
   let quiet = false;
   let stats = false;
   let jobs = 'auto';
-  for (let i = 2; i < args.length; i++) {
+  for (let i = 1; i < args.length; i++) {
     const a = args[i];
     if (a === '-o' || a === '--out') out = args[++i];
     else if (a === '--fonts') fontDirs.push(args[++i]);

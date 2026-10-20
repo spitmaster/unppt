@@ -1,5 +1,19 @@
 # 更新日志 / Changelog
 
+## 0.2.0（2026-10-20）
+
+**中文**
+
+- 命令行简化：`unppt 课件.pptx` 直接转码，输出和 pptx 同名的 `.html`，放在 pptx 所在的文件夹；其它功能都用选项加。旧写法 `unppt convert 课件.pptx` 仍然可用。
+- 新增 `unppt -v` / `--version`（版本号）、`unppt -h` / `--help`（用法）。
+- 安装成命令：`npm install -g @unppt/unppt`（公司内网镜像下载失败时加 `--registry https://registry.npmjs.org/`）。
+
+**English**
+
+- Simpler CLI: `unppt deck.pptx` converts directly and writes `deck.html` next to the .pptx; everything else is an option. The old form `unppt convert deck.pptx` still works.
+- New `unppt -v` / `--version` and `unppt -h` / `--help`.
+- Install as a command: `npm install -g @unppt/unppt`.
+
 ## 0.1.0（2026-10-20）
 
 第一个公开试用版。/ First public preview release.

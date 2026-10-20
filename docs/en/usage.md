@@ -39,10 +39,12 @@ Every form also writes `prop.json`, and by default `pic/{n}.jpg` and `thum/{n}.j
 ### 2.1 Syntax
 
 ```bash
-unppt convert <input.pptx> [-o output] [options]
+unppt <input.pptx> [-o output] [options]
 ```
 
-- The first argument must be `convert`, the second the input file.
+- The first argument is the input file. With no options it writes an `.html` with the same name next to the .pptx. Everything else is an option.
+- The 0.1.0-and-earlier form `unppt convert <input.pptx>` still works (`convert` is optional since 0.2.0).
+- `unppt -v` prints the version, `unppt -h` prints the usage.
 - With no arguments, wrong arguments, or an unknown option, it prints the version and usage and exits with code 1.
 - If conversion fails (e.g. the file is not a valid pptx) it prints the error and exits with code 1. On success the exit code is 0.
 
@@ -63,12 +65,14 @@ Everything below comes from `packages/transcoder/src/cli.ts`:
 | `--inline-limit <bytes>` | number | `2097152` (2 MB) | Images smaller than this are inlined in the HTML (only affects `single`) |
 | `--stats` | none | off | Print slide count, time and peak memory at the end |
 | `-q`, `--quiet` | none | off | Show no progress and no result lines (including missing fonts and notices) |
+| `-v`, `--version` | none | — | Print the version only |
+| `-h`, `--help` | none | — | Print the usage (exit code 0) |
 
 ### 2.3 Where output goes without `-o`
 
 By default it goes to **the folder of the input file**, named after the input:
 
-| Form | Output of `unppt convert D:\work\demo.pptx` |
+| Form | Output of `unppt D:\work\demo.pptx` |
 |---|---|
 | `single` | `D:\work\demo.html` |
 | `paged` / `pages` | `D:\work\demo\index.html` |
@@ -92,22 +96,22 @@ The CLI messages are in Chinese:
 
 ```bash
 # Most common: self-contained HTML with local fonts
-unppt convert demo.pptx -o out/index.html --system-fonts
+unppt demo.pptx -o out/index.html --system-fonts
 
 # For a website: on-demand loading, fonts embedded so viewers need not install them
-unppt convert demo.pptx -o site/demo --output paged --system-fonts --embed-fonts
+unppt demo.pptx -o site/demo --output paged --system-fonts --embed-fonts
 
 # One HTML per slide
-unppt convert demo.pptx -o site/demo --output pages
+unppt demo.pptx -o site/demo --output pages
 
 # On a server: explicit font folder, no images, quiet
-unppt convert demo.pptx -o out/index.html --fonts /opt/fonts --no-images -q
+unppt demo.pptx -o out/index.html --fonts /opt/fonts --no-images -q
 
 # Low-memory machine: one image thread, show peak memory
-unppt convert demo.pptx -o out/index.html --jobs 1 --stats
+unppt demo.pptx -o out/index.html --jobs 1 --stats
 
 # Data only
-unppt convert demo.pptx --data -o out/deck.json
+unppt demo.pptx --data -o out/deck.json
 ```
 
 ---

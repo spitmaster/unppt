@@ -2,7 +2,7 @@
 
 # 转码原理：一个 .pptx 是怎么变成网页的
 
-这篇文档顺着代码讲一遍：从你在命令行敲下 `unppt convert 课件.pptx` 开始，到磁盘上出现 `课件.html`、`prop.json`、`pic/`、`thum/` 为止，中间每一步做了什么、代码在哪个文件里。
+这篇文档顺着代码讲一遍：从你在命令行敲下 `unppt 课件.pptx` 开始，到磁盘上出现 `课件.html`、`prop.json`、`pic/`、`thum/` 为止，中间每一步做了什么、代码在哪个文件里。
 
 读完你应该能回答：
 
@@ -166,7 +166,7 @@ sequenceDiagram
   participant O as OutputForm（output/）
   participant W as write 回调
 
-  U->>CLI: unppt convert 课件.pptx
+  U->>CLI: unppt 课件.pptx
   CLI->>CLI: 解析参数，列出字体文件，读 resvg.wasm，建出图线程池
   CLI->>C: convert(fileSource, options)
   C->>Z: ZipReader.open 只读 zip 目录
@@ -210,7 +210,7 @@ sequenceDiagram
 
 ```mermaid
 flowchart TD
-  A["unppt convert 输入.pptx 选项"] --> B{"解析参数"}
+  A["unppt 输入.pptx 选项"] --> B{"解析参数"}
   B --> C["确定输出路径<br/>single: 同名 .html<br/>paged/pages: 同名目录/index.html<br/>data: 同名 .json"]
   B --> D["--fonts / --system-fonts<br/>递归列出 .ttf .otf .ttc"]
   B --> E["读 dist/resvg.wasm<br/>（--no-images 时不读）"]
