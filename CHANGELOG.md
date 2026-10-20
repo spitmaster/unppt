@@ -1,5 +1,15 @@
 # 更新日志 / Changelog
 
+## 0.2.2（2026-10-20）
+
+**中文**
+
+- 不写 `-o` 时，产物不再直接放在 pptx 旁边，而是在 pptx 旁边新建一个和它同名的文件夹，全部放进去：`课件.pptx` → `课件/index.html`（以及 `pic/`、`thum/`、`prop.json`、`media/`）。`--data` 时是 `课件/deck.json`。写了 `-o` 时照旧按指定位置。
+
+**English**
+
+- Without `-o`, output no longer lands next to the .pptx: a new folder named after it is created and everything goes inside: `deck.pptx` → `deck/index.html` (plus `pic/`, `thum/`, `prop.json`, `media/`); `--data` writes `deck/deck.json`. With `-o` nothing changes.
+
 ## 0.2.1（2026-10-20）
 
 **中文**

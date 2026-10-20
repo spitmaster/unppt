@@ -24,7 +24,7 @@ flowchart LR
 ## Features
 
 - **Matches PowerPoint**: during development, images exported by a local copy of PowerPoint are the "answer key"; every page is compared and scored automatically (see "Status and accuracy" below).
-- **One file to play**: the default output is a single self-contained HTML file (named after the input when `-o` is not given) holding the player, pages, fonts and small images; it works from a local double-click, any static server or a CDN.
+- **One file to play**: the default output is a single self-contained HTML file (without `-o` it goes into a new folder named after the .pptx, e.g. `deck/index.html`) holding the player, pages, fonts and small images; it works from a local double-click, any static server or a CDN.
 - **Animations and transitions**: entrance, exit, emphasis and motion-path animations, triggers, automatic advance timings, slide transitions, audio and video.
 - **Embeddable and controllable**: cross-origin iframe embedding; control it via `postMessage` (the standard browser way for different pages to message each other), the same-page `window.unppt` object, or a native app's WebView, and receive events such as slide changes and end of show.
 - **Live-class sync**: presenter and watch modes; the watch side follows the teacher with the `sync` command (see [examples/live-class.html](examples/live-class.html)).
@@ -51,7 +51,7 @@ The player (click, arrow keys, space bar or swipe left/right to move on):
 
 ## Status and accuracy
 
-Current version: **0.2.1**.
+Current version: **0.2.2**.
 
 Accuracy is measured with **SSIM** (structural similarity, a number from 0 to 1 where 1 means the two images are identical): each page drawn by unppt is compared with the image PowerPoint exports, and **a page passes when SSIM ≥ 0.95**.
 
@@ -111,13 +111,13 @@ If you get a permission error (`EACCES` / `permission denied`), prefix the secon
 
 **Step 2: open the output**
 
-Open the generated `.html` file in a browser (without `-o` it has the same name as the input and sits in the same folder) and it plays.
+Open the generated `index.html` in a browser and it plays. Without `-o`, all output goes into a new folder next to the .pptx with the same name (e.g. `deck.pptx` → `deck/index.html`).
 
 **Command-line options** (run `unppt` with no arguments for the built-in help, or see the [usage guide](docs/en/usage.md)):
 
 | Option | Meaning |
 |---|---|
-| `-o, --out <file>` | Output file, defaults to a `.html` with the input's name; for the `paged` / `pages` forms it is an output folder |
+| `-o, --out <file>` | Output file, defaults to `index.html` in a new folder named after the .pptx; for the `paged` / `pages` forms it is an output folder |
 | `--output <form>` | Output form: `single` (default, one self-contained HTML), `paged` (on-demand loading), `pages` (paged plus one HTML per slide), `data` (same as `--data`) |
 | `--fonts <dir>` | Font folder (repeatable); text is laid out with real glyph widths |
 | `--system-fonts` | Use the system font folders; Office's private fonts and cloud fonts (Aptos, Gill Sans MT, ...) are used too and embedded in the output when used (browsers cannot use these fonts since they are not installed in the system) |

@@ -103,7 +103,7 @@ npm install -g ./unppt.tgz
 
 On macOS / Linux, if you get a permission error (`EACCES` / `permission denied`), use `sudo npm install -g ./unppt.tgz` and enter your login password.
 
-For a specific version, replace `latest/download/unppt.tgz` with something like `download/v0.2.1/unppt-unppt-0.2.1.tgz`. Run `unppt -v` afterwards to check the version.
+For a specific version, replace `latest/download/unppt.tgz` with something like `download/v0.2.2/unppt-unppt-0.2.2.tgz`. Run `unppt -v` afterwards to check the version.
 
 > Running `unppt` with no arguments prints the version and all options.
 
@@ -126,7 +126,7 @@ unppt demo.pptx -o out/index.html --system-fonts
 ```
 
 - `convert`: the sub-command (currently the only one).
-- `-o out/index.html`: where to write. Without it, the default is `demo.html` next to `demo.pptx` (and `pic/`, `thum/`, `prop.json` etc. also land in the folder of the `.pptx`).
+- `-o out/index.html`: where to write. Without it, a `demo/` folder is created next to `demo.pptx`, holding `index.html` plus `pic/`, `thum/`, `prop.json` etc.
 - `--system-fonts`: lay text out with the fonts installed on this computer, for more accurate results. See [section 7](#7-fonts-why-they-matter-and-how-to-provide-them) for why fonts matter.
 
 **Step 3: read the console output**
@@ -215,7 +215,7 @@ out/
 unppt demo.pptx -o out --output paged
 ```
 
-Note: for `paged` / `pages`, `-o` is a **folder** (the entry is `index.html` inside it). Without `-o`, the default is a folder named after the input (e.g. `demo/`).
+Note: for `paged` / `pages`, `-o` is a **folder** (the entry is `index.html` inside it). Without `-o`, it is likewise a folder next to the .pptx named after it (e.g. `demo/`).
 
 ```text
 out/
@@ -453,7 +453,7 @@ Known gaps: time scaling on chart date axes (min/max, month/year intervals), ver
 | It only prints a long "usage" text | The command is wrong: the first argument must be `convert`, followed by the input file; a misspelled option also prints usage. See [Usage](usage.md#2-cli-reference) |
 | Line breaks differ from PowerPoint | Fonts missing at conversion time. Check the `缺少字体` (missing fonts) line and provide them with `--system-fonts` or `--fonts <dir>` |
 | Fine on my computer, wrong fonts on others | The viewer's computer lacks the fonts. Add `--embed-fonts` |
-| `pic/`, `thum/`, `prop.json` appear next to my `.pptx` | Without `-o`, output is written next to the input file. Use `-o out/index.html` to choose a dedicated folder |
+| `pic/`, `thum/`, `prop.json` appear next to my `.pptx` | Versions up to 0.2.1 wrote output next to the input when `-o` was omitted. Upgrade to 0.2.2+ (default is a folder named after the .pptx), or use `-o out/index.html` |
 | Notice saying there is no resvg.wasm and no slide images/thumbnails are written | The program cannot find `resvg.wasm` (usually an incomplete install). Reinstall; add `--no-images` if you do not need images |
 | Slow conversion or out of memory | Image rendering takes the most time. Add `--no-images` to skip it, or use `--jobs 1` / `--jobs 2` to draw with fewer threads. `--stats` shows time and peak memory |
 | Video does not play | Videos live in `media/`; copy or upload `media/` together with the rest. The video codec must also be playable by browsers (e.g. MP4/H.264) |
