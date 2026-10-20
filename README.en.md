@@ -98,7 +98,14 @@ Invoke-WebRequest https://github.com/spitmaster/unppt/releases/latest/download/u
 npm install -g .\unppt.tgz
 ```
 
-On macOS / Linux use `curl -L -o unppt.tgz <same URL>` and `./unppt.tgz`.
+macOS / Linux (in Terminal):
+
+```bash
+curl -L -o unppt.tgz https://github.com/spitmaster/unppt/releases/latest/download/unppt.tgz
+npm install -g ./unppt.tgz
+```
+
+If you get a permission error (`EACCES` / `permission denied`), prefix the second line with `sudo` (`sudo npm install -g ./unppt.tgz`) and enter your login password. Run `unppt -v` afterwards to check the version.
 
 `--system-fonts` lays text out with the fonts installed on your machine, so line breaks match PowerPoint (fonts are explained in [docs/en/usage.md](docs/en/usage.md)).
 
