@@ -35,3 +35,9 @@ npm 要求发布包的账号**必须开启双重验证（2FA）**，否则发布
 
 已经推送过的标签（例如加这个工作流之前的 v0.2.0）：GitHub 仓库 → Actions → release → Run workflow，填标签名。
 标签和 `packages/transcoder/package.json` 的版本号不一致时工作流会失败。
+
+## 自动发布到 npm（可信发布）
+
+npm 网站上 @unppt/unppt → Settings → Trusted Publisher 绑定了 GitHub Actions：`spitmaster/unppt` 的 `release.yml`（环境名留空）。
+之后推送 `v*` 标签，工作流在建好 GitHub Release 后自动 `npm publish --provenance`，不需要本机登录和验证码；
+npm 上已经有这个版本时跳过。npm 收到新版本后仍会先自动审查（Validating），通过后 latest 才切过去。

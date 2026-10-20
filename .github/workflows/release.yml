@@ -14,6 +14,8 @@ on:
 
 permissions:
   contents: write
+  # 发布到 npm 用"可信发布"（npm 网站上为 @unppt/unppt 绑定了这个仓库的 release.yml），不需要 token
+  id-token: write
 
 jobs:
   release:
@@ -87,4 +89,14 @@ jobs:
             gh release upload "$TAG" $files --clobber
           else
             gh release create "$TAG" $files --title "$TAG" --notes-file notes.md
+          fi
+
+      - name: 发布到 npm（这个版本 npm 上已经有了就跳过）
+        working-directory: packages/transcoder
+        run: |
+          v="${TAG#v}"
+          if npm view "@unppt/unppt@$v" version --registry https://registry.npmjs.org/ > /dev/null 2>&1; then
+            echo "npm 上已经有 $v，跳过"
+          else
+            npm publish --provenance --access public --registry https://registry.npmjs.org/
           fi
