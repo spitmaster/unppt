@@ -25,7 +25,7 @@ STATE = 'async () => { const s = await window.unppt.getState(); return [s.slide,
 
 def convert(src: Path, out: Path):
     cli = ["node", "packages/transcoder/dist/cli.js", "convert", str(src), "--system-fonts", "-q"]
-    subprocess.run(cli + ["-o", str(out / "single.html")], check=True, cwd=ROOT)
+    subprocess.run(cli + ["--output", "single", "-o", str(out / "single.html")], check=True, cwd=ROOT)
     subprocess.run(cli + ["--output", "pages", "-o", str(out / "paged")], check=True, cwd=ROOT)
 
 

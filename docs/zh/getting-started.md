@@ -103,7 +103,7 @@ npm install -g ./unppt.tgz
 
 macOS / Linux 提示权限不足（`EACCES` / `permission denied`）时，第二行改成 `sudo npm install -g ./unppt.tgz`，按提示输入电脑登录密码。
 
-想装指定版本，把网址里的 `latest/download/unppt.tgz` 换成 `download/v0.2.3/unppt-unppt-0.2.3.tgz` 这样的格式。装好后运行 `unppt -v` 看版本号。
+想装指定版本，把网址里的 `latest/download/unppt.tgz` 换成 `download/v0.2.4/unppt-unppt-0.2.4.tgz` 这样的格式。装好后运行 `unppt -v` 看版本号。
 
 > 不带参数运行 `unppt`，会打印版本号和全部选项。
 
@@ -179,14 +179,14 @@ sequenceDiagram
 
 | 形式 | 命令 | 主文件 | 特点 | 适合 |
 |---|---|---|---|---|
-| `single`（默认） | `--output single` | 一个 `.html` | 页面、图片、字体、播放器全部写进这一个 HTML；只有大的图片和所有音视频单独放在 `media/` | 发给别人、本地双击、小文件 |
-| `paged` | `--output paged` | 目录里的 `index.html` | 入口很小，每页数据是单独文件；打开时只加载正在看的页，并预加载下一页 | 放在网上、页数多、文件大 |
+| `single` | `--output single` | 一个 `.html` | 页面、图片、字体、播放器全部写进这一个 HTML；只有大的图片和所有音视频单独放在 `media/` | 发给别人、本地双击、小文件 |
+| `paged`（命令行默认） | `--output paged` | 目录里的 `index.html` | 入口很小，每页数据是单独文件；打开时只加载正在看的页，并预加载下一页 | 放在网上、页数多、文件大 |
 | `pages` | `--output pages` | 目录里的 `index.html` | 和 `paged` 一样，另外每页再出一个只含这一页的 `page-001.html` | 需要单独打开、嵌入某一页 |
 | `data` | `--output data` 或 `--data` | `.json` | 只有演示数据，没有播放器 | 开发调试 |
 
 > `--output html` 也能用，它是 `single` 的旧名字。
 
-### 5.2 single（默认）
+### 5.2 single（一个自包含的 HTML）
 
 ```bash
 unppt demo.pptx -o out/index.html

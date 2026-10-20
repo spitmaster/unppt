@@ -24,7 +24,7 @@ flowchart LR
 ## Features
 
 - **Matches PowerPoint**: during development, images exported by a local copy of PowerPoint are the "answer key"; every page is compared and scored automatically (see "Status and accuracy" below).
-- **One file to play**: the default output is a single self-contained HTML file (without `-o` it goes into a new folder named after the .pptx, e.g. `deck/index.html`) holding the player, pages, fonts and small images; it works from a local double-click, any static server or a CDN.
+- **Fast to open, made for online viewing**: the CLI writes the on-demand form by default (without `-o` it goes into a new folder named after the .pptx, e.g. `deck/index.html`): the entry HTML is only tens of KB and each slide's data and images load when that slide is shown, with the next one preloaded; works from a local double-click, any static server or a CDN. `--output single` gives one self-contained HTML file for sending as an attachment.
 - **Animations and transitions**: entrance, exit, emphasis and motion-path animations, triggers, automatic advance timings, slide transitions, audio and video.
 - **Embeddable and controllable**: cross-origin iframe embedding; control it via `postMessage` (the standard browser way for different pages to message each other), the same-page `window.unppt` object, or a native app's WebView, and receive events such as slide changes and end of show.
 - **Live-class sync**: presenter and watch modes; the watch side follows the teacher with the `sync` command (see [examples/live-class.html](examples/live-class.html)).
@@ -51,7 +51,7 @@ The player (click, arrow keys, space bar or swipe left/right to move on):
 
 ## Status and accuracy
 
-Current version: **0.2.3**.
+Current version: **0.2.4**.
 
 Accuracy is measured with **SSIM** (structural similarity, a number from 0 to 1 where 1 means the two images are identical): each page drawn by unppt is compared with the image PowerPoint exports, and **a page passes when SSIM ≥ 0.95**.
 
@@ -118,7 +118,7 @@ Open the generated `index.html` in a browser and it plays. Without `-o`, all out
 | Option | Meaning |
 |---|---|
 | `-o, --out <file>` | Output file, defaults to `index.html` in a new folder named after the .pptx; for the `paged` / `pages` forms it is an output folder |
-| `--output <form>` | Output form: `single` (default, one self-contained HTML), `paged` (on-demand loading), `pages` (paged plus one HTML per slide), `data` (same as `--data`) |
+| `--output <form>` | Output form: `paged` (CLI default, on-demand loading), `single` (one self-contained HTML, the API default), `pages` (paged plus one HTML per slide), `data` (same as `--data`) |
 | `--fonts <dir>` | Font folder (repeatable); text is laid out with real glyph widths |
 | `--system-fonts` | **On by default** (since 0.2.3): use the system fonts so text is laid out with real glyph widths and wraps like PowerPoint; Office private and cloud fonts are embedded when used. `--no-system-fonts` turns it off (widths are then estimated and line breaks may differ) |
 | `--embed-fonts` | Embed subsets of the fonts used (viewers need no installed fonts and see exactly what was laid out; mind licensing for commercial fonts) |

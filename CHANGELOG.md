@@ -1,5 +1,19 @@
 # 更新日志 / Changelog
 
+## 0.2.4（2026-10-20）
+
+**中文**
+
+- 命令行默认输出按需加载的形式（`paged`）：入口 `index.html` 只有几十 KB，每页的数据和图片看到那一页才加载，并预加载下一页，适合在线观看；本地双击照样能播（Chrome、Firefox 验证过）。以前默认的单文件形式会把所有图片塞进一个 HTML（大课件十几 MB），要用时加 `--output single`。
+- `-o` 写成 `xxx.html` 时就把它当入口文件，其它文件放在它旁边；写目录时入口是目录里的 `index.html`。
+- 在代码里调用 `convert()` 的默认形式不变（仍是 `single`）。
+
+**English**
+
+- The CLI now writes the on-demand form (`paged`) by default: the entry `index.html` is only tens of KB and each slide's data and images load when shown, with the next slide preloaded, so it suits online viewing; double-clicking locally still works (checked in Chrome and Firefox). The old default single file put every image into one HTML (over 10 MB for big decks); use `--output single` for that.
+- `-o something.html` is used as the entry file with the rest next to it; `-o folder` puts the entry at `folder/index.html`.
+- The default of `convert()` in code is unchanged (`single`).
+
 ## 0.2.3（2026-10-20）
 
 **中文**

@@ -103,7 +103,7 @@ npm install -g ./unppt.tgz
 
 On macOS / Linux, if you get a permission error (`EACCES` / `permission denied`), use `sudo npm install -g ./unppt.tgz` and enter your login password.
 
-For a specific version, replace `latest/download/unppt.tgz` with something like `download/v0.2.3/unppt-unppt-0.2.3.tgz`. Run `unppt -v` afterwards to check the version.
+For a specific version, replace `latest/download/unppt.tgz` with something like `download/v0.2.4/unppt-unppt-0.2.4.tgz`. Run `unppt -v` afterwards to check the version.
 
 > Running `unppt` with no arguments prints the version and all options.
 
@@ -180,14 +180,14 @@ sequenceDiagram
 
 | Form | Command | Main file | Characteristics | Good for |
 |---|---|---|---|---|
-| `single` (default) | `--output single` | one `.html` | Slides, images, fonts and player all inside one HTML; only large images and all audio/video go to `media/` | Sending to people, double-click locally, small decks |
-| `paged` | `--output paged` | `index.html` in a folder | Small entry file, one data file per slide; loads only the slide being viewed and preloads the next | Hosting online, many slides, large files |
+| `single` | `--output single` | one `.html` | Slides, images, fonts and player all inside one HTML; only large images and all audio/video go to `media/` | Sending to people, double-click locally, small decks |
+| `paged` (CLI default) | `--output paged` | `index.html` in a folder | Small entry file, one data file per slide; loads only the slide being viewed and preloads the next | Hosting online, many slides, large files |
 | `pages` | `--output pages` | `index.html` in a folder | Same as `paged`, plus one `page-001.html` per slide containing just that slide | Opening or embedding a single slide |
 | `data` | `--output data` or `--data` | `.json` | Deck data only, no player | Development and debugging |
 
 > `--output html` also works; it is the old name of `single`.
 
-### 5.2 single (default)
+### 5.2 single (one self-contained HTML)
 
 ```bash
 unppt demo.pptx -o out/index.html

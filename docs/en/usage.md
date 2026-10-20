@@ -17,9 +17,9 @@ flowchart TD
   S(["Start"]) --> Q1{"Just debugging, want the raw data?"}
   Q1 -->|"Yes"| D["data<br/>deck.json only, no player"]
   Q1 -->|"No"| Q2{"Loaded over the web,<br/>and many slides or large files?"}
-  Q2 -->|"No: send to people, open locally, small deck"| SG["single (default)<br/>one HTML does it all"]
+  Q2 -->|"No: send to people, open locally, small deck"| SG["single<br/>one HTML does it all (API default)"]
   Q2 -->|"Yes"| Q3{"Need to open or embed a single slide?"}
-  Q3 -->|"No"| PG["paged<br/>loads only the slide being viewed"]
+  Q3 -->|"No"| PG["paged (CLI default)<br/>loads only the slide being viewed"]
   Q3 -->|"Yes"| PS["pages<br/>paged + one page-001.html per slide"]
 ```
 

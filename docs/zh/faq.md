@@ -104,8 +104,8 @@ console.log(result.report.missingFonts);  // 还缺哪些字体
 
 | 形式 | 命令 | 输出 | 适合 |
 |---|---|---|---|
-| `single`（默认） | `--output single` | 一个自包含的 HTML，页面、图片、字体、播放器全部内联 | 本地双击打开、发文件 |
-| `paged` | `--output paged` | 目录：入口 `index.html` + 每页单独的数据文件 `pages/`、`fonts/`、`media/`；打开时只加载当前页，并预加载下一页 | 放到网上播放 |
+| `single` | `--output single` | 一个自包含的 HTML，页面、图片、字体、播放器全部内联 | 本地双击打开、发文件 |
+| `paged`（命令行默认） | `--output paged` | 目录：入口 `index.html` + 每页单独的数据文件 `pages/`、`fonts/`、`media/`；打开时只加载当前页，并预加载下一页 | 放到网上播放 |
 | `pages` | `--output pages` | 在 `paged` 基础上每页再输出一个独立的 `page-001.html` | 需要单页链接时 |
 | `data` | `--data` 或 `--output data` | 只输出演示数据 `deck.json` | 开发调试 |
 
@@ -266,9 +266,9 @@ Issue 里请写明：
 
 ## 版本号
 
-- 当前版本 **0.2.3**，npm 包名 `@unppt/unppt`，需要 Node.js 20.12 或更高版本；
+- 当前版本 **0.2.4**，npm 包名 `@unppt/unppt`，需要 Node.js 20.12 或更高版本；
 - 版本号格式是"主版本.次版本.修订号"。0.x 表示还在早期阶段，接口和选项可能随版本调整，升级前请看 GitHub 上的发布说明；
 - 每个发布版本在 GitHub 上有对应的标签（`v0.1.0` 这样的格式）；同一个版本号在 npm 上只发布一次；
-- 想固定版本：`npm install @unppt/unppt@0.2.3`，或 `npx @unppt/unppt@0.2.3 ...`；查看 npm 上的最新版本：`npm view @unppt/unppt version`；
+- 想固定版本：`npm install @unppt/unppt@0.2.4`，或 `npx @unppt/unppt@0.2.4 ...`；查看 npm 上的最新版本：`npm view @unppt/unppt version`；
 - **产物格式有自己的版本号**：`deck.json` 里的 `"format": "unppt-deck", "version": 1`。格式有变化时增加这个数字，播放器遇到比自己新的版本会明确报错（提示升级播放器）；
 - 每份产物都**带着自己的播放器**，所以已经转好的课件不受以后升级影响；想用新版本的效果，重新转码即可。
