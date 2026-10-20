@@ -8,9 +8,9 @@ const NO_END = new Set([...'（［｛「『〔〈《【〘〖〝‘“｟«([{']
 /** 可以悬挂在行外的字（行首禁则的标点） */
 export const hangable = (t: string) => NO_START.has(t);
 
-function canBreakBetween(a: Atom, b: Atom, kinsoku: boolean): boolean {
+function canBreakBetween(a: Atom, b: Atom, kinsoku: boolean, latin: boolean): boolean {
   if (kinsoku && (a.style.eaBreak || b.style.eaBreak) && (NO_START.has(b.text) || NO_END.has(a.text))) return false;
-  if (a.space || a.tab) return true;
+  if (a.space || a.tab || latin) return true;
   if (a.wide || b.wide) return true;
   // 实测：破折号、连字符后面可以断（两个 — 能拆到两行）；斜杠后面不断（text-slash-break：short/longerword、网址都是放不下时在字中间断）
   if (a.text === '-' || a.text === '—') return true;
@@ -24,8 +24,9 @@ function canBreakBetween(a: Atom, b: Atom, kinsoku: boolean): boolean {
  * 标点溢出边界也不起作用。两条都只在断点两边至少有一个字的语言（rPr lang 或 altLang）是中日韩时管：前后的字都在 lang 写成 en-US
  * 或没写、也没有中日韩 altLang 的文字段里时，标点照常可以在行首、也不悬挂（实测 text-ea-lang；样本：lang="en-US" altLang="zh-CN" 照样悬挂；
  * text-hanging-punct 里单独一段 en-US 的半角标点跟在中文后面照样悬挂）
+ * latin：允许西文在单词中间换行（a:pPr latinLnBrk="1"）——任意两个字之间都能断，标点禁则照样管（实测 text-latin-break）
  */
-export function breakLines(atoms: Atom[], avail: (first: boolean) => number, wrap: boolean, hang = false, kinsoku = true): Atom[][] {
+export function breakLines(atoms: Atom[], avail: (first: boolean) => number, wrap: boolean, hang = false, kinsoku = true, latin = false): Atom[][] {
   const lines: Atom[][] = [];
   let start = 0;
   while (start < atoms.length) {
@@ -38,7 +39,7 @@ export function breakLines(atoms: Atom[], avail: (first: boolean) => number, wra
     for (; i < atoms.length; i++) {
       const a = atoms[i];
       if (a.text === '\n') { forced = i; break; }
-      if (i > start && canBreakBetween(atoms[i - 1], a, kinsoku)) lastBreak = i;
+      if (i > start && canBreakBetween(atoms[i - 1], a, kinsoku, latin)) lastBreak = i;
       const w = width + a.width;
       // 实测：行宽向上取整到排版单位（1/8 磅）后不超过可用宽度才放得下（可用宽度、内边距不取整；字间距让行宽不在格子上时，
       // 正好等宽也要换行）
