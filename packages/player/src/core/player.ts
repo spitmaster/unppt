@@ -119,8 +119,10 @@ export class Player {
       win.addEventListener('resize', onResize);
       this.cleanup.push(() => win.removeEventListener('resize', onResize));
     }
-    // 没指定起始页时从第一张不隐藏的页开始
-    this.show(opts.slide === undefined ? this.visibleFrom(0, 1) ?? 0 : this.clampSlide(opts.slide), opts.step ?? 0, false);
+    // 没指定起始页时从第一张不隐藏的页开始，并且像 PowerPoint 开始放映一样播放这一页的自动动画；
+    // 指定了起始页、步骤（深链接、直播课同步）时直接摆成那一步的样子
+    const fromStart = opts.slide === undefined && !opts.step;
+    this.show(opts.slide === undefined ? this.visibleFrom(0, 1) ?? 0 : this.clampSlide(opts.slide), opts.step ?? 0, fromStart);
   }
 
   // ---------------- 公开接口

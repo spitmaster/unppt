@@ -10,6 +10,7 @@
  */
 import { DECK_FORMAT, DECK_FORMAT_VERSION, UNPPT_VERSION, type DeckReport, type DeckSlide } from '../../format/src/index';
 import { compileAdvance, compileTiming, compileTransition, soundRids } from './anim/anim';
+import { mergeTiming } from './anim/inherited-timing';
 import { lazyEmbeddedFont } from './font/eot';
 import { FontLibrary, loadFontFile, type FontFace } from './font/font';
 import { subsetFont } from './font/subset';
@@ -169,7 +170,9 @@ export async function convert(input: InputSource, options: ConvertOptions): Prom
         const href = await media.media(ref.part, rid);
         if (href) sounds.set(rid, href);
       }
-      const anim = compileTiming(r.timing, uids, { width: pres.width, height: pres.height, colors: r.colors ?? { scheme: {}, map: {} }, sounds, groups: r.groups });
+      // 母版、版式上的动画排在幻灯片自己的前面（anim/inherited-timing.ts）
+      const timing = mergeTiming([...(r.inheritedTiming ?? []), { timing: r.timing, prefix: '' }]);
+      const anim = compileTiming(timing, uids, { width: pres.width, height: pres.height, colors: r.colors ?? { scheme: {}, map: {} }, sounds, groups: r.groups });
       for (const w of anim.warnings) pres.warn(w);
       count++;
       slideParts.push(ref.part);

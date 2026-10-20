@@ -46,7 +46,8 @@ export function effectAction(eff: XEl, base: number, ctx: AnimContext): AnimActi
   if (!cls) return undefined;
   const spTgt = findAll(cTn, 'p:spTgt')[0];
   const spid = attr(spTgt, 'spid');
-  if (!spid || !/^\d{1,10}$/.test(spid)) return undefined;
+  // 母版、版式上的形状编号带 m / l 前缀（anim/inherited-timing.ts）
+  if (!spid || !/^[lm]?\d{1,10}$/.test(spid)) return undefined;
   const pRg = child(child(spTgt, 'p:txEl'), 'p:pRg');
   const st = attr(pRg, 'st') ?? '0';
   // SmartArt 里的单个形状（"逐个"动画）

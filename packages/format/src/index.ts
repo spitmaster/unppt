@@ -5,7 +5,7 @@
 
 export const DECK_FORMAT = 'unppt-deck';
 export const DECK_FORMAT_VERSION = 1;
-export const UNPPT_VERSION = '0.2.4';
+export const UNPPT_VERSION = '0.2.5';
 
 export interface Deck {
   format: typeof DECK_FORMAT;

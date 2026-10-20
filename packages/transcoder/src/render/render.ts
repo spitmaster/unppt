@@ -23,6 +23,8 @@ export interface RenderedSlide {
   svg: string;
   colors?: import('../model/color').ColorContext;
   timing?: XEl;
+  /** 母版、版式上的动画（显示了它们的形状时）：入口按 母版 → 版式 → 幻灯片 合成一棵时间树（anim/inherited-timing.ts）；prefix 是目标编号前缀 */
+  inheritedTiming?: { timing: XEl | undefined; prefix: string }[];
   transition?: XEl;
   hidden: boolean;
   /** 组合（含嵌套的）的动画编号：颜色类动画作用在组合上不起作用 */
@@ -102,10 +104,13 @@ class SlideRenderer implements RenderContext {
   }
 
   uidOf(el: XEl, ctx: SlideContext): string | undefined {
-    if (!ctx.ownSlide) return undefined;
+    // 幻灯片自己的形状 s…；版式、母版上有动画时它们的形状也要编号（sl…、sm…），动画才找得到目标
+    const pre = ctx.ownSlide ? '' : ctx.part === ctx.layout.part && animated(ctx.layout.xml) ? 'l'
+      : ctx.part === ctx.master.part && animated(ctx.master.xml) ? 'm' : undefined;
+    if (pre === undefined) return undefined;
     const id = attr(nvProps(el), 'id');
     // 只接受纯数字：编号会拼进 HTML 属性，防止恶意文件注入代码
-    return id && /^\d{1,10}$/.test(id) ? `s${id}` : undefined;
+    return id && /^\d{1,10}$/.test(id) ? `s${pre}${id}` : undefined;
   }
 
   shape(el: XEl, ctx: SlideContext, groupFill?: Fill): Promise<string> {
@@ -154,6 +159,14 @@ class SlideRenderer implements RenderContext {
   }
 }
 
+/** 版式、母版的时间树里有没有动画目标（结果按部件缓存） */
+const animatedCache = new WeakMap<XEl, boolean>();
+function animated(xml: XEl): boolean {
+  let v = animatedCache.get(xml);
+  if (v === undefined) animatedCache.set(xml, (v = findAll(child(xml, 'p:timing'), 'p:spTgt').length > 0));
+  return v;
+}
+
 export async function renderSlide(ref: SlideRef, env: RenderEnv): Promise<RenderedSlide> {
   const { pres } = env;
   const xml = await pres.pkg.xml(ref.part, false);
@@ -196,6 +209,10 @@ export async function renderSlide(ref: SlideRef, env: RenderEnv): Promise<Render
     svg,
     colors,
     timing: child(xml, 'p:timing'),
+    inheritedTiming: [
+      ...(showMaster && attr(layout.xml, 'showMasterSp') !== '0' ? [{ timing: child(master.xml, 'p:timing'), prefix: 'm' }] : []),
+      ...(showMaster ? [{ timing: child(layout.xml, 'p:timing'), prefix: 'l' }] : []),
+    ],
     transition: expandAlternate(xml.children).find((c) => c.name === 'p:transition'),
     hidden: attr(xml, 'show') === '0',
     groups,

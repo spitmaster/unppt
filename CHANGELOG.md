@@ -1,5 +1,19 @@
 # 更新日志 / Changelog
 
+## 0.2.5（2026-10-20）
+
+**中文**
+
+- 播放母版、版式上的动画：PowerPoint 放映时先播母版的、再播版式的、最后是幻灯片自己的，以前母版和版式上的动画完全不播（例如首页标题、横线由版式上的自动动画依次出现）。
+- 从头打开播放页时，第一页的自动动画会播放（以前直接显示播完的样子）；指定了起始页、步骤时仍然直接显示那一步。
+- 说明：第一页设置了"单击鼠标时换片"关闭（`advClick="0"`）的课件，单击不翻页、键盘和翻页按钮可以，和 PowerPoint 一样。
+
+**English**
+
+- Animations on slide masters and layouts now play (master first, then layout, then the slide's own, as in PowerPoint); previously they were ignored.
+- Opening the player from the start now plays the first slide's automatic animations instead of showing their end state; deep links to a slide/step still jump straight there.
+- Note: if a slide turns off "advance on mouse click" (`advClick="0"`), clicks don't advance it but keys and the next button do, matching PowerPoint.
+
 ## 0.2.4（2026-10-20）
 
 **中文**
