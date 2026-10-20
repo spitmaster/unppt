@@ -1,5 +1,5 @@
 /** 图表里共用的绘制工具：文字样式、文字标签、图例键、数据点标记、主题强调色 */
-import { colorIn, css, type ColorContext, type Rgba } from '../model/color';
+import { colorIn, css, opacity, type ColorContext, type Rgba } from '../model/color';
 import { fallbackAdvance } from '../font/font';
 import { esc, n2 } from '../common/svg';
 import { attr, child, numAttr, path, type XEl } from '../io/xml';
@@ -77,11 +77,14 @@ export function legendKey(e: { color: Rgba; line: boolean; marker: boolean; seri
 
 /** 数据点标记：按系列的形状、大小、填充色和边框色画（maxSize 用于图例里缩小） */
 export function markerSvg(s: Series, x: number, y: number, maxSize = Infinity): string {
-  const fill = s.markerFill ?? s.line?.color;
+  // 全透明的填充当没有填充（样本：透明填充、无边框的标记，PowerPoint 看不见）
+  const fill0 = s.markerFill ?? s.line?.color;
+  const fill = fill0 && fill0.a > 0 ? fill0 : undefined;
   const stroke = s.markerLine;
   if (!fill && !stroke) return '';
   const d = Math.min(s.markerSize, maxSize), r = d / 2;
-  const f = ` fill="${fill ? css(fill) : 'none'}"`;
+  const fo = fill ? opacity(fill) : undefined;
+  const f = ` fill="${fill ? css(fill) : 'none'}"${fo ? ` fill-opacity="${fo}"` : ''}`;
   const st = stroke ? ` stroke="${css(stroke)}" stroke-width="0.75"` : '';
   // 只有线条的标记（X、星形、加号、短横线）用标记的边框色，没有就用填充色
   const lineOnly = ` fill="none" stroke="${css(stroke ?? fill!)}" stroke-width="${n2(Math.max(1, d / 8))}"`;
