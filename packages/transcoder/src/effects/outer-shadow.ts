@@ -12,6 +12,9 @@ export const SHADOW_SIGMA = 0.34;
 export const outerShadow: ShapeEffect = {
   tag: 'a:outerShdw',
   build(el, colors) {
+    // 缩放（sx / sy，十万分之一）到 5% 以下的阴影缩成一个点，看不见（样本：sx=sy=1% 的阴影 PowerPoint 不显示）；其它缩放还没实现
+    const scale = (k: string) => Math.abs(Number(el.attrs[k] ?? 100000)) / 100000;
+    if (scale('sx') < 0.05 || scale('sy') < 0.05) return undefined;
     const c = colorIn(el, colors) ?? { r: 0, g: 0, b: 0, a: 0.4 };
     const blur = px(el, 'blurRad'), dist = px(el, 'dist');
     const dir = dirRad(el);
