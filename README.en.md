@@ -51,7 +51,7 @@ The player (click, arrow keys, space bar or swipe left/right to move on):
 
 ## Status and accuracy
 
-Current version: **0.2.4**.
+Current version: **0.2.5**.
 
 Accuracy is measured with **SSIM** (structural similarity, a number from 0 to 1 where 1 means the two images are identical): each page drawn by unppt is compared with the image PowerPoint exports, and **a page passes when SSIM ≥ 0.95**.
 
