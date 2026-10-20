@@ -2778,28 +2778,33 @@ def charts_pie_bestfit(app):
 
 
 def charts_pie_label_pos(app):
-    """饼图数据标签位置和饼的大小：数据标签内（inEnd）/ 居中（ctr）/ 最佳位置（bestFit）/ 数据标签外（outEnd），类别名 + 百分比 9 磅"""
+    """饼图数据标签位置和饼的大小：数据标签内（inEnd）/ 居中（ctr）/ 最佳位置（bestFit）/ 数据标签外（outEnd），类别名 + 百分比 9 磅；
+    第 1 页没有图例，第 2 页图例在下方，第 3 页没有图例、显示引导线（showLeaderLines）"""
     import time
     p = new_pres(app, window=True)
-    s = blank(p)
-    for k, pos in enumerate([3, -4108, 5, 2]):
-        ch = s.Shapes.AddChart2(-1, 5, 10 + (k % 2) * 470, 10 + (k // 2) * 265, 300, 255)
-        _chart_values(ch, [["", "系列 1"]] + [[f"类别{i + 1}", v] for i, v in enumerate([40, 30, 20, 10])])
-        _close_data(ch)
-        c = ch.Chart
-        time.sleep(1)
-        c.HasTitle = False
-        c.HasLegend = False
-        ser = c.SeriesCollection(1)
-        ser.HasDataLabels = True
-        dl = ser.DataLabels()
-        dl.ShowValue = False
-        dl.ShowCategoryName = True
-        dl.ShowPercentage = True
-        dl.Position = pos
-        dl.Format.TextFrame2.TextRange.Font.Size = 9
+    for legend, leader in ((False, False), (True, False), (False, True)):
+        s = blank(p)
+        for k, pos in enumerate([3, -4108, 5, 2]):
+            ch = s.Shapes.AddChart2(-1, 5, 10 + (k % 2) * 470, 10 + (k // 2) * 265, 300, 255)
+            _chart_values(ch, [["", "系列 1"]] + [[f"类别{i + 1}", v] for i, v in enumerate([40, 30, 20, 10])])
+            _close_data(ch)
+            c = ch.Chart
+            time.sleep(1)
+            c.HasTitle = False
+            c.HasLegend = legend
+            if legend:
+                c.Legend.Position = -4107
+            ser = c.SeriesCollection(1)
+            ser.HasDataLabels = True
+            dl = ser.DataLabels()
+            dl.ShowValue = False
+            dl.ShowCategoryName = True
+            dl.ShowPercentage = True
+            dl.Position = pos
+            dl.Format.TextFrame2.TextRange.Font.Size = 9
+            if leader:
+                ser.HasLeaderLines = True
     return p
-
 
 def charts_dtable_wrap(app):
     """数据表的表头分类名比列宽长：8 个分类、名称 2 / 4 / 7 个汉字（7 个字折成两三行，表头行变高），10 磅"""
