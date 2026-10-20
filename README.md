@@ -98,7 +98,14 @@ Invoke-WebRequest https://github.com/spitmaster/unppt/releases/latest/download/u
 npm install -g .\unppt.tgz
 ```
 
-macOS / Linux 把第一行换成 `curl -L -o unppt.tgz <同一个网址>`，第二行用 `./unppt.tgz`。
+macOS / Linux（在"终端"里运行）：
+
+```bash
+curl -L -o unppt.tgz https://github.com/spitmaster/unppt/releases/latest/download/unppt.tgz
+npm install -g ./unppt.tgz
+```
+
+提示权限不足（`EACCES` / `permission denied`）时，第二行前面加 `sudo`（`sudo npm install -g ./unppt.tgz`），按提示输入电脑登录密码。装好后运行 `unppt -v` 查看版本号。
 
 `--system-fonts` 表示用本机装的字体排版，这样换行位置才和 PowerPoint 一致（字体的说明见 [docs/zh/usage.md](docs/zh/usage.md)）。
 
