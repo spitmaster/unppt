@@ -7,6 +7,7 @@
  */
 import hbWasm from 'harfbuzzjs/dist/harfbuzz-subset.wasm';
 import type { RandomAccessSource } from '../io/source';
+import { clearReservedGlyphFlags } from './glyf-flags';
 import { be32, checksum, readSfnt, Writer, type SfntTables } from './sfnt';
 
 interface HbExports {
@@ -86,7 +87,9 @@ export async function subsetFont(src: RandomAccessSource, faceOffset: number, co
   e.hb_face_destroy(face);
   e.free(ptr);
   if (!out) return undefined;
-  return woff([...readSfnt(out)].sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0)));
+  const tables = readSfnt(out);
+  clearReservedGlyphFlags(tables);
+  return woff([...tables].sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0)));
 }
 
 async function deflate(data: Uint8Array): Promise<Uint8Array> {
