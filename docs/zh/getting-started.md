@@ -56,21 +56,21 @@ npm 包名是 **`@unppt/unppt`**，安装后的命令名是 **`unppt`**。三种
 flowchart TD
   Q{"你打算怎么用？"} -->|"经常在命令行里转换"| G["全局安装<br/>npm install -g @unppt/unppt"]
   Q -->|"在自己的项目代码里调用"| L["项目里安装<br/>npm install @unppt/unppt"]
-  Q -->|"只是试一下，不想安装"| X["直接运行<br/>npx @unppt/unppt convert ..."]
+  Q -->|"只是试一下，不想安装"| X["直接运行<br/>npx @unppt/unppt ..."]
 ```
 
 **方式一：全局安装（推荐给命令行用户）**
 
 ```bash
 npm install -g @unppt/unppt
-unppt convert 演示文稿.pptx -o out/index.html
+unppt 演示文稿.pptx -o out/index.html
 ```
 
 **方式二：装进你的项目**
 
 ```bash
 npm install @unppt/unppt
-npx unppt convert 演示文稿.pptx -o out/index.html
+npx unppt 演示文稿.pptx -o out/index.html
 ```
 
 装进项目后，代码里可以 `import { convert } from '@unppt/unppt'`，见 [使用说明](usage.md#3-javascript-api)。
@@ -78,7 +78,7 @@ npx unppt convert 演示文稿.pptx -o out/index.html
 **方式三：不安装，直接运行**
 
 ```bash
-npx @unppt/unppt convert 演示文稿.pptx -o out/index.html
+npx @unppt/unppt 演示文稿.pptx -o out/index.html
 ```
 
 第一次运行时 npx 会临时下载包，稍等一下即可。
@@ -100,7 +100,7 @@ mkdir out
 **第 2 步：转码**
 
 ```bash
-unppt convert demo.pptx -o out/index.html --system-fonts
+unppt demo.pptx -o out/index.html --system-fonts
 ```
 
 - `convert`：子命令，目前只有这一个。
@@ -132,7 +132,7 @@ sequenceDiagram
   participant CLI as unppt 命令行
   participant T as 转码器 convert()
   participant D as 磁盘
-  U->>CLI: unppt convert demo.pptx -o out/index.html
+  U->>CLI: unppt demo.pptx -o out/index.html
   CLI->>D: 读取 demo.pptx 和字体目录
   CLI->>T: 文件内容 + 选项
   T->>CLI: write("index.html", 数据流)，每页转完就往里追加
@@ -167,7 +167,7 @@ sequenceDiagram
 ### 5.2 single（默认）
 
 ```bash
-unppt convert demo.pptx -o out/index.html
+unppt demo.pptx -o out/index.html
 ```
 
 ```text
@@ -189,7 +189,7 @@ out/
 ### 5.3 paged（按需加载）
 
 ```bash
-unppt convert demo.pptx -o out --output paged
+unppt demo.pptx -o out --output paged
 ```
 
 注意：`paged` / `pages` 形式下 `-o` 写的是**目录**（入口是目录里的 `index.html`）。不写 `-o` 时，默认是和输入同名的目录（例如 `demo/`）。
@@ -211,7 +211,7 @@ out/
 ### 5.4 pages（按需加载 + 每页一个 HTML）
 
 ```bash
-unppt convert demo.pptx -o out --output pages
+unppt demo.pptx -o out --output pages
 ```
 
 在 `paged` 的基础上多出：
@@ -228,7 +228,7 @@ out/
 ### 5.5 data（只输出数据）
 
 ```bash
-unppt convert demo.pptx --data -o out/deck.json
+unppt demo.pptx --data -o out/deck.json
 ```
 
 ```text
@@ -391,13 +391,13 @@ flowchart LR
 
 ```bash
 # 在自己电脑上转码，观看的人和你用同样的系统
-unppt convert demo.pptx -o out/index.html --system-fonts
+unppt demo.pptx -o out/index.html --system-fonts
 
 # 观看的人可能没有这些字体（例如手机）
-unppt convert demo.pptx -o out/index.html --system-fonts --embed-fonts
+unppt demo.pptx -o out/index.html --system-fonts --embed-fonts
 
 # 在 Linux 服务器上，字体放在 /opt/fonts
-unppt convert demo.pptx -o out/index.html --fonts /opt/fonts --embed-fonts
+unppt demo.pptx -o out/index.html --fonts /opt/fonts --embed-fonts
 ```
 
 ---
@@ -425,7 +425,7 @@ unppt convert demo.pptx -o out/index.html --fonts /opt/fonts --embed-fonts
 
 | 现象 | 原因和解决 |
 |---|---|
-| `unppt` 不是内部或外部命令 / command not found | 没有全局安装，或者 npm 全局目录不在 PATH 里。改用 `npx @unppt/unppt convert ...`，或者重新 `npm install -g @unppt/unppt` |
+| `unppt` 不是内部或外部命令 / command not found | 没有全局安装，或者 npm 全局目录不在 PATH 里。改用 `npx @unppt/unppt ...`，或者重新 `npm install -g @unppt/unppt` |
 | 安装或运行时报 Node 版本错误、语法错误 | Node 版本低于 20.12。运行 `node -v` 检查并升级 |
 | 运行后只打印了一大段“用法” | 命令写错了：第一个参数必须是 `convert`，后面跟输入文件；选项名写错也会打印用法。看 [使用说明](usage.md#2-命令行参考) |
 | 文字换行和 PowerPoint 不一样 | 转码时缺字体。看输出里的 `缺少字体：`，用 `--system-fonts` 或 `--fonts <目录>` 提供这些字体 |

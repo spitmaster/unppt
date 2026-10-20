@@ -51,7 +51,7 @@ flowchart LR
 
 ## 现状和准确度
 
-当前版本 **0.1.0**。
+当前版本 **0.2.0**。
 
 准确度用 **SSIM**（结构相似度，0 到 1 之间的一个数，1 表示两张图一模一样）衡量：把 unppt 画出来的页面和 PowerPoint 导出的图片逐页比较，**SSIM ≥ 0.95 算这一页通过**。
 
@@ -81,14 +81,14 @@ flowchart LR
 **第 1 步：不安装，直接用 npx 转一个文件**
 
 ```bash
-npx @unppt/unppt convert 演示文稿.pptx --system-fonts
+npx @unppt/unppt 演示文稿.pptx --system-fonts
 ```
 
 **或者全局安装后用 `unppt` 命令**
 
 ```bash
 npm install -g @unppt/unppt
-unppt convert 演示文稿.pptx -o out/index.html --system-fonts
+unppt 演示文稿.pptx -o out/index.html --system-fonts
 ```
 
 `--system-fonts` 表示用本机装的字体排版，这样换行位置才和 PowerPoint 一致（字体的说明见 [docs/zh/usage.md](docs/zh/usage.md)）。
@@ -213,7 +213,7 @@ cd unppt
 npm install
 npm run build
 npm test
-node packages/transcoder/dist/cli.js convert 演示文稿.pptx -o out/index.html --system-fonts
+node packages/transcoder/dist/cli.js 演示文稿.pptx -o out/index.html --system-fonts
 ```
 
 | 命令 | 作用 |

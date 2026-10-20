@@ -33,7 +33,7 @@
 |---|---|---|
 | `DECK_FORMAT` | `"unppt-deck"` | 写在每份数据的 `format` 字段里，用来认出"这是 unppt 的数据" |
 | `DECK_FORMAT_VERSION` | `1` | 数据格式的版本号，写在 `version` 字段里 |
-| `UNPPT_VERSION` | `"0.1.0"` | 软件版本，写在 `generator` 字段里（`"unppt 0.1.0"`） |
+| `UNPPT_VERSION` | `"0.2.0"` | 软件版本，写在 `generator` 字段里（`"unppt 0.2.0"`） |
 
 规则：
 
@@ -45,7 +45,7 @@
 
 ## 3. 磁盘上的文件：四种产物形式
 
-用命令行选择形式：`unppt convert 输入.pptx --output <形式>`（`--data` 等同 `--output data`）。
+用命令行选择形式：`unppt 输入.pptx --output <形式>`（`--data` 等同 `--output data`）。
 
 ```mermaid
 flowchart LR
@@ -114,7 +114,7 @@ HTML 内部结构（按出现顺序）：
 
 ```json
 {
-  "format": "unppt-deck", "version": 1, "generator": "unppt 0.1.0",
+  "format": "unppt-deck", "version": 1, "generator": "unppt 0.2.0",
   "width": 1280, "height": 720, "title": "",
   "fonts": [{ "family": "unppt-f0", "source": "Impact", "weight": "normal", "style": "normal",
               "format": "woff", "url": "fonts/unppt-f0.2e92b8da.js" }],
@@ -285,7 +285,7 @@ classDiagram
 |---|---|---|---|
 | `format` | `"unppt-deck"` | 是 | 固定值，认出数据类型 |
 | `version` | 数字 | 是 | 格式版本，目前 `1` |
-| `generator` | 字符串 | 是 | 生成它的软件，如 `"unppt 0.1.0"` |
+| `generator` | 字符串 | 是 | 生成它的软件，如 `"unppt 0.2.0"` |
 | `width` / `height` | 数字 | 是 | 幻灯片宽高，**像素**（96 dpi）。16:9 是 1280 × 720 |
 | `title` | 字符串 | 转码器总会写 | 演示文稿标题（来自 pptx 的文档属性，没有时是空字符串）。注意：它不在 TypeScript 的 `Deck` 类型里，但转码器会输出，播放器也会读 |
 | `slides` | `DeckSlide[]` | 是 | 每页的数据，见第 6 节（paged 形式里没有这个字段，换成 `pages`） |
@@ -432,7 +432,7 @@ PowerPoint 内部用一组"行为"描述一个效果。转码器把它原样带�
 `testcases/anim-basic.pptx` 是一个合成测试用例：一页上 4 个矩形，依次"出现、淡入、从下方飞入、从下方擦除"，最后第 1 个矩形淡出。用下面的命令看它的数据：
 
 ```bash
-npx @unppt/unppt convert testcases/anim-basic.pptx --data -o out/deck.json
+npx @unppt/unppt testcases/anim-basic.pptx --data -o out/deck.json
 ```
 
 得到（`svg` 省略）：
@@ -441,7 +441,7 @@ npx @unppt/unppt convert testcases/anim-basic.pptx --data -o out/deck.json
 {
   "format": "unppt-deck",
   "version": 1,
-  "generator": "unppt 0.1.0",
+  "generator": "unppt 0.2.0",
   "width": 1280,
   "height": 720,
   "title": "",

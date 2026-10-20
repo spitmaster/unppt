@@ -51,7 +51,7 @@ The player (click, arrow keys, space bar or swipe left/right to move on):
 
 ## Status and accuracy
 
-Current version: **0.1.0**.
+Current version: **0.2.0**.
 
 Accuracy is measured with **SSIM** (structural similarity, a number from 0 to 1 where 1 means the two images are identical): each page drawn by unppt is compared with the image PowerPoint exports, and **a page passes when SSIM ≥ 0.95**.
 
@@ -81,14 +81,14 @@ You need [Node.js](https://nodejs.org/) **20.12 or later** (run `node -v` to che
 **Step 1: convert a file with npx, no install needed**
 
 ```bash
-npx @unppt/unppt convert presentation.pptx --system-fonts
+npx @unppt/unppt presentation.pptx --system-fonts
 ```
 
 **Or install globally and use the `unppt` command**
 
 ```bash
 npm install -g @unppt/unppt
-unppt convert presentation.pptx -o out/index.html --system-fonts
+unppt presentation.pptx -o out/index.html --system-fonts
 ```
 
 `--system-fonts` lays text out with the fonts installed on your machine, so line breaks match PowerPoint (fonts are explained in [docs/en/usage.md](docs/en/usage.md)).
@@ -213,7 +213,7 @@ cd unppt
 npm install
 npm run build
 npm test
-node packages/transcoder/dist/cli.js convert presentation.pptx -o out/index.html --system-fonts
+node packages/transcoder/dist/cli.js presentation.pptx -o out/index.html --system-fonts
 ```
 
 | Command | Purpose |

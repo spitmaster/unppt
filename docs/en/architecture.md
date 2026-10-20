@@ -213,7 +213,7 @@ sequenceDiagram
   participant O as OutputForm (output/)
   participant W as write callback
 
-  U->>CLI: unppt convert deck.pptx
+  U->>CLI: unppt deck.pptx
   CLI->>CLI: read resvg.wasm, create raster thread pool by CPU and memory
   CLI->>C: convert(source, options)
   C->>C: open ZIP, read OPC package, load Presentation (theme, master, layout)

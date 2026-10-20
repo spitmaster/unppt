@@ -2,7 +2,7 @@
 
 # How Transcoding Works: Turning a .pptx into a Web Page
 
-This document walks through the code: from the moment you type `unppt convert deck.pptx` until `deck.html`, `prop.json`, `pic/` and `thum/` appear on disk. For each step it explains what happens and which file the code lives in.
+This document walks through the code: from the moment you type `unppt deck.pptx` until `deck.html`, `prop.json`, `pic/` and `thum/` appear on disk. For each step it explains what happens and which file the code lives in.
 
 After reading it you should be able to answer:
 
@@ -166,7 +166,7 @@ sequenceDiagram
   participant O as OutputForm (output/)
   participant W as write callback
 
-  U->>CLI: unppt convert deck.pptx
+  U->>CLI: unppt deck.pptx
   CLI->>CLI: parse args, list font files, read resvg.wasm, create raster pool
   CLI->>C: convert(fileSource, options)
   C->>Z: ZipReader.open reads only the zip directory
@@ -210,7 +210,7 @@ The CLI only does the file-system work. The conversion itself is done by `conver
 
 ```mermaid
 flowchart TD
-  A["unppt convert input.pptx options"] --> B{"parse args"}
+  A["unppt input.pptx options"] --> B{"parse args"}
   B --> C["decide output path<br/>single: same name .html<br/>paged/pages: same-name folder/index.html<br/>data: same name .json"]
   B --> D["--fonts / --system-fonts<br/>recursively list .ttf .otf .ttc"]
   B --> E["read dist/resvg.wasm<br/>(skipped with --no-images)"]

@@ -39,10 +39,12 @@ flowchart TD
 ### 2.1 语法
 
 ```bash
-unppt convert <输入.pptx> [-o 输出] [选项]
+unppt <输入.pptx> [-o 输出] [选项]
 ```
 
-- 第一个参数必须是 `convert`，第二个是输入文件。
+- 第一个参数就是输入文件；什么选项都不加时，转成和输入同名的 `.html`，放在 pptx 所在的文件夹。其它功能都用选项加。
+- 0.1.0 及以前的写法 `unppt convert <输入.pptx>` 仍然可用（从 0.2.0 起 `convert` 可以省略）。
+- `unppt -v` 显示版本号，`unppt -h` 显示用法。
 - 不带参数、参数不对、或者写了不认识的选项时，会打印版本号和用法，然后以退出码 1 结束。
 - 转码出错（例如文件不是有效的 pptx）时打印错误信息，退出码 1。成功时退出码 0。
 
@@ -63,12 +65,14 @@ unppt convert <输入.pptx> [-o 输出] [选项]
 | `--inline-limit <字节>` | 数字 | `2097152`（2MB） | 小于这个大小的图片内联进 HTML（只对 `single` 有效） |
 | `--stats` | 无 | 关 | 结束时打印页数、用时和峰值内存 |
 | `-q`, `--quiet` | 无 | 关 | 不显示进度和结果（包括缺少字体、提示） |
+| `-v`, `--version` | 无 | — | 只显示版本号 |
+| `-h`, `--help` | 无 | — | 显示用法（退出码 0） |
 
 ### 2.3 不写 `-o` 时输出到哪里
 
 默认放在**输入文件所在的目录**，用输入文件的名字：
 
-| 形式 | `unppt convert D:\work\demo.pptx` 的输出 |
+| 形式 | `unppt D:\work\demo.pptx` 的输出 |
 |---|---|
 | `single` | `D:\work\demo.html` |
 | `paged` / `pages` | `D:\work\demo\index.html` |
@@ -90,22 +94,22 @@ unppt convert <输入.pptx> [-o 输出] [选项]
 
 ```bash
 # 最常用：自包含 HTML，用本机字体
-unppt convert demo.pptx -o out/index.html --system-fonts
+unppt demo.pptx -o out/index.html --system-fonts
 
 # 放到网站上：按需加载，嵌入字体，观看端不用装字体
-unppt convert demo.pptx -o site/demo --output paged --system-fonts --embed-fonts
+unppt demo.pptx -o site/demo --output paged --system-fonts --embed-fonts
 
 # 每页一个 HTML
-unppt convert demo.pptx -o site/demo --output pages
+unppt demo.pptx -o site/demo --output pages
 
 # 服务器上：指定字体目录，不要图片，安静模式
-unppt convert demo.pptx -o out/index.html --fonts /opt/fonts --no-images -q
+unppt demo.pptx -o out/index.html --fonts /opt/fonts --no-images -q
 
 # 内存紧张的机器：只用 1 个线程出图，看峰值内存
-unppt convert demo.pptx -o out/index.html --jobs 1 --stats
+unppt demo.pptx -o out/index.html --jobs 1 --stats
 
 # 只看数据
-unppt convert demo.pptx --data -o out/deck.json
+unppt demo.pptx --data -o out/deck.json
 ```
 
 ---

@@ -47,10 +47,10 @@ If the substitute is missing too, the layout uses estimated widths, and line bre
 
 ```bash
 # Use the system fonts (on Windows this also picks up Office's private and cloud fonts, e.g. Aptos)
-npx @unppt/unppt convert deck.pptx -o out/index.html --system-fonts
+npx @unppt/unppt deck.pptx -o out/index.html --system-fonts
 
 # Point at font folders (repeatable; .ttf / .otf / .ttc are found recursively)
-npx @unppt/unppt convert deck.pptx -o out/index.html --fonts ./fonts --fonts ./more-fonts
+npx @unppt/unppt deck.pptx -o out/index.html --fonts ./fonts --fonts ./more-fonts
 ```
 
 **In code (for example in a cloud function — Linux usually has no Microsoft fonts, so bring your own):**
@@ -126,11 +126,11 @@ Full-slide images and thumbnails cost extra: by default the CLI picks the number
 
 ```bash
 # Draw on the main thread: lowest memory
-npx @unppt/unppt convert deck.pptx -o out/index.html --jobs 1
+npx @unppt/unppt deck.pptx -o out/index.html --jobs 1
 # Or skip the images entirely
-npx @unppt/unppt convert deck.pptx -o out/index.html --no-images
+npx @unppt/unppt deck.pptx -o out/index.html --no-images
 # Show time taken and peak memory
-npx @unppt/unppt convert deck.pptx -o out/index.html --stats
+npx @unppt/unppt deck.pptx -o out/index.html --stats
 ```
 
 ---
@@ -255,7 +255,7 @@ flowchart TD
 Please include in the issue:
 
 1. the unppt version (running `npx @unppt/unppt` without arguments prints it on the first line);
-2. the full conversion command, for example `unppt convert demo.pptx -o out/index.html --system-fonts --embed-fonts`;
+2. the full conversion command, for example `unppt demo.pptx -o out/index.html --system-fonts --embed-fonts`;
 3. the CLI lines starting with `缺少字体：` (missing font) and `提示：` (notice);
 4. the browser and its version;
 5. side-by-side screenshots: the PowerPoint slide show and the unppt player (screenshots, too, may only show content you can make public).
@@ -266,9 +266,9 @@ Please include in the issue:
 
 ## Versioning
 
-- The current version is **0.1.0**; the npm package is `@unppt/unppt` and needs Node.js 20.12 or later;
+- The current version is **0.2.0**; the npm package is `@unppt/unppt` and needs Node.js 20.12 or later;
 - versions have the form "major.minor.patch". 0.x means early stage: interfaces and options may change between versions, so read the release notes on GitHub before upgrading;
 - every release has a matching tag on GitHub (in the form `v0.1.0`); a version number is published to npm only once;
-- to pin a version: `npm install @unppt/unppt@0.1.0`, or `npx @unppt/unppt@0.1.0 convert ...`; to see the latest version on npm: `npm view @unppt/unppt version`;
+- to pin a version: `npm install @unppt/unppt@0.2.0`, or `npx @unppt/unppt@0.2.0 ...`; to see the latest version on npm: `npm view @unppt/unppt version`;
 - **the output format has its own version**: `"format": "unppt-deck", "version": 1` in `deck.json`. The number goes up when the format changes, and a player that meets a newer version than it knows reports a clear error (asking for a player upgrade);
 - every output **carries its own player**, so decks you have already converted are not affected by later upgrades; to get the improvements of a new version, simply convert again.
