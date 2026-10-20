@@ -101,7 +101,7 @@ curl -L -o unppt.tgz https://github.com/spitmaster/unppt/releases/latest/downloa
 npm install -g ./unppt.tgz
 ```
 
-想装指定版本，把网址里的 `latest/download/unppt.tgz` 换成 `download/v0.2.0/unppt-unppt-0.2.0.tgz` 这样的格式。装好后运行 `unppt -v` 看版本号。
+想装指定版本，把网址里的 `latest/download/unppt.tgz` 换成 `download/v0.2.1/unppt-unppt-0.2.1.tgz` 这样的格式。装好后运行 `unppt -v` 看版本号。
 
 > 不带参数运行 `unppt`，会打印版本号和全部选项。
 
