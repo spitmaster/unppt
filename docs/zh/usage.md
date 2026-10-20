@@ -58,7 +58,7 @@ unppt <输入.pptx> [-o 输出] [选项]
 | `--output <形式>` | `single`、`paged`、`pages`、`data`（`html` 是 `single` 的旧名） | `single` | 产物形式。写了不认识的形式会报错 |
 | `--data` | 无 | 关 | 等同于 `--output data` |
 | `--fonts <目录>` | 目录 | 无 | 字体目录，递归读取里面的 `.ttf` / `.otf` / `.ttc`，按真实字宽排版。可以写多次 |
-| `--system-fonts` | 无 | 关 | 使用本机系统字体目录；Office 私有字体、云字体也用于排版，用到的字总是嵌入产物 |
+| `--system-fonts` | 无 | 开 | **默认开启**（0.2.3 起）：使用本机系统字体，按真实字宽排版，换行才和 PowerPoint 一致；Office 自带的私有字体、云字体用到时嵌入产物。加 `--no-system-fonts` 关闭（关闭后字宽只能估算，换行可能和 PowerPoint 不同） |
 | `--embed-fonts` | 无 | 关 | 把用到的字做成字体子集嵌入，观看端不需要安装字体（商业字体注意授权） |
 | `--no-images` | 无 | 出图 | 不输出整页图 `pic/` 和缩略图 `thum/`（`prop.json` 照常输出） |
 | `--jobs <n\|auto>` | 正整数或 `auto` | `auto` | 出图用几个线程同时画。`auto` 按 CPU 数（容器里按 CPU 配额）和可用内存（每个线程按 400MB 估算）取较小值；`1` 表示在主线程画 |

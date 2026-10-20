@@ -1,6 +1,6 @@
 {
   "name": "@unppt/player",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "description": "unppt 播放器（零依赖）：播放演示数据，支持 JS / iframe postMessage / 原生 WebView 外部控制",
   "license": "Apache-2.0",
   "type": "module",

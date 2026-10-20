@@ -51,7 +51,7 @@ flowchart LR
 
 ## 现状和准确度
 
-当前版本 **0.2.2**。
+当前版本 **0.2.3**。
 
 准确度用 **SSIM**（结构相似度，0 到 1 之间的一个数，1 表示两张图一模一样）衡量：把 unppt 画出来的页面和 PowerPoint 导出的图片逐页比较，**SSIM ≥ 0.95 算这一页通过**。
 
@@ -120,7 +120,7 @@ npm install -g ./unppt.tgz
 | `-o, --out <文件>` | 输出文件，默认是 pptx 旁边同名文件夹里的 `index.html`；`paged` / `pages` 形式下是输出目录 |
 | `--output <形式>` | 产物形式：`single`（默认，一个自包含的 HTML）、`paged`（按需加载）、`pages`（paged 再加每页一个 HTML）、`data`（同 `--data`） |
 | `--fonts <目录>` | 字体目录（可以写多次），转码时按真实字宽排版 |
-| `--system-fonts` | 使用本机系统字体目录；Office 自带的私有字体、云字体（Aptos、Gill Sans MT 等）也会用上，并且用到时嵌入产物（浏览器用不了这些没装进系统的字体） |
+| `--system-fonts` | **默认开启**（0.2.3 起）：使用本机系统字体，按真实字宽排版，换行才和 PowerPoint 一致；Office 自带的私有字体、云字体用到时嵌入产物。加 `--no-system-fonts` 关闭（关闭后字宽只能估算，换行可能和 PowerPoint 不同） |
 | `--embed-fonts` | 把用到的字做成字体子集嵌入（观看端不需要安装字体，显示与转码时一致；商业字体请注意分发授权） |
 | `--data` | 只输出演示数据 `deck.json`（开发调试用） |
 | `--no-images` | 不输出整页图 `pic/` 和缩略图 `thum/`（`prop.json` 照常输出） |

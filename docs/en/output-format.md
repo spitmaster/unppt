@@ -33,7 +33,7 @@ The converter and the player **talk to each other only through this format**. As
 |---|---|---|
 | `DECK_FORMAT` | `"unppt-deck"` | Written to every deck's `format` field, identifying "this is unppt data" |
 | `DECK_FORMAT_VERSION` | `1` | The data format version, written to the `version` field |
-| `UNPPT_VERSION` | `"0.2.2"` | The software version, written to the `generator` field (`"unppt 0.2.2"`) |
+| `UNPPT_VERSION` | `"0.2.3"` | The software version, written to the `generator` field (`"unppt 0.2.3"`) |
 
 Rules:
 
@@ -114,7 +114,7 @@ The index (`DeckIndex`) = `Deck` without `slides`, plus `pages`:
 
 ```json
 {
-  "format": "unppt-deck", "version": 1, "generator": "unppt 0.2.2",
+  "format": "unppt-deck", "version": 1, "generator": "unppt 0.2.3",
   "width": 1280, "height": 720, "title": "",
   "fonts": [{ "family": "unppt-f0", "source": "Impact", "weight": "normal", "style": "normal",
               "format": "woff", "url": "fonts/unppt-f0.2e92b8da.js" }],
@@ -285,7 +285,7 @@ classDiagram
 |---|---|---|---|
 | `format` | `"unppt-deck"` | Yes | Fixed value identifying the data |
 | `version` | number | Yes | Format version, currently `1` |
-| `generator` | string | Yes | The software that produced it, e.g. `"unppt 0.2.2"` |
+| `generator` | string | Yes | The software that produced it, e.g. `"unppt 0.2.3"` |
 | `width` / `height` | number | Yes | Slide size in **pixels** (96 dpi). 16:9 is 1280 × 720 |
 | `title` | string | Always written by the converter | Presentation title (from the pptx document properties; empty string if none). Note: it is not in the TypeScript `Deck` type, but the converter writes it and the player reads it |
 | `slides` | `DeckSlide[]` | Yes | Per-slide data, see section 6 (absent in the paged index, replaced by `pages`) |
@@ -441,7 +441,7 @@ Result (`svg` omitted):
 {
   "format": "unppt-deck",
   "version": 1,
-  "generator": "unppt 0.2.2",
+  "generator": "unppt 0.2.3",
   "width": 1280,
   "height": 720,
   "title": "",
