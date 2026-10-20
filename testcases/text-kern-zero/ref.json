@@ -1,0 +1,117 @@
+{
+ "version": 8,
+ "level": "full",
+ "slideWidthPt": 960.0,
+ "slideHeightPt": 540.0,
+ "imageWidth": 1280,
+ "imageHeight": 720,
+ "slides": [
+  {
+   "index": 0,
+   "hidden": false,
+   "shapes": [
+    {
+     "id": 2,
+     "name": "TextBox 1",
+     "type": 17,
+     "x": 30.0,
+     "y": 30.0,
+     "w": 900.0,
+     "h": 65.433,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 73,
+       "text": "AVATAR TAVERN WAVY LT VALLEY TOYOTA AWAY YAWN VAT AVE AVATAR TAVERN WAVY ",
+       "x": 37.2,
+       "y": 33.6,
+       "w": 886.0,
+       "h": 28.8
+      },
+      {
+       "start": 73,
+       "len": 35,
+       "text": "LT VALLEY TOYOTA AWAY YAWN VAT AVE ",
+       "x": 37.2,
+       "y": 62.4,
+       "w": 413.505,
+       "h": 28.8
+      }
+     ]
+    },
+    {
+     "id": 3,
+     "name": "TextBox 2",
+     "type": 17,
+     "x": 30.0,
+     "y": 180.0,
+     "w": 900.0,
+     "h": 65.433,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 76,
+       "text": "AVATAR TAVERN WAVY LT VALLEY TOYOTA AWAY YAWN VAT AVE AVATAR TAVERN WAVY LT ",
+       "x": 37.2,
+       "y": 183.6,
+       "w": 871.48,
+       "h": 28.8
+      },
+      {
+       "start": 76,
+       "len": 32,
+       "text": "VALLEY TOYOTA AWAY YAWN VAT AVE ",
+       "x": 37.2,
+       "y": 212.4,
+       "w": 369.955,
+       "h": 28.8
+      }
+     ]
+    },
+    {
+     "id": 4,
+     "name": "TextBox 3",
+     "type": 17,
+     "x": 30.0,
+     "y": 330.0,
+     "w": 900.0,
+     "h": 65.433,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 76,
+       "text": "AVATAR TAVERN WAVY LT VALLEY TOYOTA AWAY YAWN VAT AVE AVATAR TAVERN WAVY LT ",
+       "x": 37.2,
+       "y": 333.6,
+       "w": 871.48,
+       "h": 28.8
+      },
+      {
+       "start": 76,
+       "len": 32,
+       "text": "VALLEY TOYOTA AWAY YAWN VAT AVE ",
+       "x": 37.2,
+       "y": 362.4,
+       "w": 369.955,
+       "h": 28.8
+      }
+     ]
+    }
+   ],
+   "effects": [],
+   "triggerHidden": [],
+   "steps": 0,
+   "keptSlideshow": false
+  }
+ ],
+ "ok": true
+}

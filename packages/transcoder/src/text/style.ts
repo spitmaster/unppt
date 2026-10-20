@@ -138,9 +138,9 @@ export function runStyle(r: XEl, env: TextEnv, scale: number): RunStyle {
   };
 }
 
-/** 这段文字是否做字距调整：PowerPoint 只对字号不小于 kern 的文字调整 */
+/** 这段文字是否做字距调整：PowerPoint 只对字号不小于 kern 的文字调整；kern=0 是关掉（"字体调整字距"没勾，实测 text-kern-zero） */
 export function kernOn(s: RunStyle): boolean {
-  return s.kern !== undefined && s.size * 72 / 96 >= s.kern - 0.01;
+  return s.kern !== undefined && s.kern > 0 && s.size * 72 / 96 >= s.kern - 0.01;
 }
 
 /**

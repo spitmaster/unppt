@@ -1,6 +1,6 @@
 /** 图例：按系列（或饼图按分类）列出图例项，放在上下左右，返回剩下的绘图空间 */
 import type { ColorContext, Rgba } from '../model/color';
-import { attr, child, numAttr, type XEl } from '../io/xml';
+import { attr, child, children, numAttr, type XEl } from '../io/xml';
 import { chartTypeOf } from './chart-types';
 import { accentColor, label, legendKey, strokeOf, textStyle } from './draw';
 import { LEGEND_LINE_KEY, legendBand, legendCenter, legendItemGap, legendKeyGap, legendLead, legendPlotGap, legendRow, legendSquare, legendTopBand, legendTopCenter, PAD, type TextWidth } from './layout';
@@ -27,16 +27,19 @@ export function seriesEntries(plots: Plot[], colors: ColorContext): LegendEntry[
 /** 竖排图例（左、右；手动摆放的按 legendPos） */
 const verticalLegend = (legend: XEl | undefined) => ['r', 'l'].includes(attr(child(legend, 'c:legendPos'), 'val') ?? 'r');
 
-/** 图例里的各项（按显示顺序） */
-function entriesOf(plots: Plot[], colors: ColorContext, vertical: boolean): LegendEntry[] {
+/** 图例里的各项（按显示顺序）；删掉的图例项（c:legendEntry 的 c:delete，idx 是第几项）不画 */
+function entriesOf(plots: Plot[], colors: ColorContext, legend: XEl | undefined): LegendEntry[] {
+  const vertical = verticalLegend(legend);
+  const deleted = new Set(children(legend, 'c:legendEntry').filter((e) => attr(child(e, 'c:delete'), 'val') === '1').map((e) => numAttr(child(e, 'c:idx'), 'val')));
+  const keep = (list: LegendEntry[]) => list.filter((_, i) => !deleted.has(i));
   const entries: LegendEntry[] = [];
   const type0 = chartTypeOf(plots[0].kind)!;
   if (type0.legendByCategory || (plots[0].varyColors && plots[0].series.length === 1)) {
     const s = plots[0].series[0];
     s?.cats.forEach((c, i) => entries.push({ name: c, color: s.pointFills.get(i) ?? accentColor(i, colors), line: false, marker: false, ...(s.pointPaints?.has(i) ? { paint: s.pointPaints.get(i) } : {}), stroke: strokeOf(s, i) }));
-    return entries;
+    return keep(entries);
   }
-  entries.push(...seriesEntries(plots, colors));
+  entries.push(...keep(seriesEntries(plots, colors)));
   if (type0.legendReversed?.(plots[0], vertical)) entries.reverse();
   // 趋势线排在所有系列后面
   for (const p of plots) {
@@ -54,9 +57,9 @@ function entriesOf(plots: Plot[], colors: ColorContext, vertical: boolean): Lege
  */
 export function renderLegend(legend: XEl | undefined, plots: Plot[], area: Rect, w: number, colors: ColorContext, baseText: TextStyle, tw: TextWidth, out: string[], drawTop?: number, hasAxes = true, bandOf = legendBand, h?: number): Rect {
   const box = manualBox(legend, w, h);
-  if (!box) return autoLegend(legend, plots, area, w, colors, baseText, tw, out, drawTop, hasAxes, bandOf);
-  const rest = autoLegend(legend, plots, area, w, colors, baseText, tw, [], drawTop, hasAxes, bandOf);
-  manualLegend(entriesOf(plots, colors, verticalLegend(legend)), box, w, textStyle(child(legend, 'c:txPr'), colors, baseText), tw, out);
+  if (!box) return autoLegend(legend, plots, area, w, colors, baseText, tw, out, drawTop, hasAxes, bandOf, h);
+  const rest = autoLegend(legend, plots, area, w, colors, baseText, tw, [], drawTop, hasAxes, bandOf, h);
+  manualLegend(entriesOf(plots, colors, legend), box, w, textStyle(child(legend, 'c:txPr'), colors, baseText), tw, out);
   return rest;
 }
 
@@ -100,13 +103,13 @@ function manualLegend(entries: LegendEntry[], box: Rect, w: number, st: TextStyl
   });
 }
 
-function autoLegend(legend: XEl | undefined, plots: Plot[], area: Rect, w: number, colors: ColorContext, baseText: TextStyle, tw: TextWidth, out: string[], drawTop?: number, hasAxes = true, bandOf = legendBand): Rect {
+function autoLegend(legend: XEl | undefined, plots: Plot[], area: Rect, w: number, colors: ColorContext, baseText: TextStyle, tw: TextWidth, out: string[], drawTop?: number, hasAxes = true, bandOf = legendBand, h?: number): Rect {
   let { left, top, right, bottom } = area;
   const shift = (drawTop ?? top) - top;
   if (!legend) return area;
   const legendPos = attr(child(legend, 'c:legendPos'), 'val') ?? 'r';
   const legendText = textStyle(child(legend, 'c:txPr'), colors, baseText);
-  const entries = entriesOf(plots, colors, verticalLegend(legend));
+  const entries = entriesOf(plots, colors, legend);
   const ks = legendText.size * 0.6;
   if (legendPos === 'b' || legendPos === 't') {
     // 实测（9~28 磅）：色块、间隔都随字号变化
@@ -136,13 +139,19 @@ function autoLegend(legend: XEl | undefined, plots: Plot[], area: Rect, w: numbe
     const anyLine = entries.some((e) => e.line);
     const keyW = anyLine ? LEGEND_LINE_KEY : legendSquare(sz);
     const kGap = legendKeyGap(sz, anyLine);
-    const lines = entries.map((e) => wrapLegendText(e.name, legendTextCap(w, sz), sz, legendText.font, tw));
-    const lw = keyW + kGap + Math.max(0, ...lines.flat().map((l) => tw(l, sz, legendText.font)));
+    const all = entries.map((e) => wrapLegendText(e.name, legendTextCap(w, sz), sz, legendText.font, tw));
     const row = legendRow(sz), extra = legendWrapLine(sz);
+    // 图表高度放不下所有项时只画前面放得下的（总高不超过图表高 − 11 磅），按只有这几项居中（实测 charts-legend-truncate）
+    const heights = all.map((l) => row + (l.length - 1) * extra);
+    let n = all.length;
+    if (h !== undefined) while (n > 1 && heights.slice(0, n).reduce((a, b) => a + b, 0) > h - PAD + 1e-6) n--;
+    const lines = all.slice(0, n);
+    // 图例宽按全部项算（没画出来的也算，饼图位置跟着变，实测）
+    const lw = keyW + kGap + Math.max(0, ...all.flat().map((l) => tw(l, sz, legendText.font)));
     const x = legendPos === 'l' ? left : right - lw;
-    const total = lines.reduce((a, l) => a + row + (l.length - 1) * extra, 0);
+    const total = heights.slice(0, n).reduce((a, b) => a + b, 0);
     let y = (top + shift + bottom) / 2 - total / 2 + row / 2;
-    entries.forEach((e, i) => {
+    entries.slice(0, n).forEach((e, i) => {
       if (!e.none) out.push(anyLine ? legendKey(e, x, y, legendSquare(sz), keyW) : legendKey(e, x, y, legendSquare(sz)));
       lines[i].forEach((l, k) => out.push(label(l, x + keyW + kGap, y + k * extra, legendText, 'start')));
       y += row + (lines[i].length - 1) * extra;

@@ -71,8 +71,10 @@ export class BulletNumbering {
       if (bu.name === 'a:buChar') text = (attr(bu, 'char') ?? '•').replace(/^•.+/su, '•');
       else if (bu.name === 'a:buAutoNum') {
         const scheme = attr(bu, 'type') ?? 'arabicPeriod';
-        const key = `${lvl}|${scheme}`;
         const start = numAttr(bu, 'startAt') ?? 1;
+        // 起始编号不同就是另一组，重新数（实测 text-autonum-symbol-font：startAt=3 后面不写 startAt 的段落是 1）
+        const key = `${lvl}|${scheme}|${start}`;
+        for (const k of [...autoNumCounters.keys()]) if (k.startsWith(`${lvl}|${scheme}|`) && k !== key) autoNumCounters.delete(k);
         const n = (autoNumCounters.get(key) ?? start - 1) + 1;
         autoNumCounters.set(key, n);
         ({ text, font } = autoNumber(scheme, n));
@@ -98,8 +100,9 @@ export async function makeBullet(
   let size = baseStyle.size;
   if (buSzPct) size = baseStyle.size * (numAttr(buSzPct, 'val') ?? 100000) / 100000;
   if (buSzPts) size = (numAttr(buSzPts, 'val') ?? 1800) / 100 * fontScale * 96 / 72;
-  // 编号样式自带字体（Wingdings 带圈数字）时用它
-  const font = numFont ?? (buFont ? (resolveTypeface(attr(buFont, 'typeface'), env.theme) ?? baseStyle.latin) : baseStyle.latin);
+  // 编号样式自带字体（Wingdings 带圈数字）时用它；编号遇到符号字体（继承来的或自己写的 Wingdings 等）不用它，按正文字体画（实测 text-autonum-symbol-font）
+  const symbolFont = !!buFont && (attr(buFont, 'charset') === '2' || /^(wingdings|webdings|symbol|marlett)/i.test(attr(buFont, 'typeface') ?? ''));
+  const font = numFont ?? (buFont && !(bu?.name === 'a:buAutoNum' && symbolFont) ? (resolveTypeface(attr(buFont, 'typeface'), env.theme) ?? baseStyle.latin) : baseStyle.latin);
   // 实测：空格当符号时不用符号字体，而是跟正文第一个字用同一种字体（中文正文时是东亚字体的半角空格宽度）
   const buFace = !text.trim() && atoms[0]?.family ? atoms[0].family : font;
   const style: RunStyle = { ...baseStyle, size, latin: buFace, ea: buFace, color: buClr ? (colorIn(buClr, env.colors) ?? baseStyle.color) : baseStyle.color, underline: false, strike: false, spc: 0 };
