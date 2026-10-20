@@ -42,7 +42,7 @@ flowchart TD
 unppt <输入.pptx> [-o 输出] [选项]
 ```
 
-- 第一个参数就是输入文件；什么选项都不加时，转成和输入同名的 `.html`，放在 pptx 所在的文件夹。其它功能都用选项加。
+- 第一个参数就是输入文件；什么选项都不加时，在 pptx 旁边新建一个和它同名的文件夹，产物都放进去（打开里面的 `index.html` 播放）。其它功能都用选项加。
 - 0.1.0 及以前的写法 `unppt convert <输入.pptx>` 仍然可用（从 0.2.0 起 `convert` 可以省略）。
 - `unppt -v` 显示版本号，`unppt -h` 显示用法。
 - 不带参数、参数不对、或者写了不认识的选项时，会打印版本号和用法，然后以退出码 1 结束。
@@ -70,15 +70,15 @@ unppt <输入.pptx> [-o 输出] [选项]
 
 ### 2.3 不写 `-o` 时输出到哪里
 
-默认放在**输入文件所在的目录**，用输入文件的名字：
+在输入文件旁边**新建一个和它同名的文件夹**，产物都放进去（0.2.2 起；以前是直接放在输入文件旁边）：
 
 | 形式 | `unppt D:\work\demo.pptx` 的输出 |
 |---|---|
-| `single` | `D:\work\demo.html` |
+| `single` | `D:\work\demo\index.html` |
 | `paged` / `pages` | `D:\work\demo\index.html` |
-| `data` | `D:\work\demo.json` |
+| `data` | `D:\work\demo\deck.json` |
 
-`media/`、`pic/`、`thum/`、`fonts/`、`prop.json` 都写在主文件**所在的目录**里。所以 `single` 形式不写 `-o` 时，这些文件会和 `.pptx` 混在一起，建议总是写 `-o 新目录/index.html`。
+`media/`、`pic/`、`thum/`、`fonts/`、`prop.json` 都写在主文件**所在的目录**里，所以不写 `-o` 时它们都在那个同名文件夹里，不会和 `.pptx` 混在一起。写了 `-o` 时按你给的位置，例如 `-o 新目录/index.html`。
 
 ### 2.4 命令行的输出
 

@@ -42,7 +42,7 @@ Every form also writes `prop.json`, and by default `pic/{n}.jpg` and `thum/{n}.j
 unppt <input.pptx> [-o output] [options]
 ```
 
-- The first argument is the input file. With no options it writes an `.html` with the same name next to the .pptx. Everything else is an option.
+- The first argument is the input file. With no options it creates a folder named after the .pptx next to it and writes everything there (open `index.html` inside to play). Everything else is an option.
 - The 0.1.0-and-earlier form `unppt convert <input.pptx>` still works (`convert` is optional since 0.2.0).
 - `unppt -v` prints the version, `unppt -h` prints the usage.
 - With no arguments, wrong arguments, or an unknown option, it prints the version and usage and exits with code 1.
@@ -70,15 +70,15 @@ Everything below comes from `packages/transcoder/src/cli.ts`:
 
 ### 2.3 Where output goes without `-o`
 
-By default it goes to **the folder of the input file**, named after the input:
+It goes into **a new folder next to the input, named after it** (since 0.2.2; earlier versions wrote next to the input):
 
 | Form | Output of `unppt D:\work\demo.pptx` |
 |---|---|
-| `single` | `D:\work\demo.html` |
+| `single` | `D:\work\demo\index.html` |
 | `paged` / `pages` | `D:\work\demo\index.html` |
-| `data` | `D:\work\demo.json` |
+| `data` | `D:\work\demo\deck.json` |
 
-`media/`, `pic/`, `thum/`, `fonts/` and `prop.json` are written in **the folder of the main file**. So with `single` and no `-o`, these files get mixed in with your `.pptx`; it is best to always write `-o new-folder/index.html`.
+`media/`, `pic/`, `thum/`, `fonts/` and `prop.json` are written in **the folder of the main file**, so without `-o` they all stay inside that folder instead of mixing with your `.pptx`. With `-o` they follow the path you give, e.g. `-o new-folder/index.html`.
 
 ### 2.4 Console output
 

@@ -1,6 +1,6 @@
 {
   "name": "unppt-monorepo",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "private": true,
   "description": "PPTX to self-contained HTML player",
   "license": "Apache-2.0",

@@ -98,12 +98,13 @@ async function writeTo(base: string, rel: string, data: WriteData) {
 function usage(code = 1): never {
   console.log(`unppt ${UNPPT_VERSION}
 用法：unppt <输入.pptx> [选项]
-      不加选项时转成和输入同名的 .html，放在 pptx 所在的文件夹（整页图 pic/、缩略图 thum/、prop.json 也在那里）
+      不加选项时在 pptx 旁边新建一个和它同名的文件夹，产物都放进去：打开里面的 index.html 播放
+      （整页图 pic/、缩略图 thum/、prop.json、音视频 media/ 也在里面）
       （旧写法 unppt convert <输入.pptx> [选项] 仍然可用）
 
 选项：
-  -o, --out <文件>        输出文件，默认和输入同名的 .html（--data 时为 .json）；
-                          paged / pages 形式下是输出目录（入口是目录里的 index.html），默认和输入同名的目录
+  -o, --out <文件>        输出文件，默认是 pptx 旁边同名文件夹里的 index.html（--data 时为 deck.json）；
+                          paged / pages 形式下是输出目录（入口是目录里的 index.html）
   --output <形式>         产物形式：single（默认，一个自包含的 HTML）、paged（按需加载：入口 HTML + 每页单独的数据文件，
                           看当前页时预加载下一页）、pages（paged 再加每页一个独立的 HTML）、data（同 --data）
   --fonts <目录>          字体目录（可以写多次），用来按真实字宽排版
@@ -156,9 +157,10 @@ async function main() {
   const dataOnly = form === 'data';
   // 按需加载的形式输出一个目录
   const dirForm = form === 'paged' || form === 'pages';
-  if (!out) out = join(dirname(input), basename(input, extname(input)) + (dirForm ? '' : dataOnly ? '.json' : '.html'));
+  // 不写 -o：在 pptx 旁边新建一个和它同名的文件夹，产物都放进去（入口 index.html，--data 时 deck.json）
+  if (!out) out = join(dirname(input), basename(input, extname(input)), dataOnly ? 'deck.json' : 'index.html');
+  else if (dirForm) out = join(out, 'index.html');
   out = resolve(out);
-  if (dirForm) out = join(out, 'index.html');
 
   const st = await stat(input);
   const fontFiles = (await Promise.all(fontDirs.map((d) => listFonts(d)))).flat();

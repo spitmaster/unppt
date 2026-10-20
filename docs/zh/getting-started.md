@@ -103,7 +103,7 @@ npm install -g ./unppt.tgz
 
 macOS / Linux 提示权限不足（`EACCES` / `permission denied`）时，第二行改成 `sudo npm install -g ./unppt.tgz`，按提示输入电脑登录密码。
 
-想装指定版本，把网址里的 `latest/download/unppt.tgz` 换成 `download/v0.2.1/unppt-unppt-0.2.1.tgz` 这样的格式。装好后运行 `unppt -v` 看版本号。
+想装指定版本，把网址里的 `latest/download/unppt.tgz` 换成 `download/v0.2.2/unppt-unppt-0.2.2.tgz` 这样的格式。装好后运行 `unppt -v` 看版本号。
 
 > 不带参数运行 `unppt`，会打印版本号和全部选项。
 
@@ -126,7 +126,7 @@ unppt demo.pptx -o out/index.html --system-fonts
 ```
 
 - `convert`：子命令，目前只有这一个。
-- `-o out/index.html`：输出到哪里。不写的话，默认在 `demo.pptx` 旁边生成 `demo.html`（以及 `pic/`、`thum/`、`prop.json` 等，同样写在 `.pptx` 所在目录）。
+- `-o out/index.html`：输出到哪里。不写的话，默认在 `demo.pptx` 旁边新建 `demo/` 文件夹，`index.html` 和 `pic/`、`thum/`、`prop.json` 等都放在里面。
 - `--system-fonts`：用本机安装的字体来排版，效果更准。为什么字体重要见 [第 7 节](#7-字体为什么重要以及怎么给)。
 
 **第 3 步：看命令行输出**
@@ -214,7 +214,7 @@ out/
 unppt demo.pptx -o out --output paged
 ```
 
-注意：`paged` / `pages` 形式下 `-o` 写的是**目录**（入口是目录里的 `index.html`）。不写 `-o` 时，默认是和输入同名的目录（例如 `demo/`）。
+注意：`paged` / `pages` 形式下 `-o` 写的是**目录**（入口是目录里的 `index.html`）。不写 `-o` 时，同样是 pptx 旁边和它同名的目录（例如 `demo/`）。
 
 ```text
 out/
@@ -452,7 +452,7 @@ unppt demo.pptx -o out/index.html --fonts /opt/fonts --embed-fonts
 | 运行后只打印了一大段“用法” | 命令写错了：第一个参数必须是 `convert`，后面跟输入文件；选项名写错也会打印用法。看 [使用说明](usage.md#2-命令行参考) |
 | 文字换行和 PowerPoint 不一样 | 转码时缺字体。看输出里的 `缺少字体：`，用 `--system-fonts` 或 `--fonts <目录>` 提供这些字体 |
 | 在自己电脑上正常，别人电脑上字体不对 | 观看的电脑没装这些字体。加 `--embed-fonts` |
-| `.pptx` 旁边多出一堆 `pic/`、`thum/`、`prop.json` | 没写 `-o` 时，输出写在输入文件旁边。用 `-o out/index.html` 指定单独目录 |
+| `.pptx` 旁边多出一堆 `pic/`、`thum/`、`prop.json` | 0.2.1 及以前不写 `-o` 时输出直接写在输入文件旁边。升级到 0.2.2 以上（默认放进同名文件夹），或用 `-o out/index.html` 指定目录 |
 | 提示“没有 resvg.wasm，不输出整页图和缩略图” | 程序找不到出图用的 `resvg.wasm`（通常是安装不完整）。重新安装；不需要图片时加 `--no-images` |
 | 转码很慢或内存不够 | 出图最耗时。加 `--no-images` 跳过出图，或用 `--jobs 1`、`--jobs 2` 减少同时出图的线程数。用 `--stats` 查看用时和峰值内存 |
 | 视频不播放 | 视频在 `media/` 里，复制或上传时要连同 `media/` 一起；另外视频本身的编码要是浏览器能播的（例如 MP4/H.264） |
