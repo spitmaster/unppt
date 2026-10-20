@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * 命令行：unppt <输入.pptx> [-o 输出.html] [--fonts 目录]... [--no-system-fonts] [--output 形式] [--inline-limit 字节]
+ * 命令行：unppt <输入.pptx> [-o 输出目录] [--fonts 目录]... [--no-system-fonts] [--output 形式] [--inline-limit 字节]
  * （旧写法 unppt convert <输入.pptx> 仍然可用）
  *
  * 这一层负责读写文件；转码本身（convert）不碰文件系统。
@@ -103,10 +103,11 @@ function usage(code = 1): never {
       （旧写法 unppt convert <输入.pptx> [选项] 仍然可用）
 
 选项：
-  -o, --out <文件>        输出文件，默认是 pptx 旁边同名文件夹里的 index.html（--data 时为 deck.json）；
-                          paged / pages 形式下是输出目录（入口是目录里的 index.html）
-  --output <形式>         产物形式：single（默认，一个自包含的 HTML）、paged（按需加载：入口 HTML + 每页单独的数据文件，
-                          看当前页时预加载下一页）、pages（paged 再加每页一个独立的 HTML）、data（同 --data）
+  -o, --out <路径>        输出位置，默认是 pptx 旁边新建的同名文件夹；写目录时入口是目录里的 index.html，
+                          写成 xxx.html 时入口就是这个文件、其它文件放在它旁边
+  --output <形式>         产物形式：paged（默认，按需加载：入口 HTML 很小，每页的数据和图片看到那一页才加载、并预加载下一页，
+                          适合放到网上，本地双击也能播）、single（所有内容装进一个自包含的 HTML，文件大，适合当附件发送）、
+                          pages（paged 再加每页一个独立的 HTML）、data（同 --data）
   --fonts <目录>          字体目录（可以写多次），用来按真实字宽排版
   --no-system-fonts       不用本机系统字体（默认会用：按真实字宽排版，换行才和 PowerPoint 一致；Office 自带的私有字体、
                           云字体用到时嵌入产物）。不用时字宽只能估算，换行位置可能不同
@@ -136,7 +137,8 @@ async function main() {
   const privateDirs: string[] = [];
   // 默认用本机系统字体（0.2.3 起）：不用时字宽只能估算，换行和 PowerPoint 不一样
   let systemFonts = true;
-  let form = 'single';
+  // 默认按需加载（0.2.4 起）：入口 HTML 很小、每页数据和图片打开到那一页才加载，适合在线看；本地双击也能播
+  let form = 'paged';
   let images = true;
   let embedFonts = false;
   let inlineLimit: number | undefined;
@@ -165,7 +167,8 @@ async function main() {
   const dirForm = form === 'paged' || form === 'pages';
   // 不写 -o：在 pptx 旁边新建一个和它同名的文件夹，产物都放进去（入口 index.html，--data 时 deck.json）
   if (!out) out = join(dirname(input), basename(input, extname(input)), dataOnly ? 'deck.json' : 'index.html');
-  else if (dirForm) out = join(out, 'index.html');
+  // 按需加载的形式 -o 一般写目录；写成 xxx.html 时就把它当入口文件（0.2.3 及以前默认是单文件，常这样写）
+  else if (dirForm && !/\.html?$/i.test(out)) out = join(out, 'index.html');
   out = resolve(out);
 
   const st = await stat(input);
