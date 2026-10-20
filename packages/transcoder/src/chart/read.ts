@@ -44,7 +44,12 @@ export function readPlots(plotArea: XEl | undefined, colors: ColorContext, part:
     // 日期轴：只画有日期的点，数值比日期多出来的不画、也不参与坐标轴范围（样本：38 个日期、50 个数值的折线）
     const ids = children(p, 'c:axId').map((a) => attr(a, 'val') ?? '');
     const dateCats = !rules.xy && children(plotArea, 'c:dateAx').some((a) => ids.includes(axId(a)));
-    const series: Series[] = children(p, 'c:ser').map((s) => {
+    // 分类和数值连缓存的点数都没写的系列（样本：别的工具生成的组合图里多出一个空系列"列1"）PowerPoint 不画，数据表里也没有；
+    // 留着它的话第一个系列没有分类，整张图的分类标签、数据表都空了
+    const hasData = (s: XEl) => cacheValues(child(s, rules.xy ? 'c:xVal' : 'c:cat')).count + cacheValues(child(s, rules.xy ? 'c:yVal' : 'c:val')).count > 0;
+    const sers = children(p, 'c:ser');
+    if (sers.length && !sers.some(hasData)) continue;
+    const series: Series[] = sers.filter(hasData).map((s) => {
       const idx = numAttr(child(s, 'c:idx'), 'val') ?? serialIdx;
       const index = serialIdx++;
       const spPr = child(s, 'c:spPr');
@@ -98,7 +103,7 @@ export function readPlots(plotArea: XEl | undefined, colors: ColorContext, part:
       const marker = rules.marker(symbol);
       // 名字的缓存是空的（strCache 里没有 pt）：名字就是空的，自动标题、图例都不写字（实测 charts-empty-series-name）
       const tx = child(s, 'c:tx');
-      const name = findAll(tx, 'c:v')[0]?.text ?? (findAll(tx, 'c:strCache').length ? '' : `系列 ${idx + 1}`);
+      const name = findAll(tx, 'c:v')[0]?.text ?? (findAll(tx, 'c:strCache').length ? '' : `系列${idx + 1}`);
       const serLabels = readLabels(child(s, 'c:dLbls'), plotLabels, colors, baseText);
       const pts = readPointLabels(child(s, 'c:dLbls'), serLabels, colors, baseText, s);
       return {
@@ -123,7 +128,8 @@ export function readPlots(plotArea: XEl | undefined, colors: ColorContext, part:
         markerSymbol: symbol && symbol !== 'none' && symbol !== 'auto' ? symbol : 'circle',
         markerSize: (numAttr(child(mk, 'c:size'), 'val') ?? 5) * 96 / 72,
         markerFill: mkFill?.kind === 'solid' ? mkFill.color : mkFill?.kind === 'none' ? undefined : accent,
-        markerLine: mkLine ? mkLine.color : accent,
+        // 标记写了边框 noFill 时不描边（parseLine 对 noFill 返回 undefined），没写才用默认色
+        markerLine: mkLine ? mkLine.color : child(child(mk, 'c:spPr'), 'a:ln') ? undefined : accent,
         pointFills,
         explosion: (i: number) => explode.get(i) ?? serExplode,
         trendlines: readTrendlines(s, name, line?.color ?? (fill?.kind === 'solid' ? fill.color : accent), colors, part, zh),
