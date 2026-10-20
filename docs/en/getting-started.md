@@ -101,7 +101,7 @@ curl -L -o unppt.tgz https://github.com/spitmaster/unppt/releases/latest/downloa
 npm install -g ./unppt.tgz
 ```
 
-For a specific version, replace `latest/download/unppt.tgz` with something like `download/v0.2.0/unppt-unppt-0.2.0.tgz`. Run `unppt -v` afterwards to check the version.
+For a specific version, replace `latest/download/unppt.tgz` with something like `download/v0.2.1/unppt-unppt-0.2.1.tgz`. Run `unppt -v` afterwards to check the version.
 
 > Running `unppt` with no arguments prints the version and all options.
 

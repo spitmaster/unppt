@@ -1,6 +1,7 @@
 // 并行出图（Node 工作线程池）：和本线程画的整页图、缩略图逐字节一致（只用合成测试用例）。先 npm run build，再 npm test。
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { existsSync } from 'node:fs';
 import { readFile } from 'node:fs/promises';
 import { convert } from '../dist/index.js';
 import { autoWorkers, createRasterPool } from '../dist/node.js';
@@ -19,7 +20,10 @@ test('线程池画的和本线程画的逐字节一致（背景层、嵌入字�
   const wasm = new Uint8Array(await readFile(new URL('../dist/resvg.wasm', import.meta.url)));
   const pool = await createRasterPool(wasm, 3);
   try {
-    for (const name of ['theme-ion.pptx', 'theme-gallery.pptx', 'text-embedded-fonts.pptx', 'svg-images.pptx', 'shape-effects.pptx', 'pictures.pptx', 'emf-images.pptx', 'pictures-tiff.pptx']) {
+    // theme-*.pptx 含微软主题素材、不进仓库（有 Office 的人用 make.py 生成），没有时跳过（GitHub 上的自动发布就没有）
+    const names = ['theme-ion.pptx', 'theme-gallery.pptx', 'text-embedded-fonts.pptx', 'svg-images.pptx', 'shape-effects.pptx', 'pictures.pptx', 'emf-images.pptx', 'pictures-tiff.pptx']
+      .filter((n) => existsSync(new URL(n, TC)));
+    for (const name of names) {
       const local = await images(name, { rasterWasm: wasm });
       const pooled = await images(name, { rasterPool: pool });
       assert.ok(local.size >= 2, name);
