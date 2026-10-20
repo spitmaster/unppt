@@ -343,6 +343,8 @@ def run(set_name: str, only: str | None, do_build: bool, batch: str | None = Non
                 continue
             w, h = ref["imageWidth"], ref["imageHeight"]
             page = browser.new_page(viewport={"width": w, "height": h})
+            fonts_dir = out_html.parent / "fonts"
+            n_fonts = len(list(fonts_dir.glob("*.js"))) if fonts_dir.exists() else 0
             for slide, step, ref_name in targets(ref):
                 ref_png = it["ref"] / ref_name
                 if not ref_png.exists():
@@ -363,6 +365,12 @@ def run(set_name: str, only: str | None, do_build: bool, batch: str | None = Non
                     except Exception as e:
                         print(f"{it['key']} 第 {slide + 1} 页加载失败，跳过：{type(e).__name__}")
                         continue
+                # 按需加载形式的字体是异步的脚本：fonts.ready 只管已经注册的字体，要先等所有字体脚本都到了（注册数 = fonts/ 下的文件数），
+                # 否则截到的是回退字体（样本：嵌入的仿宋_GB2312 还没到，截成了系统仿宋）
+                try:
+                    page.wait_for_function(f"document.fonts.size >= {n_fonts}", timeout=20000)
+                except Exception:
+                    pass
                 page.evaluate("document.fonts.ready")
                 page.wait_for_timeout(50)
                 stem = f"{it['key']}-{slide:03d}-{step:02d}"
