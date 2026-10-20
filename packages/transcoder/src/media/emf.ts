@@ -167,10 +167,21 @@ function emfToSvgUnsafe(bytes: Uint8Array): string | undefined {
     emit(`<path d="${d}"${fill ? fillAttr() : ' fill="none"'}${stroke ? strokeAttr() : ' stroke="none"'}${clipAttr()}/>`);
     // 装饰笔在显示出来的图上至少 1 像素（样本：大尺寸 EMF 表格缩小显示，按比例缩只剩 0.15 像素，PowerPoint 照样是 1 像素的线）：
     // 再叠一条不随缩放变细的 1 像素线，合起来就是"按比例的宽度和 1 像素取大的"
-    if (stroke && !st.pen.none && st.pen.cosmetic) emit(`<path d="${d}" fill="none"${hairline(st.pen)}${clipAttr()}/>`);
+    // GDI 的几何笔（PS_GEOMETRIC）也一样：缩小后不足 1 个设备像素时照样画 1 像素（样本：宽 5 个逻辑单位的表格线缩小后 PowerPoint 是 1 像素实线）；
+    // 虚线的几何笔不叠（叠出来的短划位置对不上）
+    // 带 EMF+ 记录的双格式 EMF PowerPoint 用 GDI+ 画（抗锯齿、没有最小宽度，样本：缩小的流程图线条很淡），几何笔不叠
+    if (stroke && !st.pen.none && (st.pen.cosmetic || (!st.pen.dash && !plus))) emit(`<path d="${d}" fill="none"${hairline(st.pen)}${clipAttr()}/>`);
   };
   const hairline = (pen: Pen) => ` stroke="${pen.color}" stroke-width="1" vector-effect="non-scaling-stroke" stroke-linecap="${pen.cap}" stroke-linejoin="${pen.join}"${pen.dash ? ` stroke-dasharray="${pen.dash}"` : ''}`;
 
+  // 有没有 EMF+ 记录（GDI 注释记录 70，标识 "EMF+"）
+  let plus = false;
+  for (let q = 0; q + 16 <= bytes.length;) {
+    const size = u32(q + 4);
+    if (size < 8) break;
+    if (u32(q) === 70 && u32(q + 12) === 0x2b464d45) { plus = true; break; }
+    q += size;
+  }
   let p = 0;
   while (p + 8 <= bytes.length) {
     const type = u32(p), size = u32(p + 4);
