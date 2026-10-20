@@ -1,4 +1,4 @@
-> **unppt 本项目的文档**：仓库根目录的 [SPEC.md](../SPEC.md)（需求真相源）、[architecture.md](architecture.md)（架构图和扩展点）、[todo/dev.md](todo/dev.md)（进展和待你决定的事项），以及根目录的 README、CONTRIBUTING。
+> **unppt 本项目的文档**：使用说明和技术设计在 [docs/zh/](zh/)（中文）和 [docs/en/](en/)（English），入口见根目录 [README.md](../README.md) 的文档地图；需求真相源 [SPEC.md](../SPEC.md)、开发者用的扩展点说明 [architecture.md](architecture.md)、进展 [todo/dev.md](todo/dev.md)。
 > `docs/` 下其余文件（01~09、agents、templates、prompts、小程序/3D 指南等）是 sdd-starter 脚手架自带的通用模板，和本项目无关。
 
 # AI 工具配置中心

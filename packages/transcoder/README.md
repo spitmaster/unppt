@@ -4,7 +4,7 @@
 
 - 转码器是纯函数：字节进、文件出，不读写磁盘、不联网，不依赖外部程序和原生插件，可以直接放进云函数；
 - 产物里自带播放器（零依赖），观看只需要浏览器；
-- 当前版本 0.0.1，处于早期阶段。
+- 当前版本 0.1.0（第一个公开试用版）。
 
 ## 安装
 
@@ -73,7 +73,16 @@ console.log(result.slides, result.report.missingFonts, result.report.warnings);
 - 同页 JS：`window.unppt.next()`、`window.unppt.goto({ slide, step })`、`window.unppt.on('change', fn)`；
 - iframe（可跨域）：`postMessage({ unppt: 1, id: 1, cmd: 'goto', args: { slide: 3, step: 0 } }, '*')`，播放器回复 `{ unppt: 1, re: 1, ok: true, result }`，事件 `{ unppt: 1, event: 'ready' | 'change' | 'end' | 'link', data }`。
 
-详细说明见 [GitHub 仓库](https://github.com/spitmaster/unppt)。
+## 文档 / Documentation
+
+完整文档（中英文，含架构图、流程图）在 GitHub / Full docs (Chinese & English, with diagrams) on GitHub：
+
+| 中文 | English |
+|---|---|
+| [快速上手](https://github.com/spitmaster/unppt/blob/main/docs/zh/getting-started.md) | [Getting started](https://github.com/spitmaster/unppt/blob/main/docs/en/getting-started.md) |
+| [命令行与 API](https://github.com/spitmaster/unppt/blob/main/docs/zh/usage.md) | [CLI & API](https://github.com/spitmaster/unppt/blob/main/docs/en/usage.md) |
+| [嵌入与外部控制](https://github.com/spitmaster/unppt/blob/main/docs/zh/embedding.md) | [Embedding & control](https://github.com/spitmaster/unppt/blob/main/docs/en/embedding.md) |
+| [架构设计](https://github.com/spitmaster/unppt/blob/main/docs/zh/architecture.md) | [Architecture](https://github.com/spitmaster/unppt/blob/main/docs/en/architecture.md) |
 
 ## 许可证
 
