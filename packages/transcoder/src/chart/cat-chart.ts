@@ -3,7 +3,8 @@
  * 画网格和坐标轴标签，再把绘图区（CategoryFrame）交给每种类型画系列。
  */
 import { css, type ColorContext } from '../model/color';
-import { parseLine } from '../style/line';
+import { parseLine, type Line } from '../style/line';
+import { lineOrDefault } from './default-lines';
 import { n2 } from '../common/svg';
 import { attr, child, numAttr, type XEl } from '../io/xml';
 import { axesOf, axId, axisCrosses, axisReversed, tickMark } from './axis';
@@ -27,7 +28,7 @@ import { catFitBand, categoryLabel, fitCategoryLabels, outerLevelBands, outerLev
 const SIDE_ROOM = 1.2;
 
 /** inner：area 就是绘图区内框（手动布局的 layoutTarget="inner"），坐标轴标签画在它外面，不再从里面让位置 */
-export interface CatEnv { colors: ColorContext; part: string; baseText: TextStyle; makeAxis: AxisMaker; tw: TextWidth; w: number; h?: number; view?: View3D; zh?: boolean; plotBg?: (r: Rect) => string; snap?: PixelGrid; inner?: boolean }
+export interface CatEnv { colors: ColorContext; part: string; baseText: TextStyle; makeAxis: AxisMaker; tw: TextWidth; w: number; h?: number; view?: View3D; zh?: boolean; plotBg?: (r: Rect) => string; snap?: PixelGrid; inner?: boolean; defLine?: Line }
 
 export function renderCategoryChart(plots: Plot[], plotArea: XEl | undefined, area0: Rect, env: CatEnv, out: string[]): void {
   const { colors, baseText, makeAxis, tw, w } = env;
@@ -64,9 +65,10 @@ export function renderCategoryChart(plots: Plot[], plotArea: XEl | undefined, ar
 
   // 数值范围（堆积按每个分类求和）；最后一项是最小的正数（对数刻度用）
   const rangeOf = (ps: Plot[]): [number, number, AxisOpts] => {
-    let vmin = 0, vmax = 0, minPos = Infinity;
+    // vmin 是真实的最小值（自动刻度要看数据挤不挤在一起，axis.ts 的 niceScale）；没有数据时按 0
+    let vmin = Infinity, vmax = 0, minPos = Infinity;
     for (const p of ps) {
-      if (p.grouping === 'percentStacked') { vmax = Math.max(vmax, 1); continue; }
+      if (p.grouping === 'percentStacked') { vmax = Math.max(vmax, 1); vmin = Math.min(vmin, 0); continue; }
       if (p.grouping === 'stacked') {
         for (let i = 0; i < nCat; i++) {
           let pos = 0, neg = 0;
@@ -81,7 +83,7 @@ export function renderCategoryChart(plots: Plot[], plotArea: XEl | undefined, ar
         }
       }
     }
-    return [vmin, vmax, { pct: ps.some((p) => p.grouping === 'percentStacked'), minPos }];
+    return [Number.isFinite(vmin) ? vmin : 0, vmax, { pct: ps.some((p) => p.grouping === 'percentStacked'), minPos }];
   };
   // 主坐标轴和次坐标轴（组合图里某些系列画在右侧的次坐标轴上）
   const primaryAx = axisOf(plots[0]);
@@ -89,8 +91,10 @@ export function renderCategoryChart(plots: Plot[], plotArea: XEl | undefined, ar
   const autoDeleted = (a: XEl) => attr(child(a, 'c:delete'), 'val') === '1' && !child(child(a, 'c:scaling'), 'c:min') && !child(child(a, 'c:scaling'), 'c:max');
   const secondaryAx = valAxes.find((a) => a !== primaryAx && !autoDeleted(a) && plots.some((p) => axisOf(p) === a));
   const onSecondary = (p: Plot) => !!secondaryAx && axisOf(p) === secondaryAx;
-  const primRange = rangeOf(plots.filter((p) => !onSecondary(p)));
-  const secRange = rangeOf(plots.filter(onSecondary));
+  // 反过来主坐标轴删掉了、又是自动刻度：两根轴按全部系列共用一个刻度（实测 combo 图删主轴后次坐标轴读数和主轴一样，不再按自己的数据放大）
+  const shared = !!secondaryAx && autoDeleted(primaryAx);
+  const primRange = rangeOf(shared ? plots : plots.filter((p) => !onSecondary(p)));
+  const secRange = shared ? primRange : rangeOf(plots.filter(onSecondary));
   const catDeleted = attr(child(catAx, 'c:delete'), 'val') === '1';
   // 底部分类标签带的高度、标签中心离轴的距离：带中文的标签和纯数字（日期等）不同（实测）
   const cjk = cats.some(hasCjk);
@@ -229,8 +233,8 @@ export function renderCategoryChart(plots: Plot[], plotArea: XEl | undefined, ar
   // 分类轴的主要网格线：画在刻度线的位置（分类之间，含绘图区两端；按刻度线间隔）
   const catGrid = child(catAx, 'c:majorGridlines');
   if (catGrid && !catDeleted) {
-    const ln = parseLine([child(child(catGrid, 'c:spPr'), 'a:ln')], [colors], env.part) ?? { color: { r: 217, g: 217, b: 217, a: 1 }, width: 1, cap: 'butt', join: 'round' };
-    for (let i = 0; i <= (between ? nCat : nCat - 1); i += markSkip) out.push(gridLine(frame.catPx(i * band), ln, !horizontal, box, g));
+    const ln = env.defLine ? lineOrDefault(catGrid, colors, env.part, env.defLine) : parseLine([child(child(catGrid, 'c:spPr'), 'a:ln')], [colors], env.part) ?? { color: { r: 217, g: 217, b: 217, a: 1 }, width: 1, cap: 'butt', join: 'round' };
+    if (ln) for (let i = 0; i <= (between ? nCat : nCat - 1); i += markSkip) out.push(gridLine(frame.catPx(i * band), ln, !horizontal, box, g));
   }
   // 网格线（次要的在下面）和数值标签
   for (const t of prim.minor) out.push(gridLine(frame.valPx(prim.pos(t)), prim.minorGrid, horizontal, box, g));
@@ -293,7 +297,7 @@ export function renderCategoryChart(plots: Plot[], plotArea: XEl | undefined, ar
   }
 
   // 坐标轴线和刻度线（画在系列上面）
-  const catLine = parseLine([child(child(catAx, 'c:spPr'), 'a:ln')], [colors], env.part);
+  const catLine = env.defLine ? lineOrDefault(catAx, colors, env.part, env.defLine) : parseLine([child(child(catAx, 'c:spPr'), 'a:ln')], [colors], env.part);
   if (catLine?.color && !catDeleted) {
     const at = frame.valPx(prim.pos(sides.catCross));
     // 刻度在分类之间（midCat 时在每个分类上）

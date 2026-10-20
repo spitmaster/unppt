@@ -10,6 +10,7 @@ import type { SvgDoc } from '../common/svg';
 import { areaRect } from './area-fill';
 import { attr, child, findAll, numAttr, path, type XEl } from '../io/xml';
 import { axesOf, axisMaker } from './axis';
+import { chartDefaultLine } from './default-lines';
 import { renderCategoryChart } from './cat-chart';
 import { pixelGrid } from './pixel-grid';
 import { chartTypeOf } from './chart-types';
@@ -153,7 +154,9 @@ export function renderChart(space: XEl | undefined, w: number, h: number, env: C
     left = fx * w; top = fy * h; right = left + fw * w; bottom = top + fh * h;
   }
 
-  const makeAxis = axisMaker(colors, baseText, env.part, lang);
+  // 坐标轴线、网格线没写线条时按图表样式画默认线（default-lines.ts）
+  const defLine = chartDefaultLine(space);
+  const makeAxis = axisMaker(colors, baseText, env.part, lang, defLine);
   const plotBg = (r: Rect) => areaRect(child(plotArea, 'c:spPr'), r, colors, env.part, env.doc, env.origin);
   const snap = env.origin && pixelGrid(env.origin.x, env.origin.y, env.origin.sx, env.origin.sy);
   const view3D = plots.some((p) => p.is3D) ? readView3D(child(chart, 'c:view3D'), type0.kind === 'pie') : undefined;
@@ -170,7 +173,7 @@ export function renderChart(space: XEl | undefined, w: number, h: number, env: C
     return groupBackground(out);
   }
 
-  renderCategoryChart(plots, plotArea, { left, top, right, bottom }, { colors, part: env.part, baseText, makeAxis, tw, w, h, view: view3D, zh: lang.startsWith('zh'), plotBg, snap, inner: innerLayout }, out);
+  renderCategoryChart(plots, plotArea, { left, top, right, bottom }, { colors, part: env.part, baseText, makeAxis, tw, w, h, view: view3D, zh: lang.startsWith('zh'), plotBg, snap, inner: innerLayout, defLine }, out);
   if (lateTitle) out.push(lateTitle);
   return groupBackground(out);
 }

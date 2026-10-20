@@ -1,7 +1,8 @@
 /** 数值轴：自动刻度（按 Excel 的习惯取整）、对数刻度、逆序、次要刻度、刻度线、显示单位 */
 import { child, attr, numAttr, path, findAll, type XEl } from '../io/xml';
 import type { ColorContext } from '../model/color';
-import { parseLine } from '../style/line';
+import { parseLine, type Line } from '../style/line';
+import { lineOrDefault } from './default-lines';
 import { textStyle } from './draw';
 import { formatNumber } from './format';
 import { maxTickLabels } from './layout';
@@ -12,13 +13,19 @@ import type { AxisInfo, AxisMaker, TextStyle } from './model';
  * maxLabels 是轴上最多能放几个刻度标签（见 layout.ts 的 maxTickLabels），放不下就换更大的单位
  */
 export function niceScale(min: number, max: number, fixedMin?: number, fixedMax?: number, fixedUnit?: number, margin = 0.05, maxLabels = Infinity) {
-  const lo0 = fixedMin ?? (min >= 0 ? 0 : min);
+  // 数据都是正数、又挤在一起（最大最小差不超过最大值的 1/6）时不从 0 起：最小值 = 最小数据 − 差 / 2，取整到单位；
+  // 上端只留 差 × 5% 的余量（COM 读自动刻度：80~90 → 74~92、100~118 → 90~120、100~121 → 0~140、1000~1050 → 970~1060，Excel 同样的规则）
+  // 固定了最大值时差按固定的最大值算（80~90 固定最大 95 → 70~95、固定最大 100 → 0~100，0.0348~0.0352 固定最大 0.06 → 0~0.06）
+  const top = fixedMax ?? max;
+  const near = fixedMin === undefined && min >= 0 && top > min && (top - min) <= top / 6 + 1e-12;
+  const lo0 = fixedMin ?? (near ? min - (top - min) / 2 : min >= 0 ? 0 : min);
   let hi0 = fixedMax ?? max;
   if (hi0 === lo0) hi0 = lo0 + 1;
-  const span = (fixedMax ?? (hi0 + (hi0 - lo0) * margin)) - lo0;
+  const pad = (near ? max - min : hi0 - lo0) * margin;
+  const span = (fixedMax ?? (hi0 + pad)) - lo0;
   const ends = (unit: number) => ({
-    lo: fixedMin === undefined && lo0 < 0 ? Math.floor(lo0 / unit) * unit : lo0,
-    hi: fixedMax === undefined ? Math.ceil(Math.round(((hi0 + (hi0 - lo0) * margin) / unit) * 1e9) / 1e9) * unit : hi0,
+    lo: fixedMin === undefined && (lo0 < 0 || near) ? Math.floor(Math.round((lo0 / unit) * 1e9) / 1e9) * unit : lo0,
+    hi: fixedMax === undefined ? Math.ceil(Math.round(((hi0 + pad) / unit) * 1e9) / 1e9) * unit : hi0,
   });
   if (fixedUnit) return { ...ends(fixedUnit), unit: fixedUnit };
   const mag = Math.pow(10, Math.floor(Math.log10(span)));
@@ -74,7 +81,8 @@ export function axisCrosses(ax: XEl | undefined): 'autoZero' | 'min' | 'max' | n
 /** 刻度线：none / in / out / cross（没写时不画） */
 export const tickMark = (ax: XEl | undefined, name: 'c:majorTickMark' | 'c:minorTickMark') => attr(child(ax, name), 'val') ?? 'none';
 
-export function axisMaker(colors: ColorContext, baseText: TextStyle, part: string, lang = 'zh'): AxisMaker {
+/** defLine：坐标轴线、网格线没写线条时的默认线（default-lines.ts） */
+export function axisMaker(colors: ColorContext, baseText: TextStyle, part: string, lang = 'zh', defLine?: Line): AxisMaker {
   return (ax, vmin, vmax, opts = {}): AxisInfo => {
     const { pct = false, margin, minPos } = opts;
     const style = textStyle(child(ax, 'c:txPr'), colors, baseText);
@@ -123,10 +131,10 @@ export function axisMaker(colors: ColorContext, baseText: TextStyle, part: strin
       lo, hi, ticks, labels: ticks.map((t) => formatNumber(divisor === 1 ? t : t / divisor, fmt)), fmt,
       deleted: attr(child(ax, 'c:delete'), 'val') === '1',
       style,
-      grid: g ? parseLine([child(child(g, 'c:spPr'), 'a:ln')], [colors], part) ?? { color: { r: 217, g: 217, b: 217, a: 1 }, width: 1, cap: 'butt', join: 'round' } : undefined,
+      grid: g ? (defLine ? lineOrDefault(g, colors, part, defLine) : parseLine([child(child(g, 'c:spPr'), 'a:ln')], [colors], part) ?? { color: { r: 217, g: 217, b: 217, a: 1 }, width: 1, cap: 'butt', join: 'round' }) : undefined,
       minor,
       minorGrid: mg ? parseLine([child(child(mg, 'c:spPr'), 'a:ln')], [colors], part) ?? { color: { r: 242, g: 242, b: 242, a: 1 }, width: 1, cap: 'butt', join: 'round' } : undefined,
-      axisLine: parseLine([child(child(ax, 'c:spPr'), 'a:ln')], [colors], part),
+      axisLine: defLine ? lineOrDefault(ax, colors, part, defLine) : parseLine([child(child(ax, 'c:spPr'), 'a:ln')], [colors], part),
       majorMark: tickMark(ax, 'c:majorTickMark'), minorMark: tickMark(ax, 'c:minorTickMark'),
       lblPos: attr(child(ax, 'c:tickLblPos'), 'val') ?? 'nextTo',
       crosses: axisCrosses(ax),
