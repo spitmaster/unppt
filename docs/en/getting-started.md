@@ -83,6 +83,26 @@ npx @unppt/unppt deck.pptx -o out/index.html
 
 The first run downloads the package temporarily, so give it a moment.
 
+**Option 4: download from GitHub (bypassing the npm registry)**
+
+While npm is still reviewing a new version, or when a corporate npm mirror fails, download the package file from the GitHub Release (attached automatically to every release; `latest` is always the newest) and install that local file. Two steps, because npm 12 and later refuse to install straight from a URL by default.
+
+Windows PowerShell:
+
+```powershell
+Invoke-WebRequest https://github.com/spitmaster/unppt/releases/latest/download/unppt.tgz -OutFile unppt.tgz
+npm install -g .\unppt.tgz
+```
+
+macOS / Linux:
+
+```bash
+curl -L -o unppt.tgz https://github.com/spitmaster/unppt/releases/latest/download/unppt.tgz
+npm install -g ./unppt.tgz
+```
+
+For a specific version, replace `latest/download/unppt.tgz` with something like `download/v0.2.0/unppt-unppt-0.2.0.tgz`. Run `unppt -v` afterwards to check the version.
+
 > Running `unppt` with no arguments prints the version and all options.
 
 ---

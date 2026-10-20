@@ -15,6 +15,8 @@ npx -p @unppt/unppt unppt 课件.pptx  # 或者不安装，直接用命令行
 
 需要 Node.js 20.12 及以上。
 
+也可以从 GitHub Release 下载安装包再安装（npm 审核新版本期间、公司内网镜像下载失败时用）：先下载 `https://github.com/spitmaster/unppt/releases/latest/download/unppt.tgz`，再 `npm install -g ./unppt.tgz`。
+
 ## 命令行
 
 ```bash

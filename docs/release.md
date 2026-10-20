@@ -26,3 +26,12 @@ npm 要求发布包的账号**必须开启双重验证（2FA）**，否则发布
 命令在 Windows 的 PowerShell 里同样能用（PowerShell 5.1 不支持 `&&`，上面的命令都是一条一条执行的）。
 
 同一个版本号只能发布一次（撤回后也不能重用），发错了就把版本号加一重新发。
+
+## GitHub Release 和安装包（自动）
+
+推送 `v*` 标签后，GitHub Actions（`.github/workflows/release.yml`）自动构建、测试、`npm pack`，创建同名 Release，附上两个安装包：
+`unppt-unppt-<版本>.tgz` 和固定名字的 `unppt.tgz`（所以 `https://github.com/spitmaster/unppt/releases/latest/download/unppt.tgz` 总是最新版）。
+用户下载后 `npm install -g ./unppt.tgz` 即可安装，不经过 npm 官方源（npm 12 起默认不允许直接从网址或 git 安装，所以文档里写的是先下载再安装）。
+
+已经推送过的标签（例如加这个工作流之前的 v0.2.0）：GitHub 仓库 → Actions → release → Run workflow，填标签名。
+标签和 `packages/transcoder/package.json` 的版本号不一致时工作流会失败。

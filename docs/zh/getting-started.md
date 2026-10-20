@@ -83,6 +83,26 @@ npx @unppt/unppt 演示文稿.pptx -o out/index.html
 
 第一次运行时 npx 会临时下载包，稍等一下即可。
 
+**方式四：从 GitHub 下载安装（不经过 npm 官方源）**
+
+npm 官方源审核新版本期间、或者公司内网镜像下载失败时，可以从 GitHub Release 下载安装包再安装（每个版本发布时自动附上，`latest` 总是最新版）。分两步：先下载安装包文件，再安装这个本地文件（npm 12 起默认不允许直接从网址安装，所以要先下载）。
+
+Windows PowerShell：
+
+```powershell
+Invoke-WebRequest https://github.com/spitmaster/unppt/releases/latest/download/unppt.tgz -OutFile unppt.tgz
+npm install -g .\unppt.tgz
+```
+
+macOS / Linux：
+
+```bash
+curl -L -o unppt.tgz https://github.com/spitmaster/unppt/releases/latest/download/unppt.tgz
+npm install -g ./unppt.tgz
+```
+
+想装指定版本，把网址里的 `latest/download/unppt.tgz` 换成 `download/v0.2.0/unppt-unppt-0.2.0.tgz` 这样的格式。装好后运行 `unppt -v` 看版本号。
+
 > 不带参数运行 `unppt`，会打印版本号和全部选项。
 
 ---
