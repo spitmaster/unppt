@@ -51,7 +51,8 @@ export async function renderText(
   // 页码字段不写 a:t 也显示页码（样本：幻灯片上的页码占位符只有 <a:fld type="slidenum"/>）
   const hasText = paras.some((p) => p.children.some((r) => (r.name === 'a:r' || r.name === 'a:fld') && ((child(r, 'a:t')?.text ?? '').length > 0
     || (r.name === 'a:fld' && attr(r, 'type') === 'slidenum' && env.slideNumber !== undefined))));
-  if (!hasText) return '';
+  // 没有字时不画，但要高度的（表格单元格）照样排：空段落按段尾的字号占一行（实测样本：空单元格撑高表格行）
+  if (!hasText && !out) return '';
 
   const b0 = readBody(bodyPrs, child(txBody, 'a:bodyPr'));
   // 竖排时内边距不跟着文字转，仍在屏幕的左、上、右、下（实测 text-vert-insets）：排版在转过的框里做，
@@ -79,6 +80,7 @@ export async function renderText(
   const layouts: ParagraphLayout[] = [];
   const ctx = { fullChain, env, measurer, fontScale, lnReduce, contentW, wrap, numbering: new BulletNumbering() };
   for (let pi = 0; pi < paras.length; pi++) layouts.push(await layoutParagraph(paras[pi], pi, ctx));
+  if (!hasText) { placeLines(layouts, b, outer, contentW, out); return ''; }
   env.blipHrefs = await pictureFills(layouts, env);
 
   // 艺术字变形：变不了（跟随路径类、缺字体文件）时按普通文字输出

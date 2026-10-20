@@ -134,6 +134,8 @@ export async function convert(input: InputSource, options: ConvertOptions): Prom
   const deckFonts: DeckFont[] = [];
   async function* fontFiles(): AsyncGenerator<{ font: DeckFont; data: Uint8Array }> {
     for (const [face, u] of usage) {
+      // 只排了空格之类的字（一个可见字都没用到）：不出字体文件（空的子集没有 cmap，浏览器解码报错）
+      if (!u.cps.size) continue;
       const data = await subsetFont(face.source, face.offset, u.cps, u.alias);
       if (!data) { pres.warn(`字体子集化失败，没有嵌入：${face.displayFamily}`); continue; }
       const font: DeckFont = { family: u.alias, source: face.displayFamily, weight: face.bold ? 'bold' : 'normal', style: face.italic ? 'italic' : 'normal', format: 'woff' };
