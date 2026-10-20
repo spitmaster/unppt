@@ -35,6 +35,8 @@ export async function renderPicture(r: RenderContext, el: XEl, ctx: SlideContext
   let poster: string | undefined;
   /** 图片调整（重新着色、亮度等）的滤镜：视频画面也一样加（样本：双色调的视频封面） */
   let posterFilter: string | undefined;
+  /** 视频画面和封面一样按裁剪摆放（srcRect / fillRect 和外形裁剪，实测样本：裁掉上下的视频放映时也裁掉） */
+  let videoPlace = { x: 0, y: 0, w: box.w, h: box.h, clip: '' };
   // 图片的外形（裁剪和边框都按它画）：自己没写时按版式、母版里对应占位符的
   // 实测（placeholders-picture、placeholders-picture-geom）：继承链上哪里都没写形状的图片 PowerPoint 不画
   // （占位符继承到母版正文占位符的矩形时照常画；版式占位符是自定义形状时按它裁剪）
@@ -69,6 +71,7 @@ export async function renderPicture(r: RenderContext, el: XEl, ctx: SlideContext
         r.doc.addDef(`<clipPath id="${id}"><path d="${outlineD}"/></clipPath>`);
         clip = ` clip-path="url(#${id})"`;
       }
+      videoPlace = { x: ix, y: iy, w: iw, h: ih, clip };
       parts.push(`<g${clip}><image${flipShift} href="${esc(href)}" x="${n2(ix)}" y="${n2(iy)}" width="${n2(iw)}" height="${n2(ih)}" preserveAspectRatio="none"${fill.alpha < 1 ? ` opacity="${n2(fill.alpha)}"` : ''}${fid ? ` filter="url(#${fid})"` : ''}/></g>`);
     } else {
       r.env.pres.warn('图片无法显示（格式不支持或缺失）');
@@ -98,7 +101,9 @@ export async function renderPicture(r: RenderContext, el: XEl, ctx: SlideContext
         mediaParts.push(`<foreignObject x="0" y="0" width="1" height="1"><audio xmlns="http://www.w3.org/1999/xhtml" data-media="1"${trim} src="${esc(href)}" preload="metadata" style="display:none"></audio></foreignObject>`);
       } else {
         // 视频：显示封面帧，不用浏览器自带控件，点击播放/暂停
-        const video = `<foreignObject x="0" y="0" width="${n2(box.w)}" height="${n2(box.h)}"><video xmlns="http://www.w3.org/1999/xhtml" data-media="1"${trim} src="${esc(href)}" playsinline="" preload="metadata"${poster ? ` poster="${esc(poster)}"` : ''} style="width:100%;height:100%;object-fit:fill"></video></foreignObject>`;
+        const vp = videoPlace;
+        const fo = `<foreignObject x="${n2(vp.x)}" y="${n2(vp.y)}" width="${n2(vp.w)}" height="${n2(vp.h)}"><video xmlns="http://www.w3.org/1999/xhtml" data-media="1"${trim} src="${esc(href)}" playsinline="" preload="metadata"${poster ? ` poster="${esc(poster)}"` : ''} style="width:100%;height:100%;object-fit:fill"></video></foreignObject>`;
+        const video = vp.clip ? `<g${vp.clip}>${fo}</g>` : fo;
         mediaParts.push(posterFilter ? `<g filter="url(#${posterFilter})">${video}</g>` : video);
       }
       mediaLink = true;
