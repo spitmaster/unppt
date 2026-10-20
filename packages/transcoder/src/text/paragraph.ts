@@ -93,7 +93,7 @@ export async function layoutParagraph(p: XEl, pi: number, ctx: ParagraphContext)
   layoutTabs(atoms, tabStops(pPr), defTab, firstX);
 
   // 标点溢出边界：哪里都没写时也开着（实测 text-hanging-unset：老 .ppt 转来的课件常不写），只有写了 "0" 才关
-  const rows = breakLines(atoms, (first) => (first ? availFirst : availRest), wrap, attr(pPr, 'hangingPunct') !== '0', attr(pPr, 'eaLnBrk') !== '0');
+  const rows = breakLines(atoms, (first) => (first ? availFirst : availRest), wrap, attr(pPr, 'hangingPunct') !== '0', attr(pPr, 'eaLnBrk') !== '0', attr(pPr, 'latinLnBrk') === '1');
   const lines: Line[] = rows.map((row, i) => {
     const vis = row.filter((a) => a.text !== '\n');
     // 只有一个换行的空行（两个 a:br 之间没有字）：行高按结束这一行的换行自己的字号（实测 text-br-empty-line）；

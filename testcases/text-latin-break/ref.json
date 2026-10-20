@@ -1,0 +1,240 @@
+{
+ "version": 8,
+ "level": "full",
+ "slideWidthPt": 960.0,
+ "slideHeightPt": 540.0,
+ "imageWidth": 1280,
+ "imageHeight": 720,
+ "slides": [
+  {
+   "index": 0,
+   "hidden": false,
+   "shapes": [
+    {
+     "id": 2,
+     "name": "TextBox 1",
+     "type": 17,
+     "x": 20.0,
+     "y": 20.0,
+     "w": 300.5,
+     "h": 21.811,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 10,
+       "text": "这是一段中文后面跟着",
+       "x": 20.0,
+       "y": 20.0,
+       "w": 240.0,
+       "h": 28.8
+      },
+      {
+       "start": 10,
+       "len": 23,
+       "text": "Internationalization的长单",
+       "x": 20.0,
+       "y": 48.8,
+       "w": 295.005,
+       "h": 28.8
+      },
+      {
+       "start": 33,
+       "len": 1,
+       "text": "词",
+       "x": 20.0,
+       "y": 77.6,
+       "w": 24.005,
+       "h": 28.8
+      }
+     ]
+    },
+    {
+     "id": 3,
+     "name": "TextBox 2",
+     "type": 17,
+     "x": 490.0,
+     "y": 20.0,
+     "w": 300.5,
+     "h": 21.811,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 15,
+       "text": "这是一段中文后面跟着Inter",
+       "x": 490.0,
+       "y": 20.0,
+       "w": 293.3,
+       "h": 28.8
+      },
+      {
+       "start": 15,
+       "len": 19,
+       "text": "nationalization的长单词",
+       "x": 490.0,
+       "y": 48.8,
+       "w": 265.755,
+       "h": 28.8
+      }
+     ]
+    },
+    {
+     "id": 4,
+     "name": "TextBox 3",
+     "type": 17,
+     "x": 20.0,
+     "y": 190.0,
+     "w": 300.5,
+     "h": 21.811,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 14,
+       "text": "会议时间定在下午12:30，",
+       "x": 20.0,
+       "y": 190.0,
+       "w": 278.25,
+       "h": 28.8
+      },
+      {
+       "start": 14,
+       "len": 9,
+       "text": "请准时参加会议讨论",
+       "x": 20.0,
+       "y": 218.8,
+       "w": 216.005,
+       "h": 28.8
+      }
+     ]
+    },
+    {
+     "id": 5,
+     "name": "TextBox 4",
+     "type": 17,
+     "x": 490.0,
+     "y": 190.0,
+     "w": 300.5,
+     "h": 21.811,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 14,
+       "text": "会议时间定在下午12:30，",
+       "x": 490.0,
+       "y": 190.0,
+       "w": 278.25,
+       "h": 28.8
+      },
+      {
+       "start": 14,
+       "len": 9,
+       "text": "请准时参加会议讨论",
+       "x": 490.0,
+       "y": 218.8,
+       "w": 216.005,
+       "h": 28.8
+      }
+     ]
+    },
+    {
+     "id": 6,
+     "name": "TextBox 5",
+     "type": 17,
+     "x": 20.0,
+     "y": 360.0,
+     "w": 300.5,
+     "h": 21.811,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 20,
+       "text": "Mixed English words ",
+       "x": 20.0,
+       "y": 360.0,
+       "w": 243.64,
+       "h": 28.8
+      },
+      {
+       "start": 20,
+       "len": 23,
+       "text": "wrapping inside narrow ",
+       "x": 20.0,
+       "y": 388.8,
+       "w": 277.785,
+       "h": 28.8
+      },
+      {
+       "start": 43,
+       "len": 10,
+       "text": "boxes here",
+       "x": 20.0,
+       "y": 417.6,
+       "w": 124.9,
+       "h": 28.8
+      }
+     ]
+    },
+    {
+     "id": 7,
+     "name": "TextBox 6",
+     "type": 17,
+     "x": 490.0,
+     "y": 360.0,
+     "w": 300.5,
+     "h": 21.811,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 24,
+       "text": "Mixed English words wrap",
+       "x": 490.0,
+       "y": 360.0,
+       "w": 300.39,
+       "h": 28.8
+      },
+      {
+       "start": 24,
+       "len": 25,
+       "text": "ping inside narrow boxes ",
+       "x": 490.0,
+       "y": 388.8,
+       "w": 295.145,
+       "h": 28.8
+      },
+      {
+       "start": 49,
+       "len": 4,
+       "text": "here",
+       "x": 490.0,
+       "y": 417.6,
+       "w": 50.79,
+       "h": 28.8
+      }
+     ]
+    }
+   ],
+   "effects": [],
+   "triggerHidden": [],
+   "steps": 0,
+   "keptSlideshow": false
+  }
+ ],
+ "ok": true
+}
