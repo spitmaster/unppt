@@ -44,6 +44,10 @@ export function readPlots(plotArea: XEl | undefined, colors: ColorContext, part:
     // 日期轴：只画有日期的点，数值比日期多出来的不画、也不参与坐标轴范围（样本：38 个日期、50 个数值的折线）
     const ids = children(p, 'c:axId').map((a) => attr(a, 'val') ?? '');
     const dateCats = !rules.xy && children(plotArea, 'c:dateAx').some((a) => ids.includes(axId(a)));
+    // 日期轴自己写了数字格式（没链接到源）时分类标签按它显示，不按数据缓存的格式（样本：缓存 yyyy-mm-dd、坐标轴 yyyy-mm）
+    const dateAxEl = dateCats ? children(plotArea, 'c:dateAx').find((a) => ids.includes(axId(a))) : undefined;
+    const axFmtEl = child(dateAxEl, 'c:numFmt');
+    const axFmt = axFmtEl && attr(axFmtEl, 'sourceLinked') !== '1' ? attr(axFmtEl, 'formatCode') : undefined;
     // 分类和数值连缓存的点数都没写的系列（样本：别的工具生成的组合图里多出一个空系列"列1"）PowerPoint 不画，数据表里也没有；
     // 留着它的话第一个系列没有分类，整张图的分类标签、数据表都空了
     const hasData = (s: XEl) => cacheValues(child(s, rules.xy ? 'c:xVal' : 'c:cat')).count + cacheValues(child(s, rules.xy ? 'c:yVal' : 'c:val')).count > 0;
@@ -63,7 +67,8 @@ export function readPlots(plotArea: XEl | undefined, colors: ColorContext, part:
       const vals: (number | null)[] = [];
       for (let i = 0; i < n; i++) {
         const c = cat.pts.get(i);
-        cats.push(c === undefined ? String(i + 1) : cat.format !== 'General' && c !== '' && !isNaN(Number(c)) ? formatNumber(Number(c), cat.format) : c);
+        const cf = axFmt ?? cat.format;
+        cats.push(c === undefined ? String(i + 1) : cf !== 'General' && c !== '' && !isNaN(Number(c)) ? formatNumber(Number(c), cf) : c);
         const v = val.pts.get(i);
         // 不是数字的（Excel 错误值 #N/A 等）当空值：柱子不画、折线断开（实测 charts-na-values）
         const num = v === undefined || v === '' ? NaN : Number(v);
