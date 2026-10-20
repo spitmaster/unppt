@@ -198,6 +198,52 @@ def table_basic(app):
     return p
 
 
+def table_latin_rows(app):
+    """英文表格的最小行高：14 / 13 / 11 磅 Calibri 英文（lang en-US），行高设成很小让 PowerPoint 按文字撑开；
+    左表默认，中表段落写了 lnSpc 100%、段前段后 0，右表文字写了主题字体 +mn-lt / +mn-ea / +mn-cs（主题东亚字体是空的，保存后改 XML）"""
+    p = new_pres(app)
+    s = blank(p)
+    for k in range(3):
+        t = s.Shapes.AddTable(6, 2, 20 + k * 310, 30, 290, 100)
+        for r in range(1, 7):
+            t.Table.Rows(r).Height = 5
+            for c in range(1, 3):
+                tr = t.Table.Cell(r, c).Shape.TextFrame.TextRange
+                tr.Text = ["Low-Med", "QQTHEME Leader" if k == 2 else "Leader"][c - 1]
+                tr.Font.Size = [14, 14, 13, 13, 11, 11][r - 1]
+                tr.LanguageID = 1033
+                if k == 1:
+                    tr.ParagraphFormat.SpaceWithin = 1.0
+                    tr.ParagraphFormat.SpaceBefore = 0
+                    tr.ParagraphFormat.SpaceAfter = 0
+    return p
+
+
+def _patch_table_latin_rows(path):
+    import re, zipfile
+    tmp = path.with_suffix(".tmp")
+    with zipfile.ZipFile(path) as zin, zipfile.ZipFile(tmp, "w", zipfile.ZIP_DEFLATED) as zout:
+        for item in zin.infolist():
+            data = zin.read(item.filename)
+            if item.filename.startswith("ppt/slides/slide"):
+                x = data.decode("utf-8")
+                fonts = '<a:latin typeface="+mn-lt"/><a:ea typeface="+mn-ea"/><a:cs typeface="+mn-cs"/>'
+                def fix(m):
+                    tbl = m.group(0)
+                    if "QQTHEME" not in tbl:
+                        return tbl
+                    tbl = tbl.replace("QQTHEME ", "")
+                    tbl = re.sub(r"<a:rPr([^>]*?)/>", lambda r: f"<a:rPr{r.group(1)}>{fonts}</a:rPr>", tbl)
+                    return re.sub(r"<a:endParaRPr([^>]*?)/>", lambda r: f"<a:endParaRPr{r.group(1)}>{fonts}</a:endParaRPr>", tbl)
+                x = re.sub(r"<a:tbl>.*?</a:tbl>", fix, x, flags=re.S)
+                data = x.encode("utf-8")
+            zout.writestr(item, data)
+    tmp.replace(path)
+
+
+table_latin_rows.patch = _patch_table_latin_rows
+
+
 def group_rotate(app):
     """组合、旋转、翻转"""
     p = new_pres(app)
@@ -2506,6 +2552,39 @@ def charts_legend_overflow(app):
     return p
 
 
+def charts_legend_truncate(app):
+    """图例项比图表高度放得下的多：饼图 150 磅高、右侧自动图例、9 磅字，6 / 8 / 10 / 14 项；
+    第 2 页同样的饼图图例手动摆成占满右边的高框，10 / 15 项"""
+    import time
+    p = new_pres(app, window=True)
+    s = blank(p)
+    for k, n in enumerate([6, 8, 10, 14]):
+        ch = s.Shapes.AddChart2(-1, 5, 10 + (k % 2) * 470, 10 + (k // 2) * 260, 300, 150)
+        _chart_values(ch, [["", "系列 1"]] + [[f"类别{i + 1}", 20 - i] for i in range(n)])
+        _close_data(ch)
+        c = ch.Chart
+        time.sleep(1)
+        c.HasTitle = False
+        c.HasLegend = True
+        c.Legend.Position = -4152
+        c.Legend.Format.TextFrame2.TextRange.Font.Size = 9
+    s = blank(p)
+    for k, n in enumerate([10, 15]):
+        ch = s.Shapes.AddChart2(-1, 5, 10 + k * 470, 10, 300, 150)
+        _chart_values(ch, [["", "系列 1"]] + [[f"类别{i + 1}", 20 - i] for i in range(n)])
+        _close_data(ch)
+        c = ch.Chart
+        time.sleep(1)
+        c.HasTitle = False
+        c.HasLegend = True
+        c.Legend.Position = -4152
+        c.Legend.Format.TextFrame2.TextRange.Font.Size = 9
+        time.sleep(0.5)
+        lg = c.Legend
+        lg.Left, lg.Top, lg.Width, lg.Height = 200, 3, 95, 144
+    return p
+
+
 GROUP_EFFECTS = [
     '<a:effectLst><a:outerShdw blurRad="76200" dist="114300" dir="2700000" algn="tl" rotWithShape="0"><a:prstClr val="black"><a:alpha val="60000"/></a:prstClr></a:outerShdw></a:effectLst>',
     '<a:effectLst><a:glow rad="139700"><a:srgbClr val="FFC000"><a:alpha val="60000"/></a:srgbClr></a:glow></a:effectLst>',
@@ -2695,6 +2774,30 @@ def charts_pie_bestfit(app):
         dl.ShowCategoryName = cat
         dl.Position = 5                     # xlLabelPositionBestFit
         dl.Format.TextFrame2.TextRange.Font.Size = fsz
+    return p
+
+
+def charts_pie_label_pos(app):
+    """饼图数据标签位置和饼的大小：数据标签内（inEnd）/ 居中（ctr）/ 最佳位置（bestFit）/ 数据标签外（outEnd），类别名 + 百分比 9 磅"""
+    import time
+    p = new_pres(app, window=True)
+    s = blank(p)
+    for k, pos in enumerate([3, -4108, 5, 2]):
+        ch = s.Shapes.AddChart2(-1, 5, 10 + (k % 2) * 470, 10 + (k // 2) * 265, 300, 255)
+        _chart_values(ch, [["", "系列 1"]] + [[f"类别{i + 1}", v] for i, v in enumerate([40, 30, 20, 10])])
+        _close_data(ch)
+        c = ch.Chart
+        time.sleep(1)
+        c.HasTitle = False
+        c.HasLegend = False
+        ser = c.SeriesCollection(1)
+        ser.HasDataLabels = True
+        dl = ser.DataLabels()
+        dl.ShowValue = False
+        dl.ShowCategoryName = True
+        dl.ShowPercentage = True
+        dl.Position = pos
+        dl.Format.TextFrame2.TextRange.Font.Size = 9
     return p
 
 
@@ -3185,6 +3288,65 @@ def text_numbering(app):
         pf.Bullet.Visible = -1
         pf.Bullet.Type = 2
         pf.Bullet.Style = st
+    return p
+
+
+def text_autonum_symbol_font(app):
+    """自动编号的字体：母版正文样式第一级改成 Wingdings 项目符号；正文占位符里三组编号段落：
+    只写 buAutoNum（字体从母版继承到 Wingdings）/ 同一个 pPr 里写了 buFont Wingdings / buFont +mj-lt（保存后改 XML）"""
+    p = new_pres(app)
+    s = p.Slides.Add(1, 2)
+    s.Shapes(1).TextFrame.TextRange.Text = "编号字体"
+    s.Shapes(2).TextFrame.TextRange.Text = "QQBODY"
+    return p
+
+
+def _patch_autonum_symbol_font(path):
+    import re, zipfile
+    num = '<a:buAutoNum type="arabicPeriod"/>'
+    groups = [("", "继承"), ('<a:buFont typeface="Wingdings" pitchFamily="2" charset="2"/>', "自己写符号字体"), ('<a:buFont typeface="+mj-lt"/>', "标题字体")]
+    paras = []
+    for k, (font, name) in enumerate(groups):
+        for i in range(2):
+            start = f' startAt="{k * 2 + 1}"' if i == 0 and k else ""
+            paras.append(f'<a:p><a:pPr marL="342900" indent="-342900">{font}{num.replace("/>", start + "/>")}</a:pPr>'
+                         f'<a:r><a:rPr lang="zh-CN" altLang="en-US"/><a:t>{name}第{i + 1}段文字</a:t></a:r></a:p>')
+    body = '<p:txBody><a:bodyPr/><a:lstStyle/>' + ''.join(paras) + '</p:txBody>'
+    tmp = path.with_suffix(".tmp")
+    with zipfile.ZipFile(path) as zin, zipfile.ZipFile(tmp, "w", zipfile.ZIP_DEFLATED) as zout:
+        for item in zin.infolist():
+            data = zin.read(item.filename)
+            if item.filename.startswith("ppt/slides/slide"):
+                x = data.decode("utf-8")
+                x = re.sub(r"<p:txBody>(?:(?!</p:txBody>).)*QQBODY.*?</p:txBody>", lambda m: body, x, flags=re.S)
+                data = x.encode("utf-8")
+            elif item.filename == "ppt/slideMasters/slideMaster1.xml":
+                x = data.decode("utf-8")
+                i = x.index("<p:bodyStyle>")
+                j = x.index("</a:lvl1pPr>", i)
+                seg = re.sub(r"<a:buFont [^>]*/>", '<a:buFont typeface="Wingdings" pitchFamily="2" charset="2"/>', x[i:j])
+                seg = re.sub(r"<a:buChar [^>]*/>", '<a:buChar char="&#167;"/>', seg)
+                x = x[:i] + seg + x[j:]
+                data = x.encode("utf-8")
+            zout.writestr(item, data)
+    tmp.replace(path)
+
+
+text_autonum_symbol_font.patch = _patch_autonum_symbol_font
+
+
+def text_kern_zero(app):
+    """字距调整阈值：Calibri 大写（AV、TA、LT、WA 这类有字距对的组合）kern=0 / 1200 / 100，24 磅，看行宽"""
+    p = new_pres(app)
+    s = blank(p)
+    for i, kern in enumerate([0, 12, 1]):
+        t = s.Shapes.AddTextbox(1, 30, 30 + i * 150, 900, 140)
+        t.TextFrame.WordWrap = -1
+        tr = t.TextFrame2.TextRange
+        tr.Text = "AVATAR TAVERN WAVY LT VALLEY TOYOTA AWAY YAWN VAT AVE " * 2
+        tr.Font.Name = "Calibri"
+        tr.Font.Size = 24
+        tr.Font.Kerning = kern
     return p
 
 
@@ -5652,6 +5814,34 @@ def _patch_control_chars(path):
 text_control_chars.patch = _patch_control_chars
 
 
+def text_cr_paragraph(app):
+    """a:t 里的回车 &#13; 是不是分段：段后间距、段前间距、项目符号、首行缩进各一个文本框，
+    回车、换行符 &#10; 对照（文字之间夹控制字符，保存后改 XML）"""
+    p = new_pres(app)
+    s = blank(p)
+    boxes = [("QQCR", "after"), ("QQLF", "after"), ("QQCR", "bullet"), ("QQCR", "before")]
+    for i, (mark, kind) in enumerate(boxes):
+        t = s.Shapes.AddTextbox(1, 40 + (i % 2) * 450, 30 + (i // 2) * 250, 420, 230)
+        tr = t.TextFrame.TextRange
+        tr.Text = f"第一段{mark}第二段文字较长一些会折行显示出来{mark}第三段"
+        tr.Font.Size = 20
+        tr.Font.Name = "Microsoft YaHei"
+        pf = tr.ParagraphFormat
+        if kind == "after":
+            pf.SpaceAfter = 18
+        elif kind == "before":
+            pf.SpaceBefore = 18
+        else:
+            pf.Bullet.Visible = True
+            pf.Bullet.Character = 8226
+            t.TextFrame.Ruler.Levels(1).FirstMargin = 0
+            t.TextFrame.Ruler.Levels(1).LeftMargin = 30
+    return p
+
+
+text_cr_paragraph.patch = _patch_control_chars
+
+
 def placeholders_no_index(app):
     """编号是 4294967295（"没有编号"，老 .ppt 转换常见）的占位符继承谁：第 1 页"标题幻灯片"版式的标题（版式里居中、
     位置在页面中部，母版标题靠左、在顶部），第 2 页"标题和内容"版式的正文；保存后把这两个占位符的编号改成 4294967295。
@@ -6755,7 +6945,7 @@ def _patch_axis_style_defaults(path):
 charts_axis_style_defaults.patch = _patch_axis_style_defaults
 
 
-CASES = [shapes_all, text_sizes, text_align, text_spacing, text_bullets, text_missing_font, shapes_basic, fills_lines, table_basic, group_rotate, anim_basic, anim_auto, charts_basic, pictures, smartart, text_effects, text_layout, table_merge, links, emf_images, anim_advanced, charts_labels, freeform_icons, media_audio, anim_trigger, wmf_images, anim_iterate, picture_transparent, charts_more, shape_effects, equations, anim_path, anim_emphasis, transitions, fills_patterns, text_decoration, anim_entrance, svg_images, charts_markers, hidden_slides, media_background, text_glow_reflection, text_tabs, text_picture_bullets, fills_texture, transition_morph, text_embedded_fonts, text_warp, anim_repeat, charts_sizes, slide_timings, lines_compound, table_diagonal, lines_gradient, fills_radial, fills_rect_gradient, shapes_3d, table_vertical, transitions_more, anim_sound, anim_build, anim_after, anim_text_emphasis, charts_bubble, media_video, charts_options, charts_negative, shapes_bevel, charts_legend, shapes_3d_rotation, smartart_3d, charts_ofpie, charts_3d, anim_group_emphasis, activex_controls, charts_extras, charts_axis_titles, charts_fills, charts_outlines, charts_labels_more, group_scale, group_flip, charts_3d_line, charts_legend_pos, charts_crowded_labels, charts_label_skip, charts_bar_long_names, charts_multilevel, picture_recolor, text_symbols, text_numbering, lines_arrows, table_styles, shapes_styles, charts_styles, placeholders_inherit, text_bold_light, ole_objects, text_hanging_punct, speaker_notes, pictures_tiff, placeholders_picture, pictures_exif, text_picture_fill, pictures_mislabeled, emf_alphablend, placeholders_orphan, picture_fill_rect, slide_number_fields, table_builtin_styles, smartart_matrix, text_layout_unit, colors_gamma, text_latin_cjk_font, text_default_style, text_missing_font_jp, text_ea_line_break, text_ambiguous_punct, text_charset_slides, table_rowspan_tall, text_autofit_round, shapes_3d_contour, emf_clip_modes, placeholders_picture_geom, emf_gradient_fill, text_theme_font_lang, text_anchor_linespacing, table_linespacing, table_fontalgn, text_theme_font_latin, text_margin_right, text_charset_gap, slide_size_repair, fills_shape_gradient, text_shadow_runs, picture_3d_shadow, charts_axis_ea_vert, fills_tile_resample, text_shadow_dist, text_shadow_size, text_shadow_scale, text_shadow_blur, text_glow_scale, text_reflection_dist, shapes_bg_fill, text_control_chars, placeholders_no_index, text_ambiguous_missing_ea, text_missing_panose, emf_bitmap_src, fills_group, fills_rot_with_shape, fills_rot_cut, charts_pct_stacked, picture_bg_fill, charts_legend_manual, charts_long_cats, charts_cat_vertical, charts_cat_rot_len, charts_cat_rot_short, charts_cat_rot_threshold, charts_pie_label_sep, text_slash_break, smartart_colors, text_fontref_ph, text_hanging_unset, table_default_bold, text_missing_cjk_name, text_fakebold_width, text_br_empty_line, text_ea_lang, slide_number_bare_field, text_neg_indent, text_mix_wrap_lines, text_theme_ea_altlang, charts_inner_titles, charts_line_dash, charts_rich_title, text_ea_slot_symbols, charts_date_extra_vals, shape_shadow_nofill_text, text_fontalgn, charts_legend_overflow, group_effects, charts_point_labels, picture_bevel_border, text_outline_fakebold, text_just_hang, text_just_spaces, charts_axis_ea_vert_latin, charts_title_moved, charts_dtable_fonts, charts_pie_manual_labels, charts_axis_title_moved, charts_pie_bestfit, charts_dtable_wrap, charts_axis_min_offset, text_bullet_pos_indent, text_spcpts_round, charts_na_values, lines_dash_caps, text_anchor_ctr, custgeom_no_wh, text_link_kinds, fills_blip_no_mode, text_buchar_multi, text_font_substitutes, charts_empty_series_name, charts_cat_custom_rot, text_ea_latin_cjk, placeholders_footer_base, table_no_style_other, lines_thin_dash, text_super_spc, text_pua_nosym, text_vert_insets, table_fontalgn_tall, charts_dlbl_numfmt, charts_user_shapes, charts_dlbl_clamp, charts_axis_no_sppr, charts_axis_style_defaults]
+CASES = [shapes_all, text_sizes, text_align, text_spacing, text_bullets, text_missing_font, shapes_basic, fills_lines, table_basic, group_rotate, anim_basic, anim_auto, charts_basic, pictures, smartart, text_effects, text_layout, table_merge, links, emf_images, anim_advanced, charts_labels, freeform_icons, media_audio, anim_trigger, wmf_images, anim_iterate, picture_transparent, charts_more, shape_effects, equations, anim_path, anim_emphasis, transitions, fills_patterns, text_decoration, anim_entrance, svg_images, charts_markers, hidden_slides, media_background, text_glow_reflection, text_tabs, text_picture_bullets, fills_texture, transition_morph, text_embedded_fonts, text_warp, anim_repeat, charts_sizes, slide_timings, lines_compound, table_diagonal, lines_gradient, fills_radial, fills_rect_gradient, shapes_3d, table_vertical, transitions_more, anim_sound, anim_build, anim_after, anim_text_emphasis, charts_bubble, media_video, charts_options, charts_negative, shapes_bevel, charts_legend, shapes_3d_rotation, smartart_3d, charts_ofpie, charts_3d, anim_group_emphasis, activex_controls, charts_extras, charts_axis_titles, charts_fills, charts_outlines, charts_labels_more, group_scale, group_flip, charts_3d_line, charts_legend_pos, charts_crowded_labels, charts_label_skip, charts_bar_long_names, charts_multilevel, picture_recolor, text_symbols, text_numbering, lines_arrows, table_styles, shapes_styles, charts_styles, placeholders_inherit, text_bold_light, ole_objects, text_hanging_punct, speaker_notes, pictures_tiff, placeholders_picture, pictures_exif, text_picture_fill, pictures_mislabeled, emf_alphablend, placeholders_orphan, picture_fill_rect, slide_number_fields, table_builtin_styles, smartart_matrix, text_layout_unit, colors_gamma, text_latin_cjk_font, text_default_style, text_missing_font_jp, text_ea_line_break, text_ambiguous_punct, text_charset_slides, table_rowspan_tall, text_autofit_round, shapes_3d_contour, emf_clip_modes, placeholders_picture_geom, emf_gradient_fill, text_theme_font_lang, text_anchor_linespacing, table_linespacing, table_fontalgn, text_theme_font_latin, text_margin_right, text_charset_gap, slide_size_repair, fills_shape_gradient, text_shadow_runs, picture_3d_shadow, charts_axis_ea_vert, fills_tile_resample, text_shadow_dist, text_shadow_size, text_shadow_scale, text_shadow_blur, text_glow_scale, text_reflection_dist, shapes_bg_fill, text_control_chars, placeholders_no_index, text_ambiguous_missing_ea, text_missing_panose, emf_bitmap_src, fills_group, fills_rot_with_shape, fills_rot_cut, charts_pct_stacked, picture_bg_fill, charts_legend_manual, charts_long_cats, charts_cat_vertical, charts_cat_rot_len, charts_cat_rot_short, charts_cat_rot_threshold, charts_pie_label_sep, text_slash_break, smartart_colors, text_fontref_ph, text_hanging_unset, table_default_bold, text_missing_cjk_name, text_fakebold_width, text_br_empty_line, text_ea_lang, slide_number_bare_field, text_neg_indent, text_mix_wrap_lines, text_theme_ea_altlang, charts_inner_titles, charts_line_dash, charts_rich_title, text_ea_slot_symbols, charts_date_extra_vals, shape_shadow_nofill_text, text_fontalgn, charts_legend_overflow, group_effects, charts_point_labels, picture_bevel_border, text_outline_fakebold, text_just_hang, text_just_spaces, charts_axis_ea_vert_latin, charts_title_moved, charts_dtable_fonts, charts_pie_manual_labels, charts_axis_title_moved, charts_pie_bestfit, charts_dtable_wrap, charts_axis_min_offset, text_bullet_pos_indent, text_spcpts_round, charts_na_values, lines_dash_caps, text_anchor_ctr, custgeom_no_wh, text_link_kinds, fills_blip_no_mode, text_buchar_multi, text_font_substitutes, charts_empty_series_name, charts_cat_custom_rot, text_ea_latin_cjk, placeholders_footer_base, table_no_style_other, lines_thin_dash, text_super_spc, text_pua_nosym, text_vert_insets, table_fontalgn_tall, charts_dlbl_numfmt, charts_user_shapes, charts_dlbl_clamp, charts_axis_no_sppr, charts_axis_style_defaults, text_cr_paragraph, charts_pie_label_pos, text_autonum_symbol_font, text_kern_zero, charts_legend_truncate, table_latin_rows]
 
 
 def main():
