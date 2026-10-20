@@ -51,7 +51,7 @@ The player (click, arrow keys, space bar or swipe left/right to move on):
 
 ## Status and accuracy
 
-Current version: **0.2.2**.
+Current version: **0.2.3**.
 
 Accuracy is measured with **SSIM** (structural similarity, a number from 0 to 1 where 1 means the two images are identical): each page drawn by unppt is compared with the image PowerPoint exports, and **a page passes when SSIM ≥ 0.95**.
 
@@ -120,7 +120,7 @@ Open the generated `index.html` in a browser and it plays. Without `-o`, all out
 | `-o, --out <file>` | Output file, defaults to `index.html` in a new folder named after the .pptx; for the `paged` / `pages` forms it is an output folder |
 | `--output <form>` | Output form: `single` (default, one self-contained HTML), `paged` (on-demand loading), `pages` (paged plus one HTML per slide), `data` (same as `--data`) |
 | `--fonts <dir>` | Font folder (repeatable); text is laid out with real glyph widths |
-| `--system-fonts` | Use the system font folders; Office's private fonts and cloud fonts (Aptos, Gill Sans MT, ...) are used too and embedded in the output when used (browsers cannot use these fonts since they are not installed in the system) |
+| `--system-fonts` | **On by default** (since 0.2.3): use the system fonts so text is laid out with real glyph widths and wraps like PowerPoint; Office private and cloud fonts are embedded when used. `--no-system-fonts` turns it off (widths are then estimated and line breaks may differ) |
 | `--embed-fonts` | Embed subsets of the fonts used (viewers need no installed fonts and see exactly what was laid out; mind licensing for commercial fonts) |
 | `--data` | Output only the deck data `deck.json` (for development and debugging) |
 | `--no-images` | Do not output slide images `pic/` and thumbnails `thum/` (`prop.json` is still written) |

@@ -103,7 +103,7 @@ npm install -g ./unppt.tgz
 
 macOS / Linux 提示权限不足（`EACCES` / `permission denied`）时，第二行改成 `sudo npm install -g ./unppt.tgz`，按提示输入电脑登录密码。
 
-想装指定版本，把网址里的 `latest/download/unppt.tgz` 换成 `download/v0.2.2/unppt-unppt-0.2.2.tgz` 这样的格式。装好后运行 `unppt -v` 看版本号。
+想装指定版本，把网址里的 `latest/download/unppt.tgz` 换成 `download/v0.2.3/unppt-unppt-0.2.3.tgz` 这样的格式。装好后运行 `unppt -v` 看版本号。
 
 > 不带参数运行 `unppt`，会打印版本号和全部选项。
 
@@ -396,7 +396,7 @@ flowchart LR
 | 选项 | 作用 | 什么时候用 |
 |---|---|---|
 | `--fonts <目录>` | 从这个目录（包括子目录）读取 `.ttf` / `.otf` / `.ttc` 字体，按真实字宽排版。可以写多次 | 服务器上没有系统字体，或者你有一套专门的字体 |
-| `--system-fonts` | 使用本机系统字体目录。Office 自带的私有字体和云字体（例如 Aptos、Gill Sans MT、Tw Cen MT）也会用上，并且**用到时自动嵌入产物**（因为浏览器用不了这些没装进系统的字体） | 在装了 Office 的电脑上转码，效果最好 |
+| `--system-fonts` | 使用本机系统字体目录。Office 自带的私有字体和云字体（例如 Aptos、Gill Sans MT、Tw Cen MT）也会用上，并且**用到时自动嵌入产物**（因为浏览器用不了这些没装进系统的字体） | **默认开启**（0.2.3 起）：使用本机系统字体，按真实字宽排版，换行才和 PowerPoint 一致；Office 自带的私有字体、云字体用到时嵌入产物。加 `--no-system-fonts` 关闭（关闭后字宽只能估算，换行可能和 PowerPoint 不同） |
 | `--embed-fonts` | 把用到的字做成字体子集（只包含用到的字）嵌入产物，观看端不需要安装字体 | 观看的人可能没装这些字体。**商业字体注意分发授权** |
 
 `--system-fonts` 会查找的目录：

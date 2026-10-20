@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * 命令行：unppt <输入.pptx> [-o 输出.html] [--fonts 目录]... [--system-fonts] [--output 形式] [--inline-limit 字节]
+ * 命令行：unppt <输入.pptx> [-o 输出.html] [--fonts 目录]... [--no-system-fonts] [--output 形式] [--inline-limit 字节]
  * （旧写法 unppt convert <输入.pptx> 仍然可用）
  *
  * 这一层负责读写文件；转码本身（convert）不碰文件系统。
@@ -108,7 +108,9 @@ function usage(code = 1): never {
   --output <形式>         产物形式：single（默认，一个自包含的 HTML）、paged（按需加载：入口 HTML + 每页单独的数据文件，
                           看当前页时预加载下一页）、pages（paged 再加每页一个独立的 HTML）、data（同 --data）
   --fonts <目录>          字体目录（可以写多次），用来按真实字宽排版
-  --system-fonts          使用本机系统字体目录（另外 Office 自带的私有字体、云字体用到时嵌入产物）
+  --no-system-fonts       不用本机系统字体（默认会用：按真实字宽排版，换行才和 PowerPoint 一致；Office 自带的私有字体、
+                          云字体用到时嵌入产物）。不用时字宽只能估算，换行位置可能不同
+  --system-fonts          （默认已开，0.2.2 及以前要写）
   --embed-fonts           把用到的字做成字体子集嵌入（观看端无需安装字体；商业字体注意授权）
   --data                  只输出演示数据 deck.json（开发调试用）
   --no-images             不输出整页图 pic/ 和缩略图 thum/（prop.json 照常输出，见 SPEC F1）
@@ -132,6 +134,8 @@ async function main() {
   let out = '';
   const fontDirs: string[] = [];
   const privateDirs: string[] = [];
+  // 默认用本机系统字体（0.2.3 起）：不用时字宽只能估算，换行和 PowerPoint 不一样
+  let systemFonts = true;
   let form = 'single';
   let images = true;
   let embedFonts = false;
@@ -143,7 +147,8 @@ async function main() {
     const a = args[i];
     if (a === '-o' || a === '--out') out = args[++i];
     else if (a === '--fonts') fontDirs.push(args[++i]);
-    else if (a === '--system-fonts') { fontDirs.push(...systemFontDirs()); privateDirs.push(...officeFontDirs()); }
+    else if (a === '--system-fonts') systemFonts = true;
+    else if (a === '--no-system-fonts') systemFonts = false;
     else if (a === '--data') form = 'data';
     else if (a === '--output') form = args[++i];
     else if (a === '--no-images') images = false;
@@ -154,6 +159,7 @@ async function main() {
     else if (a === '--jobs') jobs = args[++i];
     else usage();
   }
+  if (systemFonts) { fontDirs.push(...systemFontDirs()); privateDirs.push(...officeFontDirs()); }
   const dataOnly = form === 'data';
   // 按需加载的形式输出一个目录
   const dirForm = form === 'paged' || form === 'pages';

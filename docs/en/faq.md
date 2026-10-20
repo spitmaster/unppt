@@ -266,9 +266,9 @@ Please include in the issue:
 
 ## Versioning
 
-- The current version is **0.2.2**; the npm package is `@unppt/unppt` and needs Node.js 20.12 or later;
+- The current version is **0.2.3**; the npm package is `@unppt/unppt` and needs Node.js 20.12 or later;
 - versions have the form "major.minor.patch". 0.x means early stage: interfaces and options may change between versions, so read the release notes on GitHub before upgrading;
 - every release has a matching tag on GitHub (in the form `v0.1.0`); a version number is published to npm only once;
-- to pin a version: `npm install @unppt/unppt@0.2.2`, or `npx @unppt/unppt@0.2.2 ...`; to see the latest version on npm: `npm view @unppt/unppt version`;
+- to pin a version: `npm install @unppt/unppt@0.2.3`, or `npx @unppt/unppt@0.2.3 ...`; to see the latest version on npm: `npm view @unppt/unppt version`;
 - **the output format has its own version**: `"format": "unppt-deck", "version": 1` in `deck.json`. The number goes up when the format changes, and a player that meets a newer version than it knows reports a clear error (asking for a player upgrade);
 - every output **carries its own player**, so decks you have already converted are not affected by later upgrades; to get the improvements of a new version, simply convert again.

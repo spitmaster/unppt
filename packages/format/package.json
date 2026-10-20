@@ -1,6 +1,6 @@
 {
   "name": "@unppt/format",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "description": "unppt 演示数据格式与 bridge 协议的类型定义",
   "license": "Apache-2.0",
   "type": "module",

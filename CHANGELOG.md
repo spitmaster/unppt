@@ -1,5 +1,15 @@
 # 更新日志 / Changelog
 
+## 0.2.3（2026-10-20）
+
+**中文**
+
+- 命令行默认使用本机系统字体（以前要加 `--system-fonts`）：按真实字宽排版，换行位置和 PowerPoint 一致。不加时字宽只能估算，像省略号"……"这类字宽度估错，一行会多塞或少塞几个字。不想用时加 `--no-system-fonts`；`--system-fonts` 仍然可以写。
+
+**English**
+
+- The CLI now uses the system fonts by default (previously `--system-fonts` was needed), so text wraps like PowerPoint. Without them widths are estimated and characters such as the ellipsis "……" can shift line breaks. Use `--no-system-fonts` to opt out; `--system-fonts` is still accepted.
+
 ## 0.2.2（2026-10-20）
 
 **中文**

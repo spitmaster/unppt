@@ -58,7 +58,7 @@ Everything below comes from `packages/transcoder/src/cli.ts`:
 | `--output <form>` | `single`, `paged`, `pages`, `data` (`html` is the old name of `single`) | `single` | Output form. An unknown form is an error |
 | `--data` | none | off | Same as `--output data` |
 | `--fonts <dir>` | folder | none | Font folder; `.ttf` / `.otf` / `.ttc` inside it are read recursively and used to lay out text with real widths. Can be repeated |
-| `--system-fonts` | none | off | Use the system font folders; Office private and cloud fonts are used for layout too, and the characters used from them are always embedded |
+| `--system-fonts` | none | on | **On by default** (since 0.2.3): use the system fonts so text is laid out with real glyph widths and wraps like PowerPoint; Office private and cloud fonts are embedded when used. `--no-system-fonts` turns it off (widths are then estimated and line breaks may differ) |
 | `--embed-fonts` | none | off | Embed subsets of the used fonts so viewers need not install them (mind commercial font licenses) |
 | `--no-images` | none | images on | Do not write slide images `pic/` and thumbnails `thum/` (`prop.json` is still written) |
 | `--jobs <n\|auto>` | positive integer or `auto` | `auto` | How many threads draw slide images in parallel. `auto` takes the smaller of the CPU count (the CPU quota inside a container) and available memory (400 MB budgeted per thread); `1` draws on the main thread |

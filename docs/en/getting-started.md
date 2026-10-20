@@ -103,7 +103,7 @@ npm install -g ./unppt.tgz
 
 On macOS / Linux, if you get a permission error (`EACCES` / `permission denied`), use `sudo npm install -g ./unppt.tgz` and enter your login password.
 
-For a specific version, replace `latest/download/unppt.tgz` with something like `download/v0.2.2/unppt-unppt-0.2.2.tgz`. Run `unppt -v` afterwards to check the version.
+For a specific version, replace `latest/download/unppt.tgz` with something like `download/v0.2.3/unppt-unppt-0.2.3.tgz`. Run `unppt -v` afterwards to check the version.
 
 > Running `unppt` with no arguments prints the version and all options.
 
@@ -397,7 +397,7 @@ Fonts are needed at two moments: **conversion** (decides the layout) and **viewi
 | Option | What it does | When to use |
 |---|---|---|
 | `--fonts <dir>` | Reads `.ttf` / `.otf` / `.ttc` fonts from this folder (including sub-folders) to lay out text with real widths. Can be repeated | The server has no system fonts, or you have a dedicated font set |
-| `--system-fonts` | Uses the system font folders of this machine. Office's private and cloud fonts (e.g. Aptos, Gill Sans MT, Tw Cen MT) are used too and are **automatically embedded when used** (browsers cannot use fonts that are not installed in the system) | Converting on a computer with Office gives the best results |
+| `--system-fonts` | Uses the system font folders of this machine. Office's private and cloud fonts (e.g. Aptos, Gill Sans MT, Tw Cen MT) are used too and are **automatically embedded when used** (browsers cannot use fonts that are not installed in the system) | **On by default** (since 0.2.3): use the system fonts so text is laid out with real glyph widths and wraps like PowerPoint; Office private and cloud fonts are embedded when used. `--no-system-fonts` turns it off (widths are then estimated and line breaks may differ) |
 | `--embed-fonts` | Embeds a subset of each used font (only the characters used), so viewers need not install the fonts | Viewers may not have the fonts. **Mind the distribution license of commercial fonts** |
 
 Folders searched by `--system-fonts`:
