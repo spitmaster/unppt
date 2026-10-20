@@ -91,6 +91,15 @@ npm install -g @unppt/unppt
 unppt 演示文稿.pptx -o out/index.html --system-fonts
 ```
 
+**或者从 GitHub 下载安装**（npm 审核新版本期间、公司内网镜像下载失败时用；说明见 [快速上手](docs/zh/getting-started.md)）
+
+```powershell
+Invoke-WebRequest https://github.com/spitmaster/unppt/releases/latest/download/unppt.tgz -OutFile unppt.tgz
+npm install -g .\unppt.tgz
+```
+
+macOS / Linux 把第一行换成 `curl -L -o unppt.tgz <同一个网址>`，第二行用 `./unppt.tgz`。
+
 `--system-fonts` 表示用本机装的字体排版，这样换行位置才和 PowerPoint 一致（字体的说明见 [docs/zh/usage.md](docs/zh/usage.md)）。
 
 **第 2 步：打开产物**

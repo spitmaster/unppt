@@ -91,6 +91,15 @@ npm install -g @unppt/unppt
 unppt presentation.pptx -o out/index.html --system-fonts
 ```
 
+**Or download and install from GitHub** (while npm reviews a new version, or behind a corporate mirror; see [Getting started](docs/en/getting-started.md))
+
+```powershell
+Invoke-WebRequest https://github.com/spitmaster/unppt/releases/latest/download/unppt.tgz -OutFile unppt.tgz
+npm install -g .\unppt.tgz
+```
+
+On macOS / Linux use `curl -L -o unppt.tgz <same URL>` and `./unppt.tgz`.
+
 `--system-fonts` lays text out with the fonts installed on your machine, so line breaks match PowerPoint (fonts are explained in [docs/en/usage.md](docs/en/usage.md)).
 
 **Step 2: open the output**

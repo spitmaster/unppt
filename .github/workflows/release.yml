@@ -1,0 +1,86 @@
+# 发布到 GitHub Release：推送 v* 标签时自动构建、测试、打包，把安装包（npm 包文件 .tgz）附在 Release 上，
+# 用户不经过 npm 也能下载安装（见 README「从 GitHub 安装」）。
+# 已经推送过的标签可以在 Actions 页面手动运行，填标签名（如 v0.2.0）。
+name: release
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 要发布的标签（如 v0.2.0）
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    env:
+      TAG: ${{ github.event.inputs.tag || github.ref_name }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.tag || github.ref }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: 安装依赖
+        run: npm ci
+
+      - name: 构建
+        run: npm run build
+
+      - name: 测试
+        run: npm test
+
+      - name: 检查版本号和标签一致
+        run: |
+          v=$(node -p "require('./packages/transcoder/package.json').version")
+          if [ "v$v" != "$TAG" ]; then echo "标签 $TAG 和 package.json 的版本 $v 不一致"; exit 1; fi
+
+      - name: 打包
+        working-directory: packages/transcoder
+        run: |
+          npm pack
+          cp unppt-unppt-*.tgz unppt.tgz
+
+      - name: 发布说明（取 CHANGELOG 里这个版本的一段）
+        run: |
+          v="${TAG#v}"
+          awk -v v="$v" '/^## /{p = index($0, "## " v) == 1} p' CHANGELOG.md > notes.md
+          cat >> notes.md <<'EOF'
+
+          ---
+
+          **从 GitHub 安装 / Install from GitHub**（需要 Node.js 20.12+）
+
+          Windows PowerShell：
+
+          ```
+          Invoke-WebRequest https://github.com/spitmaster/unppt/releases/latest/download/unppt.tgz -OutFile unppt.tgz
+          npm install -g .\unppt.tgz
+          ```
+
+          macOS / Linux：
+
+          ```
+          curl -L -o unppt.tgz https://github.com/spitmaster/unppt/releases/latest/download/unppt.tgz
+          npm install -g ./unppt.tgz
+          ```
+          EOF
+
+      - name: 创建或更新 Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          files="packages/transcoder/unppt-unppt-${TAG#v}.tgz packages/transcoder/unppt.tgz"
+          if gh release view "$TAG" > /dev/null 2>&1; then
+            gh release upload "$TAG" $files --clobber
+          else
+            gh release create "$TAG" $files --title "$TAG" --notes-file notes.md
+          fi
