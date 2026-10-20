@@ -48,9 +48,9 @@ export function readPlots(plotArea: XEl | undefined, colors: ColorContext, part:
     const dateAxEl = dateCats ? children(plotArea, 'c:dateAx').find((a) => ids.includes(axId(a))) : undefined;
     const axFmtEl = child(dateAxEl, 'c:numFmt');
     const axFmt = axFmtEl && attr(axFmtEl, 'sourceLinked') !== '1' ? attr(axFmtEl, 'formatCode') : undefined;
-    // 分类和数值连缓存的点数都没写的系列（样本：别的工具生成的组合图里多出一个空系列"列1"）PowerPoint 不画，数据表里也没有；
-    // 留着它的话第一个系列没有分类，整张图的分类标签、数据表都空了
-    const hasData = (s: XEl) => cacheValues(child(s, rules.xy ? 'c:xVal' : 'c:cat')).count + cacheValues(child(s, rules.xy ? 'c:yVal' : 'c:val')).count > 0;
+    // 数值连缓存的点数都没写的系列（样本：别的工具生成的组合图里多出一个空系列"列1"；有名字、有分类但数值没缓存的两个系列）
+    // PowerPoint 不画，图例、数据表里也没有；留着它的话第一个系列没有分类时整张图的分类标签、数据表都空了
+    const hasData = (s: XEl) => cacheValues(child(s, rules.xy ? 'c:yVal' : 'c:val')).count > 0;
     const sers = children(p, 'c:ser');
     if (sers.length && !sers.some(hasData)) continue;
     const series: Series[] = sers.filter(hasData).map((s) => {
