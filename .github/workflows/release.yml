@@ -18,6 +18,7 @@ permissions:
 jobs:
   release:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     env:
       TAG: ${{ github.event.inputs.tag || github.ref_name }}
     steps:
@@ -25,9 +26,11 @@ jobs:
         with:
           ref: ${{ github.event.inputs.tag || github.ref }}
 
+      # 测试用 esbuild 现场打包源码、没指定目标版本，会用到 Node 25 起才有的 Uint8Array.fromBase64，所以用最新的 Node；
+      # 发布出去的包构建时指定了目标版本（node20），Node 20.12+ 都能用
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: current
 
       - name: 安装依赖
         run: npm ci
@@ -36,6 +39,7 @@ jobs:
         run: npm run build
 
       - name: 测试
+        timeout-minutes: 5
         run: npm test
 
       - name: 检查版本号和标签一致
