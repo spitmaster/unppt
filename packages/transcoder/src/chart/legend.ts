@@ -39,12 +39,17 @@ function entriesOf(plots: Plot[], colors: ColorContext, legend: XEl | undefined)
     s?.cats.forEach((c, i) => entries.push({ name: c, color: s.pointFills.get(i) ?? accentColor(i, colors), line: false, marker: false, ...(s.pointPaints?.has(i) ? { paint: s.pointPaints.get(i) } : {}), stroke: strokeOf(s, i) }));
     return keep(entries);
   }
-  entries.push(...keep(seriesEntries(plots, colors)));
+  const series = seriesEntries(plots, colors);
+  entries.push(...keep(series));
   if (type0.legendReversed?.(plots[0], vertical)) entries.reverse();
-  // 趋势线排在所有系列后面
+  // 趋势线排在所有系列后面（删除图例项的编号接着系列往下数，样本：删掉 idx 2 = 第一条趋势线）
+  let k = series.length;
   for (const p of plots) {
     for (const s of p.series) {
-      for (const t of s.trendlines) if (t.line.color) entries.push({ name: t.name, color: t.line.color, line: true, marker: false, width: t.line.width, dash: dashCap(t.line) });
+      for (const t of s.trendlines) {
+        if (t.line.color && !deleted.has(k)) entries.push({ name: t.name, color: t.line.color, line: true, marker: false, width: t.line.width, dash: dashCap(t.line) });
+        k++;
+      }
     }
   }
   return entries;
@@ -119,18 +124,32 @@ function autoLegend(legend: XEl | undefined, plots: Plot[], area: Rect, w: numbe
     const keyW = (e: LegendEntry) => (anyLine ? LEGEND_LINE_KEY : e.line ? ks * 3 : legendSquare(sz));
     const kGap = legendKeyGap(sz, anyLine), lead = legendLead(sz, anyLine);
     const parts = entries.map((e) => keyW(e) + kGap + tw(e.name, sz, legendText.font));
-    const gap = legendItemGap(sz, anyLine, parts.reduce((a, b) => a + b, 0) / Math.max(1, parts.length));
-    const total = lead + parts.reduce((a, b) => a + b, 0) + gap * Math.max(0, entries.length - 1);
-    let x = (w - total) / 2 + lead;
+    const sum = parts.reduce((a, b) => a + b, 0), n = entries.length;
+    // 一行放不下（可用宽 = 图表宽 − 两边留白）时先把项间距压到最小；还放不下就排成等宽的网格（列宽 = 最宽一项 + 最小间距，
+    // 列数按行数平衡，例如 9 项排 5 + 4），整体居中，每多一行图例带加高一行（实测 charts-legend-bottom-wrap）
+    const avail = w - 2 * PAD, minGap = 0.25 * sz;
+    let gap = legendItemGap(sz, anyLine, sum / Math.max(1, n));
+    if (lead + sum + gap * Math.max(0, n - 1) > avail) gap = minGap;
+    let cols = n, colW = 0;
+    if (lead + sum + gap * Math.max(0, n - 1) > avail && n > 1) {
+      colW = Math.max(...parts) + minGap;
+      cols = Math.ceil(n / Math.ceil(n / Math.max(1, Math.floor((avail - lead + minGap) / colW))));
+    }
+    const rowH = legendRow(sz), extraH = (Math.ceil(n / Math.max(1, cols)) - 1) * rowH;
+    const total = colW ? lead + cols * colW - minGap : lead + sum + gap * Math.max(0, n - 1);
+    const x0 = (w - total) / 2 + lead;
     // 上方图例：中心在 9 磅 + 0.515 倍字号处，下沿（12 磅 + 1.03 倍字号）再往下 11 磅才是绘图区（COM 读 3 种字号，导出图核对）
-    const y = legendPos === 'b' ? bottom - legendCenter(sz) : top + shift - PAD + legendTopCenter(sz);
+    const y0 = legendPos === 'b' ? bottom - legendCenter(sz) - extraH : top + shift - PAD + legendTopCenter(sz);
+    let x = x0;
     entries.forEach((e, i) => {
+      const y = y0 + Math.floor(i / cols) * rowH;
+      if (colW) x = x0 + (i % cols) * colW;
       if (!e.none) out.push(anyLine ? legendKey(e, x, y, legendSquare(sz), keyW(e)) : legendKey(e, x, y, e.line ? ks : legendSquare(sz)));
       out.push(label(e.name, x + keyW(e) + kGap, y, legendText, 'start'));
       x += parts[i] + gap;
     });
-    if (legendPos === 'b') bottom -= bandOf(legendText.size);
-    else top += legendTopBand(sz);
+    if (legendPos === 'b') bottom -= bandOf(legendText.size) + extraH;
+    else top += legendTopBand(sz) + extraH;
   } else {
     // 竖排图例（左、右）：键和横排一样（有线条项时所有键等宽），每行 legendRow；整体在上下范围里居中，
     // 右侧图例的文字右端对齐图表留白线（左侧的键左端对齐）；键到文字、键到绘图区的距离见 layout.ts（实测）。
