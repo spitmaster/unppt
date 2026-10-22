@@ -1,5 +1,31 @@
 # 更新日志 / Changelog
 
+## 0.2.6（2026-10-22）
+
+**中文**
+
+用三批真实课件（1.1 万页）逐页对照 PowerPoint 修的问题：
+
+- 文字里直接写的回车、换行符按分段排（每段各有段距、项目符号），以前挤成一段；
+- 细明体等 Office 云字体嵌入后浏览器不再拒绝；
+- 视频画面按图片的裁剪显示；
+- 表格空单元格也撑高行；允许西文单词中间断行（latinLnBrk）；kern="0" 不做字距调整；自动编号遇到符号字体时用正文字体，起始编号不同重新计数；
+- 图表：坐标轴没写线条时画默认线；数据挤在一起时数值轴不从 0 起；主轴删掉时两轴共用刻度；日期轴用坐标轴自己的数字格式；数值没缓存的空系列不画、不进图例；透明标记不画；默认系列名"系列N"；
+- 图例：下方 / 上方图例一行放不下时排成多行网格；竖排图例放不下只画前几项；支持删除单个图例项；饼图标签在扇区内时不缩小饼；
+- EMF 细线至少 1 像素；缩到几乎没有的阴影不画。
+
+**English**
+
+Fixes found by comparing three batches of real decks (11k slides) with PowerPoint:
+
+- Carriage returns / line feeds inside text are paragraph breaks (each part gets its own spacing and bullet);
+- Embedded Office cloud fonts (e.g. MingLiU) are no longer rejected by browsers;
+- Video frames honor the picture crop;
+- Empty table cells contribute to row height; latinLnBrk (break inside Latin words); kern="0" disables kerning; auto-numbers ignore symbol bullet fonts and restart when startAt differs;
+- Charts: default axis/gridlines when none are written; value axis no longer starts at 0 when data are tightly clustered; shared scale when the primary axis is deleted; date axis number format; series without cached values are skipped (incl. legend); transparent markers hidden; default series name "系列N";
+- Legends: bottom/top legends wrap into a grid when one row doesn't fit; vertical legends show only the entries that fit; deleted legend entries; pies with inside labels are not shrunk;
+- EMF hairlines are at least 1 px; shadows scaled to almost nothing are not drawn.
+
 ## 0.2.5（2026-10-20）
 
 **中文**
