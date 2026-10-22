@@ -3,7 +3,8 @@
 用 PowerPoint 按随机种子批量造文本框（字体、字号、框宽、对齐、缩进、项目符号、中英数标点混排），
 生成后立刻读出 PowerPoint 实际排出的每一行文字（TextRange.Lines），存成标准答案。内容都是合成的中性文字。
 
-用法：python tools/wraptest/gen.py <种子> [页数，默认 40]
+用法：python tools/wraptest/gen.py <种子> [页数，默认 40] [--rich]
+  --rich：再随机加上形状（矩形、圆角矩形、椭圆）里的文字、粗体、字间距、同一段里混合字号、"溢出时缩小文字"
 输出：.cache/wraptest/<种子>.pptx 和 <种子>.json（每个文本框的参数和 PowerPoint 的每一行）
 """
 from __future__ import annotations
@@ -67,14 +68,47 @@ def paragraph(rnd: random.Random) -> tuple[str, str]:
     return kind, "".join(parts)
 
 
-def make_box(slide, rnd: random.Random, x: float, y: float, w: float, h: float) -> dict:
+SHAPES = {"rect": 1, "roundRect": 5, "ellipse": 9}
+
+
+def enrich(s, tr, rnd: random.Random, size: float) -> dict:
+    """--rich 的随机变化：返回记到答案里的参数"""
+    extra = {}
+    if rnd.random() < 0.25:
+        tr.Font.Bold = -1
+        extra["bold"] = True
+    if rnd.random() < 0.2:
+        spc = rnd.choice([-1, -0.5, 1, 2, 3])
+        s.TextFrame2.TextRange.Font.Spacing = spc
+        extra["spc"] = spc
+    if rnd.random() < 0.25 and tr.Length > 4:
+        # 同一段里一部分字换字号
+        a = rnd.randint(1, tr.Length - 2)
+        n = rnd.randint(1, min(12, tr.Length - a))
+        sz = rnd.choice([size * 0.6, size * 1.5, size * 2])
+        tr.Characters(a, n).Font.Size = round(sz)
+        extra["mixSize"] = [a, n, round(sz)]
+    if rnd.random() < 0.15:
+        s.TextFrame2.AutoSize = 2  # 溢出时缩小文字
+        extra["shrink"] = True
+    return extra
+
+
+def make_box(slide, rnd: random.Random, x: float, y: float, w: float, h: float, rich: bool = False) -> dict:
     latin, ea = rnd.choice(FONTS)
     size = rnd.choice([10, 12, 14, 16, 18, 20, 24, 28, 32, 40])
     width = rnd.choice([w * 0.35, w * 0.5, w * 0.7, w])
     algn = rnd.choice(["l", "l", "l", "ctr", "r", "just", "just", "dist"])
     paras = [paragraph(rnd) for _ in range(rnd.randint(1, 3))]
     text = "\r".join(p[1] for p in paras)
-    s = slide.Shapes.AddTextbox(1, x, y, width, h)
+    shape = rnd.choice(["text", "text", "rect", "roundRect", "ellipse"]) if rich else "text"
+    if shape == "text":
+        s = slide.Shapes.AddTextbox(1, x, y, width, h)
+    else:
+        s = slide.Shapes.AddShape(SHAPES[shape], x, y, width, h)
+        s.Fill.Visible = 0
+        s.Line.ForeColor.RGB = 0x999999
+        s.TextFrame.TextRange.Font.Color.RGB = 0
     tf = s.TextFrame
     tf.WordWrap = -1
     tf.AutoSize = 0
@@ -97,6 +131,7 @@ def make_box(slide, rnd: random.Random, x: float, y: float, w: float, h: float) 
         lv.FirstMargin, lv.LeftMargin = 0, size * 1.2
     if rnd.random() < 0.3:
         tr.ParagraphFormat.SpaceWithin = rnd.choice([0.9, 1.2, 1.5])
+    extra = enrich(s, tr, rnd, size) if rich else {}
     s.Height = h
     lines = []
     i = 1
@@ -107,12 +142,14 @@ def make_box(slide, rnd: random.Random, x: float, y: float, w: float, h: float) 
         lines.append(ln.Text)
         i += 1
     return {"id": s.Id, "font": [latin, ea], "size": size, "width": round(width, 2), "algn": algn, "indent": indent,
-            "text": text, "lines": lines}
+            "shape": shape, **extra, "text": text, "lines": lines}
 
 
 def main():
-    seed = int(sys.argv[1])
-    pages = int(sys.argv[2]) if len(sys.argv) > 2 else 40
+    args = [a for a in sys.argv[1:] if not a.startswith("--")]
+    rich = "--rich" in sys.argv
+    seed = int(args[0])
+    pages = int(args[1]) if len(args) > 1 else 40
     rnd = random.Random(seed)
     OUT.mkdir(parents=True, exist_ok=True)
     pythoncom.CoInitialize()
@@ -128,7 +165,7 @@ def main():
             cw = (940 - (cols - 1) * 10) / cols
             for r in range(4):
                 for c in range(cols):
-                    b = make_box(slide, rnd, 10 + c * (cw + 10), 8 + r * 133, cw, 125)
+                    b = make_box(slide, rnd, 10 + c * (cw + 10), 8 + r * 133, cw, 125, rich)
                     b["slide"] = k + 1
                     boxes.append(b)
         path = OUT / f"{seed}.pptx"
