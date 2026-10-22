@@ -430,7 +430,7 @@ const result = await convert(pptxBytes, { write, fontPack });
 ```
 
 - One `fontPack` can be shared by many `convert()` / `checkFonts()` calls; load it once.
-- Font files in the pack are read on demand when the characters used are embedded, not loaded into memory as a whole.
+- Font files in the pack are read only when used: only the open fonts this deck needs; subsetting and page images read those files into memory (9–26 MB each, e.g. LXGW WenKai is 26 MB), so mind memory-constrained environments.
 - Every font used is always embedded as a subset (`embedFonts` defaults to `true`), so playback never uses the viewer's fonts and everyone sees the same thing.
 - For the mapping (Microsoft YaHei → Noto Sans SC, Calibri → Carlito, ...) see [Getting started 7.3](getting-started.md#73-layout-and-display-are-separate-metrics-pack--open-source-fonts).
 
