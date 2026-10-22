@@ -57,20 +57,23 @@ export function breakLines(atoms: Atom[], avail: (first: boolean) => number, wra
     let lastBreak = -1;
     let i = start;
     let forced = -1;
-    let hung = false;
+    let hung = -1;
     for (; i < atoms.length; i++) {
       const a = atoms[i];
       if (a.text === '\n') { forced = i; break; }
       if (i > start && canBreakBetween(atoms[i - 1], a, kinsoku, latin) && !(kinsoku && (atoms[i - 1].space && endsOpen(atoms, i - 1) || a.space && startsClose(atoms, i)))) lastBreak = i;
       const w = width + a.width;
       // 实测：行宽向上取整到排版单位（1/8 磅）后不超过可用宽度才放得下（可用宽度、内边距不取整；字间距让行宽不在格子上时，
-      // 正好等宽也要换行）。这个字在行尾时不算它和后一个字的字距调整（实测 tools/wraptest：微软雅黑 "me|r-"，r 和 - 有负字距）
-      if (wrap && Math.ceil((w - (a.kern ?? 0)) / LAYOUT_UNIT - 1e-6) * LAYOUT_UNIT > max + 1e-6 && i > start && !a.space) {
+      // 正好等宽也要换行）。这个字在行尾时不算它和后一个字的字距调整（实测 tools/wraptest：微软雅黑 "me|r-"，r 和 - 有负字距），
+      // 后一个字是能悬挂的标点时还在这一行，照算（Arial 粗体 "Friday." 的 y. 有负字距，y 放得下、. 悬挂）
+      const next = atoms[i + 1];
+      const endKern = next && hang && kinsoku && hangable(next.text, atoms[i + 2]?.text) ? 0 : a.kern ?? 0;
+      if (wrap && Math.ceil((w - endKern) / LAYOUT_UNIT - 1e-6) * LAYOUT_UNIT > max + 1e-6 && i > start && !a.space) {
         // 前面也能正常断（"险——|。"）时，这一行剩下的空不到 0.1 个字才在前面断，否则照样悬挂
         // （实测 tools/wraptest 框宽扫描：宋体 10、20、40 磅都在剩 0.085~0.11 个字之间变）
         // 前面的字本身就放不下（框比一个字还窄）时也不悬挂（实测 tools/wraptest：宋体 40 磅框宽 54 磅，"险|。"）
-        if (!hang || !kinsoku || hung || width > max + 1e-6 || (lastBreak === i && max - width < a.style.size * 0.1) || !hangable(a.text, atoms[i + 1]?.text) || !(a.style.eaBreak || atoms[i - 1].style.eaBreak)) break;
-        hung = true;
+        if (!hang || !kinsoku || hung >= 0 || width > max + 1e-6 || (lastBreak === i && max - width < a.style.size * 0.1) || !hangable(a.text, atoms[i + 1]?.text) || !(a.style.eaBreak || atoms[i - 1].style.eaBreak)) break;
+        hung = i;
       }
       width = w;
     }
@@ -85,7 +88,9 @@ export function breakLines(atoms: Atom[], avail: (first: boolean) => number, wra
       lines.push(atoms.slice(start));
       break;
     }
-    let end = lastBreak > start ? lastBreak : i;
+    // 悬挂了一个标点后后面的标点还是放不下（"险。；"）：不悬挂了，没有正常断点时从悬挂的标点前面断，标点一起到下一行
+    // （实测 tools/wraptest：宋体 20 磅框宽 54 磅 "险|。；"）
+    let end = lastBreak > start ? lastBreak : hung > start ? hung : i;
     lines.push(atoms.slice(start, end));
     // 行首的空格吞掉
     while (end < atoms.length && atoms[end].space) end++;
