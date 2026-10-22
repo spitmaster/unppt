@@ -12,6 +12,8 @@ interface TableRec { offset: number; length: number; }
 const CURVE_STEPS = 8;
 /** 子程序最多嵌套几层（Type 2 规范上限 10） */
 const MAX_DEPTH = 10;
+/** 一个字形最多执行多少个操作（坏字体里子程序互相多次调用会指数爆炸；正常字形几百个） */
+const MAX_OPS = 100000;
 
 interface Index { count: number; start: number[]; data: Uint8Array; }
 
@@ -52,7 +54,8 @@ function readDict(b: Uint8Array): Map<number, number[]> {
       let s = '';
       const nib = '0123456789.EE?-';
       p++;
-      for (;;) {
+      // 没写结束半字节就到头的坏数据：读到 DICT 末尾为止
+      while (p < b.length) {
         const x = b[p++];
         const hi = x >> 4, lo = x & 15;
         if (hi === 15) break;
@@ -73,8 +76,10 @@ const bias = (n: number) => (n < 1240 ? 107 : n < 33900 ? 1131 : 32768);
 
 interface Fd { subrs: Index; }
 
+const EMPTY: Index = { count: 0, start: [0], data: new Uint8Array(0) };
+
 export class CffOutlines {
-  private parsed?: Promise<{ charStrings: Index; gsubrs: Index; fds: Fd[]; fdSelect: (gid: number) => number } | undefined>;
+  private parsed?: Promise<{ charStrings: Index; gsubrs: Index; fd: (i: number) => Fd; fdSelect: (gid: number) => number } | undefined>;
   private cache = new Map<number, Promise<Contour[]>>();
 
   constructor(private src: RandomAccessSource, private rec: TableRec, private upem: number) {}
@@ -102,17 +107,24 @@ export class CffOutlines {
       const charStrings = readIndex(b, csOff).index;
       const privOf = (d: Map<number, number[]>): Fd => {
         const pr = d.get(18);
-        if (!pr) return { subrs: { count: 0, start: [0], data: b.subarray(0, 0) } };
+        if (!pr) return { subrs: EMPTY };
         const [size, off] = pr;
         const pd = readDict(b.subarray(off, off + size));
         const so = pd.get(19)?.[0];
-        return { subrs: so === undefined ? { count: 0, start: [0], data: b.subarray(0, 0) } : readIndex(b, off + so).index };
+        return { subrs: so === undefined ? EMPTY : readIndex(b, off + so).index };
       };
       // CID 字体：FDArray（1236）和 FDSelect（1237）
       const fdArrOff = dict.get(1236)?.[0], fdSelOff = dict.get(1237)?.[0];
       if (fdArrOff !== undefined && fdSelOff !== undefined) {
         const arr = readIndex(b, fdArrOff).index;
-        const fds = Array.from({ length: arr.count }, (_, i) => privOf(readDict(item(arr, i))));
+        // 私有字典用到才读（坏字体的 FDArray 可以有几万项，每项一个大子程序表）
+        const fds = new Map<number, Fd>();
+        const fd = (i: number) => {
+          if (i < 0 || i >= arr.count) i = 0;
+          let v = fds.get(i);
+          if (!v) { v = arr.count ? privOf(readDict(item(arr, i))) : { subrs: EMPTY }; fds.set(i, v); }
+          return v;
+        };
         const fmt = b[fdSelOff];
         let fdSelect: (gid: number) => number;
         if (fmt === 0) fdSelect = (g) => b[fdSelOff + 1 + g];
@@ -128,16 +140,18 @@ export class CffOutlines {
             return fd;
           };
         }
-        return { charStrings, gsubrs, fds, fdSelect };
+        return { charStrings, gsubrs, fd, fdSelect };
       }
-      return { charStrings, gsubrs, fds: [privOf(dict)], fdSelect: () => 0 };
+      const only = privOf(dict);
+      return { charStrings, gsubrs, fd: () => only, fdSelect: () => 0 };
     })();
   }
 
   private async load(gid: number): Promise<Contour[]> {
     const f = await this.parse();
     if (!f || gid >= f.charStrings.count) return [];
-    const subrs = f.fds[f.fdSelect(gid)]?.subrs ?? f.fds[0].subrs;
+    const subrs = f.fd(f.fdSelect(gid)).subrs;
+    let ops = 0;
     const s = 1 / this.upem;
     const contours: Contour[] = [];
     let cur: Contour | undefined;
@@ -171,6 +185,7 @@ export class CffOutlines {
     const run = (code: Uint8Array, depth: number): boolean => {
       if (depth > MAX_DEPTH) return true;
       for (let p = 0; p < code.length;) {
+        if (++ops > MAX_OPS) return true;
         const v = code[p++];
         if (v >= 32 || v === 28) {
           if (v === 28) { stack.push(((code[p] << 24) >> 16) | code[p + 1]); p += 2; }
@@ -246,7 +261,8 @@ export class CffOutlines {
               const sx = x, sy = y;
               const dx = a[0] + a[2] + a[4] + a[6] + a[8], dy = a[1] + a[3] + a[5] + a[7] + a[9];
               curveTo(x + a[0], y + a[1], x + a[0] + a[2], y + a[1] + a[3], x + a[0] + a[2] + a[4], y + a[1] + a[3] + a[5]);
-              const x6 = Math.abs(dx) > Math.abs(dy) ? sx + dx + a[10] : sx + dx, y6 = Math.abs(dx) > Math.abs(dy) ? sy : sy + dy + a[10];
+              // 主要是横向的 flex：最后一点回到起点的高度；主要是竖向的：回到起点的横坐标（Type 2 规范 flex1）
+              const x6 = Math.abs(dx) > Math.abs(dy) ? sx + dx + a[10] : sx, y6 = Math.abs(dx) > Math.abs(dy) ? sy : sy + dy + a[10];
               curveTo(x + a[6], y + a[7], x + a[6] + a[8], y + a[7] + a[9], x6, y6);
             }
             stack.length = 0; break;

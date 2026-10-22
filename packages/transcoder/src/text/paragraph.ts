@@ -26,7 +26,9 @@ const effSize = (a: Atom) => (a.style.baseline ? a.style.size * 0.67 : a.style.s
 async function kernAcross(prev: Atom | undefined, next: Atom | undefined) {
   if (!prev || !next || !prev.face || prev.face !== next.face || effSize(prev) !== effSize(next)) return;
   if (!kernOn(prev.style) || !kernOn(next.style)) return;
-  prev.width += (await prev.face.load()).kern(prev.cp, next.cp) * effSize(prev);
+  const k = (await prev.face.load()).kern(prev.cp, next.cp) * effSize(prev);
+  // 记在 kern 里：后一个字折到下一行时这一行不算它（见 linebreak.ts）
+  if (k) { prev.width += k; prev.kern = (prev.kern ?? 0) + k; }
 }
 
 export async function layoutParagraph(p: XEl, pi: number, ctx: ParagraphContext): Promise<ParagraphLayout> {
@@ -94,10 +96,15 @@ export async function layoutParagraph(p: XEl, pi: number, ctx: ParagraphContext)
   const availRest = contentW - marL - marR;
 
   // 制表符宽度：自定义制表位，超出后按默认制表位
-  layoutTabs(atoms, tabStops(pPr), defTab, firstX);
+  // 悬挂缩进（indent < 0）的左缩进位置本身也是一个制表位：第一行的制表符先跳到那里（样本：没有项目符号、
+  // "	+5     墙裂要求" 的 +5 从左缩进 27 磅处排，不是默认制表位 72 磅）
+  const stops0 = tabStops(pPr);
+  const stops = indent < 0 && marL > firstX ? [...stops0, { pos: marL, algn: 'l' }].sort((a, b) => a.pos - b.pos) : stops0;
+  layoutTabs(atoms, stops, defTab, firstX);
+  const relayout = atoms.some((a) => a.tab) ? (start: number, first: boolean) => layoutTabs(atoms, stops, defTab, first ? firstX : marL, start) : undefined;
 
   // 标点溢出边界：哪里都没写时也开着（实测 text-hanging-unset：老 .ppt 转来的课件常不写），只有写了 "0" 才关
-  const rows = breakLines(atoms, (first) => (first ? availFirst : availRest), wrap, attr(pPr, 'hangingPunct') !== '0', attr(pPr, 'eaLnBrk') !== '0', attr(pPr, 'latinLnBrk') === '1');
+  const rows = breakLines(atoms, (first) => (first ? availFirst : availRest), wrap, attr(pPr, 'hangingPunct') !== '0', attr(pPr, 'eaLnBrk') !== '0', attr(pPr, 'latinLnBrk') === '1', relayout);
   const lines: Line[] = rows.map((row, i) => {
     const vis = row.filter((a) => a.text !== '\n');
     // 只有一个换行的空行（两个 a:br 之间没有字）：行高按结束这一行的换行自己的字号（实测 text-br-empty-line）；

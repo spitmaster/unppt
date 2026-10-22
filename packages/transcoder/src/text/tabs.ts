@@ -25,10 +25,11 @@ function followingWidth(atoms: Atom[], from: number, toDot: boolean): number {
   return w;
 }
 
-/** x0 是这一段第一个字的横坐标（相对文本框内边距左侧） */
-export function layoutTabs(atoms: Atom[], stops: TabStop[], defTab: number, x0: number) {
+/** x0 是第 from 个字（默认是这一段第一个字）的横坐标（相对文本框内边距左侧）；折行后从新一行的第一个字重排（见 linebreak.ts） */
+export function layoutTabs(atoms: Atom[], stops: TabStop[], defTab: number, x0: number, from = 0) {
   let x = x0;
   atoms.forEach((a, i) => {
+    if (i < from) return;
     if (a.text === '\n') { x = x0; return; }
     if (a.tab) {
       const stop = stops.find((s) => s.pos > x + 0.01);
