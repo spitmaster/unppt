@@ -97,7 +97,8 @@ async function writeTo(base: string, rel: string, data: WriteData) {
   await done;
 }
 
-function usage(code = 1): never {
+/** code：0 是看帮助；参数写错时 2（unppt check 的 1 留给"有必须处理的问题"） */
+function usage(code = 2): never {
   console.log(`unppt ${UNPPT_VERSION}
 用法：unppt <输入.pptx> [选项]
       unppt check <输入.pptx> [--json] [字体选项]   只检查字体（缺哪些、用什么替代、符号字体有没有嵌入），不输出文件；
@@ -136,6 +137,7 @@ async function main() {
   if (args[0] === 'convert') args = args.slice(1);
   const check = args[0] === 'check';
   if (check) args = args.slice(1);
+  if (args[0] === '-h' || args[0] === '--help') usage(0);
   if (!args[0] || args[0].startsWith('-')) usage();
   const input = resolve(args[0]);
   let out = '';

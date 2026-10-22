@@ -4,7 +4,8 @@
 
 - 转码器是纯函数：字节进、文件出，不读写磁盘、不联网，不依赖外部程序和原生插件，可以直接放进云函数；
 - 产物里自带播放器（零依赖），观看只需要浏览器；
-- 当前版本 0.2.5。
+- 播放时不用观看者电脑上的字体：用到的字做成字体子集打包进产物，所有观看者看到的完全一样；
+- 当前版本 0.3.0。
 
 ## 安装
 
@@ -13,24 +14,25 @@ npm install @unppt/unppt                   # 在代码里调用
 npx -p @unppt/unppt unppt 课件.pptx  # 或者不安装，直接用命令行
 ```
 
-需要 Node.js 20.12 及以上。
+需要 Node.js 20.12 及以上。安装时会自动带上默认字体包 `@unppt/fonts`（开源字体 + 排版用的字体度量，下载约 60MB）。
 
-也可以从 GitHub Release 下载安装包再安装（npm 审核新版本期间、公司内网镜像下载失败时用）：先下载 `https://github.com/spitmaster/unppt/releases/latest/download/unppt.tgz`，再 `npm install -g ./unppt.tgz`。
+也可以从 GitHub Release 下载安装包再安装（npm 审核新版本期间、公司内网镜像下载失败时用）：先下载 `https://github.com/spitmaster/unppt/releases/latest/download/unppt-fonts.tgz` 和 `.../unppt.tgz`，再 `npm install -g ./unppt-fonts.tgz ./unppt.tgz`。
 
 ## 命令行
 
 ```bash
-unppt 课件.pptx -o out/index.html --system-fonts
-unppt 课件.pptx -o out --output paged            # 按需加载：入口 HTML + 每页单独的数据文件
+unppt 课件.pptx -o out                          # 默认按需加载：入口 HTML + 每页单独的数据文件
+unppt 课件.pptx -o out/index.html --output single # 一个自包含的 HTML
+unppt check 课件.pptx                             # 只检查字体（嵌入的 / 默认字体包的 / 被替代的 / 缺的），不输出文件
 ```
 
 | 选项 | 说明 |
 |---|---|
 | `-o, --out <文件>` | 输出文件；`paged` / `pages` 形式下是输出目录 |
 | `--output <形式>` | `paged`（默认，按需加载，看当前页时预加载下一页，适合放到网上）、`single`（一个自包含的 HTML，适合当附件发送）、`pages`（paged 再加每页一个独立的 HTML） |
-| `--fonts <目录>` | 字体目录（可写多次），按真实字宽排版 |
-| `--system-fonts` | **默认开启**（0.2.3 起）：使用本机系统字体，按真实字宽排版，换行才和 PowerPoint 一致；Office 自带的私有字体、云字体用到时嵌入产物。加 `--no-system-fonts` 关闭（关闭后字宽只能估算，换行可能和 PowerPoint 不同） |
-| `--embed-fonts` | 把用到的字做成字体子集嵌入产物（商业字体注意授权） |
+| `--fonts <目录>` | 指定字体目录（可写多次）：同名时压过默认字体包，排版和显示都用它，用到的字嵌入产物 |
+| `--system-fonts` | 也用本机系统字体和 Office 字体（0.3.0 起**默认关闭**；用到的字嵌入产物，注意商业字体的分发授权） |
+| `--no-default-fonts` | 不用默认字体包（调试用） |
 | `--no-images` | 不输出整页图 `pic/` 和缩略图 `thum/`（`prop.json` 照常输出） |
 | `--stats` | 结束时显示用时和峰值内存 |
 
@@ -49,8 +51,17 @@ const result = await convert(pptxBytes, {
   // 出整页图和缩略图要用 resvg 的 wasm（包里的 dist/resvg.wasm）；不给就只输出 prop.json
   rasterWasm: readFile(new URL(import.meta.resolve('@unppt/unppt/resvg.wasm'))),
 });
-console.log(result.slides, result.report.missingFonts, result.report.warnings);
+console.log(result.slides, result.fontCheck, result.report.warnings);
 ```
+
+默认字体包（Node）：`import { loadFontPack } from '@unppt/unppt/node'`，`convert(bytes, { fontPack: await loadFontPack(), ... })`。
+只检查字体：`checkFonts(pptxBytes, { fontPack })`。
+
+## 字体
+
+- **产物里的字体只有两个来源**（除非用 `--fonts` / `--system-fonts` 明确指定）：PPT 里嵌入的字体，和默认字体包 `@unppt/fonts` 里的开源字体（SIL OFL 1.1）。
+- **排版按原字体，显示用开源字体**：没嵌入的微软雅黑、宋体、Calibri 等按原字体的度量（只有字宽等数字）排版，换行和文字位置和 PowerPoint 一致；显示用对应的开源字体（微软雅黑 → 思源黑体、Calibri → Carlito ……）。
+- **符号字体**（Wingdings 等）不替换、不改动字符：没嵌入时转码报告和 `unppt check` 提示作者在 PowerPoint 里"将字体嵌入文件"。
 
 大文件不必整个读进内存，传 `{ size, read(offset, length) }` 这样按位置读取的对象即可。
 

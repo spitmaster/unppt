@@ -1,6 +1,11 @@
 # 发布到 npm
 
-只发布转码器一个包 `@unppt/unppt`（`packages/transcoder`；不带作用域的 `unppt` 被 npm 判为和 unpdf、unpipe、nopt 太像而拒绝，`@unppt` 是发布账号的用户名作用域）：播放器已经内嵌在它的产物里，`@unppt/format`、`@unppt/player` 暂不发布。
+发布两个包（0.3.0 起）：
+
+- 转码器 `@unppt/unppt`（`packages/transcoder`；不带作用域的 `unppt` 被 npm 判为和 unpdf、unpipe、nopt 太像而拒绝，`@unppt` 是发布账号的用户名作用域）：播放器已经内嵌在它的产物里，`@unppt/format`、`@unppt/player` 暂不发布；
+- 默认字体包 `@unppt/fonts`（`packages/fonts`）：开源字体文件 + 字体度量包，转码器依赖它（`^0.3.0`）。**字体包要先发**，否则装转码器时找不到依赖。字体包的版本号单独管理：字体文件、对照表 `map.json`、度量包有变化时才加版本号（同时改转码器 `package.json` 里依赖它的版本范围），没变就不发。
+
+字体文件不在 git 里（约 87MB）：`node scripts/fetch-fonts.mjs` 按 `packages/fonts/fonts.json` 下载并校验 SHA-256，放进 `packages/fonts/files/`；`npm pack` / `npm publish` 前 `prepack` 会检查文件齐全，缺文件就失败（避免发出一个没有字体的包）。
 
 ## 注意：发布源
 
@@ -14,6 +19,20 @@ npm whoami --registry https://registry.npmjs.org/
 ```
 
 npm 要求发布包的账号**必须开启双重验证（2FA）**，否则发布报 403：到 npmjs.com 右上角头像 → Account → Two-Factor Authentication 开启（用手机验证器 App 扫码）。之后发布时带上验证器里的 6 位数字：`npm publish --otp=123456`。
+
+## 0.3.0：字体包第一次发布（只需要手动做一次）
+
+npm 的"可信发布"只能给已经存在的包绑定，所以 `@unppt/fonts` 第一次要在本机手动发：
+
+```bash
+node scripts/fetch-fonts.mjs
+cd packages/fonts
+npm pack --dry-run            # 应该有 files/ 下 27 个字体文件、metrics/、LICENSES/、map.json、fonts.json、index.js
+npm publish --access public --otp=<验证器里的 6 位数字>
+```
+
+发完到 npmjs.com → @unppt/fonts → Settings → Trusted Publisher 绑定 GitHub Actions：`spitmaster/unppt` 的 `release.yml`（和 @unppt/unppt 一样，环境名留空）。
+之后再推 `v0.3.0` 标签，工作流会跳过已经发过的字体包、自动发转码器。
 
 ## 每次发布
 
