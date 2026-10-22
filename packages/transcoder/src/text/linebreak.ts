@@ -5,16 +5,38 @@ import { LAYOUT_UNIT } from './measure';
 const NO_START = new Set([...'、。，．・：；？！゛゜ヽヾゝゞ々ー）］｝」』〕〉》】〙〗〟’”｠»,.:;?!)]}%…‥']);
 const NO_END = new Set([...'（［｛「『〔〈《【〘〖〝‘“｟«([{']);
 
-/** 可以悬挂在行外的字（行首禁则的标点） */
-export const hangable = (t: string) => NO_START.has(t);
+/**
+ * 可以悬挂在行外的字：行首禁则的标点，但半角 % 和省略号不挂，后面紧跟半角字符的半角 . , :（网址、小数、"CEO,CFO"）也不挂
+ * （实测 tools/wraptest 框宽扫描："-3.2%"、"+21.3%" 的 % 和 "www.example" 的 . 到了行尾 PowerPoint 都不悬挂，而是在前面断，
+ * "CEO,CFO|,CTO"、"https|://" 也是；"风险……"放不下时 … 不悬挂，整体换到下一行）
+ */
+const ASCII = /^[!-~]$/;
+export const hangable = (t: string, next?: string) => NO_START.has(t) && t !== '%' && t !== '…' && t !== '‥' && !((t === '.' || t === ',' || t === ':') && next !== undefined && ASCII.test(next));
 
 function canBreakBetween(a: Atom, b: Atom, kinsoku: boolean, latin: boolean): boolean {
+  // 破折号后面总能断，后面是行首禁则的标点也一样（"险——|……"、"险——|。"，实测 tools/wraptest 框宽扫描）
+  if (a.text === '—') return true;
   if (kinsoku && (a.style.eaBreak || b.style.eaBreak) && (NO_START.has(b.text) || NO_END.has(a.text))) return false;
+  // 破折号和前一个字之间不断（"表明——"整体换行；两个 — 之间能断，见上一条。实测 tools/wraptest 框宽扫描）
+  if (b.text === '—') return false;
   if (a.space || a.tab || latin) return true;
   if (a.wide || b.wide) return true;
-  // 实测：破折号、连字符后面可以断（两个 — 能拆到两行）；斜杠后面不断（text-slash-break：short/longerword、网址都是放不下时在字中间断）
-  if (a.text === '-' || a.text === '—') return true;
+  // 实测：连字符后面可以断；斜杠后面不断（text-slash-break：short/longerword、网址都是放不下时在字中间断）
+  if (a.text === '-') return true;
   return false;
+}
+
+/**
+ * 空格前面紧挨着的字是行尾禁则的字（"（ e.g."）：空格后面也不能断；空格后面紧挨着的是行首禁则的字（"。 ）"）：空格前面也不能断
+ * （实测 tools/wraptest：PowerPoint 把"（"一起带到下一行，把"习。 ）"一起带到下一行）
+ */
+function endsOpen(atoms: Atom[], i: number): boolean {
+  while (i >= 0 && atoms[i].space) i--;
+  return i >= 0 && NO_END.has(atoms[i].text) && !!atoms[i].style.eaBreak;
+}
+function startsClose(atoms: Atom[], i: number): boolean {
+  while (i < atoms.length && atoms[i].space) i++;
+  return i < atoms.length && NO_START.has(atoms[i].text) && !!atoms[i].style.eaBreak;
 }
 
 /**
@@ -39,12 +61,15 @@ export function breakLines(atoms: Atom[], avail: (first: boolean) => number, wra
     for (; i < atoms.length; i++) {
       const a = atoms[i];
       if (a.text === '\n') { forced = i; break; }
-      if (i > start && canBreakBetween(atoms[i - 1], a, kinsoku, latin)) lastBreak = i;
+      if (i > start && canBreakBetween(atoms[i - 1], a, kinsoku, latin) && !(kinsoku && (atoms[i - 1].space && endsOpen(atoms, i - 1) || a.space && startsClose(atoms, i)))) lastBreak = i;
       const w = width + a.width;
       // 实测：行宽向上取整到排版单位（1/8 磅）后不超过可用宽度才放得下（可用宽度、内边距不取整；字间距让行宽不在格子上时，
-      // 正好等宽也要换行）
-      if (wrap && Math.ceil(w / LAYOUT_UNIT - 1e-6) * LAYOUT_UNIT > max + 1e-6 && i > start && !a.space) {
-        if (!hang || !kinsoku || hung || !NO_START.has(a.text) || !(a.style.eaBreak || atoms[i - 1].style.eaBreak)) break;
+      // 正好等宽也要换行）。这个字在行尾时不算它和后一个字的字距调整（实测 tools/wraptest：微软雅黑 "me|r-"，r 和 - 有负字距）
+      if (wrap && Math.ceil((w - (a.kern ?? 0)) / LAYOUT_UNIT - 1e-6) * LAYOUT_UNIT > max + 1e-6 && i > start && !a.space) {
+        // 前面也能正常断（"险——|。"）时，这一行剩下的空不到 0.1 个字才在前面断，否则照样悬挂
+        // （实测 tools/wraptest 框宽扫描：宋体 10、20、40 磅都在剩 0.085~0.11 个字之间变）
+        // 前面的字本身就放不下（框比一个字还窄）时也不悬挂（实测 tools/wraptest：宋体 40 磅框宽 54 磅，"险|。"）
+        if (!hang || !kinsoku || hung || width > max + 1e-6 || (lastBreak === i && max - width < a.style.size * 0.1) || !hangable(a.text, atoms[i + 1]?.text) || !(a.style.eaBreak || atoms[i - 1].style.eaBreak)) break;
         hung = true;
       }
       width = w;
@@ -74,5 +99,5 @@ export function trimmedWidth(atoms: Atom[]): number {
   let last = atoms.length - 1;
   while (last >= 0 && atoms[last].space) last--;
   for (let i = 0; i <= last; i++) w += atoms[i].width;
-  return w;
+  return last >= 0 ? w - (atoms[last].kern ?? 0) : w;
 }
