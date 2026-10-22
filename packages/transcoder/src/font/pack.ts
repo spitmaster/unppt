@@ -4,7 +4,7 @@
  * 每个原字体变成一个 FontFace：名字、粗斜体是原字体的，load() 给原字体的度量，source / offset 指向开源字体（子集化、出图用）。
  */
 import type { InputSource } from '../io/source';
-import { loadFontFile, type FontFace, type FontMetrics } from './font';
+import { isWide, loadFontFile, type FontFace, type FontMetrics } from './font';
 
 /** 度量包里一个字形的概要（metrics/index.json 的一项；长度单位是字体单位） */
 export interface PackFaceInfo {
@@ -24,6 +24,8 @@ export interface PackFaceInfo {
   generic?: FontMetrics['generic'];
   /** 有大量汉字 */
   cjk: boolean;
+  /** 汉字的竖直中心（字体单位，几个方正汉字字形上下范围中点的平均） */
+  cjkMid?: number;
 }
 
 /** 一个字形的字宽和字距（metrics/faces/<id>.json）：runs 是 [起始码点, 个数, 字宽]，kern 是 [左, 右, 调整量] */
@@ -105,19 +107,34 @@ function metricFace(info: PackFaceInfo, shown: FontFace, data: () => Promise<Pac
     families: info.families, displayFamily: info.display, bold: info.bold, italic: info.italic, weight: info.weight,
     source: shown.source, offset: shown.offset, rank: PACK_RANK, shownFamily: shown.displayFamily,
     load() {
-      metrics ??= (async () => build(info, await data(), shown))();
+      metrics ??= (async () => {
+        const sm = await shown.load();
+        return build(info, await data(), sm, info.cjkMid === undefined ? undefined : await cjkMid(sm));
+      })();
       return metrics;
     },
   };
 }
 
-function build(info: PackFaceInfo, d: PackFaceData, shown: FontFace): FontMetrics {
+/** 显示字体汉字的竖直中心（em），和度量包里原字体的 cjkMid 用同样几个字量 */
+async function cjkMid(m: FontMetrics): Promise<number | undefined> {
+  const mids: number[] = [];
+  for (const ch of '中国口田日') {
+    const cs = await m.outline(ch.codePointAt(0)!).catch(() => undefined);
+    const ys = (cs ?? []).flat().map((p) => p.y);
+    if (ys.length) mids.push((Math.min(...ys) + Math.max(...ys)) / 2);
+  }
+  return mids.length ? mids.reduce((a, b) => a + b, 0) / mids.length : undefined;
+}
+
+function build(info: PackFaceInfo, d: PackFaceData, sm: FontMetrics, shownMid: number | undefined): FontMetrics {
   const u = info.upem;
   const starts = d.runs.map((r) => r[0]);
   const kern = new Map<number, number>();
   for (const [l, r, v] of d.kern) kern.set(l * 0x110000 + r, v / u);
-  let outline: Promise<FontMetrics> | undefined;
-  return {
+  // 汉字整体上下挪多少：原字体的汉字中心 - 显示字体的
+  const midShift = shownMid !== undefined && info.cjkMid !== undefined ? info.cjkMid / u - shownMid : 0;
+  const self: FontMetrics = {
     unitsPerEm: u,
     ascent: info.ascent / u, descent: info.descent / u, lineGap: info.lineGap / u,
     strikeTop: info.strikeTop === undefined ? undefined : info.strikeTop / u,
@@ -137,9 +154,13 @@ function build(info: PackFaceInfo, d: PackFaceData, shown: FontFace): FontMetric
     },
     kern: (l, r) => kern.get(l * 0x110000 + r) ?? 0,
     // 字形轮廓（艺术字变形用）：用显示的开源字体的
-    async outline(cp) {
-      outline ??= shown.load();
-      return (await outline).outline(cp);
+    outline: (cp) => sm.outline(cp),
+    displayShift(cp) {
+      const w = self.advance(cp), sw = sm.advance(cp);
+      if (w === undefined || sw === undefined) return undefined;
+      const dx = (w - sw) / 2, dy = isWide(cp) ? midShift : 0;
+      return Math.abs(dx) < 1e-4 && Math.abs(dy) < 1e-4 ? undefined : { dx, dy };
     },
   };
+  return self;
 }

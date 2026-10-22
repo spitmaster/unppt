@@ -1,0 +1,617 @@
+{
+ "version": 8,
+ "level": "full",
+ "slideWidthPt": 960.0,
+ "slideHeightPt": 540.0,
+ "imageWidth": 1280,
+ "imageHeight": 720,
+ "slides": [
+  {
+   "index": 0,
+   "hidden": false,
+   "shapes": [
+    {
+     "id": 2,
+     "name": "TextBox 1",
+     "type": 17,
+     "x": 40.0,
+     "y": 20.0,
+     "w": 880.0,
+     "h": 50.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 21,
+       "text": "第三章  2024 年 Q3 经营分析报告",
+       "x": 47.2,
+       "y": 23.6,
+       "w": 487.38,
+       "h": 38.4
+      }
+     ]
+    },
+    {
+     "id": 3,
+     "name": "TextBox 2",
+     "type": 17,
+     "x": 40.0,
+     "y": 90.0,
+     "w": 430.0,
+     "h": 200.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 25,
+       "text": "本季度营收同比增长 18.6%，其中线上渠道贡献 ",
+       "x": 47.2,
+       "y": 93.6,
+       "w": 386.625,
+       "h": 21.6
+      },
+      {
+       "start": 25,
+       "len": 28,
+       "text": "62%。用户规模突破 1,250 万，ARPU 提升至 ",
+       "x": 47.2,
+       "y": 115.2,
+       "w": 369.75,
+       "h": 21.6
+      },
+      {
+       "start": 53,
+       "len": 24,
+       "text": "¥36.8，客户满意度（NPS）达到 47 分。",
+       "x": 47.2,
+       "y": 136.8,
+       "w": 330.13,
+       "h": 21.6
+      }
+     ]
+    },
+    {
+     "id": 4,
+     "name": "TextBox 3",
+     "type": 17,
+     "x": 490.0,
+     "y": 90.0,
+     "w": 430.0,
+     "h": 200.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 9,
+       "text": "核心指标全面达成\r",
+       "x": 524.2,
+       "y": 93.6,
+       "w": 149.375,
+       "h": 21.6
+      },
+      {
+       "start": 9,
+       "len": 21,
+       "text": "新产品线 AI Assistant 上线\r",
+       "x": 524.2,
+       "y": 115.2,
+       "w": 224.5,
+       "h": 21.6
+      },
+      {
+       "start": 30,
+       "len": 16,
+       "text": "华东、华南区域增长超过 25%\r",
+       "x": 524.2,
+       "y": 136.8,
+       "w": 245.75,
+       "h": 21.6
+      },
+      {
+       "start": 46,
+       "len": 12,
+       "text": "下季度重点：海外市场拓展",
+       "x": 524.2,
+       "y": 158.4,
+       "w": 216.005,
+       "h": 21.6
+      }
+     ]
+    },
+    {
+     "id": 5,
+     "name": "TextBox 4",
+     "type": 17,
+     "x": 40.0,
+     "y": 310.0,
+     "w": 880.0,
+     "h": 60.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 48,
+       "text": "等线：数据驱动决策，用 Python + SQL 搭建 BI 看板，每日 08:30 自动推送。",
+       "x": 47.2,
+       "y": 313.6,
+       "w": 674.755,
+       "h": 24.0
+      }
+     ]
+    },
+    {
+     "id": 6,
+     "name": "Table 5",
+     "type": 19,
+     "x": 40.0,
+     "y": 390.0,
+     "w": 880.0,
+     "h": 120.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": -2
+    }
+   ],
+   "effects": [],
+   "triggerHidden": [],
+   "steps": 0,
+   "keptSlideshow": false
+  },
+  {
+   "index": 1,
+   "hidden": false,
+   "shapes": [
+    {
+     "id": 2,
+     "name": "TextBox 1",
+     "type": 17,
+     "x": 40.0,
+     "y": 20.0,
+     "w": 430.0,
+     "h": 240.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 7,
+       "text": "宋体标题示例\r",
+       "x": 47.2,
+       "y": 23.6,
+       "w": 130.0,
+       "h": 24.0
+      },
+      {
+       "start": 7,
+       "len": 20,
+       "text": "学而时习之，不亦说乎？有朋自远方来，不亦",
+       "x": 47.2,
+       "y": 47.6,
+       "w": 400.0,
+       "h": 24.0
+      },
+      {
+       "start": 27,
+       "len": 24,
+       "text": "乐乎？人不知而不愠，不亦君子乎？2024 年第 ",
+       "x": 47.2,
+       "y": 71.6,
+       "w": 420.0,
+       "h": 24.0
+      },
+      {
+       "start": 51,
+       "len": 12,
+       "text": "3 课，共 45 分钟。",
+       "x": 47.2,
+       "y": 95.6,
+       "w": 180.005,
+       "h": 24.0
+      }
+     ]
+    },
+    {
+     "id": 3,
+     "name": "TextBox 2",
+     "type": 17,
+     "x": 490.0,
+     "y": 20.0,
+     "w": 430.0,
+     "h": 240.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 7,
+       "text": "楷体标题示例\r",
+       "x": 497.2,
+       "y": 23.6,
+       "w": 130.0,
+       "h": 24.0
+      },
+      {
+       "start": 7,
+       "len": 20,
+       "text": "学而时习之，不亦说乎？有朋自远方来，不亦",
+       "x": 497.2,
+       "y": 47.6,
+       "w": 400.0,
+       "h": 24.0
+      },
+      {
+       "start": 27,
+       "len": 24,
+       "text": "乐乎？人不知而不愠，不亦君子乎？2024 年第 ",
+       "x": 497.2,
+       "y": 71.6,
+       "w": 420.0,
+       "h": 24.0
+      },
+      {
+       "start": 51,
+       "len": 12,
+       "text": "3 课，共 45 分钟。",
+       "x": 497.2,
+       "y": 95.6,
+       "w": 180.005,
+       "h": 24.0
+      }
+     ]
+    },
+    {
+     "id": 4,
+     "name": "TextBox 3",
+     "type": 17,
+     "x": 40.0,
+     "y": 280.0,
+     "w": 430.0,
+     "h": 240.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 7,
+       "text": "仿宋标题示例\r",
+       "x": 47.2,
+       "y": 283.6,
+       "w": 130.0,
+       "h": 24.0
+      },
+      {
+       "start": 7,
+       "len": 20,
+       "text": "学而时习之，不亦说乎？有朋自远方来，不亦",
+       "x": 47.2,
+       "y": 307.6,
+       "w": 400.0,
+       "h": 24.0
+      },
+      {
+       "start": 27,
+       "len": 24,
+       "text": "乐乎？人不知而不愠，不亦君子乎？2024 年第 ",
+       "x": 47.2,
+       "y": 331.6,
+       "w": 420.0,
+       "h": 24.0
+      },
+      {
+       "start": 51,
+       "len": 12,
+       "text": "3 课，共 45 分钟。",
+       "x": 47.2,
+       "y": 355.6,
+       "w": 180.005,
+       "h": 24.0
+      }
+     ]
+    },
+    {
+     "id": 5,
+     "name": "TextBox 4",
+     "type": 17,
+     "x": 490.0,
+     "y": 280.0,
+     "w": 430.0,
+     "h": 240.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 7,
+       "text": "黑体标题示例\r",
+       "x": 497.2,
+       "y": 283.6,
+       "w": 130.0,
+       "h": 24.0
+      },
+      {
+       "start": 7,
+       "len": 20,
+       "text": "学而时习之，不亦说乎？有朋自远方来，不亦",
+       "x": 497.2,
+       "y": 307.6,
+       "w": 400.0,
+       "h": 24.0
+      },
+      {
+       "start": 27,
+       "len": 24,
+       "text": "乐乎？人不知而不愠，不亦君子乎？2024 年第 ",
+       "x": 497.2,
+       "y": 331.6,
+       "w": 420.0,
+       "h": 24.0
+      },
+      {
+       "start": 51,
+       "len": 12,
+       "text": "3 课，共 45 分钟。",
+       "x": 497.2,
+       "y": 355.6,
+       "w": 180.005,
+       "h": 24.0
+      }
+     ]
+    }
+   ],
+   "effects": [],
+   "triggerHidden": [],
+   "steps": 0,
+   "keptSlideshow": false
+  },
+  {
+   "index": 2,
+   "hidden": false,
+   "shapes": [
+    {
+     "id": 2,
+     "name": "TextBox 1",
+     "type": 17,
+     "x": 40.0,
+     "y": 20.0,
+     "w": 430.0,
+     "h": 240.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 16,
+       "text": "Calibri Heading\r",
+       "x": 47.2,
+       "y": 23.6,
+       "w": 127.75,
+       "h": 24.0
+      },
+      {
+       "start": 16,
+       "len": 45,
+       "text": "The quick brown fox jumps over the lazy dog. ",
+       "x": 47.2,
+       "y": 47.6,
+       "w": 370.105,
+       "h": 24.0
+      },
+      {
+       "start": 61,
+       "len": 44,
+       "text": "Revenue grew 18.6% year over year, reaching ",
+       "x": 47.2,
+       "y": 71.6,
+       "w": 371.73,
+       "h": 24.0
+      },
+      {
+       "start": 105,
+       "len": 46,
+       "text": "$12.58M in Q3 2024 (AVATAR, WAVE, Typography).",
+       "x": 47.2,
+       "y": 95.6,
+       "w": 410.97,
+       "h": 24.0
+      }
+     ]
+    },
+    {
+     "id": 3,
+     "name": "TextBox 2",
+     "type": 17,
+     "x": 490.0,
+     "y": 20.0,
+     "w": 430.0,
+     "h": 240.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 14,
+       "text": "Arial Heading\r",
+       "x": 497.2,
+       "y": 23.6,
+       "w": 125.75,
+       "h": 24.0
+      },
+      {
+       "start": 14,
+       "len": 45,
+       "text": "The quick brown fox jumps over the lazy dog. ",
+       "x": 497.2,
+       "y": 47.6,
+       "w": 406.375,
+       "h": 24.0
+      },
+      {
+       "start": 59,
+       "len": 44,
+       "text": "Revenue grew 18.6% year over year, reaching ",
+       "x": 497.2,
+       "y": 71.6,
+       "w": 416.395,
+       "h": 24.0
+      },
+      {
+       "start": 103,
+       "len": 34,
+       "text": "$12.58M in Q3 2024 (AVATAR, WAVE, ",
+       "x": 497.2,
+       "y": 95.6,
+       "w": 346.21,
+       "h": 24.0
+      },
+      {
+       "start": 137,
+       "len": 12,
+       "text": "Typography).",
+       "x": 497.2,
+       "y": 119.6,
+       "w": 116.65,
+       "h": 24.0
+      }
+     ]
+    },
+    {
+     "id": 4,
+     "name": "TextBox 3",
+     "type": 17,
+     "x": 40.0,
+     "y": 280.0,
+     "w": 430.0,
+     "h": 240.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 24,
+       "text": "Times New Roman Heading\r",
+       "x": 47.2,
+       "y": 283.6,
+       "w": 232.545,
+       "h": 24.0
+      },
+      {
+       "start": 24,
+       "len": 45,
+       "text": "The quick brown fox jumps over the lazy dog. ",
+       "x": 47.2,
+       "y": 307.6,
+       "w": 375.125,
+       "h": 24.0
+      },
+      {
+       "start": 69,
+       "len": 44,
+       "text": "Revenue grew 18.6% year over year, reaching ",
+       "x": 47.2,
+       "y": 331.6,
+       "w": 373.825,
+       "h": 24.0
+      },
+      {
+       "start": 113,
+       "len": 34,
+       "text": "$12.58M in Q3 2024 (AVATAR, WAVE, ",
+       "x": 47.2,
+       "y": 355.6,
+       "w": 328.995,
+       "h": 24.0
+      },
+      {
+       "start": 147,
+       "len": 12,
+       "text": "Typography).",
+       "x": 47.2,
+       "y": 379.6,
+       "w": 107.985,
+       "h": 24.0
+      }
+     ]
+    },
+    {
+     "id": 5,
+     "name": "TextBox 4",
+     "type": 17,
+     "x": 490.0,
+     "y": 280.0,
+     "w": 430.0,
+     "h": 240.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 16,
+       "text": "Cambria Heading\r",
+       "x": 497.2,
+       "y": 283.6,
+       "w": 151.75,
+       "h": 24.0
+      },
+      {
+       "start": 16,
+       "len": 45,
+       "text": "The quick brown fox jumps over the lazy dog. ",
+       "x": 497.2,
+       "y": 307.6,
+       "w": 389.13,
+       "h": 24.0
+      },
+      {
+       "start": 61,
+       "len": 44,
+       "text": "Revenue grew 18.6% year over year, reaching ",
+       "x": 497.2,
+       "y": 331.6,
+       "w": 390.92,
+       "h": 24.0
+      },
+      {
+       "start": 105,
+       "len": 34,
+       "text": "$12.58M in Q3 2024 (AVATAR, WAVE, ",
+       "x": 497.2,
+       "y": 355.6,
+       "w": 322.59,
+       "h": 24.0
+      },
+      {
+       "start": 139,
+       "len": 12,
+       "text": "Typography).",
+       "x": 497.2,
+       "y": 379.6,
+       "w": 114.41,
+       "h": 24.0
+      }
+     ]
+    }
+   ],
+   "effects": [],
+   "triggerHidden": [],
+   "steps": 0,
+   "keptSlideshow": false
+  }
+ ],
+ "ok": true
+}

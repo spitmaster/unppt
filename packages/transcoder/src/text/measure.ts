@@ -97,6 +97,9 @@ const EA_SLOT = new Set([0xa7, 0xa8, 0xb0, 0xb1, 0xd7, 0xf7, 0x2122, 0x2194]);
 const eaSlot = (cp: number) => EA_SLOT.has(cp) || (cp >= 0x2460 && cp <= 0x24ff) || (cp >= 0x25a0 && cp <= 0x26ff);
 const subsFor = (script: 'jp' | 'ea' | undefined, latin: boolean) => (script === 'jp' ? JP_SUBS : script === 'ea' || !latin ? EA_SUBS : LATIN_SUBS);
 
+/** 默认字体包的字：开源字体的字在原字体格子里的挪动量换成像素（Atom.shift） */
+const shiftOf = (d: { dx: number; dy: number } | undefined, size: number) => (d ? { shift: { dx: d.dx * size, dy: d.dy * size } } : {});
+
 export async function makeAtoms(text: string, style: RunStyle, m: Measurer): Promise<Atom[]> {
   const out: Atom[] = [];
   // 缺字体时按 PowerPoint 的做法替代：西文用 Calibri（字体标了东亚字符集时也用雅黑，日文字符集用 Yu Gothic），中文用雅黑
@@ -189,6 +192,7 @@ export async function makeAtoms(text: string, style: RunStyle, m: Measurer): Pro
       ...(mix ? { ownAscent: ownAsc * size, ownDescent: ownDesc * size } : {}),
       strikeY: (used?.strikeTop !== undefined && used.strikeSize !== undefined ? used.strikeTop - used.strikeSize / 2 : 0.25) * size,
       space: ch === ' ' || ch === '　', wide, tab: ch === '\t',
+      ...shiftOf(adv !== undefined ? used?.displayShift?.(cp) : undefined, size),
     });
   }
   return out;

@@ -21,9 +21,10 @@ function fontList(primary: string, alias?: string): string {
 /**
  * x 是起点，或者每个字的位置（逐字定位：字按排版时算的位置落下，不用浏览器自己的字宽，字距、字间距都已经算在位置里）
  */
-export function textEl(txt: string, x: number | number[], y: number, s: RunStyle, family: string, bullet = false, alias?: string, env?: TextEnv, anchor?: string): string {
+export function textEl(txt: string, x: number | number[], y: number | number[], s: RunStyle, family: string, bullet = false, alias?: string, env?: TextEnv, anchor?: string): string {
   const xa = typeof x === 'number' ? n2(x) : x.map(n2).join(' ');
-  let a = `${bullet ? 'data-bu="1" ' : ''}x="${xa}" y="${n2(y)}" font-family="${esc(fontList(family, alias))}" font-size="${n2(s.size)}" fill="${css(s.color)}"`;
+  const ya = typeof y === 'number' ? n2(y) : y.map(n2).join(' ');
+  let a = `${bullet ? 'data-bu="1" ' : ''}x="${xa}" y="${ya}" font-family="${esc(fontList(family, alias))}" font-size="${n2(s.size)}" fill="${css(s.color)}"`;
   if (s.color.a < 0.999) a += ` fill-opacity="${n2(s.color.a)}"`;
   if (s.bold) a += ' font-weight="bold"';
   if (s.italic) a += ' font-style="italic"';

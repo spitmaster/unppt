@@ -70,13 +70,24 @@ for (const d of dirs) {
         const v = Math.round(m.kern(a, b) * upem);
         if (v) kern.push([a, b, v]);
       }
+      // 汉字的竖直中心（显示字体的汉字按它对齐，见 font/pack.ts）：几个方正汉字字形上下范围的中点的平均
+      let cjkMid;
+      if (cjk > 1000) {
+        const mids = [];
+        for (const ch of '中国口田日') {
+          const cs = await m.outline(ch.codePointAt(0)).catch(() => undefined);
+          const ys = (cs ?? []).flat().map((p) => p.y);
+          if (ys.length) mids.push((Math.min(...ys) + Math.max(...ys)) / 2);
+        }
+        if (mids.length) cjkMid = Math.round((mids.reduce((a, b) => a + b, 0) / mids.length) * upem);
+      }
       const id = String(index.length);
       const r2 = (v) => (v === undefined ? undefined : Math.round(v * upem));
       index.push({
         id, families: f.families, display: f.displayFamily, bold: f.bold, italic: f.italic, weight: f.weight,
         upem, ascent: r2(m.ascent), descent: r2(m.descent), lineGap: r2(m.lineGap),
         strikeTop: r2(m.strikeTop), strikeSize: r2(m.strikeSize), xHeight: r2(m.xHeight), generic: m.generic,
-        cjk: cjk > 1000, file: basename(path),
+        cjk: cjk > 1000, ...(cjkMid !== undefined ? { cjkMid } : {}), file: basename(path),
       });
       await writeFile(join(out, 'faces', `${id}.json`), JSON.stringify({ runs, kern }));
     }
