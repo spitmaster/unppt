@@ -234,9 +234,30 @@ export async function loadFontFile(input: InputSource): Promise<FontFace[]> {
 
 // ---------------------------------------------------------------- 字体库与测量
 
+/** 只有字宽、没有字形的字体（默认字体包里没有显示字体的符号字体）：只用来排版，见 FontLibrary.widths */
+export interface WidthFace {
+  families: string[];
+  bold: boolean;
+  italic: boolean;
+  load(): Promise<Pick<FontMetrics, 'advance'>>;
+}
+
 export class FontLibrary {
   private byFamily = new Map<string, FontFace[]>();
+  private widthFaces = new Map<string, WidthFace[]>();
   readonly missing = new Set<string>();
+
+  addWidths(faces: WidthFace[]) {
+    for (const f of faces) for (const fam of f.families) this.widthFaces.set(fam, [...this.widthFaces.get(fam) ?? [], f]);
+  }
+
+  /** 找不到可用字体时原字体的字宽（排版按它，字形用替代字体画） */
+  widths(family: string, bold: boolean, italic: boolean): Promise<Pick<FontMetrics, 'advance'>> | undefined {
+    const list = this.widthFaces.get(family.toLowerCase().trim());
+    if (!list?.length) return undefined;
+    const best = list.find((f) => f.bold === bold && f.italic === italic) ?? list.find((f) => !f.bold && !f.italic) ?? list[0];
+    return best.load();
+  }
 
   add(faces: FontFace[]) {
     for (const f of faces) {

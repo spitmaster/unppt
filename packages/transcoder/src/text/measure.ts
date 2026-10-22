@@ -7,6 +7,8 @@ export interface Measured { metrics: FontMetrics; face: FontFace; }
 
 export interface Measurer {
   metrics(family: string, bold: boolean, italic: boolean, quiet?: boolean): Promise<Measured | undefined>;
+  /** 没有可用字体时原字体的字宽（FontLibrary.widths） */
+  widths?(family: string, bold: boolean, italic: boolean): Promise<Pick<FontMetrics, 'advance'> | undefined>;
   /** 这个字体是嵌入了、但 PowerPoint 不用的（metrics 返回之后才知道） */
   unusable?(family: string): boolean;
   embed?: FontEmbedder;
@@ -20,6 +22,7 @@ export function makeMeasurer(env: TextEnv): Measurer {
     embed: env.embed,
     fontUse: env.fontUse,
     unusable: (family) => unusable.has(family.toLowerCase()),
+    widths: async (family, bold, italic) => env.fonts.widths(family, bold, italic),
     metrics(family, bold, italic, quiet) {
       const key = `${family}|${bold}|${italic}`;
       let p = cache.get(key);
@@ -128,6 +131,10 @@ export async function makeAtoms(text: string, style: RunStyle, m: Measurer): Pro
   // 两种字体里都没有的中日韩字：用雅黑补（实测：Yu Gothic 里没有的简体字 PowerPoint 用雅黑 Regular 画）
   let cjk: Promise<[Measured | undefined, string]> | undefined;
   const [symM, symFam] = style.sym ? await pick(style.sym, []) : [undefined, ''];
+  // 换成了替代字体的（没嵌入的 Wingdings 等）：字宽仍按原字体（度量包里有的话），字形用替代字体画
+  const origWidths = (requested: string | undefined, picked: string) =>
+    requested && picked.toLowerCase() !== requested.toLowerCase() ? m.widths?.(requested, style.bold, style.italic) : undefined;
+  const [latinW, eaW, symW] = await Promise.all([origWidths(style.latin, latinFam), origWidths(style.ea, eaFam), origWidths(style.sym, symFam)]);
   let src = text;
   if (style.caps === 'all') src = src.toUpperCase();
   const kerning = kernOn(style);
@@ -168,7 +175,8 @@ export async function makeAtoms(text: string, style: RunStyle, m: Measurer): Pro
     if (usedM && adv !== undefined && m.embed && cp > 0x20) m.embed.use(usedM.face, cp);
     const size = st.baseline ? st.size * 0.67 : st.size;
     const fakeBold = !!st.bold && adv !== undefined && !!usedM && !usedM.face.bold;
-    const width = snapAdvance((adv ?? fallbackAdvance(cp)) * size) + (fakeBold ? fakeBoldExtra(size, usedM!.metrics.unitsPerEm) : 0) + st.spc;
+    const origAdv = (isSym ? symW : eaFont ? eaW : latinW)?.advance(cp);
+    const width = snapAdvance((origAdv ?? adv ?? fallbackAdvance(cp)) * size) + (fakeBold ? fakeBoldExtra(size, usedM!.metrics.unitsPerEm) : 0) + st.spc;
     // 字距调整：和前一个字同一个字体时，把成对调整量加到前一个字的宽度上
     const prevAtom = out[out.length - 1];
     if (kerning && prevAtom && adv !== undefined && usedM && usedM === prevM) {
