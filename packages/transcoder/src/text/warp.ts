@@ -264,7 +264,8 @@ export async function warpText(warp: XEl, layouts: ParagraphLayout[], placed: Pl
       const slant = s.italic && !a.face.italic ? 0.21 : 0;
       glyphs.push({
         pi, li, group: groupOf[li], style: s, cx: xs[k] + a.width / 2,
-        contours: outline.map((c) => c.map((q) => ({ x: xs[k] + (q.x + q.y * slant) * size, y: y0 - q.y * size, on: q.on }))),
+        // 默认字体包的字：开源字体的字形放进原字体的格子里（和普通文字一样，见 Atom.shift）
+        contours: outline.map((c) => c.map((q) => ({ x: xs[k] + (a.shift?.dx ?? 0) + (q.x + q.y * slant) * size, y: y0 - (a.shift?.dy ?? 0) - q.y * size, on: q.on }))),
       });
     }
   }
