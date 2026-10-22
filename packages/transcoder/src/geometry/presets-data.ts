@@ -5505,7 +5505,7 @@ gd il +- hc 0 idx
 gd ir +- hc idx 0
 gd it +- vc 0 idy
 gd ib +- vc idy 0
-rect il ir it ib
+rect il it ir ib
 path
 M x1 y1
 A wd2 hd2 stAng swAng

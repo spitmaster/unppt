@@ -26,7 +26,11 @@ def convert(src: str, source_name: str, const: str, target: str, what: str):
             out.append(f"gd {gd.get('name')} {gd.get('fmla')}")
         rect = shape.find(f"{A}rect")
         if rect is not None:
-            out.append(f"rect {rect.get('l')} {rect.get('t')} {rect.get('r')} {rect.get('b')}")
+            ltrb = [rect.get('l'), rect.get('t'), rect.get('r'), rect.get('b')]
+            # 标准里 pie 的文字矩形 t、r 写反了（t="ir" r="it"）；PowerPoint 按 l=il t=it r=ir b=ib 排（实测 tools/wraptest/shapes.py）
+            if shape.tag == "pie" and ltrb == ["il", "ir", "it", "ib"]:
+                ltrb = ["il", "it", "ir", "ib"]
+            out.append("rect " + " ".join(ltrb))
         for path in shape.findall(f"{A}pathLst/{A}path"):
             attrs = []
             for k in ("w", "h"):

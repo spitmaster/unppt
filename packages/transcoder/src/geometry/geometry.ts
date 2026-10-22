@@ -12,7 +12,8 @@ const EMU_PER_PX = 9525;
 export type { GeomCmd, GeomDef, GeomPath } from './types';
 
 
-export interface Geometry { paths: SvgPath[]; text: { x: number; y: number; w: number; h: number }; }
+/** text.bare：几何没写文字矩形，文字区域只是左上角一个点（见 TextBox.bare） */
+export interface Geometry { paths: SvgPath[]; text: { x: number; y: number; w: number; h: number; bare?: boolean }; }
 
 export interface SvgPath { d: string; fill: GeomPath['fill']; stroke: boolean; }
 
@@ -235,8 +236,10 @@ export function buildGeometry(def: GeomDef, w: number, h: number, overrides: Map
     walkPath(p, w, h, v, sink);
     return { d: sink.out.join(''), fill: p.fill, stroke: p.stroke };
   });
-  // 文字区域（标准里每个预设形状都定义了，例如椭圆的文字框比外框小）
-  let text = { x: 0, y: 0, w, h };
+  // 文字区域（标准里几乎每个预设形状都定义了，例如椭圆的文字框比外框小）。没写文字矩形的（自定义几何不写 a:rect，
+  // 预设 chartX / chartStar / chartPlus / line）：文字区域是左上角一个点，不换行、不算内边距，左对齐从这一点往右排、
+  // 居中以它为中心，垂直居中时行的中心在这一点上（实测 tools/wraptest：custGeom 去掉 a:rect，宽 100 磅照样一行）
+  let text: Geometry['text'] = def.rect ? { x: 0, y: 0, w, h } : { x: 0, y: 0, w: 0, h: 0, bare: true };
   if (def.rect) {
     const [l, t, r, b] = def.rect.map(v);
     if (r > l && b > t) text = { x: l, y: t, w: r - l, h: b - t };

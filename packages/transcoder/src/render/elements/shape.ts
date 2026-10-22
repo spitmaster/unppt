@@ -172,7 +172,11 @@ export async function renderShape(r: RenderContext, el: XEl, ctx: SlideContext, 
   // （转动的形状靠文字框反向转把文字转正，例如矩阵图：形状 270°、文字框 90°）
   const txXfrm = readXfrm(pc(el, 'txXfrm'));
   const ownText = !!txXfrm && !sp;
-  const textBox = txXfrm ? (ownText ? { x: 0, y: 0, w: txXfrm.w, h: txXfrm.h } : { x: txXfrm.x - box.x, y: txXfrm.y - box.y, w: txXfrm.w, h: txXfrm.h }) : snap ? buildGeometry(def, box.w, box.h, av).text : geo.text;
+  const textRect = txXfrm ? (ownText ? { x: 0, y: 0, w: txXfrm.w, h: txXfrm.h } : { x: txXfrm.x - box.x, y: txXfrm.y - box.y, w: txXfrm.w, h: txXfrm.h }) : snap ? buildGeometry(def, box.w, box.h, av).text : geo.text;
+  // 自己、版式、母版都没写几何、宽度又是 0 的形状（老格式 .ppt 转来的标题常见）没有文字区域：PowerPoint 不换行，一行排完，
+  // 从形状的位置排起、不算内边距（实测 tools/wraptest：同一段字 nogeom-w0 一行，rect-w0 十行，nogeom-w30 十行；
+  // 样本：行左边就是形状的 x，anchor=ctr 时行的中心在形状的 y 上）
+  const textBox = !cust && !prst && box.w === 0 ? { ...textRect, w: 0, bare: true } : textRect;
   const laid = await renderText(
     txBody, r.textChain(ctx, ph, layoutPh, masterPh),
     [path(masterPh, 'p:txBody', 'a:bodyPr'), path(layoutPh, 'p:txBody', 'a:bodyPr')],
