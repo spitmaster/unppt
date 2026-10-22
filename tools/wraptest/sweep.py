@@ -1,7 +1,7 @@
 """自动换行专项测试：框宽扫描。同一段文字放进一组宽度逐步增加的文本框，读出 PowerPoint 每个宽度下的每一行，
 用来精确看断行规则（破折号、省略号、数字、网址……）。check.mjs 照常比对。
 
-用法：python tools/wraptest/sweep.py <名字> <字体> <字号> <语言 2052|1033> <起始宽度> <结束宽度> <步长> <文字> [<文字>…]
+用法：python tools/wraptest/sweep.py [--no-kinsoku] <名字> <字体> <字号> <语言 2052|1033> <起始宽度> <结束宽度> <步长> <文字> [<文字>…]
 （给多段文字时每段各扫一遍，放在同一个文件里）
 输出：.cache/wraptest/<名字>.pptx / .json（和 gen.py 相同的格式）
 """
@@ -19,6 +19,8 @@ OUT = ROOT / ".cache" / "wraptest"
 
 
 def main():
+    kinsoku = "--no-kinsoku" not in sys.argv
+    sys.argv = [a for a in sys.argv if a != "--no-kinsoku"]
     name, font, size, lang, w0, w1, step = sys.argv[1], sys.argv[2], float(sys.argv[3]), int(sys.argv[4]), float(sys.argv[5]), float(sys.argv[6]), float(sys.argv[7])
     texts = sys.argv[8:]
     OUT.mkdir(parents=True, exist_ok=True)
@@ -45,6 +47,8 @@ def main():
                 tr.Font.NameFarEast = font
                 tr.Font.Size = size
                 tr.LanguageID = lang
+                if not kinsoku:
+                    tr.ParagraphFormat.FarEastLineBreakControl = 0
                 lines = []
                 i = 1
                 while i < 200:

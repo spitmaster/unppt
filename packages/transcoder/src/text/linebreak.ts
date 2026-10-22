@@ -11,6 +11,7 @@ const NO_END = new Set([...'（［｛「『〔〈《【〘〖〝‘“｟«([{']
  * "CEO,CFO|,CTO"、"https|://" 也是；"风险……"放不下时 … 不悬挂，整体换到下一行）
  */
 const ASCII = /^[!-~]$/;
+const QUOTES = new Set([...'‘’“”']);
 export const hangable = (t: string, next?: string) => NO_START.has(t) && t !== '%' && t !== '…' && t !== '‥' && !((t === '.' || t === ',' || t === ':') && next !== undefined && ASCII.test(next));
 
 function canBreakBetween(a: Atom, b: Atom, kinsoku: boolean, latin: boolean): boolean {
@@ -21,6 +22,8 @@ function canBreakBetween(a: Atom, b: Atom, kinsoku: boolean, latin: boolean): bo
   if ((a.text === '”' && b.text === '“') || (a.text === '’' && b.text === '‘')) return false;
   // 破折号和前一个字之间不断（"表明——"整体换行；两个 — 之间能断，见上一条。实测 tools/wraptest 框宽扫描）
   if (b.text === '—') return false;
+  // 弯引号和紧挨着的西文字母数字之间不断（"入选|“2019"、"险”abc"）；按中文习惯控制首尾字符关掉时也一样（实测 tools/wraptest 框宽扫描，eaLnBrk 开 / 关）
+  if (!a.space && !b.space && !a.tab && !b.tab && ((QUOTES.has(a.text) && !b.wide) || (QUOTES.has(b.text) && !a.wide))) return false;
   if (a.space || a.tab || latin) return true;
   // 用东亚字体排的符号（± × § ° 等，见 measure.ts EA_SLOT）断行时按西文算：和前后的字母数字之间不断（实测 tools/wraptest："风险|±10V"、"险|10°C"）
   if ((a.wide && !eaSlot(a.cp)) || (b.wide && !eaSlot(b.cp))) return true;
@@ -76,7 +79,7 @@ export function breakLines(atoms: Atom[], avail: (first: boolean) => number, wra
         // （实测 tools/wraptest 框宽扫描：宋体 10、20、40 磅都在剩 0.085~0.11 个字之间变）
         // 前面的字本身就放不下（框比一个字还窄）时也不悬挂（实测 tools/wraptest：宋体 40 磅框宽 54 磅，"险|。"）
         // 悬挂的标点后面得能断（后面紧跟的字不能和它分开时不挂）
-        if (!hang || !kinsoku || hung >= 0 || (atoms[i + 1] && !atoms[i + 1].space && !canBreakBetween(a, atoms[i + 1], kinsoku, latin)) || width > max + 1e-6 || (lastBreak === i && max - width < a.style.size * 0.1) || !hangable(a.text, atoms[i + 1]?.text) || !(a.style.eaBreak || atoms[i - 1].style.eaBreak)) break;
+        if (!hang || hung >= 0 || (atoms[i + 1] && !atoms[i + 1].space && !canBreakBetween(a, atoms[i + 1], kinsoku, latin)) || width > max + 1e-6 || (lastBreak === i && max - width < a.style.size * 0.1) || !hangable(a.text, atoms[i + 1]?.text) || !(a.style.eaBreak || atoms[i - 1].style.eaBreak)) break;
         hung = i;
       }
       width = w;
