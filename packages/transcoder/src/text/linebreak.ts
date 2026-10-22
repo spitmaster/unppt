@@ -15,6 +15,8 @@ const QUOTES = new Set([...'‘’“”']);
 export const hangable = (t: string, next?: string) => NO_START.has(t) && t !== '%' && t !== '…' && t !== '‥' && !((t === '.' || t === ',' || t === ':') && next !== undefined && ASCII.test(next));
 
 function canBreakBetween(a: Atom, b: Atom, kinsoku: boolean, latin: boolean): boolean {
+  // 不间断空格前后都不断（实测 tools/wraptest："关|注\u00a0风" 整体换行）
+  if (a.text === '\u00a0' || b.text === '\u00a0') return false;
   // 破折号后面总能断，后面是行首禁则的标点也一样（"险——|……"、"险——|。"，实测 tools/wraptest 框宽扫描）
   if (a.text === '—') return true;
   if (kinsoku && (a.style.eaBreak || b.style.eaBreak) && (NO_START.has(b.text) || NO_END.has(a.text))) return false;

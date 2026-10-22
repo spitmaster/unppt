@@ -130,6 +130,7 @@ export async function makeAtoms(text: string, style: RunStyle, m: Measurer): Pro
   const ambiguousEa = style.eaLang && ((!!eaM && eaFam === style.ea) || !!style.eaScript);
   // 两种字体里都没有的中日韩字：用雅黑补（实测：Yu Gothic 里没有的简体字 PowerPoint 用雅黑 Regular 画）
   let cjk: Promise<[Measured | undefined, string]> | undefined;
+  let latinFallback: Promise<[Measured | undefined, string]> | undefined;
   const [symM, symFam] = style.sym ? await pick(style.sym, []) : [undefined, ''];
   // 换成了替代字体的（没嵌入的 Wingdings 等）：字宽仍按原字体（度量包里有的话），字形用替代字体画
   const origWidths = (requested: string | undefined, picked: string) =>
@@ -171,6 +172,13 @@ export async function makeAtoms(text: string, style: RunStyle, m: Measurer): Pro
       if (adv !== undefined) { usedM = secondary; family = eaFont ? latinFam : eaFam; }
     }
     if (adv === undefined && eaFont && !slotFirst) await tryCjk();
+    // 西文字体、东亚字体里都没有的西文字（黑体没有不间断空格 U+00A0）：PowerPoint 用 Calibri 的字宽（实测 tools/wraptest：黑体 20 磅
+    // 不间断空格占 4.4~4.6 磅，Calibri 是 0.226 字号）
+    if (adv === undefined && !eaFont) {
+      const [lm, lf] = await (latinFallback ??= substitute(LATIN_SUBS));
+      adv = lm?.metrics.advance(cp);
+      if (adv !== undefined) { usedM = lm; family = lf; }
+    }
     const used = usedM?.metrics;
     if (usedM && adv !== undefined && m.embed && cp > 0x20) m.embed.use(usedM.face, cp);
     const size = st.baseline ? st.size * 0.67 : st.size;
