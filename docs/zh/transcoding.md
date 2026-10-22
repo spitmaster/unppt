@@ -173,7 +173,7 @@ sequenceDiagram
   C->>Z: OpcPackage.open 读 [Content_Types].xml
   C->>P: new Presentation(pkg) 然后 load()
   P->>Z: 读 presentation.xml、关系表、presProps.xml
-  C->>F: 加入嵌入字体、--fonts 字体、私有字体
+  C->>F: 加入嵌入字体、fonts 指定的字体、默认字体包 fontPack
   C->>C: outputForm(output) 选产物形式，建 MediaStore
   C->>O: form.write(source)
   loop 每一页（由产物形式通过 slides() 逐页拉取）
@@ -192,8 +192,8 @@ sequenceDiagram
   O->>C: meta() 元数据和报告
   O->>W: 写入口文件 index.html 或 deck.json
   C->>W: 写 prop.json
-  C-->>CLI: ConvertResult 页数、宽高、report
-  CLI-->>U: 完成 N 页，缺少字体、提示
+  C-->>CLI: ConvertResult 页数、宽高、report、fontCheck
+  CLI-->>U: 完成 N 页，有问题的字体、提示
 ```
 
 关键点：
@@ -212,20 +212,22 @@ sequenceDiagram
 flowchart TD
   A["unppt 输入.pptx 选项"] --> B{"解析参数"}
   B --> C["确定输出路径<br/>single: 同名 .html<br/>paged/pages: 同名目录/index.html<br/>data: 同名 .json"]
-  B --> D["--fonts / --system-fonts<br/>递归列出 .ttf .otf .ttc"]
+  B --> D["--fonts / --system-fonts<br/>递归列出 .ttf .otf .ttc<br/>loadFontPack() 读默认字体包"]
   B --> E["读 dist/resvg.wasm<br/>（--no-images 时不读）"]
   E --> F["--jobs auto：autoWorkers()<br/>按 CPU 和可用内存定线程数"]
   F --> G{"线程数 > 1 ?"}
   G -->|是| H["createRasterPool 建工作线程池"]
   G -->|否| I["在主线程画图"]
   C & D & H & I --> J["convert(fileSource(输入), options)"]
-  J --> K["打印：完成 N 页、缺少字体、提示"]
+  J --> K["打印：完成 N 页、有问题的字体（⚠ / ✗）、提示"]
 ```
 
 几个值得知道的细节（都在 `cli.ts`）：
 
 - **`fileSource`**：输入文件不是一次性读进内存，而是包装成"按位置读取"的对象 `{ size, read(offset, length) }`，转码器要哪一段就读哪一段。字体文件也一样。
-- **`--system-fonts`**：把本机系统字体目录加进字体库，另外把 Office 自带的私有字体和云字体目录（例如 Windows 上的 `Microsoft Office\root\vfs\Fonts\private`）作为 `privateFonts` 传入。私有字体浏览器用不了，所以用到时总是嵌入产物。
+- **默认字体包**：`loadFontPack()`（`node-fonts.ts`）找到已安装的 `@unppt/fonts`（在仓库里开发时用 `packages/fonts/`），作为 `fontPack` 传入；找不到时打印提示，没有嵌入的字体只能估算字宽。`--no-default-fonts` 时不读。
+- **`--system-fonts`**（0.3.0 起默认关闭）：把本机系统字体目录和 Office 自带的私有字体、云字体目录（例如 Windows 上的 `Microsoft Office\root\vfs\Fonts\private`）里的字体都作为 `fonts` 传入，排版和显示都用它们，用到的字嵌入产物。
+- **`unppt check`**：同样的字体选项，改为调用 `checkFonts()` 只检查字体，用 `cli-check.ts` 的 `formatFontCheck()` 打印；有 ✗ 时退出码 1。正常转码结束时也用它打印有问题的字体。
 - **`autoWorkers()`**（`node-pool.ts`）：线程数 = min(CPU 数, 可用内存 ÷ 400MB)，在 Linux 容器里还会读 cgroup 的 CPU 配额。
 - **线程池建不起来**（比如 resvg.wasm 坏了）时退回主线程，转码照常进行，只是报告里多一条"resvg 加载失败"。
 
@@ -234,11 +236,13 @@ flowchart TD
 | 命令行 | `ConvertOptions` 字段 | 说明 |
 |---|---|---|
 | `-o, --out` | （命令行自己处理）| 输出文件或目录 |
-| `--output single\|paged\|pages\|data` | `output` | 产物形式，默认 `single` |
+| `--output single\|paged\|pages\|data` | `output` | 产物形式，命令行默认 `paged`（0.2.4 起），`convert()` 默认 `single` |
 | `--data` | `output: 'data'` | 同 `--output data` |
 | `--fonts <目录>` | `fonts` | 可写多次 |
-| `--system-fonts` | `fonts` + `privateFonts` | 系统字体 + Office 私有字体 |
-| `--embed-fonts` | `embedFonts: true` | 把用到的字做成子集嵌入 |
+| `--system-fonts` | `fonts` | 系统字体 + Office 私有字体 / 云字体，0.3.0 起默认关闭 |
+| （默认） | `fontPack: await loadFontPack()` | 默认字体包 `@unppt/fonts` |
+| `--no-default-fonts` | 不传 `fontPack` | 调试用 |
+| `--embed-fonts` | — | 旧选项，没有作用（`embedFonts` 默认就是 `true`） |
 | `--no-images` | `images: false` | 不出 `pic/`、`thum/` |
 | `--jobs <n\|auto>` | `rasterPool` | 出图线程数 |
 | `--inline-limit <字节>` | `inlineLimit` | 小于它的图片内联，默认 2097152（2MB） |
@@ -269,7 +273,7 @@ const result = await convert(new Uint8Array(pptx), {
     }
   },
 });
-console.log(result.slides, result.report.missingFonts, result.report.warnings);
+console.log(result.slides, result.fontCheck, result.report.warnings);
 ```
 
 `write` 收到的数据有三种：字符串、`Uint8Array`、或者 `AsyncIterable<Uint8Array>`（大文件分块流过来）。
@@ -280,6 +284,7 @@ console.log(result.slides, result.report.missingFonts, result.report.warnings);
 classDiagram
   class ConvertOptions {
     +WriteFn write
+    +FontPack fontPack
     +InputSource[] fonts
     +InputSource[] privateFonts
     +string output
@@ -296,6 +301,7 @@ classDiagram
     +number width
     +number height
     +DeckReport report
+    +FontCheck fontCheck
   }
   class DeckReport {
     +string[] missingFonts
@@ -627,7 +633,8 @@ flowchart LR
   - 标了中文字符集的缺字体 → `Microsoft YaHei`（微软雅黑）等；
   - 标了日文字符集的 → `Yu Gothic`；
   - 一些老名字有别名：`Helvetica` → `Arial`，`Times` → `Times New Roman`，`Courier` → `Courier New`。
-- 缺的字体名记入 `missingFonts`，最后出现在 `report.missingFonts`。
+- 有默认字体包时，Calibri、微软雅黑、Yu Gothic 这些替代字体的度量都在包里，所以替代后的换行也和 PowerPoint 一致。
+- 缺的字体名记入 `missingFonts`，最后出现在 `report.missingFonts`；每个字用了什么字体还会通过 `fontUse` 记进字体检查（`font/check.ts` 的 `FontCheckLog`），最后成为 `ConvertResult.fontCheck`。
 
 ### 8.2 断行（linebreak.ts）
 
@@ -762,26 +769,27 @@ flowchart LR
 字体在 unppt 里有两个用途：
 
 1. **排版**：量字宽，决定在哪换行（第 8 节）；
-2. **显示**：观看者的电脑上不一定有这个字体，可以把用到的字"嵌入"产物。
+2. **显示**：播放时**不用观看者电脑上的字体**（SPEC D3），用到的字都做成子集"嵌入"产物，所有人看到的一样。
 
 ```mermaid
 flowchart TD
   e["pptx 里嵌入的字体<br/>ppt/fonts/*.fntdata（EOT 格式）"] -->|"lazyEmbeddedFont<br/>用到才解压"| lib
-  u["--fonts 目录<br/>options.fonts"] -->|loadFontFile| lib
-  p["Office 私有字体<br/>options.privateFonts"] -->|loadFontFile| lib
-  lib["FontLibrary<br/>font/font.ts"] --> layout["排版时 fonts.find(名字, 粗, 斜)"]
+  u["指定的字体<br/>options.fonts（--fonts、--system-fonts）"] -->|loadFontFile| lib
+  p["默认字体包 @unppt/fonts<br/>options.fontPack"] -->|"packFaces<br/>排版用原字体的度量<br/>显示用开源字体"| lib
+  lib["FontLibrary<br/>font/font.ts<br/>同名时：嵌入 > 指定 > 字体包"] --> layout["排版时 fonts.find(名字, 粗, 斜)"]
   layout --> use["embed.use(字体, 码点)<br/>记录每个字体用到的字"]
-  use --> q{"要嵌入吗？<br/>embedFonts=true<br/>或 是嵌入/私有字体"}
-  q -->|是| sub["subsetFont<br/>font/subset.ts<br/>HarfBuzz hb-subset WASM"]
+  layout --> chk["fontUse → FontCheckLog<br/>font/check.ts → fontCheck"]
+  use --> sub["subsetFont<br/>font/subset.ts<br/>HarfBuzz hb-subset WASM"]
   sub --> woff["只含用到的字的 WOFF<br/>别名 unppt-f0、unppt-f1……"]
-  q -->|否| none["不嵌入<br/>浏览器用本机字体"]
 ```
 
 要点：
 
 - **字体解析是自研的**（`font/font.ts`）：只读排版需要的表（`name`、`cmap`、`hmtx`/`hhea`、`head`、`OS/2`、`GPOS`/`kern`），而且懒加载——建索引时只读表目录和 `name` 表，真正用到才读字宽。
 - **嵌入字体还原**：PowerPoint 嵌入的字体是 EOT 外壳，里面一般经过 MicroType Express 压缩。`font/eot.ts` → `font/lzcomp.ts` → `font/ctf.ts` 把它还原成普通 TTF。
-- **什么时候嵌入**：`options.embedFonts === true` 时所有用到的字体都嵌入；否则只嵌入 pptx 自带的嵌入字体和 `privateFonts`（因为观看端多半没有这些字体）。商业字体的分发需要授权，所以默认关闭。
+- PowerPoint 自己不认的嵌入字体（CFF 格式的 `.otf`、表目录没排序的字体）和 PowerPoint 一样当作没有嵌入。
+- **默认字体包**（`font/pack.ts`）：每个原字体（微软雅黑、Calibri……）变成一个 `FontFace`：名字、粗斜体、字宽和行高来自度量包（`metrics/`，只有数字，覆盖 447 个 Windows / Office 字体），字形来自对应的开源字体文件（`files/`，按 `map.json` 的规则对照），子集化和出图都用开源字体。符号字体（Wingdings 等）在 `map.json` 里没有显示字体，没嵌入时记为 `symbol-missing`。
+- **什么时候嵌入**：0.3.0 起 `embedFonts` 默认 `true`，所有用到的字体都嵌入（`false` 只用于调试，这时只嵌入 pptx 自带的嵌入字体）。默认情况下嵌入的只有开源字体和作者自己嵌入 PPT 的字体；用 `--fonts` / `--system-fonts` 指定的商业字体，分发授权由调用方负责。
 - **子集化**：`font/subset.ts` 用 HarfBuzz 的 `hb-subset`（WASM，构建时直接打进 JS）只保留用到的字，打包成 WOFF。每个字体一个唯一别名 `unppt-f{n}`，SVG 里的 `font-family` 先写别名、再写原名。
 - 所有页处理完之后，产物形式调用 `fontFiles()` 才真正做子集化，这时已经知道全部用到的字了。
 
@@ -982,7 +990,7 @@ unppt 的原则是"尽量出结果"：
 | 某个元素渲染失败 | 跳过这个元素，警告"元素渲染失败：…" |
 | 不支持的 graphicFrame | 跳过，警告"未支持的图形：…" |
 | SmartArt 没有绘图缓存 | 跳过，警告"SmartArt 缺少绘图缓存" |
-| 缺字体 | 用替代字体排版，字体名进 `report.missingFonts` |
+| 缺字体 | 用替代字体排版，字体名进 `report.missingFonts`，结论进 `fontCheck`（符号字体没嵌入时另记一条警告） |
 | 字体子集化失败 | 不嵌入这个字体，警告 |
 | 没有 resvg.wasm | 不出 `pic/`、`thum/`，警告，`prop.json` 照常 |
 | 整页图画不出来 | 这一页不出图，警告 |
@@ -1028,7 +1036,7 @@ unppt 的原则是"尽量出结果"：
 | 动画 | `p:timing` | `anim/anim.ts`、`anim/effect.ts`、`anim/behaviors.ts` |
 | 页面切换、换片方式 | `p:transition` | `anim/transition.ts` |
 | 嵌入字体 | `p:embeddedFontLst`、`fonts/*.fntdata` | `font/eot.ts`、`font/lzcomp.ts`、`font/ctf.ts` |
-| 字体解析、子集化 | — | `font/font.ts`、`font/subset.ts` |
+| 字体解析、子集化、默认字体包、字体检查 | — | `font/font.ts`、`font/subset.ts`、`font/pack.ts`、`font/check.ts` |
 | EMF / WMF / TIFF 图片 | — | `media/emf.ts`、`media/wmf.ts`、`media/tiff.ts` |
 | 整页图、缩略图 | — | `preview/`、`node-pool.ts`、`raster-worker.ts` |
 | 产物文件 | — | `output/`（`single.ts`、`paged.ts`、`data.ts`、`prop.ts`） |

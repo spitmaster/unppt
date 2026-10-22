@@ -82,12 +82,14 @@ flowchart TB
   pk --> fmt["format/<br/>output format: types + version"]
   pk --> tr["transcoder/<br/>transcoder (published as @unppt/unppt)"]
   pk --> pl["player/<br/>player"]
+  pk --> fo["fonts/<br/>default font pack (published as @unppt/fonts)"]
 ```
 
 | Folder | What it does | Published to npm? |
 |---|---|---|
 | `packages/format` | TypeScript types of the output format: `Deck`, `DeckSlide`, `AnimAction`, `SlideTransition`, `PlayerState`, the bridge messages `BridgeCommand` / `BridgeReply` / `BridgeEvent`, and the versions `DECK_FORMAT_VERSION` and `UNPPT_VERSION`. **The only contract between transcoder and player.** | Types only; bundled into transcoder and player |
 | `packages/transcoder` | The transcoder, in TypeScript. Entry points: `src/index.ts` (the `convert` function) and `src/cli.ts` (the `unppt` command). | Yes, as `@unppt/unppt` |
+| `packages/fonts` | The default font pack: open-source fonts (SIL OFL 1.1; the font files are not in git, run `node scripts/fetch-fonts.mjs` once when developing to download and verify them), the metrics pack `metrics/` (numbers only), and the mapping rules `map.json`. | Yes, as `@unppt/fonts` (a dependency of `@unppt/unppt`) |
 | `packages/player` | The player, TypeScript, zero dependencies. Entry `src/player.ts`; `src/host.ts` is a small helper `UnpptFrame` for host pages. | The player code is embedded into the transcoder's output |
 | `tools/` | Python dev tools: `tools/powerpoint` drives the local PowerPoint to export reference images; `tools/make-case` builds synthetic cases with PowerPoint; `tools/compare` screenshots, compares and scores; `check-player.py` and friends are end-to-end player tests. | No (dev machine only) |
 | `testcases/` | Synthetic test cases: an `xxx.pptx` plus a folder of the same name with the reference images exported by PowerPoint. All content is neutral and can be committed. | No |
@@ -124,7 +126,7 @@ From [SPEC.md](../../SPEC.md) section 2 and the project's `CLAUDE.md`:
 | Principle | What it means | Why |
 |---|---|---|
 | **Pure function: bytes in, files out** | `convert(input, { write, fonts? })`: input is bytes (`Uint8Array` / `ArrayBuffer`) or a random-access source `{ size, read(offset, length) }`; output goes through the caller's `write(path, data)`. The transcoder **never touches the disk or the network** itself. | The caller decides where files come from and go to, so it works in Node, cloud functions and browsers. Big files are read on demand, not loaded whole into memory. |
-| **Fonts only as bytes** | Fonts are passed as bytes via the `fonts` / `privateFonts` options; the system is never searched. | The font used for measuring is the font used for display, so line breaks are identical in every browser. |
+| **Fonts only as bytes** | Fonts are passed in via the `fonts` option (font file bytes) and the `fontPack` option (the default font pack, loaded in Node with `loadFontPack()`); the transcoder never searches the system. The glyphs used are always embedded as subsets, and playback never uses fonts on the viewer's computer (SPEC D3). | Every viewer sees the same thing, and the same input converts to the same result on a desktop, a server or a cloud function. |
 | **No native addons, no external programs** | Product code may only use pure JS and WASM libraries; every new library states its license and a pinned version. | Installs and runs in any Node environment. |
 | **Zero-dependency player** | The player imports no third-party library; viewing needs only a browser. | Output opens by double-click, in an iframe, or in an app's WebView. |
 | **Self-built core rendering** | The slide SVG and animations used for playback are written in-house and must match PowerPoint pixel by pixel; third-party renderers are only used for side features such as thumbnails (resvg). | Full control over the core result. |
@@ -182,7 +184,7 @@ Reading bottom-up, what each layer does:
 | `common/` | SVG output helpers (`svg.ts`), hyperlinks (`links.ts`), content hashes (`hash.ts`), animation target ids (`uid.ts`). | io |
 | `model/` | Presentation / theme / master / layout inheritance (`model.ts`), colors (`color.ts`), speaker notes (`notes.ts`), font-name charsets (`font-charsets.ts`), 3D lighting constants. | io, common |
 | `geometry/` | Formula engine, preset shape data (`presets-data.ts`), text warp data (`warps-data.ts`), bounding box after rotation. | io, common |
-| `font/` | Reads TrueType (`font.ts`, `cmap.ts`, `glyf.ts`, `kern.ts`), font subsetting (`subset.ts`, HarfBuzz WASM), restores embedded fonts (`eot.ts` -> `lzcomp.ts` -> `ctf.ts`). | io, common |
+| `font/` | Reads TrueType (`font.ts`, `cmap.ts`, `glyf.ts`, `kern.ts`), font subsetting (`subset.ts`, HarfBuzz WASM), restores embedded fonts (`eot.ts` -> `lzcomp.ts` -> `ctf.ts`), the default font pack (`pack.ts`), the font check (`check.ts`). | io, common |
 | `style/` | Fill `fill.ts`, patterns `pattern.ts`, lines `line.ts`, arrowheads `arrowheads.ts`, gradients `gradient-stops.ts`, picture adjustments `blip.ts`, 3D `camera.ts` / `lighting.ts`, perspective `perspective.ts`. | io, common, model |
 | `effects/` | Shape effects as SVG filters: `outer-shadow.ts`, `inner-shadow.ts`, `glow.ts`, `soft-edge.ts`, `bevel.ts`, reflection `reflection.ts`, 3D contour `contour.ts`. | io, common, model |
 | `text/` | Text box properties -> per-paragraph layout (measuring, line breaking, bullets) -> positioning -> SVG text; WordArt warp `warp.ts`. | io, common, model, geometry, font, style, effects |
@@ -217,7 +219,7 @@ sequenceDiagram
   CLI->>CLI: read resvg.wasm, create raster thread pool by CPU and memory
   CLI->>C: convert(source, options)
   C->>C: open ZIP, read OPC package, load Presentation (theme, master, layout)
-  C->>C: load fonts (embedded fonts, fonts, privateFonts)
+  C->>C: load fonts (embedded fonts, fonts, default font pack fontPack)
   C->>O: form.write(slides generator, ...)
   loop each slide
     O->>C: ask for next slide
@@ -250,6 +252,7 @@ The structure of `ConvertOptions` (`packages/transcoder/src/index.ts`) and relat
 classDiagram
   class ConvertOptions {
     +write: WriteFn
+    +fontPack?: FontPack
     +fonts?: InputSource[]
     +privateFonts?: InputSource[]
     +output?: string
@@ -266,6 +269,7 @@ classDiagram
     +width: number
     +height: number
     +report: DeckReport
+    +fontCheck: FontCheck
   }
   class RandomAccessSource {
     +size: number
@@ -288,12 +292,13 @@ classDiagram
 | Option | Meaning |
 |---|---|
 | `write` | Required. Function that writes a file; paths are relative, e.g. `index.html`, `media/video1.mp4`. |
-| `fonts` | Font files (ttf / otf / ttc) as bytes. |
-| `privateFonts` | Fonts the viewer won't have: the used glyphs are always embedded. |
+| `fontPack` | The default font pack (`@unppt/fonts`): layout with the original font's metrics, display with open-source fonts. In Node load it with `loadFontPack()` from `@unppt/unppt/node`. |
+| `fonts` | Font files (ttf / otf / ttc) specified by the caller, as bytes; they win over the font pack for the same name. |
+| `privateFonts` | Old option, same as `fonts`. |
 | `output` | Output form: `single` (default, old name `html`), `paged`, `pages`, `data`. |
 | `fileName` | Main file name, default `index.html` (`deck.json` for `data`). |
 | `inlineLimit` | Images smaller than this many bytes are inlined into the HTML; default 2MB. |
-| `embedFonts` | Subset the used glyphs and embed them in the output; off by default. |
+| `embedFonts` | Subset the used glyphs and embed them in the output; on by default since 0.3.0 (`false` is for debugging only). |
 | `images` | Whether to write slide images and thumbnails; on by default. |
 | `rasterWasm` | The resvg WASM bytes (the CLI reads `dist/resvg.wasm` from the package automatically). |
 | `rasterPool` | Parallel rasterizer, e.g. `createRasterPool` from `@unppt/unppt/node`. |

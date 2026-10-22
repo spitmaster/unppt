@@ -66,6 +66,8 @@ npm install -g @unppt/unppt
 unppt 演示文稿.pptx -o out/index.html
 ```
 
+安装时会自动带上默认字体包 `@unppt/fonts`（开源字体 + 排版用的字体度量数据，下载约 60MB，装好后约 87MB）。它只在转码的电脑上需要，观看的人不用下载。为什么需要它见 [第 7 节](#7-字体为什么重要以及现在怎么处理)。
+
 **方式二：装进你的项目**
 
 ```bash
@@ -85,25 +87,29 @@ npx @unppt/unppt 演示文稿.pptx -o out/index.html
 
 **方式四：从 GitHub 下载安装（不经过 npm 官方源）**
 
-npm 官方源审核新版本期间、或者公司内网镜像下载失败时，可以从 GitHub Release 下载安装包再安装（每个版本发布时自动附上，`latest` 总是最新版）。分两步：先下载安装包文件，再安装这个本地文件（npm 12 起默认不允许直接从网址安装，所以要先下载）。
+npm 官方源审核新版本期间、或者公司内网镜像下载失败时，可以从 GitHub Release 下载安装包再安装（每个版本发布时自动附上，`latest` 总是最新版）。分两步：先下载安装包文件，再安装这些本地文件（npm 12 起默认不允许直接从网址安装，所以要先下载）。
+
+0.3.0 起要下载**两个文件**：默认字体包 `unppt-fonts.tgz` 和程序本身 `unppt.tgz`，两个一起安装（字体包写在前面）。
 
 Windows PowerShell：
 
 ```powershell
+Invoke-WebRequest https://github.com/spitmaster/unppt/releases/latest/download/unppt-fonts.tgz -OutFile unppt-fonts.tgz
 Invoke-WebRequest https://github.com/spitmaster/unppt/releases/latest/download/unppt.tgz -OutFile unppt.tgz
-npm install -g .\unppt.tgz
+npm install -g .\unppt-fonts.tgz .\unppt.tgz
 ```
 
 macOS / Linux：
 
 ```bash
+curl -L -o unppt-fonts.tgz https://github.com/spitmaster/unppt/releases/latest/download/unppt-fonts.tgz
 curl -L -o unppt.tgz https://github.com/spitmaster/unppt/releases/latest/download/unppt.tgz
-npm install -g ./unppt.tgz
+npm install -g ./unppt-fonts.tgz ./unppt.tgz
 ```
 
-macOS / Linux 提示权限不足（`EACCES` / `permission denied`）时，第二行改成 `sudo npm install -g ./unppt.tgz`，按提示输入电脑登录密码。
+macOS / Linux 提示权限不足（`EACCES` / `permission denied`）时，最后一行改成 `sudo npm install -g ./unppt-fonts.tgz ./unppt.tgz`，按提示输入电脑登录密码。
 
-想装指定版本，把网址里的 `latest/download/unppt.tgz` 换成 `download/v0.2.6/unppt-unppt-0.2.6.tgz` 这样的格式。装好后运行 `unppt -v` 看版本号。
+想装指定版本，把网址里的 `latest/download/` 换成 `download/v0.3.0/` 这样的格式（0.2.x 版本没有字体包，只下载 `unppt.tgz` 一个文件）。装好后运行 `unppt -v` 看版本号。
 
 > 不带参数运行 `unppt`，会打印版本号和全部选项。
 
@@ -122,12 +128,11 @@ mkdir out
 **第 2 步：转码**
 
 ```bash
-unppt demo.pptx -o out/index.html --system-fonts
+unppt demo.pptx -o out/index.html
 ```
 
-- `convert`：子命令，目前只有这一个。
 - `-o out/index.html`：输出到哪里。不写的话，默认在 `demo.pptx` 旁边新建 `demo/` 文件夹，`index.html` 和 `pic/`、`thum/`、`prop.json` 等都放在里面。
-- `--system-fonts`：用本机安装的字体来排版，效果更准。为什么字体重要见 [第 7 节](#7-字体为什么重要以及怎么给)。
+- 字体不用另外指定：默认用 PPT 里嵌入的字体和默认字体包，所有观看者看到的都一样。想先看看字体有没有问题，运行 `unppt check demo.pptx`，见 [第 7 节](#7-字体为什么重要以及现在怎么处理)。
 
 **第 3 步：看命令行输出**
 
@@ -135,11 +140,12 @@ unppt demo.pptx -o out/index.html --system-fonts
 
 ```text
 完成：12 页，用时 4.2 秒 -> D:\work\out\index.html
-缺少字体：Some Font
+字体：
+  ⚠ 楷体_GB2312  第 1 页   没有这个字体，按 Microsoft YaHei 替代（字形和换行可能和作者电脑上不同）
 提示：……
 ```
 
-- `缺少字体`：文件里用到但本机找不到的字体（会用替代字体，效果可能有偏差）。
+- `字体：`：只列**有问题**的字体（⚠ 提醒、✗ 必须处理），没有问题时不显示这一段。每种结论的意思见 [7.5 节](#75-检查字体unppt-check)。
 - `提示`：转码时发现的问题（例如某个图片读不出来），不影响其它页面。
 
 **第 4 步：打开播放**
@@ -222,7 +228,7 @@ out/
 ├── pages/                     ← 每页的数据，一页一个脚本文件
 │   ├── 1.9f8e7d6c.js
 │   └── 2.0a1b2c3d.js
-├── fonts/                     ← 嵌入的字体子集（有嵌入字体时才有）
+├── fonts/                     ← 用到的字体子集（有文字时就有）
 │   └── unppt-f0.5e6f7a8b.js
 ├── media/                     ← 所有图片、音频、视频（这种形式下图片一律不内联）
 ├── pic/  thum/  prop.json     ← 同 single
@@ -256,7 +262,7 @@ unppt demo.pptx --data -o out/deck.json
 ```text
 out/
 ├── deck.json       ← 演示数据（每页的 SVG、动画步骤、切换效果，以及标题、尺寸、报告）
-├── fonts/          ← 嵌入的字体子集，.woff 格式（有嵌入字体时才有）
+├── fonts/          ← 用到的字体子集，.woff 格式（有文字时就有）
 ├── media/          ← 所有图片、音视频
 ├── pic/  thum/  prop.json
 ```
@@ -374,30 +380,125 @@ sequenceDiagram
 
 ---
 
-## 7. 字体：为什么重要，以及怎么给
+## 7. 字体：为什么重要，以及现在怎么处理
+
+> 0.3.0 起字体的处理方式变了：默认**不再用本机系统字体**，改用 PPT 里嵌入的字体 + 默认字体包 `@unppt/fonts`。下面从头讲一遍。
 
 ### 7.1 为什么字体重要
 
-PowerPoint 排版时，每个字有多宽、一行能放几个字、在哪里换行，都由字体决定。unppt 要做到和 PowerPoint 一样，**转码时就要知道每个字的真实宽度**，所以需要拿到字体文件（`.ttf`、`.otf`、`.ttc`）。
+字体在两个时刻起作用：
+
+| 时刻 | 字体决定了什么 |
+|---|---|
+| **转码时**（排版） | 每个字有多宽、一行能放几个字、在哪里换行、行和行隔多远。要和 PowerPoint 一样，转码器就要知道每个字的真实宽度 |
+| **观看时**（显示） | 每个字长什么样（字形） |
+
+unppt 的原则（SPEC D3）：**播放时绝不用观看者电脑上装的字体**。每个字的字形都来自打包进产物的字体子集（只包含用到的字）。这样不管观看的人用 Windows、Mac、安卓还是 iPhone（例如一场直播课里几千个学生），看到的都完全一样。
+
+### 7.2 产物里的字体从哪来
+
+不另外指定字体文件时，产物里的字体只有两个来源：
+
+1. **作者嵌入在 `.pptx` 里的字体**：原样使用。例外：PowerPoint 自己都不认的嵌入字体（CFF 格式的 `.otf`、表目录没排序的字体），和 PowerPoint 一样当作没有嵌入。
+2. **默认字体包 `@unppt/fonts`**：安装 `@unppt/unppt` 时自动装上（它是一个依赖）。里面都是开源字体，许可证都是 SIL OFL 1.1，可以自由分发。约 87MB，只在转码的电脑上需要，观看的人不会下载它（产物里只有用到的字的子集）。
 
 ```mermaid
-flowchart LR
-  F{"转码时有这个字体吗？"} -->|"有"| OK["按真实字宽排版<br/>换行位置和 PowerPoint 一致"]
-  F -->|"没有"| MISS["按 PowerPoint 的规则找替代字体<br/>记入「缺少字体」<br/>换行位置可能不同"]
-  OK --> V{"观看的电脑上有这个字体吗？"}
-  V -->|"有，或者用了 --embed-fonts"| GOOD["显示效果一致"]
-  V -->|"没有"| DIFF["浏览器用别的字体显示<br/>字形、宽度可能有偏差"]
+flowchart TD
+  F["PPT 里用到的字体，例如「微软雅黑」"] --> E{"作者把它嵌入 PPT 了吗？<br/>（并且 PowerPoint 认它）"}
+  E -->|"嵌入了"| EMB["排版、显示都用嵌入的字体"]
+  E -->|"没有"| S{"用 --fonts 指定了同名字体吗？"}
+  S -->|"指定了"| SPEC["排版、显示都用指定的字体"]
+  S -->|"没有"| K{"字体包认识它吗？<br/>（度量包里有 447 个 Windows / Office 字体）"}
+  K -->|"认识"| DEF["排版按原字体的字宽<br/>显示用对应的开源字体"]
+  K -->|"不认识"| SUB["和 PowerPoint 一样找替代字体<br/>（中文→微软雅黑，西文→Calibri，日文→Yu Gothic）<br/>再按上一格处理"]
+  EMB --> OUT[("用到的字做成子集<br/>嵌入产物")]
+  SPEC --> OUT
+  DEF --> OUT
+  SUB --> OUT
+  OUT --> V["所有观看者看到的一样"]
 ```
 
-有两个时刻需要字体：**转码时**（决定排版）和**观看时**（浏览器显示）。
+所有字体都没有的字（很少见，例如 emoji、生僻字）交给浏览器自己找字体显示，不同设备上可能不一样，`unppt check` 会列出来。
 
-### 7.2 三个字体选项
+### 7.3 排版和显示分开：度量包 + 开源字体
+
+微软雅黑、宋体、Calibri 这些字体是商业字体，不能随产物分发。unppt 的做法是把“排版”和“显示”分开：
+
+- **排版**用原字体的**度量数据**：字体包里有一个度量包，只有数字（每个字的宽度、上下高度、字距调整），**没有字形**，覆盖 447 个 Windows / Office 字体。所以换行位置、每个字的位置、行距和 PowerPoint 一样。
+- **显示**用对应的开源字体。字形会和原字体略有不同（例如微软雅黑显示成思源黑体），但位置不变。
+
+| 原字体（举例） | 显示用的开源字体 |
+|---|---|
+| 微软雅黑、等线、黑体等无衬线中文字体 | 思源黑体（Noto Sans SC，细体 / 常规 / 粗体） |
+| 宋体一类 | 思源宋体（Noto Serif SC，常规 / 粗体） |
+| 楷体 | 霞鹜文楷（LXGW WenKai） |
+| 仿宋 | 朱雀仿宋（Zhuque Fangsong） |
+| Calibri | Carlito（和 Calibri 字宽一致） |
+| Cambria | Caladea（和 Cambria 字宽一致） |
+| Arial 等无衬线西文字体 | Liberation Sans（和 Arial 字宽一致） |
+| Times New Roman 等衬线西文字体 | Liberation Serif（和 Times New Roman 字宽一致） |
+| Courier New 等等宽字体 | Liberation Mono（和 Courier New 字宽一致） |
+
+对照规则写在 `packages/fonts/map.json` 里，按顺序匹配，第一条命中的生效。
+
+### 7.4 符号字体（Wingdings、Webdings、Symbol 等）
+
+符号字体里，字母的位置放的是图形（例如 Wingdings 的 `l` 是一个实心圆点）。开源字体里没有能代替它们的，unppt 也**不会改动你的字符**：
+
+- 作者把符号字体嵌入了 PPT：照常使用，显示正确。
+- 没有嵌入：符号会显示成普通字母，转码报告和 `unppt check` 会提示作者嵌入字体。
+
+在 PowerPoint 里嵌入字体：**文件 → 选项 → 保存 → 勾选“将字体嵌入文件”**，然后重新保存。也可以用 `--fonts` 指定符号字体文件。
+
+### 7.5 检查字体：unppt check
+
+想在转码前知道字体有没有问题（例如在产品里检查用户上传的课件），用 `unppt check`。它只检查字体，不写任何文件，几秒钟就出结果：
+
+```bash
+unppt check text-latin-cjk-font.pptx
+```
+
+```text
+字体检查：text-latin-cjk-font.pptx（共 1 页）
+  ⚠ 楷体_GB2312  第 1 页   没有这个字体，按 Microsoft YaHei 替代（字形和换行可能和作者电脑上不同）
+  ✓ 等线         第 1 页   排版按原字体，显示用 思源黑体（Noto Sans SC）
+  ✓ 宋体         第 1 页   排版按原字体，显示用 思源宋体（Noto Serif SC）
+  ✓ Arial        第 1 页   排版按原字体，显示用 Liberation Sans
+结论：0 个必须处理的问题（✗），1 个提醒（⚠）
+```
+
+用了 Wingdings 又没有嵌入时会看到：
+
+```text
+  ✗ Wingdings  第 1 页   符号字体没有嵌入，符号会显示成字母：请在 PowerPoint 里勾选"将字体嵌入文件"
+```
+
+每种结论的意思（括号里是 `--json` 输出里的 `status`）：
+
+| 标记 | 结论 | 意思 |
+|---|---|---|
+| ✓ | 嵌入了（`embedded`） | PPT 里嵌入了这个字体，照原样显示 |
+| ✓ | 指定的（`specified`） | 用 `--fonts` / `--system-fonts` 给的字体 |
+| ✓ | 默认字体包（`default`） | 排版按原字体的字宽，显示用开源字体 |
+| ⚠ | 替代（`substituted`） | 字体包也不认识这个字体，按 PowerPoint 的规则找了替代字体，字形和换行可能和作者电脑上不同 |
+| ✗ | 符号字体没嵌入（`symbol-missing`） | 符号会显示成字母，见 [7.4 节](#74-符号字体wingdingswebdingssymbol-等) |
+| ✗ | 没有字体（`missing`） | 连替代字体都没有，字宽只能估算（通常是没装默认字体包） |
+
+- 加 `--json` 输出 JSON：`fonts`（每个字体的 `font`、`pages`、`status`，以及可能有的 `substitute` 替代字体、`shownWith` 显示用的字体）、`missingChars`（没有字体能显示的字，按页列出）、`errors`（✗ 的个数）、`warnings`（⚠ 的个数）、`slides`（页数）。
+- 有 ✗ 时退出码是 `1`，产品里可以据此拒绝上传或提示作者。
+- 字体选项（`--fonts`、`--system-fonts`、`--no-default-fonts`）和转码时一样写，结论就是按这些字体转码时的情况。
+- 正常转码结束时也会打印字体检查，但只列有问题的字体（⚠、✗）。
+
+### 7.6 字体选项
 
 | 选项 | 作用 | 什么时候用 |
 |---|---|---|
-| `--fonts <目录>` | 从这个目录（包括子目录）读取 `.ttf` / `.otf` / `.ttc` 字体，按真实字宽排版。可以写多次 | 服务器上没有系统字体，或者你有一套专门的字体 |
-| `--system-fonts` | 使用本机系统字体目录。Office 自带的私有字体和云字体（例如 Aptos、Gill Sans MT、Tw Cen MT）也会用上，并且**用到时自动嵌入产物**（因为浏览器用不了这些没装进系统的字体） | **默认开启**（0.2.3 起）：使用本机系统字体，按真实字宽排版，换行才和 PowerPoint 一致；Office 自带的私有字体、云字体用到时嵌入产物。加 `--no-system-fonts` 关闭（关闭后字宽只能估算，换行可能和 PowerPoint 不同） |
-| `--embed-fonts` | 把用到的字做成字体子集（只包含用到的字）嵌入产物，观看端不需要安装字体 | 观看的人可能没装这些字体。**商业字体注意分发授权** |
+| （不写） | PPT 里嵌入的字体 + 默认字体包。找不到 `@unppt/fonts` 时会打印提示，这时没有嵌入的字体字宽只能估算 | 大多数情况 |
+| `--fonts <目录>` | 从这个目录（包括子目录）读取 `.ttf` / `.otf` / `.ttc`。同名时压过字体包，排版和显示都用它，用到的字嵌入产物。可以写多次 | 你有自己的一套字体，并且有权分发 |
+| `--system-fonts` | 也用本机系统字体和 Office 私有字体 / 云字体（例如 Aptos、Gill Sans MT），排版和显示都用它们，用到的字嵌入产物。**0.3.0 起默认关闭**（0.2.3 到 0.2.6 默认开启） | 想让字形和作者电脑上一模一样。**注意商业字体的分发授权**：嵌入产物就等于把字体子集分发给了所有观看者 |
+| `--no-default-fonts` | 不用默认字体包 | 调试 |
+| `--no-system-fonts` | 旧选项，照样接受，没有作用（现在本来就默认关闭） | — |
+| `--embed-fonts` | 旧选项，照样接受，没有作用（现在用到的字体总是嵌入） | — |
 
 `--system-fonts` 会查找的目录：
 
@@ -407,19 +508,20 @@ flowchart LR
 | macOS | `/System/Library/Fonts`、`/Library/Fonts`、`~/Library/Fonts` | `/Applications/Microsoft PowerPoint.app/Contents/Resources/DFonts` |
 | Linux | `/usr/share/fonts`、`/usr/local/share/fonts`、`~/.fonts`、`~/.local/share/fonts` | 无 |
 
-另外，`.pptx` 文件里自己嵌入的字体会被优先使用，并且总是嵌入产物，不需要任何选项。
-
 推荐写法：
 
 ```bash
-# 在自己电脑上转码，观看的人和你用同样的系统
-unppt demo.pptx -o out/index.html --system-fonts
+# 大多数情况：什么都不用加，在哪台电脑、服务器、云函数上转，结果都一样
+unppt demo.pptx -o out
 
-# 观看的人可能没有这些字体（例如手机）
-unppt demo.pptx -o out/index.html --system-fonts --embed-fonts
+# 先检查字体
+unppt check demo.pptx
 
-# 在 Linux 服务器上，字体放在 /opt/fonts
-unppt demo.pptx -o out/index.html --fonts /opt/fonts --embed-fonts
+# 用自己有分发授权的字体（同名时压过字体包）
+unppt demo.pptx -o out --fonts /opt/fonts
+
+# 用本机字体，字形和作者电脑上一样（注意商业字体的分发授权）
+unppt demo.pptx -o out --system-fonts
 ```
 
 ---
@@ -432,6 +534,8 @@ unppt demo.pptx -o out/index.html --fonts /opt/fonts --embed-fonts
 |---|---|---|---|
 | 合成测试用例 | 228 份 / 504 页 | 92.3% | 0.984 |
 | 随机抽取的 100 份真实课件 | 3527 页，0 份转码失败 | 78.8%（约 95% 的页 SSIM ≥ 0.90） | 0.967 |
+
+上表是用 `--system-fonts`（和 PowerPoint 用同一套字体）转码测出来的，衡量的是排版规则对不对。默认用字体包时换行和文字位置不变，只是字形换成了开源字体，合成用例平均每页 SSIM 约低 0.024，全部来自字形差别。
 
 多数没通过的页只是细节有差别（文字位置差几个像素、某个图表标签）。下面每张图左边是 Microsoft PowerPoint，右边是 unppt：
 
@@ -450,8 +554,10 @@ unppt demo.pptx -o out/index.html --fonts /opt/fonts --embed-fonts
 | `unppt` 不是内部或外部命令 / command not found | 没有全局安装，或者 npm 全局目录不在 PATH 里。改用 `npx @unppt/unppt ...`，或者重新 `npm install -g @unppt/unppt` |
 | 安装或运行时报 Node 版本错误、语法错误 | Node 版本低于 20.12。运行 `node -v` 检查并升级 |
 | 运行后只打印了一大段“用法” | 命令写错了：第一个参数必须是 `convert`，后面跟输入文件；选项名写错也会打印用法。看 [使用说明](usage.md#2-命令行参考) |
-| 文字换行和 PowerPoint 不一样 | 转码时缺字体。看输出里的 `缺少字体：`，用 `--system-fonts` 或 `--fonts <目录>` 提供这些字体 |
-| 在自己电脑上正常，别人电脑上字体不对 | 观看的电脑没装这些字体。加 `--embed-fonts` |
+| 文字换行和 PowerPoint 不一样 | 转码时缺字体。运行 `unppt check 文件.pptx` 看哪些字体是 ⚠ 替代或 ✗；请作者在 PowerPoint 里嵌入字体，或用 `--fonts <目录>` 提供这些字体。见 [第 7 节](#7-字体为什么重要以及现在怎么处理) |
+| 提示“没找到默认字体包 @unppt/fonts” | 字体包没装上（例如只装了 `unppt.tgz`）。重新 `npm install -g @unppt/unppt`，或者从 GitHub 安装时把 `unppt-fonts.tgz` 一起装上 |
+| 字形和作者电脑上看到的不完全一样 | 正常现象：没有嵌入的商业字体（微软雅黑、Calibri 等）用开源字体显示，位置和换行不变。要完全一样，请作者嵌入字体，或者在你有授权时用 `--system-fonts` / `--fonts` |
+| 符号（勾、箭头、圆点）显示成了字母 | 用了 Wingdings 这类符号字体但没有嵌入。请作者在 PowerPoint 里“将字体嵌入文件”，见 [7.4 节](#74-符号字体wingdingswebdingssymbol-等) |
 | `.pptx` 旁边多出一堆 `pic/`、`thum/`、`prop.json` | 0.2.1 及以前不写 `-o` 时输出直接写在输入文件旁边。升级到 0.2.2 以上（默认放进同名文件夹），或用 `-o out/index.html` 指定目录 |
 | 提示“没有 resvg.wasm，不输出整页图和缩略图” | 程序找不到出图用的 `resvg.wasm`（通常是安装不完整）。重新安装；不需要图片时加 `--no-images` |
 | 转码很慢或内存不够 | 出图最耗时。加 `--no-images` 跳过出图，或用 `--jobs 1`、`--jobs 2` 减少同时出图的线程数。用 `--stats` 查看用时和峰值内存 |

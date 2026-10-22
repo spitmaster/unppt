@@ -66,6 +66,8 @@ npm install -g @unppt/unppt
 unppt deck.pptx -o out/index.html
 ```
 
+The default font pack `@unppt/fonts` (open-source fonts plus font metrics for layout; about 60 MB to download, about 87 MB installed) is installed automatically with it. It is only needed on the machine that converts; viewers never download it. See [section 7](#7-fonts-why-they-matter-and-how-they-are-handled-now) for why.
+
 **Option 2: install into your project**
 
 ```bash
@@ -85,25 +87,29 @@ The first run downloads the package temporarily, so give it a moment.
 
 **Option 4: download from GitHub (bypassing the npm registry)**
 
-While npm is still reviewing a new version, or when a corporate npm mirror fails, download the package file from the GitHub Release (attached automatically to every release; `latest` is always the newest) and install that local file. Two steps, because npm 12 and later refuse to install straight from a URL by default.
+While npm is still reviewing a new version, or when a corporate npm mirror fails, download the package file from the GitHub Release (attached automatically to every release; `latest` is always the newest) and install those local files. Two steps, because npm 12 and later refuse to install straight from a URL by default.
+
+Since 0.3.0 you need **two files**: the default font pack `unppt-fonts.tgz` and the program itself `unppt.tgz`. Install them together (font pack first).
 
 Windows PowerShell:
 
 ```powershell
+Invoke-WebRequest https://github.com/spitmaster/unppt/releases/latest/download/unppt-fonts.tgz -OutFile unppt-fonts.tgz
 Invoke-WebRequest https://github.com/spitmaster/unppt/releases/latest/download/unppt.tgz -OutFile unppt.tgz
-npm install -g .\unppt.tgz
+npm install -g .\unppt-fonts.tgz .\unppt.tgz
 ```
 
 macOS / Linux:
 
 ```bash
+curl -L -o unppt-fonts.tgz https://github.com/spitmaster/unppt/releases/latest/download/unppt-fonts.tgz
 curl -L -o unppt.tgz https://github.com/spitmaster/unppt/releases/latest/download/unppt.tgz
-npm install -g ./unppt.tgz
+npm install -g ./unppt-fonts.tgz ./unppt.tgz
 ```
 
-On macOS / Linux, if you get a permission error (`EACCES` / `permission denied`), use `sudo npm install -g ./unppt.tgz` and enter your login password.
+On macOS / Linux, if you get a permission error (`EACCES` / `permission denied`), change the last line to `sudo npm install -g ./unppt-fonts.tgz ./unppt.tgz` and enter your login password.
 
-For a specific version, replace `latest/download/unppt.tgz` with something like `download/v0.2.6/unppt-unppt-0.2.6.tgz`. Run `unppt -v` afterwards to check the version.
+For a specific version, replace `latest/download/` with something like `download/v0.3.0/` (0.2.x releases have no font pack; download only `unppt.tgz`). Run `unppt -v` afterwards to check the version.
 
 > Running `unppt` with no arguments prints the version and all options.
 
@@ -122,12 +128,11 @@ mkdir out
 **Step 2: convert**
 
 ```bash
-unppt demo.pptx -o out/index.html --system-fonts
+unppt demo.pptx -o out/index.html
 ```
 
-- `convert`: the sub-command (currently the only one).
 - `-o out/index.html`: where to write. Without it, a `demo/` folder is created next to `demo.pptx`, holding `index.html` plus `pic/`, `thum/`, `prop.json` etc.
-- `--system-fonts`: lay text out with the fonts installed on this computer, for more accurate results. See [section 7](#7-fonts-why-they-matter-and-how-to-provide-them) for why fonts matter.
+- No font options needed: by default the fonts embedded in the PPT plus the default font pack are used, and every viewer sees the same thing. To check fonts first, run `unppt check demo.pptx`; see [section 7](#7-fonts-why-they-matter-and-how-they-are-handled-now).
 
 **Step 3: read the console output**
 
@@ -135,12 +140,13 @@ While converting it shows progress like `转码中 3/12 页` ("converting page 3
 
 ```text
 完成：12 页，用时 4.2 秒 -> D:\work\out\index.html
-缺少字体：Some Font
+字体：
+  ⚠ 楷体_GB2312  第 1 页   没有这个字体，按 Microsoft YaHei 替代（字形和换行可能和作者电脑上不同）
 提示：……
 ```
 
 - `完成` (done): number of slides, time taken, output path.
-- `缺少字体` (missing fonts): fonts used in the file but not found on this machine. A substitute font is used, so the result may differ slightly.
+- `字体：` (fonts): only fonts **with problems** are listed (⚠ warning, ✗ must fix); the block is absent when there are none. The example says "font not available, substituted with Microsoft YaHei (glyphs and line breaks may differ from the author's computer)". See [section 7.5](#75-checking-fonts-unppt-check) for every status.
 - `提示` (notice): problems found during conversion (for example an image that could not be read). Other slides are not affected.
 
 **Step 4: open and play**
@@ -223,7 +229,7 @@ out/
 ├── pages/                     ← per-slide data, one script file per slide
 │   ├── 1.9f8e7d6c.js
 │   └── 2.0a1b2c3d.js
-├── fonts/                     ← embedded font subsets (only when fonts are embedded)
+├── fonts/                     ← subsets of the fonts used (present whenever there is text)
 │   └── unppt-f0.5e6f7a8b.js
 ├── media/                     ← all images, audio, video (images are never inlined in this form)
 ├── pic/  thum/  prop.json     ← same as single
@@ -257,7 +263,7 @@ unppt demo.pptx --data -o out/deck.json
 ```text
 out/
 ├── deck.json       ← deck data (each slide's SVG, animation steps, transition, plus title, size, report)
-├── fonts/          ← embedded font subsets as .woff (only when fonts are embedded)
+├── fonts/          ← subsets of the fonts used, as .woff (present whenever there is text)
 ├── media/          ← all images, audio, video
 ├── pic/  thum/  prop.json
 ```
@@ -375,30 +381,129 @@ Commands are `next`, `prev`, `goto`, `sync`, `getState`; events are `ready`, `ch
 
 ---
 
-## 7. Fonts: why they matter and how to provide them
+## 7. Fonts: why they matter and how they are handled now
+
+> Font handling changed in 0.3.0: by default unppt **no longer uses the fonts installed on this machine**; it uses the fonts embedded in the PPT plus the default font pack `@unppt/fonts`. This section explains it from the start.
 
 ### 7.1 Why fonts matter
 
-When PowerPoint lays out text, the width of each character, how many fit on a line and where lines break all depend on the font. To match PowerPoint, unppt needs **the real width of every character at conversion time**, so it needs the font files (`.ttf`, `.otf`, `.ttc`).
+Fonts matter at two moments:
+
+| Moment | What the font decides |
+|---|---|
+| **Conversion** (layout) | How wide each character is, how many fit on a line, where lines break, how far apart lines are. To match PowerPoint the transcoder must know the real width of every character |
+| **Viewing** (display) | What each character looks like (glyph shapes) |
+
+unppt's principle (SPEC D3): **the player never uses fonts installed on the viewer's computer**. Every glyph comes from font subsets (only the characters used) packed into the output. So whether viewers use Windows, Mac, Android or iPhone (for example thousands of students in a live class), they all see exactly the same thing.
+
+### 7.2 Where the fonts in the output come from
+
+Unless you explicitly specify font files, the fonts in the output come from only two sources:
+
+1. **Fonts the author embedded in the `.pptx`**: used as-is. Exception: embedded fonts that PowerPoint itself refuses (CFF `.otf`, fonts with an unsorted table directory) are treated as not embedded, just like PowerPoint does.
+2. **The default font pack `@unppt/fonts`**: installed automatically with `@unppt/unppt` (it is a dependency). It contains only open-source fonts, all under SIL OFL 1.1, which may be freely redistributed. About 87 MB, needed only on the machine that converts; viewers never download it (the output only contains subsets of the characters used).
 
 ```mermaid
-flowchart LR
-  F{"Is the font available at conversion time?"} -->|"Yes"| OK["Layout with real glyph widths<br/>line breaks match PowerPoint"]
-  F -->|"No"| MISS["Substitute font chosen by PowerPoint rules<br/>listed under missing fonts<br/>line breaks may differ"]
-  OK --> V{"Does the viewer's computer have the font?"}
-  V -->|"Yes, or --embed-fonts was used"| GOOD["Looks the same"]
-  V -->|"No"| DIFF["The browser shows another font<br/>glyph shapes and widths may differ"]
+flowchart TD
+  F["A font used in the PPT, e.g. Microsoft YaHei"] --> E{"Did the author embed it in the PPT?<br/>(and does PowerPoint accept it?)"}
+  E -->|"Yes"| EMB["Layout and display use the embedded font"]
+  E -->|"No"| S{"Was a font with this name given via --fonts?"}
+  S -->|"Yes"| SPEC["Layout and display use the specified font"]
+  S -->|"No"| K{"Does the font pack know it?<br/>(metrics of 447 Windows / Office fonts)"}
+  K -->|"Yes"| DEF["Layout with the original font's widths<br/>display with the matching open-source font"]
+  K -->|"No"| SUB["Substitute like PowerPoint<br/>(CJK → Microsoft YaHei, Latin → Calibri, Japanese → Yu Gothic)<br/>then as in the box above"]
+  EMB --> OUT[("Subsets of the characters used<br/>embedded in the output")]
+  SPEC --> OUT
+  DEF --> OUT
+  SUB --> OUT
+  OUT --> V["Every viewer sees the same thing"]
 ```
 
-Fonts are needed at two moments: **conversion** (decides the layout) and **viewing** (the browser draws the text).
+Characters that no font has (rare: emoji, rare CJK characters) are left to the browser's own fallback, so they may differ between devices; `unppt check` lists them.
 
-### 7.2 The three font options
+### 7.3 Layout and display are separate: metrics pack + open-source fonts
+
+Microsoft YaHei, SimSun, Calibri and the like are commercial fonts that cannot be shipped with the output. unppt therefore separates "layout" from "display":
+
+- **Layout** uses the original font's **metrics**: the font pack contains a metrics pack with numbers only (advance width of each character, ascent/descent, kerning), **no glyph shapes**, covering 447 Windows / Office font faces. So line breaks, character positions and line spacing are the same as in PowerPoint.
+- **Display** uses the matching open-source font. Glyph shapes differ slightly from the original (e.g. Microsoft YaHei is shown as Noto Sans SC), but positions do not change.
+
+| Original font (examples) | Displayed with |
+|---|---|
+| Microsoft YaHei (微软雅黑), DengXian (等线), SimHei (黑体) and other sans-serif CJK fonts | Noto Sans SC (思源黑体; Light / Regular / Bold) |
+| SimSun (宋体) and similar | Noto Serif SC (思源宋体; Regular / Bold) |
+| KaiTi (楷体) | LXGW WenKai (霞鹜文楷) |
+| FangSong (仿宋) | Zhuque Fangsong (朱雀仿宋) |
+| Calibri | Carlito (metric-compatible with Calibri) |
+| Cambria | Caladea (metric-compatible with Cambria) |
+| Arial and other sans-serif Latin fonts | Liberation Sans (metric-compatible with Arial) |
+| Times New Roman and other serif Latin fonts | Liberation Serif (metric-compatible with Times New Roman) |
+| Courier New and other monospace fonts | Liberation Mono (metric-compatible with Courier New) |
+
+The mapping rules live in `packages/fonts/map.json`; they are tried in order and the first match wins.
+
+### 7.4 Symbol fonts (Wingdings, Webdings, Symbol, ...)
+
+Symbol fonts put pictures where letters normally are (e.g. `l` in Wingdings is a solid dot). No open-source font can stand in for them, and unppt **never changes your characters**:
+
+- The author embedded the symbol font in the PPT: it is used and displays correctly.
+- Not embedded: the symbols show as ordinary letters, and the conversion report and `unppt check` tell the author to embed fonts.
+
+To embed fonts in PowerPoint: **File → Options → Save → check "Embed fonts in the file"**, then save again. You can also provide the symbol font file with `--fonts`.
+
+### 7.5 Checking fonts: unppt check
+
+To find font problems before converting (for example to check decks users upload to your product), use `unppt check`. It only checks fonts, writes no files and takes a few seconds:
+
+```bash
+unppt check text-latin-cjk-font.pptx
+```
+
+```text
+字体检查：text-latin-cjk-font.pptx（共 1 页）
+  ⚠ 楷体_GB2312  第 1 页   没有这个字体，按 Microsoft YaHei 替代（字形和换行可能和作者电脑上不同）
+  ✓ 等线         第 1 页   排版按原字体，显示用 思源黑体（Noto Sans SC）
+  ✓ 宋体         第 1 页   排版按原字体，显示用 思源宋体（Noto Serif SC）
+  ✓ Arial        第 1 页   排版按原字体，显示用 Liberation Sans
+结论：0 个必须处理的问题（✗），1 个提醒（⚠）
+```
+
+(The CLI prints Chinese. Line by line: 楷体_GB2312 is not available and is substituted with Microsoft YaHei; 等线, 宋体 and Arial are laid out with the original font and displayed with Noto Sans SC, Noto Serif SC and Liberation Sans; summary: 0 problems that must be fixed, 1 warning.)
+
+A deck that uses Wingdings without embedding it shows:
+
+```text
+  ✗ Wingdings  第 1 页   符号字体没有嵌入，符号会显示成字母：请在 PowerPoint 里勾选"将字体嵌入文件"
+```
+
+("Symbol font not embedded, symbols will show as letters: tick 'Embed fonts in the file' in PowerPoint.")
+
+What each status means (the `status` value in `--json` output in parentheses):
+
+| Mark | Status | Meaning |
+|---|---|---|
+| ✓ | Embedded (`embedded`) | The font is embedded in the PPT and shown as-is |
+| ✓ | Specified (`specified`) | A font given with `--fonts` / `--system-fonts` |
+| ✓ | Default pack (`default`) | Laid out with the original font's widths, displayed with an open-source font |
+| ⚠ | Substituted (`substituted`) | The font pack does not know this font either; a substitute was chosen by PowerPoint's rules, so glyphs and line breaks may differ from the author's computer |
+| ✗ | Symbol font missing (`symbol-missing`) | Symbols will show as letters; see [section 7.4](#74-symbol-fonts-wingdings-webdings-symbol-) |
+| ✗ | Missing (`missing`) | Not even a substitute is available; widths can only be estimated (usually the default font pack is not installed) |
+
+- `--json` prints JSON: `fonts` (per font: `font`, `pages`, `status`, plus optional `substitute` and `shownWith`), `missingChars` (characters no font can show, per page), `errors` (number of ✗), `warnings` (number of ⚠) and `slides` (slide count).
+- The exit code is `1` when there is any ✗, so a product can reject the upload or warn the author.
+- Font options (`--fonts`, `--system-fonts`, `--no-default-fonts`) work the same as for conversion; the result describes a conversion with those fonts.
+- A normal conversion also prints the font check at the end, but only the fonts with problems (⚠, ✗).
+
+### 7.6 Font options
 
 | Option | What it does | When to use |
 |---|---|---|
-| `--fonts <dir>` | Reads `.ttf` / `.otf` / `.ttc` fonts from this folder (including sub-folders) to lay out text with real widths. Can be repeated | The server has no system fonts, or you have a dedicated font set |
-| `--system-fonts` | Uses the system font folders of this machine. Office's private and cloud fonts (e.g. Aptos, Gill Sans MT, Tw Cen MT) are used too and are **automatically embedded when used** (browsers cannot use fonts that are not installed in the system) | **On by default** (since 0.2.3): use the system fonts so text is laid out with real glyph widths and wraps like PowerPoint; Office private and cloud fonts are embedded when used. `--no-system-fonts` turns it off (widths are then estimated and line breaks may differ) |
-| `--embed-fonts` | Embeds a subset of each used font (only the characters used), so viewers need not install the fonts | Viewers may not have the fonts. **Mind the distribution license of commercial fonts** |
+| (none) | Fonts embedded in the PPT + the default font pack. If `@unppt/fonts` is not found a hint is printed, and widths of non-embedded fonts can only be estimated | Most of the time |
+| `--fonts <dir>` | Reads `.ttf` / `.otf` / `.ttc` from this folder (including sub-folders). These win over the font pack for the same name, are used for layout and display, and the characters used are embedded. Can be repeated | You have your own fonts and the right to distribute them |
+| `--system-fonts` | Also uses this machine's system fonts and Office private / cloud fonts (e.g. Aptos, Gill Sans MT) for layout and display, embedding the characters used. **Off by default since 0.3.0** (it was on by default in 0.2.3–0.2.6) | You want glyphs identical to the author's computer. **Mind commercial font licenses**: embedding means distributing font subsets to every viewer |
+| `--no-default-fonts` | Do not use the default font pack | Debugging |
+| `--no-system-fonts` | Old option, still accepted, no effect (it is off by default now) | — |
+| `--embed-fonts` | Old option, still accepted, no effect (every font used is always embedded now) | — |
 
 Folders searched by `--system-fonts`:
 
@@ -408,19 +513,20 @@ Folders searched by `--system-fonts`:
 | macOS | `/System/Library/Fonts`, `/Library/Fonts`, `~/Library/Fonts` | `/Applications/Microsoft PowerPoint.app/Contents/Resources/DFonts` |
 | Linux | `/usr/share/fonts`, `/usr/local/share/fonts`, `~/.fonts`, `~/.local/share/fonts` | none |
 
-Fonts embedded inside the `.pptx` itself are preferred and always embedded in the output; no option needed.
-
 Recommended:
 
 ```bash
-# Converting on your own computer; viewers use the same kind of system
-unppt demo.pptx -o out/index.html --system-fonts
+# Most of the time: no options; the result is the same on any computer, server or cloud function
+unppt demo.pptx -o out
 
-# Viewers may not have the fonts (e.g. phones)
-unppt demo.pptx -o out/index.html --system-fonts --embed-fonts
+# Check fonts first
+unppt check demo.pptx
 
-# On a Linux server with fonts in /opt/fonts
-unppt demo.pptx -o out/index.html --fonts /opt/fonts --embed-fonts
+# Use your own fonts that you may distribute (they win over the font pack)
+unppt demo.pptx -o out --fonts /opt/fonts
+
+# Use this machine's fonts so glyphs match the author's computer (mind commercial font licenses)
+unppt demo.pptx -o out --system-fonts
 ```
 
 ---
@@ -433,6 +539,8 @@ During development unppt compares every slide automatically against images expor
 |---|---|---|---|
 | Synthetic test cases | 228 decks / 504 slides | 92.3% | 0.984 |
 | Random batch of 100 real-world decks | 3527 slides, 0 conversion failures | 78.8% (about 95% of slides at SSIM ≥ 0.90) | 0.967 |
+
+These numbers are measured with `--system-fonts` (the same fonts PowerPoint uses), so they measure whether the layout rules are right. With the default font pack, line breaks and text positions stay the same and only glyph shapes change to the open-source fonts; on the synthetic test cases the mean SSIM is about 0.024 lower per slide, purely from glyph shapes.
 
 Most failing slides differ only in details (text a few pixels off, one chart label). In each image below, Microsoft PowerPoint is on the left and unppt on the right:
 
@@ -451,8 +559,10 @@ Known gaps: time scaling on chart date axes (min/max, month/year intervals), ver
 | `unppt` is not recognized / command not found | Not installed globally, or the npm global folder is not on PATH. Use `npx @unppt/unppt ...`, or reinstall with `npm install -g @unppt/unppt` |
 | Node version error or syntax error on install/run | Node is older than 20.12. Check with `node -v` and upgrade |
 | It only prints a long "usage" text | The command is wrong: the first argument must be `convert`, followed by the input file; a misspelled option also prints usage. See [Usage](usage.md#2-cli-reference) |
-| Line breaks differ from PowerPoint | Fonts missing at conversion time. Check the `缺少字体` (missing fonts) line and provide them with `--system-fonts` or `--fonts <dir>` |
-| Fine on my computer, wrong fonts on others | The viewer's computer lacks the fonts. Add `--embed-fonts` |
+| Line breaks differ from PowerPoint | A font was missing at conversion time. Run `unppt check file.pptx` to see which fonts are ⚠ substituted or ✗; ask the author to embed fonts in PowerPoint, or provide them with `--fonts <dir>`. See [section 7](#7-fonts-why-they-matter-and-how-they-are-handled-now) |
+| Hint saying the default font pack @unppt/fonts was not found (`没找到默认字体包 @unppt/fonts`) | The font pack is not installed (e.g. only `unppt.tgz` was installed). Reinstall with `npm install -g @unppt/unppt`, or when installing from GitHub install `unppt-fonts.tgz` too |
+| Glyphs look slightly different from the author's computer | Expected: non-embedded commercial fonts (Microsoft YaHei, Calibri, ...) are displayed with open-source fonts; positions and line breaks do not change. For identical glyphs, have the author embed the fonts, or use `--system-fonts` / `--fonts` if you are licensed to |
+| Symbols (ticks, arrows, bullets) show as letters | A symbol font such as Wingdings is used but not embedded. Ask the author to "Embed fonts in the file" in PowerPoint; see [section 7.4](#74-symbol-fonts-wingdings-webdings-symbol-) |
 | `pic/`, `thum/`, `prop.json` appear next to my `.pptx` | Versions up to 0.2.1 wrote output next to the input when `-o` was omitted. Upgrade to 0.2.2+ (default is a folder named after the .pptx), or use `-o out/index.html` |
 | Notice saying there is no resvg.wasm and no slide images/thumbnails are written | The program cannot find `resvg.wasm` (usually an incomplete install). Reinstall; add `--no-images` if you do not need images |
 | Slow conversion or out of memory | Image rendering takes the most time. Add `--no-images` to skip it, or use `--jobs 1` / `--jobs 2` to draw with fewer threads. `--stats` shows time and peak memory |

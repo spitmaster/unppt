@@ -20,66 +20,102 @@
 
 ## 字体
 
-### 问：转码时提示"缺少字体：xxx"，是什么意思？
+> 0.3.0 起字体的处理方式变了，完整说明见 [快速上手第 7 节](getting-started.md#7-字体为什么重要以及现在怎么处理)。
 
-转码器要知道每个字有多宽，才能算出一行放几个字、在哪里换行。它**只能使用你交给它的字体文件**（转码器是纯函数，自己不会去翻系统目录）。如果课件用到的字体你没提供，就会：
+### 问：观看的人电脑上没装这个字体，会显示成别的字体吗？
 
-1. 在命令行输出 `缺少字体：xxx`，代码里在 `result.report.missingFonts` 里列出；
-2. 按 PowerPoint 的替代规则换一个字体来排版（见下表）；
-3. **不会报错**，照常输出。
+不会。0.3.0 起播放器**绝不用观看者电脑上装的字体**：用到的每个字都做成字体子集打包进产物，不管观看的人用 Windows、Mac、安卓还是 iPhone，看到的都一样（[SPEC.md](../../SPEC.md) 决策 D3）。
 
-PowerPoint 的替代规则（代码里实测得到的）：
+产物里的字体只有两个来源（除非你用 `--fonts` / `--system-fonts` 明确指定）：
+
+| 来源 | 说明 |
+|---|---|
+| 作者嵌入在 PPT 里的字体 | 原样使用（PowerPoint 里“将字体嵌入文件”） |
+| 默认字体包 `@unppt/fonts` | 开源字体，随 `@unppt/unppt` 自动安装 |
+
+> “字体子集”= 只保留用到的那些字的字体文件，体积比完整字体小得多。
+
+### 问：没嵌入的微软雅黑、Calibri 会怎么样？换行还准吗？
+
+准。排版和显示是分开的：
+
+- **排版**按原字体的度量数据（每个字的宽度、上下高度、字距），所以换行位置、每个字的位置、行距和 PowerPoint 一样；
+- **显示**用对应的开源字体：微软雅黑、等线、黑体 → 思源黑体；宋体 → 思源宋体；楷体 → 霞鹜文楷；仿宋 → 朱雀仿宋；Calibri → Carlito；Cambria → Caladea；Arial → Liberation Sans；Times New Roman → Liberation Serif；Courier New → Liberation Mono。
+
+所以你会看到**字形**和作者电脑上略有不同，但位置不变。想要字形也一模一样，请作者把字体嵌入 PPT，或者在你有授权时用 `--system-fonts` / `--fonts`。
+
+### 问：unppt 会分发微软雅黑、Calibri 这些商业字体吗？
+
+不会。
+
+- 默认字体包里**只有开源字体**，许可证都是 SIL OFL 1.1，可以自由分发、嵌入：思源黑体（Noto Sans SC）、思源宋体（Noto Serif SC）、霞鹜文楷（LXGW WenKai）、朱雀仿宋（Zhuque Fangsong）、Carlito、Caladea、Liberation Sans / Serif / Mono。许可证文件在 `packages/fonts/LICENSES/`。
+- 字体包里的**度量包只有数字**（每个字的宽度、上下高度、字距调整），没有任何字形，覆盖 447 个 Windows / Office 字体。它只用来排版，不会出现在产物里。
+- 产物里只会出现：开源字体的子集、作者自己嵌入 PPT 的字体的子集、你用 `--fonts` / `--system-fonts` 明确指定的字体的子集。**后两种的分发授权由作者 / 你自己负责**：嵌入产物就等于把字体子集分发给了所有观看者，商业字体请先确认授权。
+
+### 问：怎么知道一个课件有没有字体问题？
+
+用 `unppt check`，只检查字体、不写文件，几秒钟出结果：
+
+```bash
+unppt check 演示文稿.pptx
+unppt check 演示文稿.pptx --json    # 输出 JSON，给程序用
+```
+
+每个字体一行：✓ 没问题；⚠ 提醒（例如字体包也不认识这个字体，换了替代字体）；✗ 必须处理（例如符号字体没嵌入）。有 ✗ 时退出码是 1，产品里可以据此拒绝上传或提示作者。代码里用 `checkFonts()`，或者看 `convert()` 结果里的 `fontCheck`，见 [使用说明 3.8](usage.md#38-checkfontsinput-options只检查字体)。
+
+正常转码结束时也会列出有问题的字体（只列 ⚠ 和 ✗）。
+
+### 问：字体包也不认识的字体怎么办？
+
+和 PowerPoint 一样换一个替代字体来排版，再用对应的开源字体显示，`unppt check` 里标成 ⚠。替代规则（实测得到的）：
 
 | 缺的字体 | 替代成 |
 |---|---|
-| 西文字体 | Calibri → Arial → Liberation Sans → Helvetica（按顺序找第一个你提供了的） |
-| 标了中文字符集的字体 | 微软雅黑（Microsoft YaHei）→ 等线 → PingFang SC → Noto Sans CJK SC → 思源黑体 |
-| 标了日文字符集的字体 | Yu Gothic（游ゴシック），它没有的字再用上一行的中文字体 |
+| 西文字体 | Calibri |
+| 标了中文字符集的字体 | 微软雅黑（Microsoft YaHei） |
+| 标了日文字符集的字体 | Yu Gothic（游ゴシック），它没有的字再用中文字体 |
 | Helvetica、Helvetica Neue、Helv | Arial |
 | Times、Tms Rmn | Times New Roman |
 | Courier | Courier New |
 
-替代字体也没有时，只能按估算的字宽排版，换行位置就很可能和 PowerPoint 不同。
+所有字体都没有的字（很少见，例如 emoji、生僻字）交给浏览器自己找字体显示，不同设备上可能不一样，`unppt check` 会把这些字列出来。
 
-### 问：怎么把字体交给转码器？
+### 问：符号（勾、箭头、圆点）显示成了字母，怎么办？
 
-**命令行：**
+课件用了 Wingdings、Webdings、Symbol 这类符号字体，但没有把它嵌入 PPT。符号字体在字母的位置上放的是图形，开源字体里没有能代替的，unppt 也**不会改动你的字符**，所以只能显示成普通字母。转码结果和 `unppt check` 会标成 ✗。
 
-```bash
-# 用本机系统字体（Windows 上还会用到 Office 自带的私有字体、云字体，例如 Aptos）
-npx @unppt/unppt 演示文稿.pptx -o out/index.html --system-fonts
+解决：请作者在 PowerPoint 里 **文件 → 选项 → 保存 → 勾选“将字体嵌入文件”**，重新保存后再转码；或者用 `--fonts` 指定符号字体文件（注意授权）。
 
-# 指定字体目录（可以写多次；会递归查找 .ttf / .otf / .ttc）
-npx @unppt/unppt 演示文稿.pptx -o out/index.html --fonts ./fonts --fonts ./more-fonts
-```
+### 问：云函数、服务器上没有任何字体，怎么办？
 
-**代码里（例如云函数，Linux 上通常没有微软字体，必须自己带）：**
+不需要装字体。安装 `@unppt/unppt` 时会自动带上默认字体包，代码里读一下传给 `convert()` 就行，结果和在桌面电脑上转码完全一样：
 
 ```js
-import { readFile } from 'node:fs/promises';
 import { convert } from '@unppt/unppt';
+import { loadFontPack } from '@unppt/unppt/node';
 
-const fonts = [
-  await readFile('fonts/msyh.ttc'),     // 字体文件的字节（Uint8Array / Buffer）
-  await readFile('fonts/calibri.ttf'),
-];
-const result = await convert(pptxBytes, { write, fonts, embedFonts: true });
-console.log(result.report.missingFonts);  // 还缺哪些字体
+const fontPack = await loadFontPack();   // 找到已安装的 @unppt/fonts；没装时返回 undefined
+const result = await convert(pptxBytes, { write, fontPack });
+console.log(result.fontCheck);           // 字体检查结果
 ```
 
-### 问：观看的电脑上没装这个字体，会显示成别的字体吗？
+字体包约 87MB，部署时注意云函数代码包的大小限制，见 [使用说明 4.3](usage.md#43-云函数从对象存储读转码写回对象存储)。
 
-分三种情况：
+### 问：怎么用自己的字体？
 
-| 情况 | 观看端显示 |
-|---|---|
-| 加了 `--embed-fonts`（代码里 `embedFonts: true`） | 用到的字做成**字体子集**嵌入产物，任何设备上都和转码时一样。**推荐** |
-| 课件自己嵌入了字体（PowerPoint 里"将字体嵌入文件"） | 总是做成子集嵌入产物，不受开关影响 |
-| `--system-fonts` 找到的 Office 私有字体、云字体 | 用到时总是嵌入（浏览器用不了这些没装进系统的字体） |
-| 其它情况 | 浏览器用观看端自己装的同名字体；没有就用浏览器的默认无衬线字体，字形会不一样 |
+```bash
+# 指定字体目录（可以写多次；会递归查找 .ttf / .otf / .ttc），同名时压过字体包
+unppt 演示文稿.pptx -o out --fonts ./fonts --fonts ./more-fonts
 
-> "字体子集"= 只保留用到的那些字的字体文件，体积比完整字体小得多。
-> 注意：商业字体的分发需要相应授权，嵌入前请确认你有权这样做。
+# 用本机系统字体（Windows 上还会用到 Office 自带的私有字体、云字体，例如 Aptos）；0.3.0 起默认关闭
+unppt 演示文稿.pptx -o out --system-fonts
+```
+
+代码里用 `fonts: [字体文件的字节, ...]`。这些字体排版和显示都用它，用到的字会嵌入产物，**请确认你有分发授权**。
+
+### 问：以前的 `--embed-fonts`、`--no-system-fonts` 还能用吗？
+
+能写，但没有作用了：0.3.0 起用到的字体总是嵌入产物（代码里 `embedFonts` 默认 `true`），本机系统字体默认不用。代码里的 `privateFonts` 和 `fonts` 一样。
 
 ---
 
@@ -87,9 +123,9 @@ console.log(result.report.missingFonts);  // 还缺哪些字体
 
 最常见的原因，按可能性排序：
 
-1. **转码时缺字体**：看命令行有没有 `缺少字体：` 的输出。把字体交给转码器（见上一节）通常就能解决；
-2. **字体版本不同**：同名字体不同版本，字宽可能不同。尽量用和做课件的电脑相同的字体文件；
-3. **观看端字体不同**：没开 `--embed-fonts` 时，观看端用的是自己的字体，字宽和转码时算的不一样。开 `--embed-fonts` 可以保证"转码时测量用的字体 = 播放时显示的字体"（[SPEC.md](../../SPEC.md) 决策 D3）；
+1. **转码时缺字体**：运行 `unppt check` 看有没有 ⚠ / ✗ 的字体。请作者把字体嵌入 PPT，或用 `--fonts` 提供（见上一节）；
+2. **没装默认字体包**：命令行开头提示“没找到默认字体包 @unppt/fonts”时，没有嵌入的字体只能估算字宽。重新安装 `@unppt/unppt`，或从 GitHub 安装时把 `unppt-fonts.tgz` 一起装上；
+3. **字体版本不同**：同名字体不同版本，字宽可能不同。字体包的度量来自 Windows / Office 自带的版本；作者电脑上的版本不一样时，可以用 `--fonts` 指定作者用的字体文件；
 4. **属于已知差距**：例如艺术字竖排（`wordArtVert`）、可变字体，见[已知差距](#已知差距)。
 
 如果以上都排除了，欢迎按[下面的方法](#怎样安全地反馈效果不对的课件)反馈。
@@ -255,8 +291,8 @@ flowchart TD
 Issue 里请写明：
 
 1. unppt 版本（`npx @unppt/unppt` 不带参数运行时第一行就是版本号）；
-2. 完整的转码命令，例如 `unppt demo.pptx -o out/index.html --system-fonts --embed-fonts`；
-3. 命令行输出的 `缺少字体：` 和 `提示：` 两类信息；
+2. 完整的转码命令，例如 `unppt demo.pptx -o out`（有字体选项也写上）；
+3. 命令行输出的 `字体：` 和 `提示：` 两类信息（或者 `unppt check` 的输出）；
 4. 用的浏览器和版本；
 5. 对照截图：PowerPoint 放映的画面和 unppt 播放的画面（截图同样只能用可以公开的内容）。
 

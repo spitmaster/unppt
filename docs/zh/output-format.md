@@ -477,7 +477,7 @@ npx @unppt/unppt testcases/anim-basic.pptx --data -o out/deck.json
 - `hidden` 有 4 个矩形 → 刚进入页面时它们都看不见；
 - `steps` 有 5 组 → 这一页要点 5 下；
 - 第 1 下：`s2` 出现（`dur: 0`，瞬间）；第 2 下：`s3` 用 500 毫秒从透明变不透明；……第 5 下：`s2` 淡出；
-- `report.missingFonts` 里的"等线"表示转码时没提供这个字体的文件（用 `--fonts` 或 `--system-fonts` 提供后，文字宽度会更准）。
+- 这份数据是不带任何字体（`--no-default-fonts`）转码得到的：`report.missingFonts` 里的"等线"表示转码时没有这个字体，字宽只能估算，`fonts` 也是空的。默认带字体包时，等线按原字体的度量排版、用思源黑体显示，`fonts` 里会有它的子集，`missingFonts` 是空的。
 
 ### 7.5 触发器的例子
 
@@ -564,11 +564,13 @@ PowerPoint 里的 3D 切换等没有对应类型的，转码器会选一个最�
 
 ## 10. 字体 DeckFont
 
-转码时，用到的字体会做成"子集"（只含用到的字）嵌入产物，保证观看端显示和转码时一样。哪些字体会嵌入：
+转码时，用到的字体**总是**做成"子集"（只含用到的字）嵌入产物（0.3.0 起）。播放器绝不用观看者电脑上的字体，所以所有观看者看到的一样（SPEC D3）。嵌入的字体来自：
 
-- pptx 里自己嵌入的字体：总是嵌入；
-- `--system-fonts` 找到的 Office 私有字体、云字体（浏览器用不了）：用到就嵌入；
-- 其它字体：加 `--embed-fonts` 才嵌入（商业字体注意授权）。
+- pptx 里作者自己嵌入的字体；
+- 默认字体包 `@unppt/fonts` 里的开源字体（思源黑体、思源宋体、霞鹜文楷、朱雀仿宋、Carlito、Caladea、Liberation，都是 SIL OFL 1.1）：没嵌入的微软雅黑、Calibri 等按原字体的度量排版，显示用这些开源字体；
+- 用 `--fonts` / `--system-fonts` 明确指定的字体（商业字体注意分发授权）。
+
+详见 [快速上手第 7 节](getting-started.md#7-字体为什么重要以及现在怎么处理)。
 
 | 字段 | 意思 |
 |---|---|
@@ -585,7 +587,7 @@ PowerPoint 里的 3D 切换等没有对应类型的，转码器会选一个最�
 | paged / pages | `fonts/<别名>.<哈希>.js`，内容是 `__unpptFont(别名, base64)` | 有 |
 | data | `fonts/<别名>.woff` | 有 |
 
-缺的字体不会报错，只列在 `report.missingFonts` 里，显示时浏览器用回退字体。
+缺的字体不会报错，只列在 `report.missingFonts` 里（更完整的结论在转码结果的 `fontCheck` 里，不写进产物，见 `unppt check`）。所有字体都没有的字（例如 emoji、生僻字）由浏览器用回退字体显示。
 
 ---
 
