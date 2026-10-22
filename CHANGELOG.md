@@ -15,7 +15,7 @@
 - 图表文字、整页图和缩略图同样只用嵌入的字体；显示用的开源字体缺字时换字体包里别的开源字体画（不交给浏览器）。
 - 思源黑体 / Source Han Sans（含"CN"和粗细后缀）、思源宋体按字体包里同一套字形的思源字体排版和显示。
 
-**自动换行和 PowerPoint 一致**：新增专项测试（`tools/wraptest`：用 PowerPoint 随机造几千个文本框、表格和各种形状，并对照真实课件读出每一行），按实测改了二十多条规则——破折号、省略号、弯引号、不间断空格、行首 / 行尾禁则（含隔着空格）、标点悬挂的例外、网址和小数里的半角标点、± × § ° 等符号、行尾字距、段落缩进的取整、自动缩小不缩字间距、没嵌入的符号字体项目符号的宽度、没写文字矩形的几何（自定义形状、宽度为 0 的老标题）不换行、饼形的文字区域等。对照结果：PowerPoint 随机生成的 3400 多个文本框、761 个表格单元格、181 种预设形状，换行和 PowerPoint 完全一致的 99.6% 以上；真实课件 398 份、约 1.45 万个多行文本框和 886 个多行表格单元格，和 PowerPoint 不一致的行从 512 行降到 63 行（共约 6 万行）。
+**自动换行和 PowerPoint 一致**：新增专项测试（`tools/wraptest`：用 PowerPoint 随机造几千个文本框、表格和各种形状，并对照真实课件读出每一行），按实测改了二十多条规则——破折号、省略号、弯引号、不间断空格、行首 / 行尾禁则（含隔着空格）、标点悬挂的例外、网址和小数里的半角标点、± × § ° 等符号、行尾字距、段落缩进的取整、自动缩小不缩字间距、没嵌入的符号字体项目符号的宽度、没写文字矩形的几何（自定义形状、宽度为 0 的老标题）不换行、饼形的文字区域等。对照结果：PowerPoint 随机生成的 3400 多个文本框、761 个表格单元格、181 种预设形状，换行和 PowerPoint 完全一致的 99.6% 以上；真实课件 398 份、约 1.45 万个多行文本框和 886 个多行表格单元格，和 PowerPoint 不一致的行从 512 行降到 45 行（共约 6.5 万行）；扩大到 991 份真实课件（约 4 万个多行文本框）99.8% 完全一致。
 
 **English**
 
@@ -30,7 +30,7 @@
 - Chart text, page images and thumbnails also use only embedded fonts; characters missing from an open display font are drawn with another font from the pack instead of the browser's.
 - Source Han Sans / Serif (including "CN" names and weight suffixes) are laid out and shown with the pack's identical Noto Sans / Serif SC.
 
-**Automatic line wrapping matches PowerPoint**: a new test harness (`tools/wraptest`: thousands of random text boxes, tables and shapes generated in PowerPoint, plus real decks, compared line by line) drove 20+ rule fixes — dashes, ellipses, curly quotes, no-break spaces, CJK line-start/line-end rules (also across spaces), hanging punctuation exceptions, ASCII punctuation in URLs and decimals, ± × § °, kerning at line ends, paragraph indent rounding, autofit not shrinking letter spacing, widths of non-embedded symbol bullet fonts; geometries without a text rectangle (custom shapes, zero-width legacy titles) no longer wrap, and the pie text area is fixed. Over 3,400 random text boxes, 761 table cells and all 181 preset shapes generated in PowerPoint, 99.6%+ break exactly like PowerPoint; on 398 real decks (~14.5k multi-line text boxes and 886 multi-line table cells) lines that differ from PowerPoint dropped from 512 to 63 (out of ~60k).
+**Automatic line wrapping matches PowerPoint**: a new test harness (`tools/wraptest`: thousands of random text boxes, tables and shapes generated in PowerPoint, plus real decks, compared line by line) drove 20+ rule fixes — dashes, ellipses, curly quotes, no-break spaces, CJK line-start/line-end rules (also across spaces), hanging punctuation exceptions, ASCII punctuation in URLs and decimals, ± × § °, kerning at line ends, paragraph indent rounding, autofit not shrinking letter spacing, widths of non-embedded symbol bullet fonts; geometries without a text rectangle (custom shapes, zero-width legacy titles) no longer wrap, and the pie text area is fixed. Over 3,400 random text boxes, 761 table cells and all 181 preset shapes generated in PowerPoint, 99.6%+ break exactly like PowerPoint; on 398 real decks (~14.5k multi-line text boxes and 886 multi-line table cells) lines that differ from PowerPoint dropped from 512 to 45 (out of ~65k); across 991 real decks (~40k multi-line text boxes) 99.8% break exactly like PowerPoint.
 
 ## 0.2.6（2026-10-22）
 
