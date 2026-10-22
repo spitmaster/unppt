@@ -45,6 +45,11 @@ export interface FontMetrics {
   generic?: 'roman' | 'swiss' | 'modern' | 'script' | 'decorative';
   /** 两个字符之间的字距调整（单位 em，负数是挤近）；字体没有字距数据时为 0 */
   kern(left: number, right: number): number;
+  /**
+   * 默认字体包里的字体（排版按原字体、字形用开源字体，font/pack.ts）：开源字体的字在原字体的格子里怎么摆（单位 em）——
+   * dx 横向居中到原字体的字宽里，dy 汉字的竖直中心对齐原字体的（y 向上为正，要往下挪是负数）；字母不竖直挪动，站在基线上
+   */
+  displayShift?(codePoint: number): { dx: number; dy: number } | undefined;
   /** 字形轮廓（单位 em，y 向上；TrueType 和 CFF 都支持）；字体里没有这个字时为 undefined */
   outline(codePoint: number): Promise<Contour[] | undefined>;
 }

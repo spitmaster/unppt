@@ -178,7 +178,13 @@ export function emitParagraphs(
           const up = UPRIGHT_DROP * st.size;
           const cy = baseline - st.size * 0.38 + up;
           pParts.push(`<g transform="rotate(-90 ${n2(cx)} ${n2(cy)})">${textEl(txt, cx, baseline + shift + up, st, seg[0].family, false, alias, env, 'middle')}</g>`);
-        } else if (txt.trim().length || s.underline || s.strike) pParts.push(textEl(txt, perChar(seg) ? xs.slice(s0, k) : xs[s0], baseline + shift, st, seg[0].family, false, alias, env));
+        } else if (txt.trim().length || s.underline || s.strike) {
+          // 默认字体包的字：开源字体的字在原字体格子里横向居中、汉字竖直中心对齐（Atom.shift，不影响排版）
+          const each = perChar(seg), one = each || seg.length === 1;
+          const xArg = each ? seg.map((q, j) => xs[s0 + j] + (q.shift?.dx ?? 0)) : xs[s0] + (seg.length === 1 ? seg[0].shift?.dx ?? 0 : 0);
+          const ys = seg.map((q) => baseline + shift - (one ? q.shift?.dy ?? 0 : 0));
+          pParts.push(textEl(txt, xArg, ys.some((v) => v !== ys[0]) ? ys : ys[0], st, seg[0].family, false, alias, env));
+        }
         decorate(seg, s, xs[s0], xs[k - 1] + seg[seg.length - 1].width - xs[s0], baseline + shift, st.size, under, over);
         s0 = k;
       }

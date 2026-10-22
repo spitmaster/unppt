@@ -120,6 +120,8 @@ export interface Atom {
   space: boolean;
   wide: boolean;
   tab: boolean;
+  /** 默认字体包：开源字体的字在原字体格子里要挪多少（像素，dy 往上为正），只影响画字，不影响排版（font/pack.ts） */
+  shift?: { dx: number; dy: number };
 }
 
 /** 排好的一行 */
