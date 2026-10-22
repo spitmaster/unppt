@@ -27,11 +27,13 @@ function flatten(shapes, out = []) {
   return out;
 }
 
-let decks = 0, failed = 0, skipped = 0, total = 0, bad = 0, lineTotal = 0, lineBad = 0;
+let decks = 0, failed = 0, skipped = 0;
+const stat = { box: [0, 0, 0, 0], cell: [0, 0, 0, 0] };
 const all = [];
 for (const h of hashes) {
   const ref = JSON.parse(await readFile(`.cache/ref/${h}/ref.json`, 'utf8'));
   const lines = JSON.parse(await readFile(`.cache/wraptest/real/${h}.json`, 'utf8'));
+  const tables = existsSync(`.cache/wraptest/real/${h}.tables.json`) ? JSON.parse(await readFile(`.cache/wraptest/real/${h}.tables.json`, 'utf8')) : undefined;
   const src = ref.converted ? `.cache/ref/${h}/converted.pptx` : join(index[h].paths[0]);
   let deck = '';
   let res;
@@ -59,23 +61,39 @@ for (const h of hashes) {
     if (noFont.has(rs.index + 1)) { skipped++; continue; }
     const ours = textsByShape(svg);
     for (const s of flatten(rs.shapes)) {
-      const want = s.lines.map((l) => norm(l.text)).filter((l) => l);
-      const got = linesOf(ours.get(String(s.id)) ?? []).map(norm).filter((l) => l);
-      // 只看多行的（一行的不涉及换行）
-      if (want.length < 2 && got.length < 2) continue;
-      // 文字对不上（竖排、艺术字、我们没画出来的等）不算换行问题
-      if (want.join('') !== got.join('')) continue;
-      total++;
-      lineTotal += want.length;
-      let diff = 0;
-      for (let i = 0; i < Math.max(want.length, got.length); i++) if (want[i] !== got[i]) diff++;
-      if (diff) {
-        bad++;
-        lineBad += diff;
-        all.push({ deck: h, slide: rs.index + 1, id: s.id, w: s.w, want, got });
-      }
+      compare('box', s.lines.map((l) => l.text), linesOf(ours.get(String(s.id)) ?? []), { deck: h, slide: rs.index + 1, id: s.id, w: s.w });
+    }
+    // 表格：每个单元格按文字找到我们的单元格（产物里每个单元格的文字在一个平移组里）
+    for (const c of tables?.cells.filter((x) => x.slide === rs.index) ?? []) {
+      const groups = new Map();
+      for (const it of ours.get(String(c.id)) ?? []) groups.set(it.cell, [...groups.get(it.cell) ?? [], it]);
+      const wantText = c.lines.map(norm).join('');
+      const mine = [...groups.values()].map((g) => linesOf(g)).filter((g) => g.map(norm).join('') === wantText);
+      if (mine.length === 1) compare('cell', c.lines, mine[0], { deck: h, slide: rs.index + 1, id: c.id, r: c.r, c: c.c });
     }
   }
 }
+
+/** 一个文本框 / 单元格：PowerPoint 的行和我们的行比 */
+function compare(kind, pptLines, ourLines, info) {
+  const want = pptLines.map(norm).filter((l) => l);
+  const got = ourLines.map(norm).filter((l) => l);
+  // 只看多行的（一行的不涉及换行）；文字对不上（竖排、艺术字、我们没画出来的等）不算换行问题
+  if (want.length < 2 && got.length < 2) return;
+  if (want.join('') !== got.join('')) return;
+  const st = stat[kind];
+  st[0]++;
+  st[2] += want.length;
+  let diff = 0;
+  for (let i = 0; i < Math.max(want.length, got.length); i++) if (want[i] !== got[i]) diff++;
+  if (diff) {
+    st[1]++;
+    st[3] += diff;
+    all.push({ kind, ...info, want, got });
+  }
+}
 await writeFile('.cache/wt-real.json', JSON.stringify(all, null, 1));
-console.log(`${systemFonts ? '本机字体' : '默认字体包'}：课件 ${decks} 份（转码失败 ${failed}，有本机没有的字体、不比的页 ${skipped}），多行文本框 ${total} 个，换行完全一致 ${total - bad} 个（${((1 - bad / Math.max(1, total)) * 100).toFixed(1)}%）；行 ${lineTotal} 行，不一致 ${lineBad} 行`);
+const pct = (st) => `${st[0]} 个，换行完全一致 ${st[0] - st[1]} 个（${((1 - st[1] / Math.max(1, st[0])) * 100).toFixed(1)}%）；行 ${st[2]} 行，不一致 ${st[3]} 行`;
+console.log(`${systemFonts ? '本机字体' : '默认字体包'}：课件 ${decks} 份（转码失败 ${failed}，有本机没有的字体、不比的页 ${skipped}）`);
+console.log(`  多行文本框 ${pct(stat.box)}`);
+console.log(`  多行表格单元格 ${pct(stat.cell)}`);
