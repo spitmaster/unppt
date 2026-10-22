@@ -1,10 +1,10 @@
 // 自动换行专项测试：用转码器转 gen.py 生成的用例，从产物里还原每个文本框的每一行，和 PowerPoint 的逐行比对。
 // 用法：node tools/wraptest/check.mjs <种子>[,<种子>…] [--system-fonts] [--show N]
 //   默认用默认字体包（产品默认行为）；--system-fonts 用本机字体（量规则用）；--show 列出前 N 个不一致的文本框
-import { readFile, readdir, stat } from 'node:fs/promises';
-import { join } from 'node:path';
+import { readFile } from 'node:fs/promises';
 import { convert } from '../../packages/transcoder/dist/index.js';
 import { loadFontPack } from '../../packages/transcoder/dist/node.js';
+import { textsByShape, linesOf, norm, systemFontBytes } from './lines.mjs';
 
 const args = process.argv.slice(2);
 const seeds = args[0].split(',');
@@ -12,64 +12,8 @@ const systemFonts = args.includes('--system-fonts');
 const show = Number(args[args.indexOf('--show') + 1]) || (args.includes('--show') ? 20 : 0);
 const dump = args.includes('--dump') ? args[args.indexOf('--dump') + 1] : undefined;
 const all = [];
-
-async function listFonts(dir, out = []) {
-  let ents;
-  try { ents = await readdir(dir, { withFileTypes: true }); } catch { return out; }
-  for (const e of ents) {
-    const p = join(dir, e.name);
-    if (e.isDirectory()) await listFonts(p, out);
-    else if (/\.(ttf|otf|ttc)$/i.test(e.name)) out.push(p);
-  }
-  return out;
-}
-const local = process.env.LOCALAPPDATA ?? '';
-const fonts = systemFonts
-  ? await Promise.all((await Promise.all(['C:/Windows/Fonts', join(local, 'Microsoft/Windows/Fonts'), join(local, 'Microsoft/FontCache/4/CloudFonts')].map((d) => listFonts(d)))).flat()
-    .map(async (f) => new Uint8Array(await readFile(f))))
-  : [];
+const fonts = systemFonts ? await systemFontBytes() : [];
 const fontPack = systemFonts ? undefined : await loadFontPack();
-
-const unesc = (s) => s.replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#(\d+);/g, (_, n) => String.fromCodePoint(+n)).replace(/&#x([0-9a-f]+);/gi, (_, n) => String.fromCodePoint(parseInt(n, 16))).replace(/&amp;/g, '&');
-
-/** 页面 SVG -> 每个形状（编号）的文字元素：{ x, y, size, text } */
-function textsByShape(svg) {
-  const out = new Map();
-  const stack = [];
-  const re = /<g\b([^>]*)>|<\/g>|<text\b([^>]*)>([\s\S]*?)<\/text>/g;
-  let m;
-  while ((m = re.exec(svg))) {
-    if (m[0].startsWith('</g')) { stack.pop(); continue; }
-    if (m[1] !== undefined) { const u = /data-uid="s(\d+)p\d+"/.exec(m[1]) ?? /data-uid="s(\d+)"/.exec(m[1]); stack.push(u ? u[1] : undefined); continue; }
-    const attrs = m[2];
-    if (/data-bu="1"/.test(attrs)) continue;
-    const shape = [...stack].reverse().find((v) => v !== undefined);
-    if (!shape) continue;
-    const xs = /\bx="([^"]*)"/.exec(attrs)?.[1].split(' ').map(Number) ?? [0];
-    const ys = /\by="([^"]*)"/.exec(attrs)?.[1].split(' ').map(Number) ?? [0];
-    const size = Number(/font-size="([^"]*)"/.exec(attrs)?.[1] ?? 12);
-    const text = unesc(m[3].replace(/<[^>]+>/g, ''));
-    let list = out.get(shape);
-    if (!list) { list = []; out.set(shape, list); }
-    list.push({ x: xs[0], y: Math.max(...ys), size, text });
-  }
-  return out;
-}
-
-/** 文字元素按基线分行：基线相差不到半个字号算同一行，行内按横坐标排 */
-function linesOf(items) {
-  const sorted = [...items].sort((a, b) => a.y - b.y || a.x - b.x);
-  const lines = [];
-  for (const it of sorted) {
-    const cur = lines[lines.length - 1];
-    if (cur && Math.abs(it.y - cur.y) < Math.max(3, it.size * 0.4)) cur.items.push(it);
-    else lines.push({ y: it.y, items: [it] });
-  }
-  return lines.map((l) => l.items.sort((a, b) => a.x - b.x).map((i) => i.text).join(''));
-}
-
-// 比较时去掉所有空白：两端、分散对齐时空格单独成段、不出文字元素，空格不影响在哪个字换行
-const norm = (s) => s.replace(/[\s\u000b　]/gu, '');
 
 let total = 0, bad = 0, lineTotal = 0, lineBad = 0;
 const shown = [];
