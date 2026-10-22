@@ -1,4 +1,5 @@
 // 自动换行专项测试：用转码器转 gen.py 生成的用例，从产物里还原每个文本框的每一行，和 PowerPoint 的逐行比对。
+// 表格用例（gen_table.py）按单元格比。
 // 用法：node tools/wraptest/check.mjs <种子>[,<种子>…] [--system-fonts] [--show N]
 //   默认用默认字体包（产品默认行为）；--system-fonts 用本机字体（量规则用）；--show 列出前 N 个不一致的文本框
 import { readFile } from 'node:fs/promises';
@@ -32,10 +33,21 @@ for (const seed of seeds) {
   });
   const slides = JSON.parse(deck).slides;
   const perSlide = slides.map((s) => textsByShape(s.svg));
-  for (const b of exp.boxes) {
+  // 表格（gen_table.py）：每个单元格按文字找到我们的单元格（产物里每个单元格的文字在一个平移组里）
+  const cellLines = (c) => {
+    const groups = new Map();
+    for (const it of perSlide[c.slide - 1].get(String(c.id)) ?? []) groups.set(it.cell, [...groups.get(it.cell) ?? [], it]);
+    const want = c.lines.map(norm).join('');
+    const mine = [...groups.values()].map((g) => linesOf(g)).filter((g) => g.map(norm).join('') === want);
+    return mine.length === 1 ? mine[0] : [];
+  };
+  const entries = exp.boxes
+    ? exp.boxes.map((b) => [b, linesOf(perSlide[b.slide - 1].get(String(b.id)) ?? [])])
+    : exp.cells.map((c) => [{ ...c, algn: '', indent: `第 ${c.r} 行第 ${c.c} 列` }, cellLines(c)]);
+  for (const [b, ours] of entries) {
     total++;
     const want = b.lines.map(norm).filter((l, i, a) => l || i < a.length - 1);
-    const got = linesOf(perSlide[b.slide - 1].get(String(b.id)) ?? []).map(norm);
+    const got = ours.map(norm);
     // 空段落：PowerPoint 有空行，我们不出文字元素，比的时候去掉空行
     const w = want.filter((l) => l), g = got.filter((l) => l);
     lineTotal += w.length;

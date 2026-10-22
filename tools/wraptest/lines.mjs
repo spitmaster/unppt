@@ -23,7 +23,8 @@ export async function systemFontBytes() {
 
 const unesc = (s) => s.replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#(\d+);/g, (_, n) => String.fromCodePoint(+n)).replace(/&#x([0-9a-f]+);/gi, (_, n) => String.fromCodePoint(parseInt(n, 16))).replace(/&amp;/g, '&');
 
-/** 页面 SVG -> 每个形状（编号）的文字元素：{ x, y, size, text } */
+/** 页面 SVG -> 每个形状（编号）的文字元素：{ x, y, size, text, cell }。cell 是形状下面前两层平移组的位置，
+ * 表格里每个单元格的文字各在一个平移组里，用它把单元格分开 */
 export function textsByShape(svg) {
   const out = new Map();
   const stack = [];
@@ -31,18 +32,27 @@ export function textsByShape(svg) {
   let m;
   while ((m = re.exec(svg))) {
     if (m[0].startsWith('</g')) { stack.pop(); continue; }
-    if (m[1] !== undefined) { const u = /data-uid="s(\d+)p\d+"/.exec(m[1]) ?? /data-uid="s(\d+)"/.exec(m[1]); stack.push(u ? u[1] : undefined); continue; }
+    if (m[1] !== undefined) {
+      const u = /data-uid="s(\d+)p\d+"/.exec(m[1]) ?? /data-uid="s(\d+)"/.exec(m[1]);
+      stack.push({ uid: u?.[1], tr: /transform="translate\(([^)]*)\)"/.exec(m[1])?.[1] });
+      continue;
+    }
     const attrs = m[2];
     if (/data-bu="1"/.test(attrs)) continue;
-    const shape = [...stack].reverse().find((v) => v !== undefined);
-    if (!shape) continue;
+    let at = stack.length - 1;
+    while (at >= 0 && stack[at].uid === undefined) at--;
+    if (at < 0) continue;
+    const shape = stack[at].uid;
+    let top = at;
+    while (top > 0 && stack[top - 1].uid === shape) top--;
+    const cell = stack.slice(top + 1).map((e) => e.tr).filter((t) => t !== undefined).slice(0, 2).join('/');
     const xs = /\bx="([^"]*)"/.exec(attrs)?.[1].split(' ').map(Number) ?? [0];
     const ys = /\by="([^"]*)"/.exec(attrs)?.[1].split(' ').map(Number) ?? [0];
     const size = Number(/font-size="([^"]*)"/.exec(attrs)?.[1] ?? 12);
     const text = unesc(m[3].replace(/<[^>]+>/g, ''));
     let list = out.get(shape);
     if (!list) { list = []; out.set(shape, list); }
-    list.push({ x: xs[0], y: Math.max(...ys), size, text });
+    list.push({ x: xs[0], y: Math.max(...ys), size, text, cell });
   }
   return out;
 }

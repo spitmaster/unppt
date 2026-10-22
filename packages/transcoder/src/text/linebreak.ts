@@ -46,6 +46,11 @@ function startsClose(atoms: Atom[], i: number): boolean {
   while (i < atoms.length && atoms[i].space) i++;
   return i < atoms.length && NO_START.has(atoms[i].text) && !!atoms[i].style.eaBreak;
 }
+/** 空格后面是中文里的破折号（"练习 ——"）：空格前面也不能断，破折号连同空格跟着前一个字（实测 tools/wraptest；英文里照样能断） */
+function startsDash(atoms: Atom[], i: number): boolean {
+  while (i < atoms.length && atoms[i].space) i++;
+  return i < atoms.length && atoms[i].text === '—' && !!atoms[i].style.eaBreak;
+}
 
 /**
  * hang：允许标点溢出边界（a:pPr hangingPunct，中文版 PowerPoint 没写时也开着）——放不下的行首禁则标点不把前一个字带到下一行，
@@ -69,7 +74,7 @@ export function breakLines(atoms: Atom[], avail: (first: boolean) => number, wra
     for (; i < atoms.length; i++) {
       const a = atoms[i];
       if (a.text === '\n') { forced = i; break; }
-      if (i > start && canBreakBetween(atoms[i - 1], a, kinsoku, latin) && !(kinsoku && (atoms[i - 1].space && endsOpen(atoms, i - 1) || a.space && startsClose(atoms, i)))) lastBreak = i;
+      if (i > start && canBreakBetween(atoms[i - 1], a, kinsoku, latin) && !(kinsoku && (atoms[i - 1].space && endsOpen(atoms, i - 1) || a.space && startsClose(atoms, i))) && !(a.space && startsDash(atoms, i))) lastBreak = i;
       const w = width + a.width;
       // 实测：行宽向上取整到排版单位（1/8 磅）后不超过可用宽度才放得下（可用宽度、内边距不取整；字间距让行宽不在格子上时，
       // 正好等宽也要换行）。这个字在行尾时不算它和后一个字的字距调整（实测 tools/wraptest：微软雅黑 "me|r-"，r 和 - 有负字距），
