@@ -5,6 +5,7 @@
  * 字体通过 RandomAccessSource 懒加载：建索引时只读表目录和 name 表，真正用到才读字宽数据。
  */
 import { GlyphOutlines, type Contour } from './glyf';
+import { CffOutlines } from './cff';
 import { buildKerning } from './kern';
 import { buildCmap } from './cmap';
 import { toSource, type InputSource, type RandomAccessSource } from '../io/source';
@@ -42,7 +43,7 @@ export interface FontMetrics {
   generic?: 'roman' | 'swiss' | 'modern' | 'script' | 'decorative';
   /** 两个字符之间的字距调整（单位 em，负数是挤近）；字体没有字距数据时为 0 */
   kern(left: number, right: number): number;
-  /** 字形轮廓（单位 em，y 向上）；字体里没有这个字、或不是 TrueType 轮廓时为 undefined */
+  /** 字形轮廓（单位 em，y 向上；TrueType 和 CFF 都支持）；字体里没有这个字时为 undefined */
   outline(codePoint: number): Promise<Contour[] | undefined>;
 }
 
@@ -153,9 +154,11 @@ async function loadMetrics(src: RandomAccessSource, tables: Map<string, TableRec
   const kernRec = tables.get('GPOS'), kernOld = tables.get('kern');
   const kernFn = kernRec || kernOld ? buildKerning(kernRec ? await get('GPOS') : undefined, kernOld ? await get('kern') : undefined) : undefined;
   const kernCache = new Map<number, number>();
-  const glyfRec = tables.get('glyf'), locaRec = tables.get('loca'), maxpRec = tables.get('maxp');
-  let outlines: Promise<GlyphOutlines | undefined> | undefined;
+  const glyfRec = tables.get('glyf'), locaRec = tables.get('loca'), maxpRec = tables.get('maxp'), cffRec = tables.get('CFF ');
+  let outlines: Promise<{ glyph(gid: number): Promise<Contour[]> } | undefined> | undefined;
   const outlinesOf = () => outlines ??= (async () => {
+    // CFF 轮廓的 .otf（思源黑体等）
+    if (!glyfRec && cffRec) return new CffOutlines(src, cffRec, upem);
     if (!glyfRec || !locaRec || !maxpRec) return undefined;
     const maxp = await src.read(maxpRec.offset, 6);
     return new GlyphOutlines(src, glyfRec, locaRec, bes16(head, 50) === 1, upem, be16(maxp, 4));
