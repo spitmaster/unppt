@@ -20,3 +20,6 @@ Thumbs.db
 
 # 用 Office 自带主题生成的用例：含微软主题素材，不进仓库（有 Office 的人可以用 make.py 自己生成）
 /testcases/theme-*
+
+# 字体包里的字体文件：发布前由 scripts/fetch-fonts.mjs 按 packages/fonts/fonts.json 下载并校验
+/packages/fonts/files/

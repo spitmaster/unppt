@@ -21,6 +21,8 @@ export interface FontFace {
   load(): Promise<FontMetrics>;
   /** 嵌入字体读出来以后发现用不了（读不出、CFF 轮廓，见 eot.ts）：按缺字体处理，字体库不再返回它 */
   unusable?: boolean;
+  /** 优先级，小的优先：PPT 嵌入的、调用方指定的字体是 0（不写），默认字体包是 2（font/pack.ts） */
+  rank?: number;
 }
 
 export interface FontMetrics {
@@ -237,8 +239,11 @@ export class FontLibrary {
   }
 
   find(family: string, bold: boolean, italic: boolean): FontFace | undefined {
-    const list = this.byFamily.get(family.toLowerCase().trim())?.filter((f) => !f.unusable);
-    if (!list?.length) return undefined;
+    const all = this.byFamily.get(family.toLowerCase().trim())?.filter((f) => !f.unusable);
+    if (!all?.length) return undefined;
+    // 同名时只在优先级最高的一组里挑（PPT 嵌入的、调用方指定的字体压过默认字体包）
+    const top = Math.min(...all.map((f) => f.rank ?? 0));
+    const list = all.filter((f) => (f.rank ?? 0) === top);
     let best = list[0], bestScore = -1;
     for (const f of list) {
       const score = (f.bold === bold ? 2 : 0) + (f.italic === italic ? 1 : 0) + (f.weight === 400 ? 0.1 : 0);

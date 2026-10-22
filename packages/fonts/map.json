@@ -1,0 +1,17 @@
+{
+  "comment": "原字体 -> 显示用的开源字体。按顺序匹配，第一条命中的生效；name 是不区分大小写的正则，匹配字体的任意一个名字；cjk 表示有大量汉字的字体；generic 是 Windows 的字体大类。show 为 null 表示不提供显示字体（符号字体，见 SPEC D3 待做）",
+  "rules": [
+    { "name": "wingdings|webdings|^symbol$|marlett|mt extra|bookshelf symbol|ms reference specialty", "show": null },
+    { "name": "^calibri", "show": { "regular": "Carlito-Regular.ttf", "bold": "Carlito-Bold.ttf", "italic": "Carlito-Italic.ttf", "boldItalic": "Carlito-BoldItalic.ttf" } },
+    { "name": "^cambria", "show": { "regular": "Caladea-Regular.ttf", "bold": "Caladea-Bold.ttf", "italic": "Caladea-Italic.ttf", "boldItalic": "Caladea-BoldItalic.ttf" } },
+    { "name": "楷|kai", "cjk": true, "show": { "regular": "LXGWWenKai-Regular.ttf" } },
+    { "name": "仿宋|fangsong", "cjk": true, "show": { "regular": "ZhuqueFangsong-Regular.ttf" } },
+    { "name": "宋|song|明|ming|batang|gungsuh|mincho|serif", "cjk": true, "show": { "regular": "NotoSerifSC-Regular.otf", "bold": "NotoSerifSC-Bold.otf" } },
+    { "cjk": true, "show": { "light": "NotoSansSC-Light.otf", "regular": "NotoSansSC-Regular.otf", "bold": "NotoSansSC-Bold.otf" } },
+    { "name": "courier|consola|console|mono|typewriter", "show": { "regular": "LiberationMono-Regular.ttf", "bold": "LiberationMono-Bold.ttf", "italic": "LiberationMono-Italic.ttf", "boldItalic": "LiberationMono-BoldItalic.ttf" } },
+    { "generic": "modern", "show": { "regular": "LiberationMono-Regular.ttf", "bold": "LiberationMono-Bold.ttf", "italic": "LiberationMono-Italic.ttf", "boldItalic": "LiberationMono-BoldItalic.ttf" } },
+    { "name": "times|georgia|garamond|book antiqua|palatino|bookman|century schoolbook", "show": { "regular": "LiberationSerif-Regular.ttf", "bold": "LiberationSerif-Bold.ttf", "italic": "LiberationSerif-Italic.ttf", "boldItalic": "LiberationSerif-BoldItalic.ttf" } },
+    { "generic": "roman", "show": { "regular": "LiberationSerif-Regular.ttf", "bold": "LiberationSerif-Bold.ttf", "italic": "LiberationSerif-Italic.ttf", "boldItalic": "LiberationSerif-BoldItalic.ttf" } },
+    { "show": { "regular": "LiberationSans-Regular.ttf", "bold": "LiberationSans-Bold.ttf", "italic": "LiberationSans-Italic.ttf", "boldItalic": "LiberationSans-BoldItalic.ttf" } }
+  ]
+}

@@ -54,7 +54,7 @@ await build({
   define,
 });
 // Node 的并行出图：工作线程池（@unppt/unppt/node）和工作线程脚本（和 cli.js、node.js 放在一起）
-for (const [entry, outfile] of [['node-pool.ts', 'node.js'], ['raster-worker.ts', 'raster-worker.js']]) {
+for (const [entry, outfile] of [['node.ts', 'node.js'], ['raster-worker.ts', 'raster-worker.js']]) {
   await build({
     entryPoints: [`packages/transcoder/src/${entry}`],
     outfile: `packages/transcoder/dist/${outfile}`,

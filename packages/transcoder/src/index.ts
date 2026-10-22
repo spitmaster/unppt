@@ -13,6 +13,7 @@ import { compileAdvance, compileTiming, compileTransition, soundRids } from './a
 import { mergeTiming } from './anim/inherited-timing';
 import { lazyEmbeddedFont } from './font/eot';
 import { FontLibrary, loadFontFile, type FontFace } from './font/font';
+import { packFaces, type FontPack } from './font/pack';
 import { subsetFont } from './font/subset';
 import type { DeckFont } from '../../format/src/index';
 import { MediaStore, type WriteData, type WriteFn } from './media/media';
@@ -31,6 +32,7 @@ import { ZipReader } from './io/zip';
 export type { InputSource, RandomAccessSource } from './io/source';
 export type { WriteData, WriteFn } from './media/media';
 export type { RasterPool } from './preview/slide-images';
+export type { FontPack, PackFaceInfo, PackFaceData, PackRule } from './font/pack';
 export type { PaintJob, PaintResources, PaintResult, PaintSvg } from './preview/paint';
 export { createPainter } from './preview/paint';
 export { UNPPT_VERSION };
@@ -40,12 +42,14 @@ declare const __UNPPT_PLAYER__: string;
 export interface ConvertOptions {
   /** 输出文件的写入函数。路径是相对路径，例如 "index.html"、"media/video1.mp4" */
   write: WriteFn;
-  /** 字体文件（ttf / otf / ttc） */
-  fonts?: InputSource[];
   /**
-   * 观看端没有的字体（例如 Office 自带的私有字体、云字体）：排版用它，用到的字总是嵌入产物，
-   * 不受 embedFonts 开关影响（否则浏览器显示时只能用别的字体，和排版对不上）
+   * 默认字体包（@unppt/fonts，Node 里用 @unppt/unppt/node 的 loadFontPack() 读）：排版按 PPT 写的原字体的字宽（度量包），
+   * 显示用对应的开源字体（SPEC D3）。不给时只有 PPT 嵌入的字体和下面指定的字体，其它字体的字宽只能估算
    */
+  fontPack?: FontPack;
+  /** 调用方指定的字体文件（ttf / otf / ttc）：同名时压过字体包，排版和显示都用它 */
+  fonts?: InputSource[];
+  /** 旧选项，和 fonts 一样（0.3.0 起所有用到的字体都嵌入产物） */
   privateFonts?: InputSource[];
   /** 产物形式（见 output/）：single 自包含的 HTML（默认，旧名 html）；paged 按需加载；pages 按需加载并且每页一个 HTML；data 只输出 deck.json（调试用） */
   output?: string;
@@ -54,8 +58,8 @@ export interface ConvertOptions {
   /** 小于这个字节数的图片内联进 HTML，默认 2MB；视频音频总是单独输出 */
   inlineLimit?: number;
   /**
-   * 把用到的字做成字体子集嵌入产物（默认关闭）。嵌入后观看端不需要安装字体，显示与转码时一致。
-   * 注意：商业字体的分发需要相应授权。
+   * 把用到的字做成字体子集嵌入产物（默认嵌入，0.3.0 起）：播放时所有字形都来自产物，不用观看者电脑里的字体，
+   * 所有人看到的一样（SPEC D3）。false 只用于调试
    */
   embedFonts?: boolean;
   /**
@@ -96,12 +100,8 @@ export async function convert(input: InputSource, options: ConvertOptions): Prom
     docFaces.add(face);
     fonts.add([face]);
   }
-  for (const f of options.fonts ?? []) fonts.add(await loadFontFile(f));
-  for (const f of options.privateFonts ?? []) {
-    const faces = await loadFontFile(f);
-    for (const face of faces) docFaces.add(face);
-    fonts.add(faces);
-  }
+  for (const f of [...options.fonts ?? [], ...options.privateFonts ?? []]) fonts.add(await loadFontFile(f));
+  if (options.fontPack) fonts.add(await packFaces(options.fontPack));
   const missingFonts = new Set<string>();
   const form = outputForm(options.output);
   // 不内联图片的形式：图片一律写成单独文件（不在内存里攒）
@@ -125,7 +125,7 @@ export async function convert(input: InputSource, options: ConvertOptions): Prom
     if (!u) { u = { alias: `unppt-f${usage.size}`, cps: new Set() }; usage.set(face, u); }
     return u;
   };
-  const embeds = (face: FontFace) => options.embedFonts === true || docFaces.has(face);
+  const embeds = (face: FontFace) => options.embedFonts !== false || docFaces.has(face);
   const embed: FontEmbedder = {
     use: (face, cp) => { if (embeds(face)) entry(face).cps.add(cp); },
     alias: (face) => (embeds(face) ? entry(face).alias : undefined),

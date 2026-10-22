@@ -39,7 +39,7 @@ flowchart LR
 
 ```mermaid
 flowchart TB
-  entry["入口 index.ts / cli.ts<br/>convert：逐页产出页面数据，交给产物形式写出<br/>node-pool.ts（@unppt/unppt/node）Node 的并行出图执行器：工作线程池（raster-worker.ts），按 CPU 和内存自动定线程数；只有命令行用，index.ts 不创建线程"]
+  entry["入口 index.ts / cli.ts<br/>convert：逐页产出页面数据，交给产物形式写出<br/>node.ts（@unppt/unppt/node）= node-pool.ts Node 的并行出图执行器：工作线程池（raster-worker.ts），按 CPU 和内存自动定线程数；只有命令行用，index.ts 不创建线程<br/>+ node-fonts.ts 读默认字体包 @unppt/fonts（packages/fonts：开源字体 files/、度量包 metrics/、对照规则 map.json），变成 convert 的 fontPack"]
   preview["preview/<br/>整页图、缩略图（prop.json 里的 pic / thum）：slide-images.ts 调度：每页在本线程准备、交给绘制（给了并行出图执行器 RasterPool 时多页同时画），按页码顺序写出<br/>prepare.ts 准备（要字体库和媒体）：剔除遮挡、拆背景层、展开嵌套的 SVG 图片（inline-svg.ts；svg-image.ts 处理序言、DOCTYPE 实体、命名空间前缀；同一页里重复很多次的大 SVG 图片单独画成位图）、字体换成用到的字体文件、发光的外扩拆成两遍（morphology.ts），得到 PaintJob；字体、图片、背景层按编号取<br/>paint.ts 绘制（和运行环境无关，本线程和工作线程共用）：resvg（WASM）光栅化、pattern 里的图片内联（按图缓存 data URI）、叠背景层，整页图存 JPG（media/jpeg-encode.ts：libjpeg-turbo 的 WASM），缩略图从整页图区域平均缩小；resvg 崩溃时 crash-filters.ts 二分找出引起崩溃的那几处滤镜去掉再画（出图线程崩溃多了换新线程）<br/>mesh-warp.ts 透视投影的图片（网格三角形，每个都带一份内容）换成单独画一次的位图、按同样的分段仿射自己贴好（resvg 每个三角形都画满整层）；occlusion.ts 出图前剔除被整页不透明图片盖住的根元素；huge-images.ts 超大图片先缩小（resvg 会整张解码，每个出图线程都多占几百 MB）：超过 5000 万像素或长边是整页图 4 倍以上的 JPEG 按 1/8、1/4 解码，长边是整页图 4 倍以上的 PNG 用 media/png-shrink.ts；layers.ts 重复出现的母版/版式背景只画一次（背景层缓存，svg-root.ts 切顶层元素）"]
   output["output/<br/>← OutputForm 扩展点：single 自包含 HTML、paged 按需加载（目录 + 每页数据文件，pages 再加每页一个 HTML）、data 只出数据（调试）<br/>output.ts 接口和 HTML 公共部分；文件名带内容哈希（common/hash.ts）<br/>prop.ts 所有形式都输出的 prop.json（页数、宽高、每页图片路径、备注、是否隐藏）"]
   anim["anim/<br/>时间线编排 anim.ts、单个效果 effect.ts<br/>进入/退出的行为 behaviors.ts（关键帧、公式、时间变换原样带给播放器）<br/>时间设置和变换 timing-util.ts、动画和切换的声音 sound.ts<br/>音视频放映选项 media-opts.ts、母版和版式上的动画合进幻灯片的时间线 inherited-timing.ts<br/>强调终态 emphasis.ts、运动路径 motion.ts、切换 transition.ts"]
@@ -49,7 +49,7 @@ flowchart TB
   text["text/<br/>文本框属性 → 拆段（split-breaks.ts：文字里的回车、换行符是分段）→ 逐段排版（测量、断行、项目符号）→ 排位置 placeLines → 输出 SVG<br/>艺术字变形 warp.ts（字形轮廓弯进包络 / 沿路径排）"]
   effects["effects/<br/>← ShapeEffect 扩展点（形状、文字共用）、映像、三维轮廓 contour"]
   style["style/<br/>fill 填充、pattern 图案（实测点阵）<br/>line 线条（含复合线型、渐变线）、arrowheads 线端箭头（实测几何，线在箭头处截短）、gradient-stops 渐变色标（实测插值规律）、blip 图片调整<br/>lighting 三维正面提亮、camera 三维旋转投影（灯光常量在 model/light-rig.ts、正面颜色实测表 model/face-light-data.ts）、perspective 图片的网格透视"]
-  font["font/<br/>TrueType 解析、cmap.ts 码点→字形（含符号字体）、字距、字形轮廓 glyf.ts、子集化 subset.ts（HarfBuzz 的 hb-subset WASM，打进 JS；glyf-flags.ts 清掉浏览器不认的点标志保留位）<br/>嵌入字体还原 eot.ts → lzcomp.ts → ctf.ts，sfnt.ts 读写公共部分"]
+  font["font/<br/>TrueType 解析、cmap.ts 码点→字形（含符号字体）、字距、字形轮廓 glyf.ts、子集化 subset.ts（HarfBuzz 的 hb-subset WASM，打进 JS；glyf-flags.ts 清掉浏览器不认的点标志保留位）<br/>嵌入字体还原 eot.ts → lzcomp.ts → ctf.ts，sfnt.ts 读写公共部分<br/>默认字体包 pack.ts：原字体的度量（度量包）+ 开源字体的字形，按 map.json 对照（SPEC D3）；字体库按优先级 rank 挑：PPT 嵌入的、指定的字体压过字体包"]
   geometry["geometry/<br/>公式引擎、187 种预设形状、40 种文字变形<br/>路径遍历 walkGeometry（输出 SVG 或按点采样）<br/>转动后轮廓的外接矩形 turned-bounds"]
   model["model/<br/>演示文稿 / 主题 / 母版 / 版式、颜色、notes 演讲者备注<br/>font-charsets 字体名的字符集（缺失字体选替代字体用）"]
   common["common/<br/>SVG 输出工具、超链接"]

@@ -212,6 +212,8 @@ def build():
 
 
 EXTRA_ARGS: list[str] = []
+# 转码用的字体：默认用本机系统字体（量排版规则时和 PowerPoint 同一套字体）；--default-fonts 时只用默认字体包（产品默认行为，SPEC D3）
+FONT_ARGS: list[str] = ["--system-fonts"]
 
 
 def convert(src: Path, out: Path) -> dict:
@@ -219,7 +221,7 @@ def convert(src: Path, out: Path) -> dict:
     t0 = time.time()
     # 按需加载形式：截每一页只加载这一页的数据（单文件形式每次都要重新解析整个 HTML，大课件很慢；两种形式画面逐像素一致，见 tools/check-paged.py）。
     # 比对用不到整页图和缩略图，不出图
-    r = subprocess.run(["node", CLI, "convert", str(src), "-o", str(out.parent), "--output", "paged", "--no-images", "--system-fonts", *EXTRA_ARGS],
+    r = subprocess.run(["node", CLI, "convert", str(src), "-o", str(out.parent), "--output", "paged", "--no-images", *FONT_ARGS, *EXTRA_ARGS],
                        cwd=ROOT, capture_output=True, text=True, encoding="utf-8", errors="replace")
     lines = [l.strip() for l in (r.stdout or "").splitlines()]
     return {
@@ -490,9 +492,12 @@ def main():
     ap.add_argument("--batch", default=None, help="只比对 samples/<批次>/ 里的课件")
     ap.add_argument("--no-build", action="store_true")
     ap.add_argument("--embed-fonts", action="store_true", help="转码时嵌入字体子集")
+    ap.add_argument("--default-fonts", action="store_true", help="不用本机系统字体，只用默认字体包（开源字体显示，产品默认行为）")
     a = ap.parse_args()
     if a.embed_fonts:
         EXTRA_ARGS.append("--embed-fonts")
+    if a.default_fonts:
+        FONT_ARGS.clear()
     run(a.set, a.only, not a.no_build, a.batch)
 
 
