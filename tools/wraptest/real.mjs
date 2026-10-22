@@ -1,17 +1,20 @@
 // 自动换行专项测试：真实课件。real.py 用 PowerPoint 读出的每个文本框的每一行在 .cache/wraptest/real/<编号>.json；
 // 这里转码后从产物还原每一行，逐行比。课件内容只在本机：输出只有数字，不一致的明细写到 .cache/wt-real.json（gitignore）。
-// 用法：node tools/wraptest/real.mjs [份数，默认 100] [--from N] [--system-fonts]
+// 用法：node tools/wraptest/real.mjs [份数，默认 100] [--from N] [--system-fonts] [--dist 构建目录]
 import { readFile, writeFile } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
-import { convert } from '../../packages/transcoder/dist/index.js';
-import { loadFontPack } from '../../packages/transcoder/dist/node.js';
+import { pathToFileURL } from 'node:url';
 import { textsByShape, linesOf, norm, systemFontBytes } from './lines.mjs';
 
 const args = process.argv.slice(2);
 const count = Number(args.find((a) => /^\d+$/.test(a)) ?? 100);
 const from = args.includes('--from') ? Number(args[args.indexOf('--from') + 1]) : 0;
 const systemFonts = args.includes('--system-fonts');
+// --dist <目录>：用别的构建（比如旧版本）比，默认 packages/transcoder/dist
+const dist = args.includes('--dist') ? args[args.indexOf('--dist') + 1] : 'packages/transcoder/dist';
+const { convert } = await import(pathToFileURL(join(dist, 'index.js')).href);
+const { loadFontPack } = await import(pathToFileURL(join(dist, 'node.js')).href);
 const fonts = systemFonts ? await systemFontBytes() : [];
 const fontPack = systemFonts ? undefined : await loadFontPack();
 

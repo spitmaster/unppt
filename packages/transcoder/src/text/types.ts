@@ -140,6 +140,8 @@ export interface Line {
 
 export interface TextBox {
   x: number; y: number; w: number; h: number;
+  /** 没有文字区域（没有几何、宽度为 0 的形状，见 render/elements/shape.ts）：不管 a:bodyPr 的 wrap 都不换行，内边距不算 */
+  bare?: boolean;
 }
 
 /** 段落的项目符号（已经测好宽度） */

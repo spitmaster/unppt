@@ -54,7 +54,8 @@ export async function renderText(
   // 没有字时不画，但要高度的（表格单元格）照样排：空段落按段尾的字号占一行（实测样本：空单元格撑高表格行）
   if (!hasText && !out) return '';
 
-  const b0 = readBody(bodyPrs, child(txBody, 'a:bodyPr'));
+  const b00 = readBody(bodyPrs, child(txBody, 'a:bodyPr'));
+  const b0 = box.bare ? { ...b00, wrap: false, lIns: 0, rIns: 0, tIns: 0, bIns: 0 } : b00;
   // 竖排时内边距不跟着文字转，仍在屏幕的左、上、右、下（实测 text-vert-insets）：排版在转过的框里做，
   // 转 90° 的（eaVert 等）行首是屏幕上边、框的"上"是屏幕右边；vert270 行首是屏幕下边、框的"上"是屏幕左边
   // （mongolianVert 的列从左往右排，emit.ts 把框的"上"镜像到了屏幕左边）

@@ -29,6 +29,7 @@ def main():
     pythoncom.CoInitialize()
     app = win32com.client.DispatchEx("PowerPoint.Application")
     cells = []
+    tables = []
     try:
         p = app.Presentations.Add(0)
         p.PageSetup.SlideWidth, p.PageSetup.SlideHeight = 960, 540
@@ -60,8 +61,16 @@ def main():
                     if rnd.random() < 0.3:
                         m = rnd.choice([0, 3.6, 10.8, 14.4])
                         tf.MarginLeft, tf.MarginRight = m, rnd.choice([0, 3.6, 7.2, 14.4])
-            for r in range(1, rows + 1):
-                for c in range(1, cols + 1):
+            tables.append((k + 1, sh.Id, latin, ea, size))
+        p.SaveAs(str(OUT / f"{seed}.pptx"))
+        p.Close()
+        # 改完列宽、字体后当场读行，PowerPoint 还按改之前的排版给（实测：行比列宽能放的多一倍）；存盘重新打开再读
+        p = app.Presentations.Open(str(OUT / f"{seed}.pptx"), True, False, False)
+        for si, sid, latin, ea, size in tables:
+            sh = next(x for x in p.Slides(si).Shapes if x.Id == sid)
+            t = sh.Table
+            for r in range(1, t.Rows.Count + 1):
+                for c in range(1, t.Columns.Count + 1):
                     tr = t.Cell(r, c).Shape.TextFrame.TextRange
                     lines = []
                     i = 1
@@ -71,9 +80,8 @@ def main():
                             break
                         lines.append(ln.Text)
                         i += 1
-                    cells.append({"slide": k + 1, "id": sh.Id, "r": r, "c": c, "font": [latin, ea], "size": size,
+                    cells.append({"slide": si, "id": sid, "r": r, "c": c, "font": [latin, ea], "size": size,
                                   "width": round(t.Columns(c).Width, 2), "text": tr.Text, "lines": lines})
-        p.SaveAs(str(OUT / f"{seed}.pptx"))
         p.Close()
     finally:
         try:
