@@ -44,7 +44,8 @@ for (const d of dirs) {
     let faces;
     try { faces = await loadFontFile(new Uint8Array(await readFile(path))); } catch { continue; }
     for (const f of faces) {
-      const key = `${f.displayFamily}|${f.bold}|${f.italic}|${f.weight}`;
+      // 按全部名字去重：同一个排版家族里的窄体、标题体（Arial Narrow 的家族名也是 Arial，Aptos Display 的也是 Aptos）是不同的字体
+      const key = `${[...f.families].sort().join('/')}|${f.bold}|${f.italic}|${f.weight}`;
       if (seen.has(key)) continue;
       seen.add(key);
       let m;

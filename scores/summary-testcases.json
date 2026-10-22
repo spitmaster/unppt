@@ -1,5 +1,5 @@
 {
- "date": "2026-10-22 19:38",
+ "date": "2026-10-22 21:07",
  "set": "testcases",
  "files": 242,
  "repairedFiles": 1,
@@ -10,7 +10,7 @@
  "meanSsim": 0.9838,
  "passLine": 0.95,
  "issues": {},
- "missingFontCount": 0,
+ "missingFontCount": 31,
  "practice": {
   "files": 242,
   "pages": 524,

@@ -42,7 +42,9 @@ export async function embedChartFonts(svg: string, fonts: FontLibrary, embed: Fo
       if (cp <= 0x20) continue;
       let face: FontFace | undefined;
       for (const f of [...own, ...subs]) if (f && await draws(f, cp)) { face = f; break; }
-      fontUse?.({ requested: names[0] ?? '', picked: face ? names.find((_, i) => own[i] === face) ?? face.displayFamily : names[0] ?? '', pickedFace: own.find(Boolean) ?? face, face, cp });
+      // 图表写的字体找到了就算用上了（它没有的字，例如 Arial 标签里的汉字，和正文一样由东亚字体画，不算替代）
+      const ownAt = own.findIndex(Boolean);
+      fontUse?.({ requested: names[0] ?? '', picked: ownAt >= 0 ? names[ownAt] : face?.displayFamily ?? names[0] ?? '', pickedFace: own[ownAt] ?? face, face, cp });
       if (!face || !embed) continue;
       embed.use(face, cp);
       if (!used.includes(face)) used.push(face);
