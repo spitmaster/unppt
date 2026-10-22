@@ -94,7 +94,7 @@ export async function packFaces(pack: FontPack): Promise<FontFace[]> {
   // 开源字体本身也能直接用（例如 PPT 里写的就是思源黑体）
   for (const p of opened.values()) {
     const f = await p;
-    if (f) out.push({ ...f, rank: PACK_RANK });
+    if (f) out.push({ ...f, rank: PACK_RANK, shownFamily: f.displayFamily });
   }
   return out;
 }
@@ -103,7 +103,7 @@ function metricFace(info: PackFaceInfo, shown: FontFace, data: () => Promise<Pac
   let metrics: Promise<FontMetrics> | undefined;
   return {
     families: info.families, displayFamily: info.display, bold: info.bold, italic: info.italic, weight: info.weight,
-    source: shown.source, offset: shown.offset, rank: PACK_RANK,
+    source: shown.source, offset: shown.offset, rank: PACK_RANK, shownFamily: shown.displayFamily,
     load() {
       metrics ??= (async () => build(info, await data(), shown))();
       return metrics;

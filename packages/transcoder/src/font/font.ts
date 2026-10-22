@@ -24,6 +24,8 @@ export interface FontFace {
   unusable?: boolean;
   /** 优先级，小的优先：PPT 嵌入的、调用方指定的字体是 0（不写），默认字体包是 2（font/pack.ts） */
   rank?: number;
+  /** 默认字体包里的字体：显示用的开源字体名（字体检查报告用） */
+  shownFamily?: string;
 }
 
 export interface FontMetrics {

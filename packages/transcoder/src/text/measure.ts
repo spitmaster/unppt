@@ -10,6 +10,7 @@ export interface Measurer {
   /** 这个字体是嵌入了、但 PowerPoint 不用的（metrics 返回之后才知道） */
   unusable?(family: string): boolean;
   embed?: FontEmbedder;
+  fontUse?: TextEnv['fontUse'];
 }
 
 export function makeMeasurer(env: TextEnv): Measurer {
@@ -17,6 +18,7 @@ export function makeMeasurer(env: TextEnv): Measurer {
   const unusable = new Set<string>();
   return {
     embed: env.embed,
+    fontUse: env.fontUse,
     unusable: (family) => unusable.has(family.toLowerCase()),
     metrics(family, bold, italic, quiet) {
       const key = `${family}|${bold}|${italic}`;
@@ -175,6 +177,10 @@ export async function makeAtoms(text: string, style: RunStyle, m: Measurer): Pro
     const ownAsc = used?.ascent ?? 0.92, ownDesc = used?.descent ?? 0.24;
     const asc = Math.max(ownAsc, mix ? other!.ascent : 0);
     const desc = Math.max(ownDesc, mix ? other!.descent : 0);
+    if (m.fontUse) {
+      const requested = isSym ? style.sym! : eaFont ? style.ea : style.latin;
+      m.fontUse({ requested, picked: isSym ? symFam : eaFont ? eaFam : latinFam, pickedFace: primary?.face, face: adv !== undefined ? usedM?.face : undefined, cp });
+    }
     out.push({
       text: ch, cp, width, style: st, family, face: adv !== undefined ? usedM?.face : undefined,
       // 实测：上下标按缩小后的字号算上伸、下伸和行高

@@ -1,6 +1,7 @@
 /** 文字排版用到的数据结构 */
 import type { ColorContext, Rgba } from '../model/color';
 import type { FontFace, FontLibrary } from '../font/font';
+import type { FontUse } from '../font/check';
 import type { Theme } from '../model/model';
 import type { SvgDoc } from '../common/svg';
 import type { Rel } from '../io/package';
@@ -35,6 +36,8 @@ export interface TextEnv {
   rels?: Rel[];
   /** 图片填充的文字：输出前解析好的图片地址（renderText 填） */
   blipHrefs?: Map<XEl, string>;
+  /** 字体检查：记录每个字用了什么字体 */
+  fontUse?: (u: FontUse) => void;
   /** 页码字段（a:fld type="slidenum"）显示的页码 */
   slideNumber?: number;
   /** 图片项目符号要用：图片解析和当前部件 */

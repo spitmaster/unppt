@@ -14,6 +14,7 @@ import { mergeTiming } from './anim/inherited-timing';
 import { lazyEmbeddedFont } from './font/eot';
 import { FontLibrary, loadFontFile, type FontFace } from './font/font';
 import { packFaces, type FontPack } from './font/pack';
+import { FontCheckLog, SYMBOL_FONT, type FontCheck } from './font/check';
 import { subsetFont } from './font/subset';
 import type { DeckFont } from '../../format/src/index';
 import { MediaStore, type WriteData, type WriteFn } from './media/media';
@@ -33,14 +34,13 @@ export type { InputSource, RandomAccessSource } from './io/source';
 export type { WriteData, WriteFn } from './media/media';
 export type { RasterPool } from './preview/slide-images';
 export type { FontPack, PackFaceInfo, PackFaceData, PackRule } from './font/pack';
+export type { FontCheck, FontCheckEntry, FontStatus } from './font/check';
 export type { PaintJob, PaintResources, PaintResult, PaintSvg } from './preview/paint';
 export { createPainter } from './preview/paint';
 export { UNPPT_VERSION };
 
 declare const __UNPPT_PLAYER__: string;
 
-/** 符号字体：字母的位置上放的是图形（Wingdings 等），换成别的字体就变成普通字母 */
-const SYMBOL_FONT = /wingdings|webdings|^symbol$|marlett|mt extra|bookshelf symbol|ms reference specialty/i;
 
 export interface ConvertOptions {
   /** 输出文件的写入函数。路径是相对路径，例如 "index.html"、"media/video1.mp4" */
@@ -86,6 +86,8 @@ export interface ConvertResult {
   width: number;
   height: number;
   report: DeckReport;
+  /** 字体检查：每个字体的结论、没有字形的字（见 font/check.ts；unppt check 打印的就是它） */
+  fontCheck: FontCheck;
 }
 
 export async function convert(input: InputSource, options: ConvertOptions): Promise<ConvertResult> {
@@ -133,7 +135,10 @@ export async function convert(input: InputSource, options: ConvertOptions): Prom
     use: (face, cp) => { if (embeds(face)) entry(face).cps.add(cp); },
     alias: (face) => (embeds(face) ? entry(face).alias : undefined),
   };
-  const env = { pres, fonts, missingFonts, media, embed };
+  // 字体检查：排版时记下每个字用了什么字体（page 是正在渲染的页，从 1 开始）
+  const fontLog = new FontCheckLog((f) => docFaces.has(f));
+  let page = 0;
+  const env = { pres, fonts, missingFonts, media, embed, fontUse: (u: Parameters<FontCheckLog['record']>[0]) => fontLog.record(u, page) };
   const deckFonts: DeckFont[] = [];
   async function* fontFiles(): AsyncGenerator<{ font: DeckFont; data: Uint8Array }> {
     for (const [face, u] of usage) {
@@ -159,6 +164,7 @@ export async function convert(input: InputSource, options: ConvertOptions): Prom
     for (const ref of pres.slides) {
       let r: Awaited<ReturnType<typeof renderSlide>>;
       try {
+        page = ref.index + 1;
         r = await renderSlide(ref, env);
       } catch (e) {
         // 单页出错不影响整份文件：输出空白页并记录
@@ -209,7 +215,7 @@ export async function convert(input: InputSource, options: ConvertOptions): Prom
 
   await form.write({ slides, takeAssets, fontFiles, meta, title, player: __UNPPT_PLAYER__, write: options.write, fileName });
   await options.write('prop.json', propJson({ width: pres.width * 0.75, height: pres.height * 0.75, thumbWidth: size.thumbWidth, thumbHeight: size.thumbHeight, slides: propSlides }));
-  return { slides: count, width: pres.width, height: pres.height, report };
+  return { slides: count, width: pres.width, height: pres.height, report, fontCheck: fontLog.result() };
 }
 
 /** 在本线程画：加载 resvg；没有或加载失败时不出图并警告 */
@@ -225,3 +231,16 @@ async function readTitle(pkg: OpcPackage): Promise<string> {
 }
 
 export type { WriteData as OutputData };
+
+/**
+ * 只检查字体，不输出文件（unppt check）：照常排版一遍，返回每个字体的结论和没有字形的字。
+ * fontPack / fonts 和 convert 一样传，结论就是按这些字体转码时的情况
+ */
+export async function checkFonts(input: InputSource, options: Pick<ConvertOptions, 'fontPack' | 'fonts' | 'privateFonts' | 'onProgress'> = {}): Promise<FontCheck & { slides: number }> {
+  // 演示数据是边写边生成的（逐页排版），要读完；音视频不用读
+  const write: WriteFn = async (path, data) => {
+    if (path.endsWith('.json') && typeof data !== 'string' && !(data instanceof Uint8Array)) for await (const chunk of data) void chunk;
+  };
+  const r = await convert(input, { ...options, write, output: 'data', images: false, embedFonts: false });
+  return { slides: r.slides, ...r.fontCheck };
+}
