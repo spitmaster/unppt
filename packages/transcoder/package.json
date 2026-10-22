@@ -36,5 +36,8 @@
   "publishConfig": {
     "registry": "https://registry.npmjs.org/",
     "access": "public"
+  },
+  "dependencies": {
+    "@unppt/fonts": "^0.3.0"
   }
 }

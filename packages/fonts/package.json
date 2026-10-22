@@ -1,0 +1,34 @@
+{
+  "name": "@unppt/fonts",
+  "version": "0.3.0",
+  "description": "unppt 默认字体包：开源字体（SIL OFL 1.1）和排版用的字体度量数据",
+  "license": "OFL-1.1",
+  "type": "module",
+  "main": "./index.js",
+  "types": "./index.d.ts",
+  "exports": {
+    ".": "./index.js",
+    "./fonts.json": "./fonts.json",
+    "./map.json": "./map.json"
+  },
+  "files": [
+    "index.js",
+    "index.d.ts",
+    "fonts.json",
+    "map.json",
+    "files",
+    "metrics",
+    "LICENSES",
+    "README.md"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/spitmaster/unppt.git",
+    "directory": "packages/fonts"
+  },
+  "homepage": "https://github.com/spitmaster/unppt",
+  "publishConfig": {
+    "registry": "https://registry.npmjs.org/",
+    "access": "public"
+  }
+}

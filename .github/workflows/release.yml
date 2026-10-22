@@ -14,13 +14,13 @@ on:
 
 permissions:
   contents: write
-  # 发布到 npm 用"可信发布"（npm 网站上为 @unppt/unppt 绑定了这个仓库的 release.yml），不需要 token
+  # 发布到 npm 用"可信发布"（npm 网站上为 @unppt/unppt、@unppt/fonts 绑定了这个仓库的 release.yml），不需要 token
   id-token: write
 
 jobs:
   release:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 30
     env:
       TAG: ${{ github.event.inputs.tag || github.ref_name }}
     steps:
@@ -37,6 +37,9 @@ jobs:
       - name: 安装依赖
         run: npm ci
 
+      - name: 下载默认字体包的字体文件（按 packages/fonts/fonts.json 校验）
+        run: node scripts/fetch-fonts.mjs
+
       - name: 构建
         run: npm run build
 
@@ -50,10 +53,9 @@ jobs:
           if [ "v$v" != "$TAG" ]; then echo "标签 $TAG 和 package.json 的版本 $v 不一致"; exit 1; fi
 
       - name: 打包
-        working-directory: packages/transcoder
         run: |
-          npm pack
-          cp unppt-unppt-*.tgz unppt.tgz
+          (cd packages/transcoder && npm pack && cp unppt-unppt-*.tgz unppt.tgz)
+          (cd packages/fonts && npm pack && cp unppt-fonts-*.tgz unppt-fonts.tgz)
 
       - name: 发布说明（取 CHANGELOG 里这个版本的一段）
         run: |
@@ -65,18 +67,20 @@ jobs:
 
           **从 GitHub 安装 / Install from GitHub**（需要 Node.js 20.12+）
 
-          Windows PowerShell：
+          先装默认字体包，再装转码器。Windows PowerShell：
 
           ```
+          Invoke-WebRequest https://github.com/spitmaster/unppt/releases/latest/download/unppt-fonts.tgz -OutFile unppt-fonts.tgz
           Invoke-WebRequest https://github.com/spitmaster/unppt/releases/latest/download/unppt.tgz -OutFile unppt.tgz
-          npm install -g .\unppt.tgz
+          npm install -g .\unppt-fonts.tgz .\unppt.tgz
           ```
 
           macOS / Linux：
 
           ```
+          curl -L -o unppt-fonts.tgz https://github.com/spitmaster/unppt/releases/latest/download/unppt-fonts.tgz
           curl -L -o unppt.tgz https://github.com/spitmaster/unppt/releases/latest/download/unppt.tgz
-          npm install -g ./unppt.tgz
+          npm install -g ./unppt-fonts.tgz ./unppt.tgz
           ```
           EOF
 
@@ -84,19 +88,22 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          files="packages/transcoder/unppt-unppt-${TAG#v}.tgz packages/transcoder/unppt.tgz"
+          files="packages/transcoder/unppt-unppt-${TAG#v}.tgz packages/transcoder/unppt.tgz packages/fonts/unppt-fonts.tgz"
           if gh release view "$TAG" > /dev/null 2>&1; then
             gh release upload "$TAG" $files --clobber
           else
             gh release create "$TAG" $files --title "$TAG" --notes-file notes.md
           fi
 
+      # 先发字体包（转码器依赖它）；字体包的版本号单独管理，没变就跳过
       - name: 发布到 npm（这个版本 npm 上已经有了就跳过）
-        working-directory: packages/transcoder
         run: |
-          v="${TAG#v}"
-          if npm view "@unppt/unppt@$v" version --registry https://registry.npmjs.org/ > /dev/null 2>&1; then
-            echo "npm 上已经有 $v，跳过"
-          else
-            npm publish --provenance --access public --registry https://registry.npmjs.org/
-          fi
+          for d in fonts transcoder; do
+            name=$(node -p "require('./packages/$d/package.json').name")
+            v=$(node -p "require('./packages/$d/package.json').version")
+            if npm view "$name@$v" version --registry https://registry.npmjs.org/ > /dev/null 2>&1; then
+              echo "npm 上已经有 $name@$v，跳过"
+            else
+              (cd packages/$d && npm publish --provenance --access public --registry https://registry.npmjs.org/)
+            fi
+          done

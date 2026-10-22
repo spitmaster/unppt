@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * 命令行：unppt <输入.pptx> [-o 输出目录] [--fonts 目录]... [--no-system-fonts] [--output 形式] [--inline-limit 字节]
+ * 命令行：unppt <输入.pptx> [-o 输出目录] [--fonts 目录]... [--system-fonts] [--output 形式] [--inline-limit 字节]
  * （旧写法 unppt convert <输入.pptx> 仍然可用）
  *
  * 这一层负责读写文件；转码本身（convert）不碰文件系统。
@@ -11,6 +11,7 @@ import { basename, dirname, extname, join, resolve } from 'node:path';
 import { homedir, platform } from 'node:os';
 import { convert, UNPPT_VERSION, type RandomAccessSource, type WriteData } from './index';
 import { autoWorkers, createRasterPool } from './node-pool';
+import { loadFontPack } from './node-fonts';
 
 /** 打开过的文件句柄统一登记，结束时显式关闭（Node 不允许句柄被垃圾回收时自动关闭） */
 const openHandles: Promise<import('node:fs/promises').FileHandle>[] = [];
@@ -108,11 +109,11 @@ function usage(code = 1): never {
   --output <形式>         产物形式：paged（默认，按需加载：入口 HTML 很小，每页的数据和图片看到那一页才加载、并预加载下一页，
                           适合放到网上，本地双击也能播）、single（所有内容装进一个自包含的 HTML，文件大，适合当附件发送）、
                           pages（paged 再加每页一个独立的 HTML）、data（同 --data）
-  --fonts <目录>          字体目录（可以写多次），用来按真实字宽排版
-  --no-system-fonts       不用本机系统字体（默认会用：按真实字宽排版，换行才和 PowerPoint 一致；Office 自带的私有字体、
-                          云字体用到时嵌入产物）。不用时字宽只能估算，换行位置可能不同
-  --system-fonts          （默认已开，0.2.2 及以前要写）
-  --embed-fonts           把用到的字做成字体子集嵌入（观看端无需安装字体；商业字体注意授权）
+  --fonts <目录>          指定字体目录（可以写多次）：这些字体同名时压过默认字体，排版和显示都用它，用到的字嵌入产物
+  --system-fonts          也用本机系统字体和 Office 字体（排版、显示都用它们，用到的字嵌入产物；注意商业字体的分发授权）
+  --no-default-fonts      不用默认字体包 @unppt/fonts（调试用；没有字体的字宽只能估算）
+                          默认：PPT 里嵌入的字体照用，其它字体按原字体的字宽排版、用开源字体显示（思源黑体、思源宋体、
+                          霞鹜文楷、朱雀仿宋、Carlito、Caladea、Liberation），所有观看者看到的一样
   --data                  只输出演示数据 deck.json（开发调试用）
   --no-images             不输出整页图 pic/ 和缩略图 thum/（prop.json 照常输出，见 SPEC F1）
   --jobs <n|auto>         出图用几个线程同时画，默认 auto（按 CPU 数和可用内存自动定）；1 是在主线程画
@@ -134,13 +135,12 @@ async function main() {
   const input = resolve(args[0]);
   let out = '';
   const fontDirs: string[] = [];
-  const privateDirs: string[] = [];
-  // 默认用本机系统字体（0.2.3 起）：不用时字宽只能估算，换行和 PowerPoint 不一样
-  let systemFonts = true;
+  // 默认只用 PPT 嵌入的字体和默认字体包（0.3.0 起，SPEC D3）；本机字体要明确指定
+  let systemFonts = false;
+  let defaultFonts = true;
   // 默认按需加载（0.2.4 起）：入口 HTML 很小、每页数据和图片打开到那一页才加载，适合在线看；本地双击也能播
   let form = 'paged';
   let images = true;
-  let embedFonts = false;
   let inlineLimit: number | undefined;
   let quiet = false;
   let stats = false;
@@ -151,17 +151,19 @@ async function main() {
     else if (a === '--fonts') fontDirs.push(args[++i]);
     else if (a === '--system-fonts') systemFonts = true;
     else if (a === '--no-system-fonts') systemFonts = false;
+    else if (a === '--no-default-fonts') defaultFonts = false;
     else if (a === '--data') form = 'data';
     else if (a === '--output') form = args[++i];
     else if (a === '--no-images') images = false;
-    else if (a === '--embed-fonts') embedFonts = true;
+    // 0.3.0 起总是嵌入，旧参数照样接受
+    else if (a === '--embed-fonts') continue;
     else if (a === '--inline-limit') inlineLimit = Number(args[++i]);
     else if (a === '-q' || a === '--quiet') quiet = true;
     else if (a === '--stats') stats = true;
     else if (a === '--jobs') jobs = args[++i];
     else usage();
   }
-  if (systemFonts) { fontDirs.push(...systemFontDirs()); privateDirs.push(...officeFontDirs()); }
+  if (systemFonts) fontDirs.push(...systemFontDirs(), ...officeFontDirs());
   const dataOnly = form === 'data';
   // 按需加载的形式输出一个目录
   const dirForm = form === 'paged' || form === 'pages';
@@ -174,8 +176,8 @@ async function main() {
   const st = await stat(input);
   const fontFiles = (await Promise.all(fontDirs.map((d) => listFonts(d)))).flat();
   const fonts = await Promise.all(fontFiles.map(async (f) => fileSource(f, (await stat(f)).size)));
-  const privateFiles = (await Promise.all(privateDirs.map((d) => listFonts(d)))).flat();
-  const privateFonts = await Promise.all(privateFiles.map(async (f) => fileSource(f, (await stat(f)).size)));
+  const fontPack = defaultFonts ? await loadFontPack() : undefined;
+  if (defaultFonts && !fontPack && !quiet) console.log('提示：没找到默认字体包 @unppt/fonts，没有嵌入的字体只能估算字宽（npm install -g @unppt/fonts）');
   const t0 = Date.now();
   // 出图用的 resvg：和 cli.js 放在一起的 resvg.wasm（读不到时不出图，prop.json 照常输出）
   const wasm = images ? await readFile(new URL('./resvg.wasm', import.meta.url)).then((b) => new Uint8Array(b), () => undefined) : undefined;
@@ -187,12 +189,11 @@ async function main() {
   const timer = stats ? setInterval(sample, 20) : undefined;
   const result = await convert(fileSource(input, st.size), {
     write: (rel, data) => writeTo(dirname(out), rel === 'index.html' || rel === 'deck.json' ? basename(out) : rel, data),
-    fonts, privateFonts,
+    fonts, fontPack,
     output: form,
     images,
     rasterWasm: wasm,
     rasterPool: pool,
-    embedFonts,
     fileName: dataOnly ? 'deck.json' : 'index.html',
     inlineLimit,
     onProgress: quiet ? undefined : (d, t) => process.stderr.write(`\r转码中 ${d}/${t} 页`),
