@@ -9,7 +9,8 @@ import { open, mkdir, readdir, readFile, stat } from 'node:fs/promises';
 import { createWriteStream } from 'node:fs';
 import { basename, dirname, extname, join, resolve } from 'node:path';
 import { homedir, platform } from 'node:os';
-import { convert, UNPPT_VERSION, type RandomAccessSource, type WriteData } from './index';
+import { checkFonts, convert, UNPPT_VERSION, type RandomAccessSource, type WriteData } from './index';
+import { formatFontCheck } from './cli-check';
 import { autoWorkers, createRasterPool } from './node-pool';
 import { loadFontPack } from './node-fonts';
 
@@ -99,6 +100,8 @@ async function writeTo(base: string, rel: string, data: WriteData) {
 function usage(code = 1): never {
   console.log(`unppt ${UNPPT_VERSION}
 用法：unppt <输入.pptx> [选项]
+      unppt check <输入.pptx> [--json] [字体选项]   只检查字体（缺哪些、用什么替代、符号字体有没有嵌入），不输出文件；
+                                                  有必须处理的问题时退出码是 1
       不加选项时在 pptx 旁边新建一个和它同名的文件夹，产物都放进去：打开里面的 index.html 播放
       （整页图 pic/、缩略图 thum/、prop.json、音视频 media/ 也在里面）
       （旧写法 unppt convert <输入.pptx> [选项] 仍然可用）
@@ -131,6 +134,8 @@ async function main() {
   if (args[0] === '-h' || args[0] === '--help') usage(0);
   // 旧写法：unppt convert <输入.pptx>
   if (args[0] === 'convert') args = args.slice(1);
+  const check = args[0] === 'check';
+  if (check) args = args.slice(1);
   if (!args[0] || args[0].startsWith('-')) usage();
   const input = resolve(args[0]);
   let out = '';
@@ -145,6 +150,7 @@ async function main() {
   let quiet = false;
   let stats = false;
   let jobs = 'auto';
+  let json = false;
   for (let i = 1; i < args.length; i++) {
     const a = args[i];
     if (a === '-o' || a === '--out') out = args[++i];
@@ -161,6 +167,7 @@ async function main() {
     else if (a === '-q' || a === '--quiet') quiet = true;
     else if (a === '--stats') stats = true;
     else if (a === '--jobs') jobs = args[++i];
+    else if (a === '--json' && check) json = true;
     else usage();
   }
   if (systemFonts) fontDirs.push(...systemFontDirs(), ...officeFontDirs());
@@ -174,6 +181,15 @@ async function main() {
   out = resolve(out);
 
   const st = await stat(input);
+  if (check) {
+    const fontFiles = (await Promise.all(fontDirs.map((d) => listFonts(d)))).flat();
+    const fonts = await Promise.all(fontFiles.map(async (f) => fileSource(f, (await stat(f)).size)));
+    const fontPack = defaultFonts ? await loadFontPack() : undefined;
+    const r = await checkFonts(fileSource(input, st.size), { fonts, fontPack });
+    console.log(json ? JSON.stringify(r, null, 2) : formatFontCheck(r, basename(input)));
+    if (r.errors) process.exitCode = 1;
+    return;
+  }
   const fontFiles = (await Promise.all(fontDirs.map((d) => listFonts(d)))).flat();
   const fonts = await Promise.all(fontFiles.map(async (f) => fileSource(f, (await stat(f)).size)));
   const fontPack = defaultFonts ? await loadFontPack() : undefined;
@@ -207,8 +223,9 @@ async function main() {
   if (!quiet) {
     process.stderr.write('\n');
     console.log(`完成：${result.slides} 页，用时 ${((Date.now() - t0) / 1000).toFixed(1)} 秒 -> ${out}`);
-    if (result.report.missingFonts.length) console.log(`缺少字体：${result.report.missingFonts.join('、')}`);
-    for (const w of result.report.warnings) console.log(`提示：${w}`);
+    if (result.fontCheck.errors || result.fontCheck.warnings) console.log(formatFontCheck({ slides: result.slides, ...result.fontCheck }, basename(input), true));
+    // 符号字体的提示上面的字体检查已经列了
+    for (const w of result.report.warnings) if (!w.startsWith('用了符号字体')) console.log(`提示：${w}`);
   }
 }
 
