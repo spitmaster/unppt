@@ -105,7 +105,10 @@ export interface RunStyle {
 export interface Atom {
   text: string;
   cp: number;
+  /** 宽度，含和后一个字的字距调整 */
   width: number;
+  /** 和后一个字的字距调整（已算在 width 里）：后一个字折到下一行时这一行不算它 */
+  kern?: number;
   style: RunStyle;
   family: string;
   face?: FontFace;

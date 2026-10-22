@@ -171,7 +171,10 @@ export async function makeAtoms(text: string, style: RunStyle, m: Measurer): Pro
     const width = snapAdvance((adv ?? fallbackAdvance(cp)) * size) + (fakeBold ? fakeBoldExtra(size, usedM!.metrics.unitsPerEm) : 0) + st.spc;
     // 字距调整：和前一个字同一个字体时，把成对调整量加到前一个字的宽度上
     const prevAtom = out[out.length - 1];
-    if (kerning && prevAtom && adv !== undefined && usedM && usedM === prevM) prevAtom.width += usedM.metrics.kern(prevAtom.cp, cp) * size;
+    if (kerning && prevAtom && adv !== undefined && usedM && usedM === prevM) {
+      const k = usedM.metrics.kern(prevAtom.cp, cp) * size;
+      if (k) { prevAtom.width += k; prevAtom.kern = k; }
+    }
     prevM = adv !== undefined ? usedM : undefined;
     // 行高：有些字体（见 MIX_GAP）要和这段文字的另一种字体（西文 / 东亚）比上伸、下伸取较大的，即使这一行没有那种字；
     // 其它字体（微软雅黑、等线、华文新魏、Arial 等）只用自己的（实测）。只管有段落标记、换行符的行，见 paragraph.ts
