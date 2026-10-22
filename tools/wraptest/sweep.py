@@ -8,6 +8,7 @@
 from __future__ import annotations
 
 import json
+import re
 import sys
 from pathlib import Path
 
@@ -22,7 +23,8 @@ def main():
     kinsoku = "--no-kinsoku" not in sys.argv
     sys.argv = [a for a in sys.argv if a != "--no-kinsoku"]
     name, font, size, lang, w0, w1, step = sys.argv[1], sys.argv[2], float(sys.argv[3]), int(sys.argv[4]), float(sys.argv[5]), float(sys.argv[6]), float(sys.argv[7])
-    texts = sys.argv[8:]
+    # 文字里可以写 \uXXXX（不间断空格等命令行不好传的字）
+    texts = [re.sub(r"\\u([0-9a-fA-F]{4})", lambda m: chr(int(m.group(1), 16)), t) for t in sys.argv[8:]]
     OUT.mkdir(parents=True, exist_ok=True)
     pythoncom.CoInitialize()
     app = win32com.client.DispatchEx("PowerPoint.Application")
