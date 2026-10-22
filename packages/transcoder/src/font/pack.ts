@@ -4,7 +4,7 @@
  * 每个原字体变成一个 FontFace：名字、粗斜体是原字体的，load() 给原字体的度量，source / offset 指向开源字体（子集化、出图用）。
  */
 import type { InputSource } from '../io/source';
-import { isWide, loadFontFile, type FontFace, type FontMetrics } from './font';
+import { isWide, loadFontFile, type FontFace, type FontMetrics, type WidthFace } from './font';
 
 /** 度量包里一个字形的概要（metrics/index.json 的一项；长度单位是字体单位） */
 export interface PackFaceInfo {
@@ -101,6 +101,35 @@ export async function packFaces(pack: FontPack): Promise<FontFace[]> {
   return out;
 }
 
+/**
+ * 度量包里有、但没有显示字体的字体（Wingdings 等符号字体，map.json 里 show 为 null，SPEC D3 ⑤）：只提供字宽，
+ * 没嵌入时排版仍按它的字宽（项目符号的宽度决定正文第一行从哪儿排），字形照旧用替代字体画、照样提示嵌入
+ */
+export function packWidthFaces(pack: FontPack): WidthFace[] {
+  return pack.faces.filter((info) => !displayFile(info, pack.rules)).map((info) => {
+    let p: Promise<Pick<FontMetrics, 'advance'>> | undefined;
+    return {
+      families: info.families, bold: info.bold, italic: info.italic,
+      load: () => (p ??= pack.metrics(info.id).then((d) => ({ advance: advanceOf(info, d) }))),
+    };
+  });
+}
+
+/** 度量包的字宽查找（单位 em）：runs 按起始码点二分 */
+function advanceOf(info: PackFaceInfo, d: PackFaceData): (cp: number) => number | undefined {
+  const starts = d.runs.map((r) => r[0]);
+  return (cp) => {
+    let lo = 0, hi = starts.length - 1, at = -1;
+    while (lo <= hi) {
+      const mid = (lo + hi) >> 1;
+      if (starts[mid] <= cp) { at = mid; lo = mid + 1; } else hi = mid - 1;
+    }
+    if (at < 0) return undefined;
+    const [s, n, w] = d.runs[at];
+    return cp < s + n ? w / info.upem : undefined;
+  };
+}
+
 function metricFace(info: PackFaceInfo, shown: FontFace, data: () => Promise<PackFaceData>): FontFace {
   let metrics: Promise<FontMetrics> | undefined;
   return {
@@ -129,7 +158,6 @@ async function cjkMid(m: FontMetrics): Promise<number | undefined> {
 
 function build(info: PackFaceInfo, d: PackFaceData, sm: FontMetrics, shownMid: number | undefined): FontMetrics {
   const u = info.upem;
-  const starts = d.runs.map((r) => r[0]);
   const kern = new Map<number, number>();
   for (const [l, r, v] of d.kern) kern.set(l * 0x110000 + r, v / u);
   // 汉字整体上下挪多少：原字体的汉字中心 - 显示字体的
@@ -141,17 +169,7 @@ function build(info: PackFaceInfo, d: PackFaceData, sm: FontMetrics, shownMid: n
     strikeSize: info.strikeSize === undefined ? undefined : info.strikeSize / u,
     xHeight: info.xHeight === undefined ? undefined : info.xHeight / u,
     generic: info.generic,
-    advance(cp) {
-      // 二分找起始码点不大于 cp 的最后一段
-      let lo = 0, hi = starts.length - 1, at = -1;
-      while (lo <= hi) {
-        const mid = (lo + hi) >> 1;
-        if (starts[mid] <= cp) { at = mid; lo = mid + 1; } else hi = mid - 1;
-      }
-      if (at < 0) return undefined;
-      const [s, n, w] = d.runs[at];
-      return cp < s + n ? w / u : undefined;
-    },
+    advance: advanceOf(info, d),
     kern: (l, r) => kern.get(l * 0x110000 + r) ?? 0,
     // 字形轮廓（艺术字变形用）：用显示的开源字体的
     outline: (cp) => sm.outline(cp),

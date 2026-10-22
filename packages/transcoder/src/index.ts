@@ -13,7 +13,7 @@ import { compileAdvance, compileTiming, compileTransition, soundRids } from './a
 import { mergeTiming } from './anim/inherited-timing';
 import { lazyEmbeddedFont } from './font/eot';
 import { FontLibrary, loadFontFile, type FontFace } from './font/font';
-import { packFaces, type FontPack } from './font/pack';
+import { packFaces, packWidthFaces, type FontPack } from './font/pack';
 import { FontCheckLog, SYMBOL_FONT, type FontCheck } from './font/check';
 import { subsetFont } from './font/subset';
 import type { DeckFont } from '../../format/src/index';
@@ -106,7 +106,10 @@ export async function convert(input: InputSource, options: ConvertOptions): Prom
     fonts.add([face]);
   }
   for (const f of [...options.fonts ?? [], ...options.privateFonts ?? []]) fonts.add(await loadFontFile(f));
-  if (options.fontPack) fonts.add(await packFaces(options.fontPack));
+  if (options.fontPack) {
+    fonts.add(await packFaces(options.fontPack));
+    fonts.addWidths(packWidthFaces(options.fontPack));
+  }
   const missingFonts = new Set<string>();
   const form = outputForm(options.output);
   // 不内联图片的形式：图片一律写成单独文件（不在内存里攒）
