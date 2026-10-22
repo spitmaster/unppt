@@ -19,6 +19,7 @@ const fonts = systemFonts ? await systemFontBytes() : [];
 const fontPack = systemFonts ? undefined : await loadFontPack();
 
 const index = JSON.parse(await readFile('.cache/samples.json', 'utf8'));
+const installed = new Set(JSON.parse(await readFile('packages/fonts/metrics/index.json', 'utf8')).flatMap((f) => f.families));
 const hashes = Object.keys(index).filter((h) => index[h].present && existsSync(`.cache/wraptest/real/${h}.json`)).sort().slice(from, from + count);
 
 /** real.py 存的形状树 -> 有行信息的形状（组合展开） */
@@ -57,7 +58,8 @@ for (const h of hashes) {
   decks++;
   const slides = JSON.parse(deck).slides;
   // 这台电脑上没有的字体（没嵌入、度量包里也没有）：PowerPoint 在这里排版用的是它自己的替代字体，作者电脑上不是这样排的，不算
-  const noFont = new Set(res.fontCheck?.fonts.filter((f) => f.status === 'substituted' || f.status === 'missing').flatMap((f) => f.pages) ?? []);
+  // （度量包就是从这台电脑装的字体生成的，所以"没嵌入、度量包里也没有这个名字"就是这台电脑没装）
+  const noFont = new Set(res.fontCheck?.fonts.filter((f) => f.status !== 'embedded' && !installed.has(f.font.toLowerCase())).flatMap((f) => f.pages) ?? []);
   for (const rs of lines.slides) {
     const svg = slides[rs.index]?.svg;
     if (!svg) continue;

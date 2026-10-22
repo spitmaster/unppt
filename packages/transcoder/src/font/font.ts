@@ -272,14 +272,16 @@ export class FontLibrary {
   }
 
   find(family: string, bold: boolean, italic: boolean): FontFace | undefined {
-    const all = this.byFamily.get(family.toLowerCase().trim())?.filter((f) => !f.unusable);
+    const want = family.toLowerCase().trim();
+    const all = this.byFamily.get(want)?.filter((f) => !f.unusable);
     if (!all?.length) return undefined;
     // 同名时只在优先级最高的一组里挑（PPT 嵌入的、调用方指定的字体压过默认字体包）
     const top = Math.min(...all.map((f) => f.rank ?? 0));
     const list = all.filter((f) => (f.rank ?? 0) === top);
     let best = list[0], bestScore = -1;
     for (const f of list) {
-      const score = (f.bold === bold ? 2 : 0) + (f.italic === italic ? 1 : 0) + (f.weight === 400 ? 0.1 : 0);
+      // 同分时选主名字（名字表里第一个家族名）就是要的这个的：要 Aptos 时选 Aptos，不选家族名里也有 Aptos 的 Aptos Display
+      const score = (f.bold === bold ? 2 : 0) + (f.italic === italic ? 1 : 0) + (f.weight === 400 ? 0.1 : 0) + (f.families[0] === want ? 0.05 : 0);
       if (score > bestScore) { best = f; bestScore = score; }
     }
     return best;
