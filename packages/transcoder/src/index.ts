@@ -39,6 +39,9 @@ export { UNPPT_VERSION };
 
 declare const __UNPPT_PLAYER__: string;
 
+/** 符号字体：字母的位置上放的是图形（Wingdings 等），换成别的字体就变成普通字母 */
+const SYMBOL_FONT = /wingdings|webdings|^symbol$|marlett|mt extra|bookshelf symbol|ms reference specialty/i;
+
 export interface ConvertOptions {
   /** 输出文件的写入函数。路径是相对路径，例如 "index.html"、"media/video1.mp4" */
   write: WriteFn;
@@ -193,7 +196,10 @@ export async function convert(input: InputSource, options: ConvertOptions): Prom
 
   const meta = () => {
     report.missingFonts = [...missingFonts].filter((f) => f && !fonts.has(f)).sort();
+    // 符号字体（字母位置上放的是图形）没有开源替代，也不改原文的字（用户 2026-10-22）：没嵌入时提示作者嵌入
+    const symbols = report.missingFonts.filter((f) => SYMBOL_FONT.test(f));
     report.warnings = [...pres.warnings].map(([m, n]) => (n > 1 ? `${m}（${n} 处）` : m));
+    if (symbols.length) report.warnings.push(`用了符号字体 ${symbols.join('、')} 但没有嵌入，这些符号会显示成普通字母或方框：请在 PowerPoint 里勾选"将字体嵌入文件"后重新转码，或用 --fonts 指定字体`);
     return {
       format: DECK_FORMAT, version: DECK_FORMAT_VERSION, generator: `unppt ${UNPPT_VERSION}`,
       width: pres.width, height: pres.height, title, fonts: deckFonts, report, slideParts, ...(pres.show ? { show: pres.show } : {}),
