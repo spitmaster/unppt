@@ -173,7 +173,7 @@ sequenceDiagram
   C->>Z: OpcPackage.open reads [Content_Types].xml
   C->>P: new Presentation(pkg) then load()
   P->>Z: read presentation.xml, relationships, presProps.xml
-  C->>F: add embedded fonts, --fonts fonts, private fonts
+  C->>F: add embedded fonts, fonts given in options.fonts, default font pack fontPack
   C->>C: outputForm(output) picks the output form, create MediaStore
   C->>O: form.write(source)
   loop every slide (pulled one by one by the output form via slides())
@@ -193,7 +193,7 @@ sequenceDiagram
   O->>W: write entry file index.html or deck.json
   C->>W: write prop.json
   C-->>CLI: ConvertResult with slide count, size, report
-  CLI-->>U: done N slides, missing fonts, notes
+  CLI-->>U: done N slides, fonts with problems, notes
 ```
 
 Key points:
@@ -212,20 +212,22 @@ The CLI only does the file-system work. The conversion itself is done by `conver
 flowchart TD
   A["unppt input.pptx options"] --> B{"parse args"}
   B --> C["decide output path<br/>single: same name .html<br/>paged/pages: same-name folder/index.html<br/>data: same name .json"]
-  B --> D["--fonts / --system-fonts<br/>recursively list .ttf .otf .ttc"]
+  B --> D["--fonts / --system-fonts<br/>recursively list .ttf .otf .ttc<br/>loadFontPack() reads the default font pack"]
   B --> E["read dist/resvg.wasm<br/>(skipped with --no-images)"]
   E --> F["--jobs auto: autoWorkers()<br/>threads from CPU count and free memory"]
   F --> G{"threads > 1 ?"}
   G -->|yes| H["createRasterPool creates worker threads"]
   G -->|no| I["rasterise on the main thread"]
   C & D & H & I --> J["convert(fileSource(input), options)"]
-  J --> K["print: done N slides, missing fonts, notes"]
+  J --> K["print: done N slides, fonts with problems (⚠ / ✗), notes"]
 ```
 
 Details worth knowing (all in `cli.ts`):
 
 - **`fileSource`**: the input file is not read into memory at once. It is wrapped as a random-access object `{ size, read(offset, length) }`, and the transcoder reads only the ranges it needs. Font files work the same way.
-- **`--system-fonts`**: adds the system font folders to the font library, and also passes Office's private and cloud font folders (on Windows, e.g. `Microsoft Office\root\vfs\Fonts\private`) as `privateFonts`. Browsers cannot use private fonts, so any of them that are used are always embedded in the output.
+- **Default font pack**: `loadFontPack()` (`node-fonts.ts`) finds the installed `@unppt/fonts` (`packages/fonts/` when developing in the repo) and passes it as `fontPack`; if it is not found a hint is printed and widths of non-embedded fonts can only be estimated. `--no-default-fonts` skips it.
+- **`--system-fonts`** (off by default since 0.3.0): passes the fonts in the system font folders and in Office's private and cloud font folders (on Windows, e.g. `Microsoft Office\root\vfs\Fonts\private`) as `fonts`; they are used for layout and display, and the characters used are embedded.
+- **`unppt check`**: same font options, but calls `checkFonts()` to check fonts only and prints with `formatFontCheck()` from `cli-check.ts`; exit code 1 when there is any ✗. A normal conversion also uses it to print the fonts with problems at the end.
 - **`autoWorkers()`** (`node-pool.ts`): thread count = min(CPU count, free memory / 400 MB). Inside Linux containers it also reads the cgroup CPU quota.
 - **If the thread pool cannot be created** (for example resvg.wasm is broken), it falls back to the main thread. Conversion continues; the report just gets a "resvg failed to load" warning.
 
@@ -234,11 +236,13 @@ CLI options and the matching `ConvertOptions` fields:
 | CLI | `ConvertOptions` field | Notes |
 |---|---|---|
 | `-o, --out` | (handled by the CLI) | output file or folder |
-| `--output single\|paged\|pages\|data` | `output` | output form, default `single` |
+| `--output single\|paged\|pages\|data` | `output` | output form; CLI default `paged` (since 0.2.4), `convert()` default `single` |
 | `--data` | `output: 'data'` | same as `--output data` |
 | `--fonts <dir>` | `fonts` | may be repeated |
-| `--system-fonts` | `fonts` + `privateFonts` | system fonts + Office private fonts |
-| `--embed-fonts` | `embedFonts: true` | embed subsets of the used glyphs |
+| `--system-fonts` | `fonts` | system fonts + Office private / cloud fonts; off by default since 0.3.0 |
+| (default) | `fontPack: await loadFontPack()` | default font pack `@unppt/fonts` |
+| `--no-default-fonts` | no `fontPack` | for debugging |
+| `--embed-fonts` | — | old option, no effect (`embedFonts` is `true` by default) |
 | `--no-images` | `images: false` | no `pic/`, `thum/` |
 | `--jobs <n\|auto>` | `rasterPool` | raster threads |
 | `--inline-limit <bytes>` | `inlineLimit` | images smaller than this are inlined, default 2097152 (2 MB) |
@@ -269,7 +273,7 @@ const result = await convert(new Uint8Array(pptx), {
     }
   },
 });
-console.log(result.slides, result.report.missingFonts, result.report.warnings);
+console.log(result.slides, result.fontCheck, result.report.warnings);
 ```
 
 `write` receives one of three data types: a string, a `Uint8Array`, or an `AsyncIterable<Uint8Array>` (a large file streamed in chunks).
@@ -280,6 +284,7 @@ The shape of `ConvertOptions` and `ConvertResult`:
 classDiagram
   class ConvertOptions {
     +WriteFn write
+    +FontPack fontPack
     +InputSource[] fonts
     +InputSource[] privateFonts
     +string output
@@ -296,6 +301,7 @@ classDiagram
     +number width
     +number height
     +DeckReport report
+    +FontCheck fontCheck
   }
   class DeckReport {
     +string[] missingFonts
@@ -627,7 +633,8 @@ flowchart LR
   - missing font marked with a Chinese charset: `Microsoft YaHei` and similar;
   - marked with a Japanese charset: `Yu Gothic`;
   - some old names have aliases: `Helvetica` to `Arial`, `Times` to `Times New Roman`, `Courier` to `Courier New`.
-- Missing font names are collected in `missingFonts` and end up in `report.missingFonts`.
+- With the default font pack, the metrics of these substitutes (Calibri, Microsoft YaHei, Yu Gothic) are in the pack, so line breaks after substitution also match PowerPoint.
+- Missing font names are collected in `missingFonts` and end up in `report.missingFonts`; which font each character used is also recorded through `fontUse` in the font check (`FontCheckLog` in `font/check.ts`), which becomes `ConvertResult.fontCheck`.
 
 ### 8.2 Line breaking (linebreak.ts)
 
@@ -762,26 +769,27 @@ Sounds used by animations and transitions are found in `index.ts` with `soundRid
 Fonts have two jobs in unppt:
 
 1. **Layout**: measure widths to decide where lines break (section 8);
-2. **Display**: the viewer's computer may not have the font, so the glyphs that are used can be "embedded" in the output.
+2. **Display**: playback **never uses fonts on the viewer's computer** (SPEC D3); the glyphs used are always "embedded" in the output as subsets, so everyone sees the same thing.
 
 ```mermaid
 flowchart TD
   e["fonts embedded in the pptx<br/>ppt/fonts/*.fntdata (EOT format)"] -->|"lazyEmbeddedFont<br/>decompressed on first use"| lib
-  u["--fonts folders<br/>options.fonts"] -->|loadFontFile| lib
-  p["Office private fonts<br/>options.privateFonts"] -->|loadFontFile| lib
-  lib["FontLibrary<br/>font/font.ts"] --> layout["during layout: fonts.find(name, bold, italic)"]
+  u["specified fonts<br/>options.fonts (--fonts, --system-fonts)"] -->|loadFontFile| lib
+  p["default font pack @unppt/fonts<br/>options.fontPack"] -->|"packFaces<br/>layout with the original font's metrics<br/>display with an open-source font"| lib
+  lib["FontLibrary<br/>font/font.ts<br/>same name: embedded > specified > pack"] --> layout["during layout: fonts.find(name, bold, italic)"]
   layout --> use["embed.use(face, codePoint)<br/>record the glyphs used per font"]
-  use --> q{"embed it?<br/>embedFonts=true<br/>or embedded/private font"}
-  q -->|yes| sub["subsetFont<br/>font/subset.ts<br/>HarfBuzz hb-subset WASM"]
+  layout --> chk["fontUse → FontCheckLog<br/>font/check.ts → fontCheck"]
+  use --> sub["subsetFont<br/>font/subset.ts<br/>HarfBuzz hb-subset WASM"]
   sub --> woff["WOFF with only the used glyphs<br/>alias unppt-f0, unppt-f1..."]
-  q -->|no| none["not embedded<br/>browser uses local fonts"]
 ```
 
 Key points:
 
 - **Font parsing is home-grown** (`font/font.ts`): it reads only the tables layout needs (`name`, `cmap`, `hmtx`/`hhea`, `head`, `OS/2`, `GPOS`/`kern`), lazily. Building the index reads only the table directory and the `name` table; widths are read on first use.
 - **Restoring embedded fonts**: PowerPoint embeds fonts in an EOT wrapper, usually MicroType Express compressed. `font/eot.ts`, `font/lzcomp.ts` and `font/ctf.ts` turn it back into a normal TTF.
-- **When fonts are embedded**: with `options.embedFonts === true` every used font is embedded; otherwise only the pptx's own embedded fonts and `privateFonts` (viewers probably lack these). Distributing commercial fonts requires a licence, so it is off by default.
+- Embedded fonts that PowerPoint itself refuses (CFF `.otf`, an unsorted table directory) are treated as not embedded, like PowerPoint.
+- **Default font pack** (`font/pack.ts`): each original font (Microsoft YaHei, Calibri, ...) becomes a `FontFace` whose names, bold/italic, widths and line metrics come from the metrics pack (`metrics/`, numbers only, covering 447 Windows / Office font faces) and whose glyphs come from the matching open-source font file (`files/`, mapped by the rules in `map.json`); subsetting and slide images use the open-source font. Symbol fonts (Wingdings etc.) have no display font in `map.json`; when not embedded they are reported as `symbol-missing`.
+- **When fonts are embedded**: since 0.3.0 `embedFonts` defaults to `true` and every used font is embedded (`false` is for debugging; then only the pptx's own embedded fonts are). By default the only fonts embedded are open-source fonts and fonts the author embedded in the PPT; for commercial fonts given with `--fonts` / `--system-fonts`, the caller is responsible for the distribution licence.
 - **Subsetting**: `font/subset.ts` uses HarfBuzz's `hb-subset` (WASM, bundled into the JS at build time) to keep only used glyphs and packs them as WOFF. Each font gets a unique alias `unppt-f{n}`; the SVG `font-family` lists the alias first, then the original name.
 - Subsetting really happens only after all slides are done, when the output form calls `fontFiles()`; by then every used glyph is known.
 
@@ -982,7 +990,7 @@ unppt's principle is "produce a result whenever possible":
 | one element fails to render | the element is skipped, with a warning |
 | unsupported graphicFrame | skipped, "unsupported graphic" warning |
 | SmartArt without drawing cache | skipped, "SmartArt is missing its drawing cache" warning |
-| missing font | laid out with a substitute; the name goes into `report.missingFonts` |
+| missing font | laid out with a substitute; the name goes into `report.missingFonts` and the verdict into `fontCheck` (a symbol font that is not embedded also adds a notice) |
 | font subsetting fails | that font is not embedded, warning |
 | no resvg.wasm | no `pic/`, `thum/`, warning; `prop.json` still written |
 | a slide image cannot be painted | no image for that slide, warning |
@@ -1028,7 +1036,7 @@ All warnings are de-duplicated and counted into `ConvertResult.report.warnings`.
 | animations | `p:timing` | `anim/anim.ts`, `anim/effect.ts`, `anim/behaviors.ts` |
 | transitions, advance settings | `p:transition` | `anim/transition.ts` |
 | embedded fonts | `p:embeddedFontLst`, `fonts/*.fntdata` | `font/eot.ts`, `font/lzcomp.ts`, `font/ctf.ts` |
-| font parsing, subsetting | — | `font/font.ts`, `font/subset.ts` |
+| font parsing, subsetting, default font pack, font check | — | `font/font.ts`, `font/subset.ts`, `font/pack.ts`, `font/check.ts` |
 | EMF / WMF / TIFF images | — | `media/emf.ts`, `media/wmf.ts`, `media/tiff.ts` |
 | slide images, thumbnails | — | `preview/`, `node-pool.ts`, `raster-worker.ts` |
 | output files | — | `output/` (`single.ts`, `paged.ts`, `data.ts`, `prop.ts`) |

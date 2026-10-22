@@ -82,12 +82,14 @@ flowchart TB
   pk --> fmt["format/<br/>产物格式：类型定义 + 版本号"]
   pk --> tr["transcoder/<br/>转码器（发布为 @unppt/unppt）"]
   pk --> pl["player/<br/>播放器"]
+  pk --> fo["fonts/<br/>默认字体包（发布为 @unppt/fonts）"]
 ```
 
 | 目录 | 做什么 | 会不会发布到 npm |
 |---|---|---|
 | `packages/format` | 产物格式的 TypeScript 类型：`Deck`、`DeckSlide`、`AnimAction`、`SlideTransition`、`PlayerState`、bridge 消息 `BridgeCommand` / `BridgeReply` / `BridgeEvent`，以及版本号 `DECK_FORMAT_VERSION`、`UNPPT_VERSION`。**转码器和播放器之间唯一的约定**。 | 只是类型，打包时被合进转码器和播放器 |
 | `packages/transcoder` | 转码器，TypeScript。入口 `src/index.ts`（`convert` 函数）和 `src/cli.ts`（命令行 `unppt`）。 | 是，包名 `@unppt/unppt` |
+| `packages/fonts` | 默认字体包：开源字体（SIL OFL 1.1，字体文件不进 git，开发时运行一次 `node scripts/fetch-fonts.mjs` 下载并校验）、度量包 `metrics/`（只有数字）、对照规则 `map.json`。 | 是，包名 `@unppt/fonts`（`@unppt/unppt` 的依赖） |
 | `packages/player` | 播放器，TypeScript，零依赖。入口 `src/player.ts`；`src/host.ts` 是给宿主页面用的小工具 `UnpptFrame`。 | 播放器代码被内嵌进转码器的产物里 |
 | `tools/` | 开发用的 Python 工具：`tools/powerpoint` 调本机 PowerPoint 导出参考图；`tools/make-case` 用 PowerPoint 生成合成用例；`tools/compare` 截图、比对、打分；`check-player.py` 等是播放器端到端测试。 | 否（只在开发机运行） |
 | `testcases/` | 合成测试用例：每个用例一个 `xxx.pptx` 和同名文件夹（PowerPoint 导出的参考图）。内容都是中性的，可以提交。 | 否 |
@@ -124,7 +126,7 @@ flowchart LR
 | 原则 | 具体意思 | 为什么 |
 |---|---|---|
 | **纯函数：字节进、文件出** | `convert(input, { write, fonts? })`：输入是字节（`Uint8Array` / `ArrayBuffer`）或按位置读取的数据源 `{ size, read(offset, length) }`；输出通过调用方给的 `write(路径, 数据)` 写出。转码器自己**不读写磁盘、不联网**。 | 文件从哪来、写到哪去交给调用方，所以 Node、云函数、浏览器都能用。大文件可以按需读取，不必整个放进内存。 |
-| **字体只接收字节** | 字体也通过 `fonts` / `privateFonts` 选项以字节传入，不去系统里找。 | 转码时测量用的字体就是播放时显示用的字体，换行位置在任何浏览器里都一致。 |
+| **字体只接收字节** | 字体也通过 `fonts` 选项（字体文件的字节）和 `fontPack` 选项（默认字体包，Node 里用 `loadFontPack()` 读）传入，转码器不去系统里找。用到的字总是做成子集嵌入产物，播放时不用观看者电脑上的字体（SPEC D3）。 | 所有观看者看到的一样；同样的输入在桌面、服务器、云函数上转出来的结果一样。 |
 | **不用原生插件和外部程序** | 产品代码只能用纯 JS 和 WASM 类库，新类库要注明许可证、固定版本。 | 任何 Node 环境都能装、都能跑，不会出现"装不上"。 |
 | **播放器零依赖** | 播放器不引用任何第三方库，产物里只需要一个浏览器。 | 产物可以本地双击打开、放进 iframe、放进 App 的 WebView。 |
 | **核心渲染自研** | 正式播放的页面 SVG 和动画全部自己写，要逐像素对齐 PowerPoint；第三方渲染库只用在缩略图这类周边功能（resvg）。 | 核心效果完全可控。 |
@@ -182,7 +184,7 @@ flowchart TB
 | `common/` | SVG 输出工具（`svg.ts`）、超链接（`links.ts`）、内容哈希（`hash.ts`）、动画目标编号（`uid.ts`）。 | io |
 | `model/` | 演示文稿 / 主题 / 母版 / 版式的继承（`model.ts`）、颜色（`color.ts`）、演讲者备注（`notes.ts`）、字体名的字符集（`font-charsets.ts`）、三维灯光常量。 | io、common |
 | `geometry/` | 公式引擎、预设形状数据（`presets-data.ts`）、文字变形数据（`warps-data.ts`）、转动后的外接矩形。 | io、common |
-| `font/` | 读 TrueType（`font.ts`、`cmap.ts`、`glyf.ts`、`kern.ts`）、字体子集化（`subset.ts`，用 HarfBuzz WASM）、还原嵌入字体（`eot.ts` → `lzcomp.ts` → `ctf.ts`）。 | io、common |
+| `font/` | 读 TrueType（`font.ts`、`cmap.ts`、`glyf.ts`、`kern.ts`）、字体子集化（`subset.ts`，用 HarfBuzz WASM）、还原嵌入字体（`eot.ts` → `lzcomp.ts` → `ctf.ts`）、默认字体包（`pack.ts`）、字体检查（`check.ts`）。 | io、common |
 | `style/` | 填充 `fill.ts`、图案 `pattern.ts`、线条 `line.ts`、箭头 `arrowheads.ts`、渐变 `gradient-stops.ts`、图片调整 `blip.ts`、三维 `camera.ts` / `lighting.ts`、透视 `perspective.ts`。 | io、common、model |
 | `effects/` | 形状效果转 SVG 滤镜：`outer-shadow.ts`、`inner-shadow.ts`、`glow.ts`、`soft-edge.ts`、`bevel.ts`、映像 `reflection.ts`、三维轮廓 `contour.ts`。 | io、common、model |
 | `text/` | 文本框属性 → 逐段排版（测量、断行、项目符号）→ 定位 → 输出 SVG 文字；艺术字变形 `warp.ts`。 | io、common、model、geometry、font、style、effects |
@@ -217,7 +219,7 @@ sequenceDiagram
   CLI->>CLI: 读 resvg.wasm，按 CPU 和内存建出图线程池
   CLI->>C: convert(数据源, 选项)
   C->>C: 打开 ZIP，读 OPC 包，加载 Presentation（主题、母版、版式）
-  C->>C: 加载字体（嵌入字体、fonts、privateFonts）
+  C->>C: 加载字体（嵌入字体、fonts、默认字体包 fontPack）
   C->>O: form.write(slides 生成器, ...)
   loop 每一页
     O->>C: 要下一页
@@ -250,6 +252,7 @@ sequenceDiagram
 classDiagram
   class ConvertOptions {
     +write: WriteFn
+    +fontPack?: FontPack
     +fonts?: InputSource[]
     +privateFonts?: InputSource[]
     +output?: string
@@ -266,6 +269,7 @@ classDiagram
     +width: number
     +height: number
     +report: DeckReport
+    +fontCheck: FontCheck
   }
   class RandomAccessSource {
     +size: number
@@ -288,12 +292,13 @@ classDiagram
 | 选项 | 含义 |
 |---|---|
 | `write` | 必填。写文件的函数，路径是相对路径，如 `index.html`、`media/video1.mp4`。 |
-| `fonts` | 字体文件（ttf / otf / ttc）的字节。 |
-| `privateFonts` | 观看端没有的字体：用到的字总是嵌入产物。 |
+| `fontPack` | 默认字体包（`@unppt/fonts`）：排版按原字体的度量，显示用开源字体。Node 里用 `@unppt/unppt/node` 的 `loadFontPack()` 读取。 |
+| `fonts` | 调用方指定的字体文件（ttf / otf / ttc）的字节，同名时压过字体包。 |
+| `privateFonts` | 旧选项，和 `fonts` 一样。 |
 | `output` | 产物形式：`single`（默认，旧名 `html`）、`paged`、`pages`、`data`。 |
 | `fileName` | 主文件名，默认 `index.html`（`data` 形式是 `deck.json`）。 |
 | `inlineLimit` | 小于这个字节数的图片内联进 HTML，默认 2MB。 |
-| `embedFonts` | 把用到的字做成字体子集嵌入产物，默认关闭。 |
+| `embedFonts` | 把用到的字做成字体子集嵌入产物，0.3.0 起默认开启（`false` 只用于调试）。 |
 | `images` | 是否输出整页图和缩略图，默认输出。 |
 | `rasterWasm` | resvg 的 WASM 字节（命令行自动读取发布包里的 `dist/resvg.wasm`）。 |
 | `rasterPool` | 并行出图执行器，例如 `@unppt/unppt/node` 的 `createRasterPool`。 |

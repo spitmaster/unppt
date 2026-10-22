@@ -477,7 +477,7 @@ How to read it:
 - `hidden` lists the 4 rectangles → none of them is visible when the slide is entered;
 - `steps` has 5 groups → the slide needs 5 clicks;
 - click 1: `s2` appears (`dur: 0`, instant); click 2: `s3` goes from transparent to opaque in 500 ms; … click 5: `s2` fades out;
-- `"等线"` (DengXian, a Chinese font) in `report.missingFonts` means no file for that font was supplied during conversion (supply it with `--fonts` or `--system-fonts` for more accurate text widths).
+- This data was converted without any fonts (`--no-default-fonts`): `"等线"` (DengXian, a Chinese font) in `report.missingFonts` means that font was not available, so its widths were only estimated, and `fonts` is empty. With the default font pack, DengXian is laid out with the original font's metrics and displayed with Noto Sans SC, `fonts` contains its subset, and `missingFonts` is empty.
 
 ### 7.5 A trigger example
 
@@ -564,11 +564,13 @@ Animation sounds and transition sounds are both `Sound`:
 
 ## 10. Fonts: DeckFont
 
-During conversion, fonts in use are turned into "subsets" (only the characters used) and embedded, so viewers see the same thing as at conversion time. Which fonts get embedded:
+During conversion, fonts in use are **always** turned into "subsets" (only the characters used) and embedded (since 0.3.0). The player never uses fonts on the viewer's computer, so every viewer sees the same thing (SPEC D3). The embedded fonts come from:
 
-- fonts embedded in the pptx itself: always;
-- Office private fonts and cloud fonts found by `--system-fonts` (browsers cannot use them): whenever used;
-- other fonts: only with `--embed-fonts` (mind the license of commercial fonts).
+- fonts the author embedded in the pptx;
+- open-source fonts from the default font pack `@unppt/fonts` (Noto Sans SC, Noto Serif SC, LXGW WenKai, Zhuque Fangsong, Carlito, Caladea, Liberation; all SIL OFL 1.1): non-embedded fonts such as Microsoft YaHei or Calibri are laid out with the original font's metrics and displayed with these open-source fonts;
+- fonts explicitly specified with `--fonts` / `--system-fonts` (mind the distribution license of commercial fonts).
+
+See [Getting started, section 7](getting-started.md#7-fonts-why-they-matter-and-how-they-are-handled-now).
 
 | Field | Meaning |
 |---|---|
@@ -585,7 +587,7 @@ During conversion, fonts in use are turned into "subsets" (only the characters u
 | paged / pages | `fonts/<alias>.<hash>.js`, containing `__unpptFont(alias, base64)` | Yes |
 | data | `fonts/<alias>.woff` | Yes |
 
-Missing fonts are not an error; they are only listed in `report.missingFonts`, and the browser uses fallback fonts.
+Missing fonts are not an error; they are only listed in `report.missingFonts` (the full verdict is `fontCheck` in the conversion result, which is not written into the output; see `unppt check`). Characters that no font has (e.g. emoji, rare CJK characters) are drawn by the browser with fallback fonts.
 
 ---
 

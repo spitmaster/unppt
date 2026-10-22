@@ -81,33 +81,37 @@ You need [Node.js](https://nodejs.org/) **20.12 or later** (run `node -v` to che
 **Step 1: convert a file with npx, no install needed**
 
 ```bash
-npx @unppt/unppt presentation.pptx --system-fonts
+npx @unppt/unppt presentation.pptx
 ```
 
 **Or install globally and use the `unppt` command**
 
 ```bash
 npm install -g @unppt/unppt
-unppt presentation.pptx -o out/index.html --system-fonts
+unppt presentation.pptx -o out/index.html
 ```
 
-**Or download and install from GitHub** (while npm reviews a new version, or behind a corporate mirror; see [Getting started](docs/en/getting-started.md))
+The default font pack `@unppt/fonts` (open-source fonts plus font metrics for layout; about 60 MB to download) is installed automatically, so no fonts need to be installed separately; see "Fonts" below.
+
+**Or download and install from GitHub** (while npm reviews a new version, or behind a corporate mirror; see [Getting started](docs/en/getting-started.md)). Download two files, the font pack `unppt-fonts.tgz` and the program `unppt.tgz`, and install them together:
 
 ```powershell
+Invoke-WebRequest https://github.com/spitmaster/unppt/releases/latest/download/unppt-fonts.tgz -OutFile unppt-fonts.tgz
 Invoke-WebRequest https://github.com/spitmaster/unppt/releases/latest/download/unppt.tgz -OutFile unppt.tgz
-npm install -g .\unppt.tgz
+npm install -g .\unppt-fonts.tgz .\unppt.tgz
 ```
 
 macOS / Linux (in Terminal):
 
 ```bash
+curl -L -o unppt-fonts.tgz https://github.com/spitmaster/unppt/releases/latest/download/unppt-fonts.tgz
 curl -L -o unppt.tgz https://github.com/spitmaster/unppt/releases/latest/download/unppt.tgz
-npm install -g ./unppt.tgz
+npm install -g ./unppt-fonts.tgz ./unppt.tgz
 ```
 
-If you get a permission error (`EACCES` / `permission denied`), prefix the second line with `sudo` (`sudo npm install -g ./unppt.tgz`) and enter your login password. Run `unppt -v` afterwards to check the version.
+If you get a permission error (`EACCES` / `permission denied`), prefix the last line with `sudo` (`sudo npm install -g ./unppt-fonts.tgz ./unppt.tgz`) and enter your login password. Run `unppt -v` afterwards to check the version.
 
-`--system-fonts` lays text out with the fonts installed on your machine, so line breaks match PowerPoint (fonts are explained in [docs/en/usage.md](docs/en/usage.md)).
+To check a deck's fonts first: `unppt check presentation.pptx` (checks only, writes no files).
 
 **Step 2: open the output**
 
@@ -119,15 +123,27 @@ Open the generated `index.html` in a browser and it plays. Without `-o`, all out
 |---|---|
 | `-o, --out <file>` | Output file, defaults to `index.html` in a new folder named after the .pptx; for the `paged` / `pages` forms it is an output folder |
 | `--output <form>` | Output form: `paged` (CLI default, on-demand loading), `single` (one self-contained HTML, the API default), `pages` (paged plus one HTML per slide), `data` (same as `--data`) |
-| `--fonts <dir>` | Font folder (repeatable); text is laid out with real glyph widths |
-| `--system-fonts` | **On by default** (since 0.2.3): use the system fonts so text is laid out with real glyph widths and wraps like PowerPoint; Office private and cloud fonts are embedded when used. `--no-system-fonts` turns it off (widths are then estimated and line breaks may differ) |
-| `--embed-fonts` | Embed subsets of the fonts used (viewers need no installed fonts and see exactly what was laid out; mind licensing for commercial fonts) |
+| `--fonts <dir>` | Explicit font folder (repeatable): wins over the default font pack for the same name, used for layout and display, characters used are embedded |
+| `--system-fonts` | Also use this machine's system fonts and Office fonts (**off by default** since 0.3.0; characters used are embedded, mind commercial font licenses) |
+| `--no-default-fonts` | Do not use the default font pack (debugging) |
 | `--data` | Output only the deck data `deck.json` (for development and debugging) |
 | `--no-images` | Do not output slide images `pic/` and thumbnails `thum/` (`prop.json` is still written) |
 | `--jobs <n\|auto>` | How many threads draw slide images in parallel, default `auto`; `1` draws on the main thread |
 | `--inline-limit <bytes>` | Images smaller than this are inlined into the HTML, default 2097152 (2 MB); video and audio always go to `media/` |
 | `--stats` | Print time taken and peak memory at the end |
 | `-q, --quiet` | Do not show progress |
+
+The old options `--embed-fonts` and `--no-system-fonts` are still accepted but have no effect. There is also a sub-command `unppt check <file.pptx> [--json]`: it only checks fonts and exits with code 1 when there is a problem that must be fixed.
+
+## Fonts
+
+- **Playback never uses fonts on the viewer's computer**: every character used is packed into the output as a font subset, so Windows, Mac, Android and iPhone viewers see exactly the same thing (e.g. thousands of students in a live class).
+- **Fonts in the output come from only two sources** (unless you explicitly specify fonts with `--fonts` / `--system-fonts`): fonts the author embedded in the PPT (used as-is), and open-source fonts from the default font pack `@unppt/fonts` (SIL OFL 1.1: Noto Sans SC, Noto Serif SC, LXGW WenKai, Zhuque Fangsong, Carlito, Caladea, Liberation Sans / Serif / Mono). The pack is about 87 MB and only needed on the machine that converts; viewers never download it.
+- **Layout with the original font, display with an open-source font**: non-embedded Microsoft YaHei, SimSun, Calibri and so on are laid out with the original font's metrics (numbers such as advance widths only, no glyph shapes), so line breaks and text positions match PowerPoint; they are displayed with the matching open-source font (Microsoft YaHei → Noto Sans SC, Calibri → Carlito, ...), so glyph shapes differ slightly.
+- **Fonts the pack does not know**: substituted like PowerPoint does (Chinese → Microsoft YaHei, Latin → Calibri, Japanese → Yu Gothic), then displayed with the matching open-source font.
+- **Symbol fonts** (Wingdings etc.): your characters are never changed. If the author embedded the font it displays normally; if not, the symbols show as letters and the conversion report and `unppt check` tell the author to "Embed fonts in the file" in PowerPoint.
+
+Details: [Getting started, section 7](docs/en/getting-started.md#7-fonts-why-they-matter-and-how-they-are-handled-now).
 
 ## Using it from code (cloud functions etc.)
 
@@ -137,15 +153,19 @@ npm install @unppt/unppt
 
 ```js
 import { convert } from '@unppt/unppt';
+import { loadFontPack } from '@unppt/unppt/node';   // Node only: reads the installed default font pack
 
+const fontPack = await loadFontPack();               // no system fonts needed on servers or cloud functions
 const result = await convert(pptxBytes, {        // pptxBytes: Uint8Array
   // you write the output: index.html, prop.json, media/xxx.mp4, pic/1.jpg ...
   write: async (path, data) => { /* data is a string, a Uint8Array or a stream (AsyncIterable) */ },
-  fonts: [fontBytes1, fontBytes2],   // optional: font file contents (ttf / otf / ttc)
-  embedFonts: true,                  // optional: embed font subsets (off by default)
+  fontPack,                          // default font pack: same result as converting on a desktop
+  fonts: [fontBytes1],               // optional: your own font files (ttf / otf / ttc); win over the pack for the same name
 });
-console.log(result.slides, result.report.missingFonts, result.report.warnings);
+console.log(result.slides, result.fontCheck, result.report.warnings);
 ```
+
+To check fonts only, without writing files: `checkFonts(pptxBytes, { fontPack })`; it returns the same data as `unppt check --json`.
 
 **Big files**: do not read the whole file into memory; pass an object that "reads by position" and the transcoder reads only the parts it needs:
 
@@ -227,9 +247,10 @@ The full reference (Android / iOS / React Native, hidden-slide rules, every URL 
 git clone https://github.com/spitmaster/unppt.git
 cd unppt
 npm install
+node scripts/fetch-fonts.mjs      # once: download the default font pack's font files (not in git) and verify SHA-256
 npm run build
 npm test
-node packages/transcoder/dist/cli.js presentation.pptx -o out/index.html --system-fonts
+node packages/transcoder/dist/cli.js presentation.pptx -o out/index.html
 ```
 
 | Command | Purpose |

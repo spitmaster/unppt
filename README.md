@@ -81,33 +81,37 @@ flowchart LR
 **第 1 步：不安装，直接用 npx 转一个文件**
 
 ```bash
-npx @unppt/unppt 演示文稿.pptx --system-fonts
+npx @unppt/unppt 演示文稿.pptx
 ```
 
 **或者全局安装后用 `unppt` 命令**
 
 ```bash
 npm install -g @unppt/unppt
-unppt 演示文稿.pptx -o out/index.html --system-fonts
+unppt 演示文稿.pptx -o out/index.html
 ```
 
-**或者从 GitHub 下载安装**（npm 审核新版本期间、公司内网镜像下载失败时用；说明见 [快速上手](docs/zh/getting-started.md)）
+安装时会自动带上默认字体包 `@unppt/fonts`（开源字体 + 排版用的字体度量，下载约 60MB），不用另外装字体，见下面的「字体」。
+
+**或者从 GitHub 下载安装**（npm 审核新版本期间、公司内网镜像下载失败时用；说明见 [快速上手](docs/zh/getting-started.md)）。要下载两个文件：字体包 `unppt-fonts.tgz` 和程序 `unppt.tgz`，一起安装：
 
 ```powershell
+Invoke-WebRequest https://github.com/spitmaster/unppt/releases/latest/download/unppt-fonts.tgz -OutFile unppt-fonts.tgz
 Invoke-WebRequest https://github.com/spitmaster/unppt/releases/latest/download/unppt.tgz -OutFile unppt.tgz
-npm install -g .\unppt.tgz
+npm install -g .\unppt-fonts.tgz .\unppt.tgz
 ```
 
 macOS / Linux（在"终端"里运行）：
 
 ```bash
+curl -L -o unppt-fonts.tgz https://github.com/spitmaster/unppt/releases/latest/download/unppt-fonts.tgz
 curl -L -o unppt.tgz https://github.com/spitmaster/unppt/releases/latest/download/unppt.tgz
-npm install -g ./unppt.tgz
+npm install -g ./unppt-fonts.tgz ./unppt.tgz
 ```
 
-提示权限不足（`EACCES` / `permission denied`）时，第二行前面加 `sudo`（`sudo npm install -g ./unppt.tgz`），按提示输入电脑登录密码。装好后运行 `unppt -v` 查看版本号。
+提示权限不足（`EACCES` / `permission denied`）时，最后一行前面加 `sudo`（`sudo npm install -g ./unppt-fonts.tgz ./unppt.tgz`），按提示输入电脑登录密码。装好后运行 `unppt -v` 查看版本号。
 
-`--system-fonts` 表示用本机装的字体排版，这样换行位置才和 PowerPoint 一致（字体的说明见 [docs/zh/usage.md](docs/zh/usage.md)）。
+想先看看课件的字体有没有问题：`unppt check 演示文稿.pptx`（只检查，不输出文件）。
 
 **第 2 步：打开产物**
 
@@ -119,15 +123,27 @@ npm install -g ./unppt.tgz
 |---|---|
 | `-o, --out <文件>` | 输出文件，默认是 pptx 旁边同名文件夹里的 `index.html`；`paged` / `pages` 形式下是输出目录 |
 | `--output <形式>` | 产物形式：`paged`（命令行默认，按需加载）、`single`（一个自包含的 HTML，API 的默认）、`pages`（paged 再加每页一个 HTML）、`data`（同 `--data`） |
-| `--fonts <目录>` | 字体目录（可以写多次），转码时按真实字宽排版 |
-| `--system-fonts` | **默认开启**（0.2.3 起）：使用本机系统字体，按真实字宽排版，换行才和 PowerPoint 一致；Office 自带的私有字体、云字体用到时嵌入产物。加 `--no-system-fonts` 关闭（关闭后字宽只能估算，换行可能和 PowerPoint 不同） |
-| `--embed-fonts` | 把用到的字做成字体子集嵌入（观看端不需要安装字体，显示与转码时一致；商业字体请注意分发授权） |
+| `--fonts <目录>` | 指定字体目录（可以写多次）：同名时压过默认字体包，排版和显示都用它，用到的字嵌入产物 |
+| `--system-fonts` | 也用本机系统字体和 Office 字体（0.3.0 起**默认关闭**；用到的字嵌入产物，注意商业字体的分发授权） |
+| `--no-default-fonts` | 不用默认字体包（调试用） |
 | `--data` | 只输出演示数据 `deck.json`（开发调试用） |
 | `--no-images` | 不输出整页图 `pic/` 和缩略图 `thum/`（`prop.json` 照常输出） |
 | `--jobs <n\|auto>` | 出图用几个线程同时画，默认 `auto`；`1` 是在主线程画 |
 | `--inline-limit <字节>` | 小于这个大小的图片内联进 HTML，默认 2097152（2MB）；视频音频总是单独输出到 `media/` |
 | `--stats` | 结束时显示用时和峰值内存 |
 | `-q, --quiet` | 不显示进度 |
+
+旧选项 `--embed-fonts`、`--no-system-fonts` 照样接受，但没有作用了。另有子命令 `unppt check <文件.pptx> [--json]`：只检查字体，有必须处理的问题时退出码是 1。
+
+## 字体
+
+- **播放时绝不用观看者电脑上的字体**：用到的每个字都做成字体子集打包进产物，Windows、Mac、安卓、iPhone 上看到的完全一样（例如直播课里几千个学生）。
+- **产物里的字体只有两个来源**（除非你用 `--fonts` / `--system-fonts` 明确指定）：作者嵌入在 PPT 里的字体（原样使用），和默认字体包 `@unppt/fonts` 里的开源字体（SIL OFL 1.1：思源黑体、思源宋体、霞鹜文楷、朱雀仿宋、Carlito、Caladea、Liberation Sans / Serif / Mono）。字体包约 87MB，只在转码的电脑上需要，观看的人不会下载它。
+- **排版按原字体，显示用开源字体**：没嵌入的微软雅黑、宋体、Calibri 等，按原字体的度量（只有字宽等数字，没有字形）排版，所以换行和文字位置和 PowerPoint 一样；显示用对应的开源字体（微软雅黑 → 思源黑体、Calibri → Carlito ……），字形会略有不同。
+- **字体包也不认识的字体**：和 PowerPoint 一样找替代字体（中文 → 微软雅黑、西文 → Calibri、日文 → Yu Gothic），再用对应的开源字体显示。
+- **符号字体**（Wingdings 等）：不改动你的字符。作者嵌入了就照常显示；没嵌入时符号会显示成字母，转码报告和 `unppt check` 会提示作者在 PowerPoint 里“将字体嵌入文件”。
+
+详见 [快速上手第 7 节](docs/zh/getting-started.md#7-字体为什么重要以及现在怎么处理)。
 
 ## 在代码里使用（云函数等）
 
@@ -137,15 +153,19 @@ npm install @unppt/unppt
 
 ```js
 import { convert } from '@unppt/unppt';
+import { loadFontPack } from '@unppt/unppt/node';   // Node 专用：读已安装的默认字体包
 
+const fontPack = await loadFontPack();               // 服务器、云函数上不需要任何系统字体
 const result = await convert(pptxBytes, {        // pptxBytes：Uint8Array
   // 输出交给你写：index.html、prop.json、media/xxx.mp4、pic/1.jpg ……
   write: async (path, data) => { /* data 可能是字符串、Uint8Array 或数据流（AsyncIterable） */ },
-  fonts: [fontBytes1, fontBytes2],   // 可选：字体文件内容（ttf / otf / ttc）
-  embedFonts: true,                  // 可选：嵌入字体子集（默认关闭）
+  fontPack,                          // 默认字体包：结果和在桌面电脑上转码一样
+  fonts: [fontBytes1],               // 可选：你自己的字体文件（ttf / otf / ttc），同名时压过字体包
 });
-console.log(result.slides, result.report.missingFonts, result.report.warnings);
+console.log(result.slides, result.fontCheck, result.report.warnings);
 ```
+
+只检查字体、不输出文件：`checkFonts(pptxBytes, { fontPack })`，返回值和 `unppt check --json` 一样。
 
 **大文件**：不要把整个文件读进内存，传一个"按位置读取"的对象即可，转码器只读需要的部分：
 
@@ -227,9 +247,10 @@ iframe.contentWindow.postMessage({ unppt: 1, id: 1, cmd: 'goto', args: { slide: 
 git clone https://github.com/spitmaster/unppt.git
 cd unppt
 npm install
+node scripts/fetch-fonts.mjs      # 只需一次：下载默认字体包的字体文件（不在 git 里）并校验 SHA-256
 npm run build
 npm test
-node packages/transcoder/dist/cli.js 演示文稿.pptx -o out/index.html --system-fonts
+node packages/transcoder/dist/cli.js 演示文稿.pptx -o out/index.html
 ```
 
 | 命令 | 作用 |

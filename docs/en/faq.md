@@ -20,66 +20,102 @@ Contents:
 
 ## Fonts
 
-### Q: The converter prints "缺少字体：xxx" (missing font). What does it mean?
+> Font handling changed in 0.3.0; the full explanation is in [Getting started, section 7](getting-started.md#7-fonts-why-they-matter-and-how-they-are-handled-now).
 
-To know where a line breaks, the converter must know how wide every character is. It **can only use the font files you give it** (the converter is a pure function and never searches system folders on its own). When the deck uses a font you did not supply, the converter:
+### Q: If the viewer's computer does not have the font, will it show a different font?
 
-1. prints `缺少字体：xxx` ("missing font") on the command line; in code the names are in `result.report.missingFonts`;
-2. lays the text out with a substitute font following PowerPoint's rules (table below);
-3. **does not fail**; output is written as usual.
+No. Since 0.3.0 the player **never uses fonts installed on the viewer's computer**: every character used is packed into the output as a font subset, so viewers on Windows, Mac, Android or iPhone all see the same thing ([SPEC.md](../../SPEC.md) decision D3).
 
-PowerPoint's substitution rules (measured, as implemented in the code):
+The fonts in the output come from only two sources (unless you explicitly specify fonts with `--fonts` / `--system-fonts`):
+
+| Source | Notes |
+|---|---|
+| Fonts the author embedded in the PPT | Used as-is ("Embed fonts in the file" in PowerPoint) |
+| The default font pack `@unppt/fonts` | Open-source fonts, installed automatically with `@unppt/unppt` |
+
+> A "font subset" is a font file that keeps only the characters actually used, much smaller than the full font.
+
+### Q: What happens to Microsoft YaHei or Calibri when they are not embedded? Are line breaks still right?
+
+Yes. Layout and display are separate:
+
+- **Layout** uses the original font's metrics (width of each character, ascent/descent, kerning), so line breaks, character positions and line spacing are the same as in PowerPoint;
+- **Display** uses the matching open-source font: Microsoft YaHei, DengXian, SimHei → Noto Sans SC; SimSun → Noto Serif SC; KaiTi → LXGW WenKai; FangSong → Zhuque Fangsong; Calibri → Carlito; Cambria → Caladea; Arial → Liberation Sans; Times New Roman → Liberation Serif; Courier New → Liberation Mono.
+
+So **glyph shapes** look slightly different from the author's computer, but positions do not change. For identical glyphs, have the author embed the fonts in the PPT, or use `--system-fonts` / `--fonts` if you are licensed to.
+
+### Q: Does unppt distribute commercial fonts such as Microsoft YaHei or Calibri?
+
+No.
+
+- The default font pack contains **only open-source fonts**, all under SIL OFL 1.1, which may be freely distributed and embedded: Noto Sans SC, Noto Serif SC, LXGW WenKai, Zhuque Fangsong, Carlito, Caladea, Liberation Sans / Serif / Mono. The license files are in `packages/fonts/LICENSES/`.
+- The **metrics pack** inside the font pack contains **numbers only** (advance widths, ascent/descent, kerning), no glyph shapes, for 447 Windows / Office font faces. It is used only for layout and never ends up in the output.
+- The output only ever contains subsets of: the open-source fonts, fonts the author embedded in the PPT, and fonts you explicitly specify with `--fonts` / `--system-fonts`. **For the last two, the author / you are responsible for the distribution license**: embedding means distributing font subsets to every viewer, so check the license of commercial fonts first.
+
+### Q: How do I find out whether a deck has font problems?
+
+Use `unppt check`. It only checks fonts, writes no files and takes a few seconds:
+
+```bash
+unppt check deck.pptx
+unppt check deck.pptx --json    # JSON output for programs
+```
+
+One line per font: ✓ fine; ⚠ warning (e.g. the font pack does not know the font either, so a substitute is used); ✗ must fix (e.g. a symbol font not embedded). The exit code is 1 when there is any ✗, so a product can reject the upload or warn the author. In code use `checkFonts()`, or `fontCheck` in the result of `convert()`; see [Usage 3.8](usage.md#38-checkfontsinput-options-checking-fonts-only).
+
+A normal conversion also lists the fonts with problems at the end (⚠ and ✗ only).
+
+### Q: What about fonts the font pack does not know?
+
+Like PowerPoint, a substitute font is used for layout and the matching open-source font for display; `unppt check` marks them ⚠. Substitution rules (measured):
 
 | Missing font | Replaced by |
 |---|---|
-| Latin font | Calibri → Arial → Liberation Sans → Helvetica (the first one you supplied) |
-| Font marked with a Chinese charset | Microsoft YaHei → DengXian → PingFang SC → Noto Sans CJK SC → Source Han Sans SC |
-| Font marked with a Japanese charset | Yu Gothic; characters it lacks fall back to the Chinese list above |
+| Latin font | Calibri |
+| Font marked with a Chinese charset | Microsoft YaHei |
+| Font marked with a Japanese charset | Yu Gothic; characters it lacks fall back to the Chinese font |
 | Helvetica, Helvetica Neue, Helv | Arial |
 | Times, Tms Rmn | Times New Roman |
 | Courier | Courier New |
 
-If the substitute is missing too, the layout uses estimated widths, and line breaks will probably differ from PowerPoint.
+Characters that no font has (rare: emoji, rare CJK characters) are left to the browser's own fallback, so they may differ between devices; `unppt check` lists them.
 
-### Q: How do I give fonts to the converter?
+### Q: Symbols (ticks, arrows, bullets) show as letters. What now?
 
-**Command line:**
+The deck uses a symbol font such as Wingdings, Webdings or Symbol without embedding it in the PPT. Symbol fonts put pictures where letters normally are; no open-source font can stand in for them, and unppt **never changes your characters**, so they show as ordinary letters. The conversion output and `unppt check` mark this ✗.
 
-```bash
-# Use the system fonts (on Windows this also picks up Office's private and cloud fonts, e.g. Aptos)
-npx @unppt/unppt deck.pptx -o out/index.html --system-fonts
+Fix: ask the author to choose **File → Options → Save → "Embed fonts in the file"** in PowerPoint, save again and convert again; or provide the symbol font file with `--fonts` (mind the license).
 
-# Point at font folders (repeatable; .ttf / .otf / .ttc are found recursively)
-npx @unppt/unppt deck.pptx -o out/index.html --fonts ./fonts --fonts ./more-fonts
-```
+### Q: My cloud function or server has no fonts at all. What should I do?
 
-**In code (for example in a cloud function — Linux usually has no Microsoft fonts, so bring your own):**
+Nothing to install. The default font pack comes with `@unppt/unppt`; load it and pass it to `convert()`, and the result is identical to converting on a desktop:
 
 ```js
-import { readFile } from 'node:fs/promises';
 import { convert } from '@unppt/unppt';
+import { loadFontPack } from '@unppt/unppt/node';
 
-const fonts = [
-  await readFile('fonts/msyh.ttc'),     // bytes of the font file (Uint8Array / Buffer)
-  await readFile('fonts/calibri.ttf'),
-];
-const result = await convert(pptxBytes, { write, fonts, embedFonts: true });
-console.log(result.report.missingFonts);  // fonts still missing
+const fontPack = await loadFontPack();   // finds the installed @unppt/fonts; undefined if missing
+const result = await convert(pptxBytes, { write, fontPack });
+console.log(result.fontCheck);           // font check result
 ```
 
-### Q: If the viewer's computer does not have the font, will it show a different font?
+The font pack is about 87 MB; mind the code package size limit of your platform, see [Usage 4.3](usage.md#43-cloud-function-read-from-object-storage-convert-write-back).
 
-It depends:
+### Q: How do I use my own fonts?
 
-| Situation | What the viewer sees |
-|---|---|
-| `--embed-fonts` was used (`embedFonts: true` in code) | The characters used are embedded as a **font subset**, so every device looks the same as at conversion time. **Recommended** |
-| The deck embeds its own fonts ("Embed fonts in the file" in PowerPoint) | Always embedded as a subset, regardless of the switch |
-| Office private / cloud fonts found by `--system-fonts` | Always embedded when used (browsers cannot use fonts that are not installed in the system) |
-| Anything else | The browser uses the viewer's own font with the same name; if there is none, the browser's default sans-serif font, so glyphs look different |
+```bash
+# Font folders (repeatable; .ttf / .otf / .ttc found recursively); they win over the font pack for the same name
+unppt deck.pptx -o out --fonts ./fonts --fonts ./more-fonts
 
-> A "font subset" is a font file that keeps only the characters actually used, much smaller than the full font.
-> Note: distributing commercial fonts requires a licence. Make sure you are allowed to embed a font before doing so.
+# This machine's system fonts (on Windows also Office's private and cloud fonts, e.g. Aptos); off by default since 0.3.0
+unppt deck.pptx -o out --system-fonts
+```
+
+In code use `fonts: [font file bytes, ...]`. These fonts are used for layout and display and the characters used are embedded in the output, so **make sure you are allowed to distribute them**.
+
+### Q: Do the old `--embed-fonts` and `--no-system-fonts` still work?
+
+They are accepted but have no effect: since 0.3.0 every font used is always embedded (`embedFonts` defaults to `true` in code), and system fonts are not used by default. `privateFonts` in code is the same as `fonts`.
 
 ---
 
@@ -87,9 +123,9 @@ It depends:
 
 The most common causes, most likely first:
 
-1. **Fonts missing at conversion time**: check whether the CLI printed `缺少字体：` (missing font). Giving the font to the converter (previous section) usually fixes it;
-2. **Different font version**: two versions of the same font can have different widths. Use the same font files as the machine the deck was made on, if you can;
-3. **Different font on the viewer's side**: without `--embed-fonts` the viewer uses their own fonts, whose widths differ from those measured during conversion. `--embed-fonts` guarantees "the font measured at conversion = the font displayed" ([SPEC.md](../../SPEC.md) decision D3);
+1. **A font was missing at conversion time**: run `unppt check` and look for ⚠ / ✗ fonts. Ask the author to embed the fonts in the PPT, or provide them with `--fonts` (previous section);
+2. **The default font pack is not installed**: if the CLI starts with the hint `没找到默认字体包 @unppt/fonts` ("default font pack not found"), widths of non-embedded fonts can only be estimated. Reinstall `@unppt/unppt`, or when installing from GitHub install `unppt-fonts.tgz` too;
+3. **Different font version**: two versions of the same font can have different widths. The font pack's metrics come from the versions shipped with Windows / Office; if the author's version differs, give the author's font file with `--fonts`;
 4. **A known gap**: for example WordArt vertical text (`wordArtVert`) or variable fonts; see [Known gaps](#known-gaps).
 
 If none of these apply, please report it as described [below](#how-to-report-a-bad-presentation-safely).
@@ -255,8 +291,8 @@ flowchart TD
 Please include in the issue:
 
 1. the unppt version (running `npx @unppt/unppt` without arguments prints it on the first line);
-2. the full conversion command, for example `unppt demo.pptx -o out/index.html --system-fonts --embed-fonts`;
-3. the CLI lines starting with `缺少字体：` (missing font) and `提示：` (notice);
+2. the full conversion command, for example `unppt demo.pptx -o out` (include any font options);
+3. the CLI lines under `字体：` (fonts) and starting with `提示：` (notice), or the output of `unppt check`;
 4. the browser and its version;
 5. side-by-side screenshots: the PowerPoint slide show and the unppt player (screenshots, too, may only show content you can make public).
 

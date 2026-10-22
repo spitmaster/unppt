@@ -66,6 +66,8 @@ flowchart LR
   index.html?slide=<slide>&step=<step>&ui=0
   ```
 
+  Why `--system-fonts`: the comparison measures whether the **layout rules** are right, so it converts with the same local fonts PowerPoint uses (since 0.3.0 this option is off by default; the comparison tool turns it on explicitly). Regular users get the fonts embedded in the PPT plus the default font pack by default; see the end of [section 8](#8-where-we-are-today-010).
+
   `slide` / `step` jump straight to a slide and step (counting from 0); `ui=0` hides the player's own navigation buttons. If the reference is a "static" image (every object shown, animations ignored), `&static=1` is added so the player also shows every object as is.
 - Chromium draws text with **greyscale anti-aliasing** (launch flag `--disable-lcd-text`): PowerPoint's references are greyscale, while Chrome's default sub-pixel anti-aliasing has coloured fringes. We compare layout, not anti-aliasing style.
 - Scoring: both images are converted to greyscale and cut into 8×8 blocks; SSIM is computed for each block and averaged. A **diff image** is also produced: the reference is faded and pixels that differ a lot (any colour channel off by more than 40) are painted red.
@@ -243,7 +245,8 @@ The rules in detail:
 How to read these numbers:
 
 - **0.95 is a strict line.** Most pages below it differ only in details: text a few pixels off, one chart label in a different place. At a glance the page looks the same;
-- the synthetic cases deliberately test hard features (3D, WordArt effects, complex charts), so the failing pages cluster around those hard spots.
+- the synthetic cases deliberately test hard features (3D, WordArt effects, complex charts), so the failing pages cluster around those hard spots;
+- these numbers are measured with `--system-fonts` (the same fonts PowerPoint uses). With the default font pack (non-embedded fonts laid out with the original font's metrics and displayed with open-source fonts), **line breaks and text positions stay the same and only glyph shapes differ**: on the synthetic cases the mean SSIM is about 0.024 lower per page, purely from glyph shapes.
 
 ### Side-by-side images (PowerPoint on the left, unppt on the right)
 

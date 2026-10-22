@@ -44,27 +44,30 @@ unppt <输入.pptx> [-o 输出] [选项]
 
 - 第一个参数就是输入文件；什么选项都不加时，在 pptx 旁边新建一个和它同名的文件夹，产物都放进去（打开里面的 `index.html` 播放）。其它功能都用选项加。
 - 0.1.0 及以前的写法 `unppt convert <输入.pptx>` 仍然可用（从 0.2.0 起 `convert` 可以省略）。
+- `unppt check <输入.pptx> [--json] [字体选项]` 只检查字体，不写文件，见 [2.6](#26-只检查字体unppt-check)。
 - `unppt -v` 显示版本号，`unppt -h` 显示用法。
 - 不带参数、参数不对、或者写了不认识的选项时，会打印版本号和用法，然后以退出码 1 结束。
 - 转码出错（例如文件不是有效的 pptx）时打印错误信息，退出码 1。成功时退出码 0。
 
 ### 2.2 全部选项
 
-以下内容逐条来自 `packages/transcoder/src/cli.ts`：
+以下内容逐条来自 `packages/transcoder/src/cli.ts`。不写任何字体选项时，用 PPT 里嵌入的字体 + 默认字体包 `@unppt/fonts`（安装 `@unppt/unppt` 时自动装上），所有观看者看到的一样；字体是怎么处理的见 [快速上手第 7 节](getting-started.md#7-字体为什么重要以及现在怎么处理)。
 
 | 选项 | 取值 | 默认值 | 说明 |
 |---|---|---|---|
 | `-o`, `--out <路径>` | 文件或目录 | 见 2.3 | `single` / `data` 时是输出文件；`paged` / `pages` 时是输出**目录**（入口是目录里的 `index.html`） |
-| `--output <形式>` | `single`、`paged`、`pages`、`data`（`html` 是 `single` 的旧名） | `single` | 产物形式。写了不认识的形式会报错 |
+| `--output <形式>` | `single`、`paged`、`pages`、`data`（`html` 是 `single` 的旧名） | `paged`（0.2.4 起；在代码里调用 `convert()` 默认仍是 `single`） | 产物形式。写了不认识的形式会报错 |
 | `--data` | 无 | 关 | 等同于 `--output data` |
-| `--fonts <目录>` | 目录 | 无 | 字体目录，递归读取里面的 `.ttf` / `.otf` / `.ttc`，按真实字宽排版。可以写多次 |
-| `--system-fonts` | 无 | 开 | **默认开启**（0.2.3 起）：使用本机系统字体，按真实字宽排版，换行才和 PowerPoint 一致；Office 自带的私有字体、云字体用到时嵌入产物。加 `--no-system-fonts` 关闭（关闭后字宽只能估算，换行可能和 PowerPoint 不同） |
-| `--embed-fonts` | 无 | 关 | 把用到的字做成字体子集嵌入，观看端不需要安装字体（商业字体注意授权） |
+| `--fonts <目录>` | 目录 | 无 | 指定字体目录，递归读取里面的 `.ttf` / `.otf` / `.ttc`。同名时压过默认字体包，排版和显示都用它，用到的字嵌入产物。可以写多次 |
+| `--system-fonts` | 无 | 关 | 也用本机系统字体和 Office 私有字体 / 云字体，排版和显示都用它们，用到的字嵌入产物（**注意商业字体的分发授权**）。**0.3.0 起默认关闭**（0.2.3 到 0.2.6 默认开启） |
+| `--no-system-fonts` | 无 | — | 旧选项，照样接受，没有作用 |
+| `--no-default-fonts` | 无 | 关 | 不用默认字体包 `@unppt/fonts`（调试用；没有字体的字宽只能估算） |
+| `--embed-fonts` | 无 | — | 旧选项，照样接受，没有作用：0.3.0 起用到的字体总是做成子集嵌入产物 |
 | `--no-images` | 无 | 出图 | 不输出整页图 `pic/` 和缩略图 `thum/`（`prop.json` 照常输出） |
 | `--jobs <n\|auto>` | 正整数或 `auto` | `auto` | 出图用几个线程同时画。`auto` 按 CPU 数（容器里按 CPU 配额）和可用内存（每个线程按 400MB 估算）取较小值；`1` 表示在主线程画 |
 | `--inline-limit <字节>` | 数字 | `2097152`（2MB） | 小于这个大小的图片内联进 HTML（只对 `single` 有效） |
 | `--stats` | 无 | 关 | 结束时打印页数、用时和峰值内存 |
-| `-q`, `--quiet` | 无 | 关 | 不显示进度和结果（包括缺少字体、提示） |
+| `-q`, `--quiet` | 无 | 关 | 不显示进度和结果（包括字体问题、提示） |
 | `-v`, `--version` | 无 | — | 只显示版本号 |
 | `-h`, `--help` | 无 | — | 显示用法（退出码 0） |
 
@@ -86,24 +89,33 @@ unppt <输入.pptx> [-o 输出] [选项]
 转码中 12/12 页                                   ← 进度（写到 stderr）
 统计：12 页，用时 4.2 秒，峰值内存 310 MB         ← 加了 --stats 时（在“完成”之前打印）
 完成：12 页，用时 4.2 秒 -> D:\work\out\index.html
-缺少字体：Font A、Font B                          ← 有缺失字体时
+字体：                                            ← 有字体问题时，只列 ⚠ / ✗ 的字体（格式同 unppt check）
+  ✗ Wingdings  第 3 页   符号字体没有嵌入，符号会显示成字母：请在 PowerPoint 里勾选"将字体嵌入文件"
 提示：……                                          ← 每条警告一行
 ```
+
+找不到默认字体包时，开头会多一行 `提示：没找到默认字体包 @unppt/fonts，没有嵌入的字体只能估算字宽`。
 
 ### 2.5 常用组合
 
 ```bash
-# 最常用：自包含 HTML，用本机字体
-unppt demo.pptx -o out/index.html --system-fonts
+# 最常用：按需加载，放到网站上或本地双击都行（字体用 PPT 嵌入的 + 默认字体包）
+unppt demo.pptx -o site/demo
 
-# 放到网站上：按需加载，嵌入字体，观看端不用装字体
-unppt demo.pptx -o site/demo --output paged --system-fonts --embed-fonts
+# 自包含的单个 HTML，适合当附件发送
+unppt demo.pptx -o out/index.html --output single
 
 # 每页一个 HTML
 unppt demo.pptx -o site/demo --output pages
 
-# 服务器上：指定字体目录，不要图片，安静模式
+# 先检查字体（不写文件）
+unppt check demo.pptx
+
+# 服务器上：再加一个自己的字体目录，不要图片，安静模式
 unppt demo.pptx -o out/index.html --fonts /opt/fonts --no-images -q
+
+# 用本机字体（字形和作者电脑上一样；注意商业字体的分发授权）
+unppt demo.pptx -o out --system-fonts
 
 # 内存紧张的机器：只用 1 个线程出图，看峰值内存
 unppt demo.pptx -o out/index.html --jobs 1 --stats
@@ -111,6 +123,27 @@ unppt demo.pptx -o out/index.html --jobs 1 --stats
 # 只看数据
 unppt demo.pptx --data -o out/deck.json
 ```
+
+### 2.6 只检查字体：`unppt check`
+
+```bash
+unppt check <输入.pptx> [--json] [--fonts 目录]... [--system-fonts] [--no-default-fonts]
+```
+
+只检查字体（缺哪些、用什么替代、符号字体有没有嵌入），**不写任何文件**，几秒钟出结果。字体选项和转码时一样写，结论就是按这些字体转码时的情况。
+
+```text
+字体检查：text-latin-cjk-font.pptx（共 1 页）
+  ⚠ 楷体_GB2312  第 1 页   没有这个字体，按 Microsoft YaHei 替代（字形和换行可能和作者电脑上不同）
+  ✓ 等线         第 1 页   排版按原字体，显示用 思源黑体（Noto Sans SC）
+  ✓ 宋体         第 1 页   排版按原字体，显示用 思源宋体（Noto Serif SC）
+  ✓ Arial        第 1 页   排版按原字体，显示用 Liberation Sans
+结论：0 个必须处理的问题（✗），1 个提醒（⚠）
+```
+
+- 加 `--json` 时输出和 [`checkFonts()`](#38-checkfontsinput-options只检查字体) 的返回值一样的 JSON。
+- 有 ✗（必须处理的问题，例如符号字体没嵌入）时**退出码是 1**，没有时是 0。产品里可以用它在上传时拒绝有问题的课件，或提示作者。
+- 每种结论（✓ / ⚠ / ✗）的意思见 [快速上手 7.5](getting-started.md#75-检查字体unppt-check)。
 
 ---
 
@@ -120,8 +153,8 @@ unppt demo.pptx --data -o out/deck.json
 
 | 导入路径 | 内容 | 运行环境 |
 |---|---|---|
-| `@unppt/unppt` | `convert()`、`createPainter()`、`UNPPT_VERSION`，以及类型 `ConvertOptions`、`ConvertResult`、`InputSource`、`RandomAccessSource`、`WriteData`、`WriteFn`、`RasterPool` 等 | 任何环境（Node、浏览器、云函数），不读写磁盘、不联网 |
-| `@unppt/unppt/node` | `createRasterPool()`、`autoWorkers()`、类型 `NodeRasterPool` | 只在 Node（用 `worker_threads` 多线程出图） |
+| `@unppt/unppt` | `convert()`、`checkFonts()`、`createPainter()`、`UNPPT_VERSION`，以及类型 `ConvertOptions`、`ConvertResult`、`FontPack`、`FontCheck`、`InputSource`、`RandomAccessSource`、`WriteData`、`WriteFn`、`RasterPool` 等 | 任何环境（Node、浏览器、云函数），不读写磁盘、不联网 |
+| `@unppt/unppt/node` | `createRasterPool()`、`autoWorkers()`、`loadFontPack()`、类型 `NodeRasterPool` | 只在 Node（用 `worker_threads` 多线程出图；从磁盘读默认字体包） |
 | `@unppt/unppt/resvg.wasm` | 出图用的 resvg WASM 文件 | 作为文件读取，传给 `rasterWasm` 或 `createRasterPool` |
 
 包是 ES Module（`"type": "module"`），用 `import` 导入。
@@ -138,6 +171,7 @@ function convert(input: InputSource, options: ConvertOptions): Promise<ConvertRe
 classDiagram
   class ConvertOptions {
     +write: WriteFn
+    +fontPack?: FontPack
     +fonts?: InputSource[]
     +privateFonts?: InputSource[]
     +output?: string
@@ -154,10 +188,17 @@ classDiagram
     +width: number
     +height: number
     +report: DeckReport
+    +fontCheck: FontCheck
   }
   class DeckReport {
     +missingFonts: string[]
     +warnings: string[]
+  }
+  class FontCheck {
+    +fonts: FontCheckEntry[]
+    +missingChars: object[]
+    +errors: number
+    +warnings: number
   }
   class RandomAccessSource {
     +size: number
@@ -172,6 +213,7 @@ classDiagram
     +close() Promise~void~
   }
   ConvertResult --> DeckReport
+  ConvertResult --> FontCheck
   ConvertOptions ..> RandomAccessSource : fonts 和 input 可以是
   ConvertOptions --> RasterPool : rasterPool
   RasterPool <|-- NodeRasterPool
@@ -195,12 +237,13 @@ interface RandomAccessSource {
 | 选项 | 类型 | 默认值 | 说明 |
 |---|---|---|---|
 | `write` | `(path, data) => Promise<void>` | **必填** | 输出文件的写入函数，见 [3.3](#33-write-回调) |
-| `fonts` | `InputSource[]` | `[]` | 字体文件（ttf / otf / ttc），每项是一个文件的内容 |
-| `privateFonts` | `InputSource[]` | `[]` | 观看端没有的字体（如 Office 私有字体、云字体）：用于排版，用到的字**总是**嵌入产物，不受 `embedFonts` 影响 |
+| `fontPack` | `FontPack` | 无 | 默认字体包：排版按原字体（微软雅黑、Calibri 等）的字宽，显示用对应的开源字体。在 Node 里用 `loadFontPack()` 读取，见 [3.7](#37-字体默认字体包和指定字体)。**不给时只有 PPT 嵌入的字体和 `fonts`，其它字体的字宽只能估算** |
+| `fonts` | `InputSource[]` | `[]` | 调用方指定的字体文件（ttf / otf / ttc），每项是一个文件的内容。同名时压过字体包，排版和显示都用它，用到的字嵌入产物 |
+| `privateFonts` | `InputSource[]` | `[]` | 旧选项，和 `fonts` 一样（0.3.0 起所有用到的字体都嵌入产物） |
 | `output` | `'single' \| 'paged' \| 'pages' \| 'data'` | `'single'` | 产物形式（`'html'` 是 `'single'` 的旧名）；不认识的名字会抛错 |
 | `fileName` | `string` | `'index.html'`（`data` 时 `'deck.json'`） | 主文件名 |
 | `inlineLimit` | `number`（字节） | `2097152` | 小于这个大小的图片内联进 HTML；只对 `single` 有效。视频音频总是单独输出 |
-| `embedFonts` | `boolean` | `false` | 把用到的字做成字体子集嵌入产物 |
+| `embedFonts` | `boolean` | `true` | 把用到的字做成字体子集嵌入产物（0.3.0 起默认 `true`）：播放时所有字形都来自产物，不用观看者电脑上的字体。`false` 只用于调试 |
 | `images` | `boolean` | `true` | 是否输出 `pic/{n}.jpg`、`thum/{n}.jpg`。`prop.json` 总是输出 |
 | `rasterWasm` | `Uint8Array \| Promise<Uint8Array \| undefined>` | 无 | resvg WASM 的字节。**`images` 为 `true` 时必须给它或 `rasterPool`**，否则不出图并记一条警告 |
 | `rasterPool` | `RasterPool` | 无 | 并行出图执行器（如 `createRasterPool()` 的返回值）。给了它就不需要 `rasterWasm`，结果和单线程画的逐字节一致 |
@@ -212,8 +255,9 @@ interface RandomAccessSource {
 |---|---|
 | `slides` | 输出的页数 |
 | `width` / `height` | 幻灯片尺寸（像素，按 96 DPI；`prop.json` 里的 `picw`/`pich` 是它乘 0.75 得到的磅数） |
-| `report.missingFonts` | 文档用到、但没有提供字体文件的字体名（已排序） |
-| `report.warnings` | 转码时的提示，例如“第 3 页渲染失败：……”。同一条出现多次时会写成“……（N 处）” |
+| `report.missingFonts` | 文档用到、但嵌入字体、`fonts`、字体包里都没有的字体名（已排序）。更完整的结论看 `fontCheck` |
+| `report.warnings` | 转码时的提示，例如“第 3 页渲染失败：……”。同一条出现多次时会写成“……（N 处）”。用了符号字体又没嵌入时也有一条 |
+| `fontCheck` | 字体检查：每个字体用在哪几页、结论是什么、没有字体能显示的字。和 `unppt check` 打印的是同一份数据，字段见 [3.8](#38-checkfontsinput-options只检查字体) |
 
 #### 出错时
 
@@ -270,7 +314,7 @@ sequenceDiagram
   participant R as 出图（resvg）
   App->>C: convert(input, { write, fonts, rasterWasm, ... })
   C->>C: 打开 zip，读演示文稿、主题、母版、版式
-  C->>C: 加载字体（pptx 里嵌入的字体优先）
+  C->>C: 加载字体（pptx 里嵌入的 > fonts 指定的 > 字体包）
   C->>F: 开始写产物
   F->>App: write(主文件, 数据流)（single 是 index.html，data 是 deck.json）
   loop 每一页
@@ -284,7 +328,7 @@ sequenceDiagram
   end
   F-->>App: 字体子集、元数据（paged 最后写 index.html）
   C->>App: write("prop.json", 字符串)
-  C-->>App: { slides, width, height, report }
+  C-->>App: { slides, width, height, report, fontCheck }
 ```
 
 转码器“边转边写”：处理完一页就交出这一页的数据并释放内存，所以几百页的文件也不会占用很多内存。
@@ -319,7 +363,7 @@ try {
 }
 ```
 
-字体也可以这样传（`fonts: [await fileSource('C:/Windows/Fonts/msyh.ttc')]`），读取大的 `.ttc` 字体集时同样省内存。在浏览器里可以用 `Blob.slice(offset, offset + length).arrayBuffer()` 实现 `read`。
+字体也可以这样传（`fonts: [await fileSource('/opt/fonts/MyFont.ttc')]`），读取大的 `.ttc` 字体集时同样省内存。在浏览器里可以用 `Blob.slice(offset, offset + length).arrayBuffer()` 实现 `read`。
 
 ### 3.6 整页图和缩略图
 
@@ -361,16 +405,85 @@ try {
 - `autoWorkers()`：CPU 数（Linux 容器里按 cgroup 的 CPU 配额）和“可用内存 ÷ 400MB”取较小值，至少 1。
 - 一个线程池可以给多次 `convert()` 共用。命令行的 `--jobs` 就是用这两个函数实现的。
 
-### 3.7 进度、警告、缺失字体
+### 3.7 字体：默认字体包和指定字体
+
+`convert()` 是纯函数，不会自己去磁盘上找字体，字体都要由你传进来。产物里的字体来自三处（同名时按这个顺序优先）：
+
+| 来源 | 怎么给 | 说明 |
+|---|---|---|
+| PPT 里嵌入的字体 | 不用给，自动读取 | PowerPoint 自己不认的嵌入字体（CFF `.otf`、表目录没排序）和 PowerPoint 一样当作没有 |
+| 指定的字体 | `fonts: [...]` | 你有分发授权的字体文件 |
+| 默认字体包 | `fontPack` | 开源字体 + 447 个 Windows / Office 字体的度量数据（只有数字，没有字形）：排版按原字体，显示用开源字体 |
+
+在 Node 里读默认字体包（安装 `@unppt/unppt` 时 `@unppt/fonts` 会自动装上）：
+
+```js
+import { convert } from '@unppt/unppt';
+import { loadFontPack } from '@unppt/unppt/node';
+
+const fontPack = await loadFontPack();   // 找到已安装的 @unppt/fonts；没装时返回 undefined
+const result = await convert(pptxBytes, { write, fontPack });
+```
+
+- 一个 `fontPack` 可以给多次 `convert()` / `checkFonts()` 共用，读一次就行。
+- 字体包里的字体文件只在嵌入用到的字时按需读取，不会整个读进内存。
+- 用到的字体总是做成子集嵌入产物（`embedFonts` 默认 `true`），播放时不用观看者电脑上的字体，所有人看到的一样。
+- 字体是怎么对照的（微软雅黑 → 思源黑体、Calibri → Carlito 等）见 [快速上手 7.3](getting-started.md#73-排版和显示分开度量包--开源字体)。
+
+### 3.8 `checkFonts(input, options)`：只检查字体
+
+```ts
+function checkFonts(
+  input: InputSource,
+  options?: { fontPack?: FontPack; fonts?: InputSource[]; onProgress?: (done: number, total: number) => void },
+): Promise<FontCheck & { slides: number }>
+```
+
+照常排版一遍但不写任何文件，返回的数据和 `unppt check --json`、`ConvertResult.fontCheck` 一样。`fontPack` / `fonts` 和 `convert()` 一样传，结论就是按这些字体转码时的情况。
+
+```js
+import { checkFonts } from '@unppt/unppt';
+import { loadFontPack } from '@unppt/unppt/node';
+
+const r = await checkFonts(pptxBytes, { fontPack: await loadFontPack() });
+if (r.errors > 0) {
+  // 例如：拒绝上传，把问题告诉作者
+  for (const f of r.fonts) if (f.status === 'symbol-missing' || f.status === 'missing') console.log(f.font, f.pages);
+}
+```
+
+| 字段 | 说明 |
+|---|---|
+| `slides` | 页数 |
+| `fonts[]` | 每个用到的字体一项：`font` 字体名、`pages` 用在哪几页（从 1 开始）、`status` 结论，以及可能有的 `substitute`（替代字体名）、`shownWith`（显示用的字体名） |
+| `missingChars[]` | 没有任何字体能显示的字（例如 emoji、生僻字，由浏览器兜底）：`{ page, chars }` |
+| `errors` | 必须处理的问题个数（`symbol-missing`、`missing`） |
+| `warnings` | 提醒个数（`substituted`，以及每条 `missingChars`） |
+
+`status` 的取值：
+
+| 值 | 意思 |
+|---|---|
+| `embedded` | PPT 里嵌入了，照原样显示 |
+| `specified` | 用 `fonts` 指定的字体 |
+| `default` | 默认字体包：排版按原字体，显示用开源字体（`shownWith`） |
+| `substituted` | 字体包也不认识，按 PowerPoint 的规则替代（`substitute`），字形和换行可能和作者电脑上不同 |
+| `symbol-missing` | 符号字体（Wingdings 等）没有嵌入，符号会显示成字母 |
+| `missing` | 连替代字体都没有，字宽只能估算（通常是没传 `fontPack`） |
+
+### 3.9 进度、警告、字体问题
 
 ```js
 const result = await convert(pptxBytes, {
   write,
+  fontPack,
   images: false,
   onProgress: (done, total) => console.log(`进度 ${done}/${total}`),
 });
 console.log('页数', result.slides);
-if (result.report.missingFonts.length) console.warn('缺少字体：', result.report.missingFonts.join('、'));
+for (const f of result.fontCheck.fonts) {
+  if (f.status !== 'embedded' && f.status !== 'specified' && f.status !== 'default') console.warn('字体问题：', f.font, f.status, f.pages);
+}
 for (const w of result.report.warnings) console.warn('提示：', w);
 ```
 
@@ -387,11 +500,12 @@ for (const w of result.report.warnings) console.warn('提示：', w);
 import { mkdir, readdir, readFile, writeFile } from 'node:fs/promises';
 import { basename, dirname, extname, join } from 'node:path';
 import { convert } from '@unppt/unppt';
-import { createRasterPool } from '@unppt/unppt/node';
+import { createRasterPool, loadFontPack } from '@unppt/unppt/node';
 
 const [inDir, outRoot] = process.argv.slice(2);
 const wasm = new Uint8Array(await readFile(new URL(import.meta.resolve('@unppt/unppt/resvg.wasm'))));
 const pool = await createRasterPool(wasm);
+const fontPack = await loadFontPack();   // 读一次，所有文件共用
 
 try {
   for (const name of await readdir(inDir)) {
@@ -404,8 +518,8 @@ try {
     };
     try {
       const bytes = await readFile(join(inDir, name));
-      const r = await convert(bytes, { write, output: 'paged', rasterPool: pool });
-      console.log(`${name}：${r.slides} 页，缺少字体 ${r.report.missingFonts.length} 个，提示 ${r.report.warnings.length} 条`);
+      const r = await convert(bytes, { write, output: 'paged', rasterPool: pool, fontPack });
+      console.log(`${name}：${r.slides} 页，字体问题 ${r.fontCheck.errors} 个、提醒 ${r.fontCheck.warnings} 个，提示 ${r.report.warnings.length} 条`);
     } catch (e) {
       console.error(`${name} 转换失败：${e.message}`);
     }
@@ -426,10 +540,12 @@ import { randomUUID } from 'node:crypto';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import { convert } from '@unppt/unppt';
+import { loadFontPack } from '@unppt/unppt/node';
 
 const app = express();
 const OUT = join(process.cwd(), 'converted');
 const wasm = new Uint8Array(await readFile(new URL(import.meta.resolve('@unppt/unppt/resvg.wasm'))));
+const fontPack = await loadFontPack();   // 服务器上不需要装任何系统字体
 
 // 转出来的文件当作静态文件提供
 app.use('/decks', express.static(OUT));
@@ -443,12 +559,12 @@ app.post('/convert', express.raw({ type: 'application/octet-stream', limit: '500
     await writeFile(target, data);
   };
   try {
-    const result = await convert(new Uint8Array(req.body), { write, output: 'paged', rasterWasm: wasm });
+    const result = await convert(new Uint8Array(req.body), { write, output: 'paged', rasterWasm: wasm, fontPack });
     res.json({
       url: `/decks/${id}/index.html`,
       prop: `/decks/${id}/prop.json`,
       slides: result.slides,
-      missingFonts: result.report.missingFonts,
+      fontCheck: result.fontCheck,
       warnings: result.report.warnings,
     });
   } catch (e) {
@@ -465,7 +581,7 @@ app.listen(3000, () => console.log('http://localhost:3000'));
 curl -X POST --data-binary @demo.pptx -H "Content-Type: application/octet-stream" http://localhost:3000/convert
 ```
 
-返回的 `url` 可以直接放进 `<iframe src="...">`。
+返回的 `url` 可以直接放进 `<iframe src="...">`。想在上传时就拒绝有问题的课件（例如符号字体没嵌入），先调用 `checkFonts()`，`errors > 0` 时返回错误，见 [3.8](#38-checkfontsinput-options只检查字体)。
 
 ```mermaid
 sequenceDiagram
@@ -489,6 +605,10 @@ sequenceDiagram
 ```js
 // handler.mjs
 import { convert } from '@unppt/unppt';
+import { loadFontPack } from '@unppt/unppt/node';
+
+// 放在函数外面：同一个实例处理多次请求时只读一次
+const fontPackReady = loadFontPack();
 
 // —— 换成你的对象存储 SDK ——
 async function getObject(key) { /* 返回 Uint8Array */ }
@@ -509,12 +629,13 @@ export async function handler(event) {
   const result = await convert(bytes, {
     output: 'paged',
     images: false,                            // 需要图片时传 rasterWasm（把 resvg.wasm 一起打包部署）
+    fontPack: await fontPackReady,
     write: async (path, data) => putObject(outputPrefix + path, await toBuffer(data)),
   });
   return {
     entry: outputPrefix + 'index.html',
     slides: result.slides,
-    missingFonts: result.report.missingFonts,
+    fontCheck: result.fontCheck,
     warnings: result.report.warnings,
   };
 }
@@ -523,7 +644,8 @@ export async function handler(event) {
 要点：
 
 - 文件很大时，`toBuffer` 会把一个视频完整放进内存。如果你的 SDK 支持流式上传，直接把 `data`（`AsyncIterable`）交给它更省内存；输入也可以用 [3.5](#35-大文件按位置读取) 的方式按范围读取（很多对象存储支持 Range 请求）。
-- 云函数里一般没有中文字体，用 `fonts: [...]` 传入字体文件的字节，并考虑 `embedFonts: true`。
+- 云函数里一般没有任何字体，也**不需要**装：部署时带上 `@unppt/unppt`（会自动带上 `@unppt/fonts`，约 87MB），调用 `loadFontPack()` 并传 `fontPack`，结果和在桌面电脑上转码完全一样。注意云函数的代码包大小限制；字体包超限时可以把它放进层（layer）或挂载的文件系统，再用 `loadFontPack(目录)` 指定位置。
+- 有自己的字体（并且有分发授权）时，再用 `fonts: [...]` 传入字体文件的字节，同名时压过字体包。
 - 把 `index.html`、`pages/`、`media/` 放在同一个前缀下，通过 CDN 提供访问即可，不需要服务器端程序。
 
 ### 4.4 在浏览器里转码
@@ -550,3 +672,5 @@ const result = await convert(source, {
 });
 // files 里就是 index.html、media/... 等输出
 ```
+
+浏览器里没有 `loadFontPack()`（它要读磁盘）。不传 `fontPack` 时，没有嵌入的字体字宽只能估算；需要时可以自己按 `FontPack` 接口（`faces`、`rules`、`metrics(id)`、`file(name)`）从网络读取 `@unppt/fonts` 的文件来实现。
