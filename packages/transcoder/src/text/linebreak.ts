@@ -1,6 +1,6 @@
 /** 换行：中英文断行规则和标点禁则（行首不放句号逗号等，行尾不放左括号等） */
 import type { Atom } from './types';
-import { LAYOUT_UNIT } from './measure';
+import { LAYOUT_UNIT, eaSlot } from './measure';
 
 const NO_START = new Set([...'、。，．・：；？！゛゜ヽヾゝゞ々ー）］｝」』〕〉》】〙〗〟’”｠»,.:;?!)]}%…‥']);
 const NO_END = new Set([...'（［｛「『〔〈《【〘〖〝‘“｟«([{']);
@@ -20,7 +20,8 @@ function canBreakBetween(a: Atom, b: Atom, kinsoku: boolean, latin: boolean): bo
   // 破折号和前一个字之间不断（"表明——"整体换行；两个 — 之间能断，见上一条。实测 tools/wraptest 框宽扫描）
   if (b.text === '—') return false;
   if (a.space || a.tab || latin) return true;
-  if (a.wide || b.wide) return true;
+  // 用东亚字体排的符号（± × § ° 等，见 measure.ts EA_SLOT）断行时按西文算：和前后的字母数字之间不断（实测 tools/wraptest："风险|±10V"、"险|10°C"）
+  if ((a.wide && !eaSlot(a.cp)) || (b.wide && !eaSlot(b.cp))) return true;
   // 实测：连字符后面可以断；斜杠后面不断（text-slash-break：short/longerword、网址都是放不下时在字中间断）
   if (a.text === '-') return true;
   return false;

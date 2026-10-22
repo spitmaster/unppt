@@ -68,10 +68,14 @@ export async function layoutParagraph(p: XEl, pi: number, ctx: ParagraphContext)
   // 制表符：跳到下一个默认制表位
   const defTab = (numAttr(pPr, 'defTabSz') ?? 914400) / EMU_PER_PX;
 
-  const marL = (numAttr(pPr, 'marL') ?? 0) / EMU_PER_PX;
+  // 左缩进、首行缩进：首行起点（marL + indent）和悬挂的距离（-indent）各自取整，见 snapIndent
+  const marLEmu = numAttr(pPr, 'marL') ?? 0;
+  const indentEmu = numAttr(pPr, 'indent') ?? 0;
+  const first = snapIndent(marLEmu + indentEmu);
+  const marL = indentEmu < 0 ? first + snapIndent(-indentEmu) : snapIndent(marLEmu);
+  const indent = first - marL;
   // 右缩进：换行和对齐都在扣掉它的宽度里（实测；PowerPoint 界面里没有，PDF 转换来的课件常见）
   const marR = (numAttr(pPr, 'marR') ?? 0) / EMU_PER_PX;
-  const indent = (numAttr(pPr, 'indent') ?? 0) / EMU_PER_PX;
   const algn = attr(pPr, 'algn') ?? 'l';
 
   // 项目符号
@@ -140,4 +144,14 @@ export async function layoutParagraph(p: XEl, pi: number, ctx: ParagraphContext)
     bullet,
     uid: env.uid ? `${env.uid}p${pi}` : undefined,
   };
+}
+
+/**
+ * 段落缩进的取整（实测 tools/wraptest：雅黑 10.5 磅 9 个字刚好放得下的框宽）：先四舍五入到 1/20 磅（635 EMU），再向上取整到
+ * 排版单位 1/8 磅。左缩进 16.8 / 16.85 / 16.87 磅都按 16.875 排，214313 EMU（16.87504 磅）按 17 磅排，5.06 磅按 5.125 磅排；
+ * 悬挂缩进时首行起点和悬挂距离各自取整（marL 214313、indent -214312 的段落正文从 16.875 磅排）。内边距、框宽不取整。返回像素
+ */
+function snapIndent(emu: number): number {
+  const twips = Math.round(emu / 635);
+  return Math.ceil((twips * 2) / 5) * 2.5 / 15;
 }
