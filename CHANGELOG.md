@@ -1,5 +1,33 @@
 # 更新日志 / Changelog
 
+## 0.3.0（2026-10-23）
+
+**中文**
+
+**字体方案改了（不兼容变化）**：播放时绝不用观看者电脑上的字体，所有观看者看到的完全一样（直播课几千人同时看也一样）。
+
+- 新增默认字体包 `@unppt/fonts`（安装 `@unppt/unppt` 时自动带上，约 60MB）：开源字体（思源黑体 / 宋体、霞鹜文楷、朱雀仿宋、Carlito、Caladea、Liberation，都是 SIL OFL 1.1）+ 447 个 Windows / Office 字体的度量数据（只有字宽等数字，没有字形）。
+- **排版按原字体，显示用开源字体**：没嵌入的微软雅黑、宋体、Calibri 等按原字体的字宽排，换行和文字位置和 PowerPoint 一样；显示用对应的开源字体，每个字放在原字体的格子里（横向居中，汉字竖直中心对齐）。
+- 产物里的字体只有两个来源：PPT 里嵌入的字体和默认字体包。**默认不再用转码电脑上的系统字体**（要用加 `--system-fonts`）；`--fonts <目录>` 指定字体文件，同名时优先。用到的字一律做成子集嵌入产物（`--embed-fonts` 不再需要）。
+- 符号字体（Wingdings 等）不替换、不改动原文的字；没嵌入时转码报告提示作者在 PowerPoint 里嵌入字体（排版仍按原字体的宽度）。
+- 新增字体检查：`unppt check 课件.pptx [--json]` / `checkFonts()`，列出每个字体是嵌入的、默认字体包的、被替代的还是缺的，以及哪些字没有字形；转码结束时也提示有问题的字体。
+- 能读 CFF 轮廓的字体（.otf，例如思源字体），艺术字变形也能用。
+
+**自动换行和 PowerPoint 一致**：新增专项测试（`tools/wraptest`：用 PowerPoint 随机造几千个文本框、表格和各种形状，并对照真实课件读出每一行），按实测改了二十多条规则——破折号、省略号、弯引号、不间断空格、行首 / 行尾禁则（含隔着空格）、标点悬挂的例外、网址和小数里的半角标点、± × § ° 等符号、行尾字距、段落缩进的取整、自动缩小不缩字间距、没嵌入的符号字体项目符号的宽度、没写文字矩形的几何（自定义形状、宽度为 0 的老标题）不换行、饼形的文字区域等。对照结果：PowerPoint 随机生成的 3400 多个文本框、761 个表格单元格、181 种预设形状，换行和 PowerPoint 完全一致的 99.6% 以上；真实课件 398 份、约 1.45 万个多行文本框和 886 个多行表格单元格，和 PowerPoint 不一致的行从 512 行降到 63 行（共约 6 万行）。
+
+**English**
+
+**New font strategy (breaking change)**: the player never uses fonts installed on the viewer's device, so every viewer sees exactly the same thing.
+
+- New default font pack `@unppt/fonts` (installed with `@unppt/unppt`, ~60 MB): open fonts (Noto Sans / Serif SC, LXGW WenKai, Zhuque Fangsong, Carlito, Caladea, Liberation — all SIL OFL 1.1) plus metrics (advance widths etc., no glyphs) of 447 Windows / Office fonts.
+- **Layout uses the original font, display uses an open font**: Microsoft YaHei, SimSun, Calibri… that are not embedded are laid out with their own metrics, so line breaks and positions match PowerPoint; glyphs come from the matching open font, centered in the original font's cell (CJK vertically centered).
+- Fonts in the output come only from fonts embedded in the .pptx and the default pack. **System fonts on the converting machine are no longer used by default** (`--system-fonts` to opt in); `--fonts <dir>` adds your own fonts, which win on name clashes. Used glyphs are always subset into the output (`--embed-fonts` is no longer needed).
+- Symbol fonts (Wingdings…) are never substituted and characters are never remapped; when not embedded the report asks the author to embed them (layout still uses their real widths).
+- New font check: `unppt check deck.pptx [--json]` / `checkFonts()` lists each font as embedded / default pack / substituted / missing, plus characters without glyphs; conversion also prints problem fonts.
+- CFF-outline fonts (.otf, e.g. Source Han) are supported, including WordArt warps.
+
+**Automatic line wrapping matches PowerPoint**: a new test harness (`tools/wraptest`: thousands of random text boxes, tables and shapes generated in PowerPoint, plus real decks, compared line by line) drove 20+ rule fixes — dashes, ellipses, curly quotes, no-break spaces, CJK line-start/line-end rules (also across spaces), hanging punctuation exceptions, ASCII punctuation in URLs and decimals, ± × § °, kerning at line ends, paragraph indent rounding, autofit not shrinking letter spacing, widths of non-embedded symbol bullet fonts; geometries without a text rectangle (custom shapes, zero-width legacy titles) no longer wrap, and the pie text area is fixed. Over 3,400 random text boxes, 761 table cells and all 181 preset shapes generated in PowerPoint, 99.6%+ break exactly like PowerPoint; on 398 real decks (~14.5k multi-line text boxes and 886 multi-line table cells) lines that differ from PowerPoint dropped from 512 to 63 (out of ~60k).
+
 ## 0.2.6（2026-10-22）
 
 **中文**
