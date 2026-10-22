@@ -94,7 +94,7 @@ const AMBIGUOUS = new Set([0x2018, 0x2019, 0x201c, 0x201d]);
  * 带圈数字、几何图形、杂项符号；· – — … ← → ≤ ≥ √ 希腊字母等仍用西文字体）
  */
 const EA_SLOT = new Set([0xa7, 0xa8, 0xb0, 0xb1, 0xd7, 0xf7, 0x2122, 0x2194]);
-const eaSlot = (cp: number) => EA_SLOT.has(cp) || (cp >= 0x2460 && cp <= 0x24ff) || (cp >= 0x25a0 && cp <= 0x26ff);
+export const eaSlot = (cp: number) => EA_SLOT.has(cp) || (cp >= 0x2460 && cp <= 0x24ff) || (cp >= 0x25a0 && cp <= 0x26ff);
 const subsFor = (script: 'jp' | 'ea' | undefined, latin: boolean) => (script === 'jp' ? JP_SUBS : script === 'ea' || !latin ? EA_SUBS : LATIN_SUBS);
 
 /** 默认字体包的字：开源字体的字在原字体格子里的挪动量换成像素（Atom.shift） */
