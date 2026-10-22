@@ -2,7 +2,7 @@
   "name": "@unppt/fonts",
   "version": "0.3.0",
   "description": "unppt 默认字体包：开源字体（SIL OFL 1.1）和排版用的字体度量数据",
-  "license": "OFL-1.1",
+  "license": "SEE LICENSE IN README.md",
   "type": "module",
   "main": "./index.js",
   "types": "./index.d.ts",
@@ -10,6 +10,9 @@
     ".": "./index.js",
     "./fonts.json": "./fonts.json",
     "./map.json": "./map.json"
+  },
+  "scripts": {
+    "prepack": "node check-files.mjs"
   },
   "files": [
     "index.js",

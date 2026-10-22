@@ -18,6 +18,7 @@ import argparse
 import html
 import json
 import os
+import re
 import subprocess
 import sys
 import time
@@ -216,6 +217,19 @@ EXTRA_ARGS: list[str] = []
 FONT_ARGS: list[str] = ["--system-fonts"]
 
 
+def missing_fonts(lines: list[str]) -> list[str]:
+    """转码输出里有问题的字体：0.3.0 起是“字体：”下面的 ⚠ / ✗ 行（字体名后面跟“第 n 页”）；以前是一行“缺少字体：甲、乙”"""
+    old = next((l[5:].split("、") for l in lines if l.startswith("缺少字体：")), None)
+    if old is not None:
+        return old
+    out = []
+    for l in lines:
+        m = re.match(r"[⚠✗]\s+(.+?)\s+第 [\d–、]+ 页", l)
+        if m:
+            out.append(m.group(1))
+    return out
+
+
 def convert(src: Path, out: Path) -> dict:
     out.parent.mkdir(parents=True, exist_ok=True)
     t0 = time.time()
@@ -228,7 +242,7 @@ def convert(src: Path, out: Path) -> dict:
         "ok": r.returncode == 0,
         "error": (r.stderr or "").strip().splitlines()[-1:] if r.returncode else [],
         "warnings": [l[3:] for l in lines if l.startswith("提示：")],
-        "missingFonts": next((l[5:].split("、") for l in lines if l.startswith("缺少字体：")), []),
+        "missingFonts": missing_fonts(lines),
         "seconds": round(time.time() - t0, 2),
     }
 

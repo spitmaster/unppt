@@ -4,7 +4,7 @@
    "file": "Caladea-Bold.ttf",
    "sha256": "ae3cb2dcbc925809dd29d2a44e9802211cab66be541bacbfc9c08c74b27c3742",
    "size": 84492,
-   "url": "https://github.com/google/fonts/raw/main/ofl/caladea/Caladea-Bold.ttf",
+   "url": "https://raw.githubusercontent.com/google/fonts/13c010f766052c13fa9cc8c656008cee55fb4775/ofl/caladea/Caladea-Bold.ttf",
    "license": "OFL-1.1",
    "licenseFile": "LICENSES/Caladea-OFL.txt"
   },
@@ -12,7 +12,7 @@
    "file": "Caladea-BoldItalic.ttf",
    "sha256": "ccabaa7b7e2fdf253d2b1a5fa699dd8a3df8d835a9eb285ad82631a677eb76c0",
    "size": 83356,
-   "url": "https://github.com/google/fonts/raw/main/ofl/caladea/Caladea-BoldItalic.ttf",
+   "url": "https://raw.githubusercontent.com/google/fonts/13c010f766052c13fa9cc8c656008cee55fb4775/ofl/caladea/Caladea-BoldItalic.ttf",
    "license": "OFL-1.1",
    "licenseFile": "LICENSES/Caladea-OFL.txt"
   },
@@ -20,7 +20,7 @@
    "file": "Caladea-Italic.ttf",
    "sha256": "4359a8e24f748b6447b1ff6d7a174febe70961d29f8bb8634b56dacd740a3deb",
    "size": 83780,
-   "url": "https://github.com/google/fonts/raw/main/ofl/caladea/Caladea-Italic.ttf",
+   "url": "https://raw.githubusercontent.com/google/fonts/13c010f766052c13fa9cc8c656008cee55fb4775/ofl/caladea/Caladea-Italic.ttf",
    "license": "OFL-1.1",
    "licenseFile": "LICENSES/Caladea-OFL.txt"
   },
@@ -28,7 +28,7 @@
    "file": "Caladea-Regular.ttf",
    "sha256": "f1e899278b7b4491aba5b6a8253c4b04c050cc59b21865be5c37559a775153cd",
    "size": 81600,
-   "url": "https://github.com/google/fonts/raw/main/ofl/caladea/Caladea-Regular.ttf",
+   "url": "https://raw.githubusercontent.com/google/fonts/13c010f766052c13fa9cc8c656008cee55fb4775/ofl/caladea/Caladea-Regular.ttf",
    "license": "OFL-1.1",
    "licenseFile": "LICENSES/Caladea-OFL.txt"
   },
@@ -36,7 +36,7 @@
    "file": "Carlito-Bold.ttf",
    "sha256": "bb5d20f79b82599ec72983597437373a80f2d2085fa91fc144fd74e876a594db",
    "size": 682468,
-   "url": "https://github.com/google/fonts/raw/main/ofl/carlito/Carlito-Bold.ttf",
+   "url": "https://raw.githubusercontent.com/google/fonts/3dd78844021e948ceb633d1dcee3f7885561b5d9/ofl/carlito/Carlito-Bold.ttf",
    "license": "OFL-1.1",
    "licenseFile": "LICENSES/Carlito-OFL.txt"
   },
@@ -44,7 +44,7 @@
    "file": "Carlito-BoldItalic.ttf",
    "sha256": "b32928186c119599e03ca6a1ffc680fdcb7fac95772f4b95d989cf6cd3861517",
    "size": 808508,
-   "url": "https://github.com/google/fonts/raw/main/ofl/carlito/Carlito-BoldItalic.ttf",
+   "url": "https://raw.githubusercontent.com/google/fonts/3dd78844021e948ceb633d1dcee3f7885561b5d9/ofl/carlito/Carlito-BoldItalic.ttf",
    "license": "OFL-1.1",
    "licenseFile": "LICENSES/Carlito-OFL.txt"
   },
@@ -52,7 +52,7 @@
    "file": "Carlito-Italic.ttf",
    "sha256": "0b019225e58d702bfedcbd35c21696769f8ee115cb6343f84c2f240312450d1c",
    "size": 615236,
-   "url": "https://github.com/google/fonts/raw/main/ofl/carlito/Carlito-Italic.ttf",
+   "url": "https://raw.githubusercontent.com/google/fonts/3dd78844021e948ceb633d1dcee3f7885561b5d9/ofl/carlito/Carlito-Italic.ttf",
    "license": "OFL-1.1",
    "licenseFile": "LICENSES/Carlito-OFL.txt"
   },
@@ -60,7 +60,7 @@
    "file": "Carlito-Regular.ttf",
    "sha256": "f6418f708baede9789daef5d458c0f53d2a888af9820e8062934e504fedc6595",
    "size": 628032,
-   "url": "https://github.com/google/fonts/raw/main/ofl/carlito/Carlito-Regular.ttf",
+   "url": "https://raw.githubusercontent.com/google/fonts/3dd78844021e948ceb633d1dcee3f7885561b5d9/ofl/carlito/Carlito-Regular.ttf",
    "license": "OFL-1.1",
    "licenseFile": "LICENSES/Carlito-OFL.txt"
   },
