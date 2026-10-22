@@ -17,6 +17,8 @@ function canBreakBetween(a: Atom, b: Atom, kinsoku: boolean, latin: boolean): bo
   // 破折号后面总能断，后面是行首禁则的标点也一样（"险——|……"、"险——|。"，实测 tools/wraptest 框宽扫描）
   if (a.text === '—') return true;
   if (kinsoku && (a.style.eaBreak || b.style.eaBreak) && (NO_START.has(b.text) || NO_END.has(a.text))) return false;
+  // 右引号紧跟左引号（"新闻”“长江"）之间不断，右引号也就不悬挂（实测 tools/wraptest："湖北新|闻”“"；"义》“以"照样能断）
+  if ((a.text === '”' && b.text === '“') || (a.text === '’' && b.text === '‘')) return false;
   // 破折号和前一个字之间不断（"表明——"整体换行；两个 — 之间能断，见上一条。实测 tools/wraptest 框宽扫描）
   if (b.text === '—') return false;
   if (a.space || a.tab || latin) return true;
@@ -73,7 +75,8 @@ export function breakLines(atoms: Atom[], avail: (first: boolean) => number, wra
         // 前面也能正常断（"险——|。"）时，这一行剩下的空不到 0.1 个字才在前面断，否则照样悬挂
         // （实测 tools/wraptest 框宽扫描：宋体 10、20、40 磅都在剩 0.085~0.11 个字之间变）
         // 前面的字本身就放不下（框比一个字还窄）时也不悬挂（实测 tools/wraptest：宋体 40 磅框宽 54 磅，"险|。"）
-        if (!hang || !kinsoku || hung >= 0 || width > max + 1e-6 || (lastBreak === i && max - width < a.style.size * 0.1) || !hangable(a.text, atoms[i + 1]?.text) || !(a.style.eaBreak || atoms[i - 1].style.eaBreak)) break;
+        // 悬挂的标点后面得能断（后面紧跟的字不能和它分开时不挂）
+        if (!hang || !kinsoku || hung >= 0 || (atoms[i + 1] && !atoms[i + 1].space && !canBreakBetween(a, atoms[i + 1], kinsoku, latin)) || width > max + 1e-6 || (lastBreak === i && max - width < a.style.size * 0.1) || !hangable(a.text, atoms[i + 1]?.text) || !(a.style.eaBreak || atoms[i - 1].style.eaBreak)) break;
         hung = i;
       }
       width = w;
