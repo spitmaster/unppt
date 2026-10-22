@@ -12,6 +12,8 @@
 - 符号字体（Wingdings 等）不替换、不改动原文的字；没嵌入时转码报告提示作者在 PowerPoint 里嵌入字体（排版仍按原字体的宽度）。
 - 新增字体检查：`unppt check 课件.pptx [--json]` / `checkFonts()`，列出每个字体是嵌入的、默认字体包的、被替代的还是缺的，以及哪些字没有字形；转码结束时也提示有问题的字体。
 - 能读 CFF 轮廓的字体（.otf，例如思源字体），艺术字变形也能用。
+- 图表文字、整页图和缩略图同样只用嵌入的字体；显示用的开源字体缺字时换字体包里别的开源字体画（不交给浏览器）。
+- 思源黑体 / Source Han Sans（含"CN"和粗细后缀）、思源宋体按字体包里同一套字形的思源字体排版和显示。
 
 **自动换行和 PowerPoint 一致**：新增专项测试（`tools/wraptest`：用 PowerPoint 随机造几千个文本框、表格和各种形状，并对照真实课件读出每一行），按实测改了二十多条规则——破折号、省略号、弯引号、不间断空格、行首 / 行尾禁则（含隔着空格）、标点悬挂的例外、网址和小数里的半角标点、± × § ° 等符号、行尾字距、段落缩进的取整、自动缩小不缩字间距、没嵌入的符号字体项目符号的宽度、没写文字矩形的几何（自定义形状、宽度为 0 的老标题）不换行、饼形的文字区域等。对照结果：PowerPoint 随机生成的 3400 多个文本框、761 个表格单元格、181 种预设形状，换行和 PowerPoint 完全一致的 99.6% 以上；真实课件 398 份、约 1.45 万个多行文本框和 886 个多行表格单元格，和 PowerPoint 不一致的行从 512 行降到 63 行（共约 6 万行）。
 
@@ -25,6 +27,8 @@
 - Symbol fonts (Wingdings…) are never substituted and characters are never remapped; when not embedded the report asks the author to embed them (layout still uses their real widths).
 - New font check: `unppt check deck.pptx [--json]` / `checkFonts()` lists each font as embedded / default pack / substituted / missing, plus characters without glyphs; conversion also prints problem fonts.
 - CFF-outline fonts (.otf, e.g. Source Han) are supported, including WordArt warps.
+- Chart text, page images and thumbnails also use only embedded fonts; characters missing from an open display font are drawn with another font from the pack instead of the browser's.
+- Source Han Sans / Serif (including "CN" names and weight suffixes) are laid out and shown with the pack's identical Noto Sans / Serif SC.
 
 **Automatic line wrapping matches PowerPoint**: a new test harness (`tools/wraptest`: thousands of random text boxes, tables and shapes generated in PowerPoint, plus real decks, compared line by line) drove 20+ rule fixes — dashes, ellipses, curly quotes, no-break spaces, CJK line-start/line-end rules (also across spaces), hanging punctuation exceptions, ASCII punctuation in URLs and decimals, ± × § °, kerning at line ends, paragraph indent rounding, autofit not shrinking letter spacing, widths of non-embedded symbol bullet fonts; geometries without a text rectangle (custom shapes, zero-width legacy titles) no longer wrap, and the pie text area is fixed. Over 3,400 random text boxes, 761 table cells and all 181 preset shapes generated in PowerPoint, 99.6%+ break exactly like PowerPoint; on 398 real decks (~14.5k multi-line text boxes and 886 multi-line table cells) lines that differ from PowerPoint dropped from 512 to 63 (out of ~60k).
 
