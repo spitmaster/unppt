@@ -9,7 +9,7 @@ import { textsByShape, linesOf, norm, systemFontBytes } from './lines.mjs';
 const args = process.argv.slice(2);
 const seeds = args[0].split(',');
 const systemFonts = args.includes('--system-fonts');
-const show = Number(args[args.indexOf('--show') + 1]) || (args.includes('--show') ? 20 : 0);
+const show = args.includes('--show') ? Number(args[args.indexOf('--show') + 1]) || 20 : 0;
 const dump = args.includes('--dump') ? args[args.indexOf('--dump') + 1] : undefined;
 const all = [];
 const fonts = systemFonts ? await systemFontBytes() : [];
