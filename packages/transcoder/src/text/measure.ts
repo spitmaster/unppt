@@ -98,6 +98,10 @@ const AMBIGUOUS = new Set([0x2018, 0x2019, 0x201c, 0x201d]);
  */
 const EA_SLOT = new Set([0xa7, 0xa8, 0xb0, 0xb1, 0xd7, 0xf7, 0x2122, 0x2194]);
 export const eaSlot = (cp: number) => EA_SLOT.has(cp) || (cp >= 0x2460 && cp <= 0x24ff) || (cp >= 0x25a0 && cp <= 0x26ff);
+/** 默认字体包里的开源字体：显示用的字体缺字时按这个顺序找（见 makeAtoms 的 drawFallback） */
+const SANS_SHOWN = ['Noto Sans SC', 'Noto Serif SC', 'LXGW WenKai', 'Liberation Sans', 'Liberation Serif', 'Liberation Mono'];
+const SERIF_SHOWN = ['Noto Serif SC', 'Noto Sans SC', 'LXGW WenKai', 'Liberation Serif', 'Liberation Sans', 'Liberation Mono'];
+const SERIF_NAME = /宋|仿宋|楷|明|song|kai|fang|ming|serif|times|georgia|garamond/i;
 const subsFor = (script: 'jp' | 'ea' | undefined, latin: boolean) => (script === 'jp' ? JP_SUBS : script === 'ea' || !latin ? EA_SUBS : LATIN_SUBS);
 
 /** 默认字体包的字：开源字体的字在原字体格子里的挪动量换成像素（Atom.shift） */
@@ -131,11 +135,26 @@ export async function makeAtoms(text: string, style: RunStyle, m: Measurer): Pro
   // 两种字体里都没有的中日韩字：用雅黑补（实测：Yu Gothic 里没有的简体字 PowerPoint 用雅黑 Regular 画）
   let cjk: Promise<[Measured | undefined, string]> | undefined;
   let latinFallback: Promise<[Measured | undefined, string]> | undefined;
+  // 默认字体包：显示用的开源字体没有的字（朱雀仿宋缺很多不常用的汉字，思源黑体缺几个货币符号等），换字体包里别的开源字体画，
+  // 字宽仍按原字体；宋体、仿宋、楷体一类先找思源宋体，其它先找思源黑体（都没有才交给浏览器，字体检查会列出来）
+  const shownBy = new Map<string, Promise<Measured | undefined>>();
+  const drawFallback = async (cp: number, serif: boolean): Promise<Measured | undefined> => {
+    for (const name of serif ? SERIF_SHOWN : SANS_SHOWN) {
+      let p = shownBy.get(name);
+      if (!p) { p = m.metrics(name, style.bold, style.italic, true); shownBy.set(name, p); }
+      const fm = await p;
+      // 找到的也可能是度量包里的同名字体（排版数据来自本机装的思源字体），它的字形同样来自字体包里的开源字体文件
+      if (fm && (fm.metrics.shown ? fm.metrics.shown(cp) : fm.metrics.advance(cp) !== undefined)) return fm;
+    }
+    return undefined;
+  };
   const [symM, symFam] = style.sym ? await pick(style.sym, []) : [undefined, ''];
   // 换成了替代字体的（没嵌入的 Wingdings 等）：字宽仍按原字体（度量包里有的话），字形用替代字体画
   const origWidths = (requested: string | undefined, picked: string) =>
     requested && picked.toLowerCase() !== requested.toLowerCase() ? m.widths?.(requested, style.bold, style.italic) : undefined;
-  const [latinW, eaW, symW] = await Promise.all([origWidths(style.latin, latinFam), origWidths(style.ea, eaFam), origWidths(style.sym, symFam)]);
+  // a:sym（"插入符号"）的符号字体没嵌入时 pick 找不到它（不替换），字宽同样按度量包
+  const [latinW, eaW, symW] = await Promise.all([origWidths(style.latin, latinFam), origWidths(style.ea, eaFam),
+    style.sym && !symM ? m.widths?.(style.sym, style.bold, style.italic) : origWidths(style.sym, symFam)]);
   let src = text;
   if (style.caps === 'all') src = src.toUpperCase();
   const kerning = kernOn(style);
@@ -150,7 +169,7 @@ export async function makeAtoms(text: string, style: RunStyle, m: Measurer): Pro
     // eaFont：用东亚字体排；wide：按中日韩字断行、两端对齐时拉开（EA_SLOT 的字只在中日韩语言里算）
     const eaFont = isWide(cp) || (ambiguousEa && AMBIGUOUS.has(cp)) || eaSlot(cp);
     const wide = isWide(cp) || (ambiguousEa && AMBIGUOUS.has(cp)) || (eaSlot(cp) && style.eaBreak);
-    const isSym = !!symM && cp >= 0xf000 && cp <= 0xf0ff;
+    const isSym = (!!symM || !!symW) && cp >= 0xf000 && cp <= 0xf0ff;
     const primary = isSym ? symM : eaFont ? eaM : latinM;
     const secondary = eaFont ? latinM : eaM;
     let adv = primary?.metrics.advance(cp);
@@ -180,10 +199,22 @@ export async function makeAtoms(text: string, style: RunStyle, m: Measurer): Pro
       if (adv !== undefined) { usedM = lm; family = lf; }
     }
     const used = usedM?.metrics;
-    if (usedM && adv !== undefined && m.embed && cp > 0x20) m.embed.use(usedM.face, cp);
+    // 画这个字用的字体：一般就是排版用的；默认字体包的开源字体没有这个字时换一个（见 drawFallback）
+    let drawFace = adv !== undefined ? usedM?.face : undefined;
+    let drawFamily = family;
+    let shift = adv !== undefined ? used?.displayShift?.(cp) : undefined;
+    if (drawFace && used?.shown && cp > 0x20 && !used.shown(cp)) {
+      const fb = await drawFallback(cp, used.generic === 'roman' || SERIF_NAME.test(family));
+      drawFace = fb?.face;
+      drawFamily = fb ? fb.face.displayFamily : family;
+      shift = fb ? { dx: (adv! - fb.metrics.advance(cp)!) / 2, dy: 0 } : undefined;
+    }
+    if (drawFace && m.embed && cp > 0x20) m.embed.use(drawFace, cp);
     const size = st.baseline ? st.size * 0.67 : st.size;
     const fakeBold = !!st.bold && adv !== undefined && !!usedM && !usedM.face.bold;
-    const origAdv = (isSym ? symW : eaFont ? eaW : latinW)?.advance(cp);
+    // 符号字体的度量按 0x20~0xFF 记，私用区 U+F0xx 的字（"插入符号"存的码点）对回去查
+    const ow = isSym ? symW : eaFont ? eaW : latinW;
+    const origAdv = ow?.advance(cp) ?? (cp >= 0xf020 && cp <= 0xf0ff ? ow?.advance(cp - 0xf000) : undefined);
     const width = snapAdvance((origAdv ?? adv ?? fallbackAdvance(cp)) * size) + (fakeBold ? fakeBoldExtra(size, usedM!.metrics.unitsPerEm) : 0) + st.spc;
     // 字距调整：和前一个字同一个字体时，把成对调整量加到前一个字的宽度上
     const prevAtom = out[out.length - 1];
@@ -201,17 +232,17 @@ export async function makeAtoms(text: string, style: RunStyle, m: Measurer): Pro
     const desc = Math.max(ownDesc, mix ? other!.descent : 0);
     if (m.fontUse) {
       const requested = isSym ? style.sym! : eaFont ? style.ea : style.latin;
-      m.fontUse({ requested, picked: isSym ? symFam : eaFont ? eaFam : latinFam, pickedFace: primary?.face, face: adv !== undefined ? usedM?.face : undefined, cp });
+      m.fontUse({ requested, picked: isSym ? symFam : eaFont ? eaFam : latinFam, pickedFace: primary?.face, face: drawFace, cp });
     }
     out.push({
-      text: ch, cp, width, style: st, family, face: adv !== undefined ? usedM?.face : undefined,
+      text: ch, cp, width, style: st, family: drawFamily, face: drawFace,
       // 实测：上下标按缩小后的字号算上伸、下伸和行高
       ascent: asc * size,
       descent: desc * size,
       ...(mix ? { ownAscent: ownAsc * size, ownDescent: ownDesc * size } : {}),
       strikeY: (used?.strikeTop !== undefined && used.strikeSize !== undefined ? used.strikeTop - used.strikeSize / 2 : 0.25) * size,
       space: ch === ' ' || ch === '　', wide, tab: ch === '\t',
-      ...shiftOf(adv !== undefined ? used?.displayShift?.(cp) : undefined, size),
+      ...shiftOf(shift, size),
     });
   }
   return out;

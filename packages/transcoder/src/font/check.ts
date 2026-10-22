@@ -9,7 +9,7 @@ import type { FontFace } from './font';
 export interface FontUse { requested: string; picked: string; pickedFace?: FontFace; face?: FontFace; cp: number }
 
 /** 符号字体：字母的位置上放的是图形（Wingdings 等），换成别的字体就变成普通字母（SPEC D3） */
-export const SYMBOL_FONT = /wingdings|webdings|^symbol$|marlett|mt extra|bookshelf symbol|ms reference specialty/i;
+export const SYMBOL_FONT = /wingdings|webdings|^symbol$|marlett|mt extra|bookshelf symbol|ms reference specialty|ms outlook|segoe mdl2 assets|segoe fluent icons/i;
 
 export type FontStatus = 'embedded' | 'specified' | 'default' | 'substituted' | 'symbol-missing' | 'missing';
 
@@ -52,6 +52,8 @@ export class FontCheckLog {
   record(u: FontUse, page: number) {
     const key = u.requested;
     if (!key) return;
+    // 符号字体只用在空格上（常见：整段设成 Wingdings 的空行、项目符号后的空格）：没有要显示的符号，不算问题
+    if (SYMBOL_FONT.test(key) && (u.cp <= 0x20 || /\s/u.test(String.fromCodePoint(u.cp)))) return;
     const status = this.classify(u);
     let e = this.fonts.get(key.toLowerCase());
     if (!e) { e = { pages: new Set(), status: status.status }; this.fonts.set(key.toLowerCase(), e); }

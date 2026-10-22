@@ -171,6 +171,7 @@ function build(info: PackFaceInfo, d: PackFaceData, sm: FontMetrics, shownMid: n
     generic: info.generic,
     advance: advanceOf(info, d),
     kern: (l, r) => kern.get(l * 0x110000 + r) ?? 0,
+    shown: (cp) => sm.advance(cp) !== undefined,
     // 字形轮廓（艺术字变形用）：用显示的开源字体的
     outline: (cp) => sm.outline(cp),
     displayShift(cp) {

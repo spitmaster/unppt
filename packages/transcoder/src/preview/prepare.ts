@@ -91,7 +91,7 @@ export class Preparer {
     const flat = warpMeshes(svg, pageScale(svg), (content, width, warp) => this.raster(`mesh@${width}@${warp.dst.join(',')}@${content}`, content, width, warp));
     const out = rewriteFonts(await inlineSvgImages(splitMorphology(flat), this.image, (key, svg, width) => this.raster(key, svg, width)), this.fonts, used);
     const faces = [...used];
-    return { svg: out, fonts: faces.map((f) => this.fontId(f)), ...(faces[0] ? { defaultFamily: faces[0].displayFamily } : {}) };
+    return { svg: out, fonts: faces.map((f) => this.fontId(f)), ...(faces[0] ? { defaultFamily: fileFamily(faces[0]) } : {}) };
   }
 
   /**
@@ -128,6 +128,12 @@ function pageScale(svg: string): number {
   return vbw > 0 ? (Number(/\swidth="([\d.]+)"/.exec(root)?.[1]) || vbw) / vbw : 1;
 }
 
+/**
+ * 交给 resvg 的字体文件里写的家族名：默认字体包的原字体（微软雅黑等）的字形来自开源字体文件，resvg 只认文件里的名字（思源黑体），
+ * 写原字体名会找不到、退回第一个加载的字体（所有字画成同一种字体）
+ */
+const fileFamily = (f: FontFace) => f.shownFamily ?? f.displayFamily;
+
 /** font-family="'甲','乙',sans-serif" 换成能找到的字体文件的英文名；找到的字体记进 used */
 function rewriteFonts(svg: string, fonts: FontResolver, used: Set<FontFace>): string {
   return svg.replace(/<(text|tspan)\b([^>]*)>/g, (tag, _name: string, attrs: string) => {
@@ -145,6 +151,10 @@ function rewriteFonts(svg: string, fonts: FontResolver, used: Set<FontFace>): st
     // 同一家族的常规 / 粗体都交给 resvg，它按 font-weight 自己挑
     const other = fonts(face.displayFamily, !bold, italic);
     if (other) used.add(other);
-    return tag.replace(/\sfont-family="[^"]*"/, ` font-family="${face.displayFamily.replace(/"/g, '')}"`);
+    let out = tag.replace(/\sfont-family="[^"]*"/, ` font-family="${fileFamily(face).replace(/"/g, '')}"`);
+    // 同一个开源家族里有细体、常规体时按字重挑（微软雅黑 Light -> 思源黑体 Light）
+    const w = Math.round(face.weight / 100) * 100;
+    if (!bold && !/\sfont-weight=/.test(attrs) && w > 0 && w !== 400) out = out.replace(/>$/, ` font-weight="${w}">`);
+    return out;
   });
 }

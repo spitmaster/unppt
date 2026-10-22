@@ -24,6 +24,8 @@ test('对照规则：中文按字体名分黑体、宋体、楷体、仿宋，�
   assert.equal(m.displayFile(face(['courier new']), rules), 'LiberationMono-Regular.ttf');
   assert.equal(m.displayFile(face(['segoe ui'], { generic: 'swiss' }), rules), 'LiberationSans-Regular.ttf');
   assert.equal(m.displayFile(face(['wingdings']), rules), undefined, '符号字体没有显示字体');
+  assert.equal(m.displayFile(face(['segoe mdl2 assets']), rules), undefined, '图标字体也是');
+  assert.equal(m.displayFile(face(['monotype corsiva'], { generic: 'script' }), rules), 'LiberationSans-Regular.ttf', 'Monotype 不是等宽字体');
 });
 
 test('原字体的字宽、字距来自度量包，嵌入用的字体来源是开源字体；同名时指定的字体压过字体包', async () => {
