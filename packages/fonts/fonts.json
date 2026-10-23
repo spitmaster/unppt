@@ -231,8 +231,8 @@
   },
   {
    "file": "UnpptWingdingsCompat.ttf",
-   "sha256": "6b83b05c7833c6531e2f59e7da444064cdfbccca1f632969d926a7e6c756e4d8",
-   "size": 58404,
+   "sha256": "4be0b44b39a4275750b596426345ea96a22f6a5c60892d74ad14971aec55e754",
+   "size": 58740,
    "path": "compat/UnpptWingdingsCompat.ttf",
    "generated": "tools/fonts/build-symbol-compat.py（字形来自 Noto Sans Symbols / Symbols 2、Noto Sans SC、Carlito，按 Wingdings 编码重排）",
    "license": "OFL-1.1",
@@ -240,8 +240,8 @@
   },
   {
    "file": "UnpptWingdings2Compat.ttf",
-   "sha256": "fbc5e6d359d4385101eede142ef864d9dd40a285246460f6211db7e5260e69a9",
-   "size": 45308,
+   "sha256": "c8c968f42b32f30f63e84ff53e71414bd6cc0719c75c3a86a07fe2c7754027ae",
+   "size": 45648,
    "path": "compat/UnpptWingdings2Compat.ttf",
    "generated": "tools/fonts/build-symbol-compat.py（字形来自 Noto Sans Symbols / Symbols 2、Noto Sans SC、Carlito，按 Wingdings 编码重排）",
    "license": "OFL-1.1",
@@ -249,8 +249,8 @@
   },
   {
    "file": "UnpptWingdings3Compat.ttf",
-   "sha256": "3b4b98fb4dcf07cabb4d783958a05f8fe9e971c930a1727e09398aefe52cc5ec",
-   "size": 14508,
+   "sha256": "95710925c234490d83475714e8a4d318bba59b1afd44022c4029856c3ca4a45a",
+   "size": 14848,
    "path": "compat/UnpptWingdings3Compat.ttf",
    "generated": "tools/fonts/build-symbol-compat.py（字形来自 Noto Sans Symbols / Symbols 2、Noto Sans SC、Carlito，按 Wingdings 编码重排）",
    "license": "OFL-1.1",

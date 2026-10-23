@@ -116,8 +116,11 @@ def build(name: str, maps: dict[str, str], sources: list[TTFont]):
     used = sorted({r[2] for r in report if r[2]})
     notices = [next((n.toUnicode() for n in sf["name"].names if n.nameID == 0 and n.platformID == 3), "") for sf in sources
                if Path(sf.reader.file.name).name in used]
+    # 全名（4）和 PostScript 名（6）不能少：resvg（整页图、缩略图）不认没有 PostScript 名的字体
     fb.setupNameTable({
         "familyName": family, "styleName": "Regular",
+        "fullName": family, "psName": family.replace(" ", "") + "-Regular", "version": "Version 1.001",
+        "uniqueFontIdentifier": "UNPT;" + family.replace(" ", "") + "-Regular;1.001",
         "copyright": "Glyphs from " + ", ".join(used) + ": " + " / ".join(n for n in notices if n)
                      + ". Re-encoded by unppt to the " + name + " code points.",
         "licenseDescription": "This Font Software is licensed under the SIL Open Font License, Version 1.1.",
