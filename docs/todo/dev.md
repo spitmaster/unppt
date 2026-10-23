@@ -10,7 +10,8 @@ npm 上另有一个 `0.0.0-stage`，是第一次暂存发布时 npm 自动建的
 
 ### 你要做的
 
-1. 有空时到 npmjs.com → @unppt/fonts → Settings → Trusted Publisher 绑定 `spitmaster/unppt` 的 `release.yml`（环境名留空），以后字体包更新也能由工作流发。
+1. ~~绑定字体包的 Trusted Publisher~~ 已绑（10/23，允许 npm publish）。状态是"待验证"：要在 10/25 前通过工作流发一次字体包才算验证，
+   没有新字体包就不必发；过期了等下次字体包更新时删掉重建（见 [docs/release.md](../release.md)）。
 
 ### 要你决定
 
