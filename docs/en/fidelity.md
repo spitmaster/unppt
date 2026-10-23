@@ -264,12 +264,14 @@ The rules in detail:
 | Test set | Size | Conversion failures | Pass rate (SSIM ≥ 0.95) | Mean SSIM |
 |---|---|---|---|---|
 | Synthetic test cases `testcases/` | 242 decks / 524 pages | 0 | **92.7%** | 0.984 |
-| Random batch of real-world decks | 100 decks / 3527 pages | **0** | **78.8%** (about 95% of pages at SSIM ≥ 0.90) | 0.967 |
+| Random batch of real-world decks | 99 decks / 2754 pages | **0** | **77.7%** (about 93% of pages at SSIM ≥ 0.90) | 0.965 |
+| All real decks on the test machine (conversion only, no comparison) | 5,212 decks / about 169,000 slides | **0** | — | — |
 
 How to read these numbers:
 
 - **0.95 is a strict line.** Most pages below it differ only in details: text a few pixels off, one chart label in a different place. At a glance the page looks the same;
 - the synthetic cases deliberately test hard features (3D, WordArt effects, complex charts), so the failing pages cluster around those hard spots;
+- a few decks in the random batch use Source Han Sans, which is not installed on the machine that exported the references: PowerPoint substituted Microsoft YaHei, while unppt shows the Source Han Sans the author used (SPEC D3 ⑩), so those decks score lower; counting only decks whose fonts are all installed, 0.3.0 and 0.2.6 are on par;
 - these numbers are measured with `--system-fonts` (the same fonts PowerPoint uses). With the default font pack (non-embedded fonts laid out with the original font's metrics and displayed with open-source fonts), **line breaks and text positions stay the same and only glyph shapes differ**: on the synthetic cases the mean SSIM is about 0.024 lower per page, purely from glyph shapes;
 - line wrapping is also compared line by line: across 991 real decks 99.8% of multi-line text boxes break exactly like PowerPoint; see [2.5](#25-the-line-wrapping-test-toolswraptest).
 
