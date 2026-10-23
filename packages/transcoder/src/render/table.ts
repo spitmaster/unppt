@@ -66,6 +66,8 @@ export async function renderTable(tbl: XEl | undefined, origin: { x: number; y: 
         lIns: attr(tcPr, 'marL') ?? '91440', rIns: attr(tcPr, 'marR') ?? '91440',
         tIns: attr(tcPr, 'marT') ?? '45720', bIns: attr(tcPr, 'marB') ?? '45720',
         anchor: attr(tcPr, 'anchor') ?? 't',
+        // 水平居中（tcPr anchorCtr）：和文本框一样，整块文字（最宽一行）在单元格里居中，各段的对齐在块里（实测 table-anchor-ctr）
+        ...(attr(tcPr, 'anchorCtr') ? { anchorCtr: attr(tcPr, 'anchorCtr')! } : {}),
         // 单元格的文字方向（竖排等），和文本框的 vert 取值相同
         ...(attr(tcPr, 'vert') ? { vert: attr(tcPr, 'vert')! } : {}),
       },
