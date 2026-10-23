@@ -16,12 +16,13 @@ import { buildGeometry, parseGeomXml, presetGeometry } from '../../geometry/geom
 import { turnedBounds } from '../../geometry/turned-bounds';
 import { colorIn, css, type ColorContext } from '../../model/color';
 import { renderText, type TextEnv } from '../../text/text';
-import { attr, child, children, numAttr, path, type XEl } from '../../io/xml';
+import { attr, child, children, numAttr, path, SNAPSHOT, type XEl } from '../../io/xml';
 import { boxTransform, flipTransform, pc, placeBox, readXfrm, withUid } from '../box';
 import type { RenderContext } from '../context';
 import { projectedBounds, projectedPath, shapeProjection } from '../projection';
 import { pixelRow, snapBox } from '../pixel-snap';
 import { backgroundFill } from './bg-fill';
+import { snapshotArea } from './snapshot';
 
 /** 填充的不透明度（没填充 0；渐变取最不透明的光圈；图片按透明度） */
 function fillOpacity(fill: Fill | undefined): number {
@@ -120,6 +121,11 @@ export async function renderShape(r: RenderContext, el: XEl, ctx: SlideContext, 
     ? backgroundFill(r.bgSvg, paths.filter((p) => p.d && p.fill !== 'none').map((p) => p.d).join(''), gb, ctx, r.env.pres.displayScale, r.doc)
     : undefined;
   if (bgLayer) fill = undefined;
+  // 公式的 Fallback 图片是按最终样子截的图：正着铺在外接矩形里（snapshot.ts）
+  if (fill?.kind === 'image' && el.attrs[SNAPSHOT] && !fill.area && !sp) {
+    const area = snapshotArea(def, gb, av, line?.width ?? 0);
+    if (area) fill = { ...fill, area };
+  }
   // 不跟着形状转的图片、渐变（实测样本：切掉一角的自定义形状转 45°）：正着铺在转动后轮廓的外接矩形里（不是形状框的外接矩形），
   // 也不跟着翻转（实测 fills-rot-cut）
   if ((fill?.kind === 'image' || fill?.kind === 'grad') && fill.upright && !fill.area && gb.rot && !sp) {

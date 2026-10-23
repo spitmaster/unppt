@@ -134,6 +134,11 @@ export function findAll(el: XEl | undefined, name: string, out: XEl[] = []): XEl
 const SUPPORTED_REQUIRES = new Set(['p14', 'p15', 'p159', 'a14', 'a16', 'v', 'mc']);
 /** 这些命名空间里我们不画的元素：Choice 里出现时改用 Fallback（Office 数学公式、墨迹） */
 const UNRENDERED = ['a14:m', 'p14:contentPart', 'p:contentPart'];
+/**
+ * 因为 Choice 画不了而改用的 Fallback 元素带这个标记：它的图片填充是 PowerPoint 按幻灯片上最终的样子截的图
+ * （已经转好、翻好，铺满外接矩形），不能再跟着形状转、翻（render/elements/snapshot.ts）
+ */
+export const SNAPSHOT = 'unppt:snapshot';
 
 export function expandAlternate(list: XEl[]): XEl[] {
   const out: XEl[] = [];
@@ -143,7 +148,11 @@ export function expandAlternate(list: XEl[]): XEl[] {
       && (x.attrs.Requires ?? '').split(/\s+/).every((r) => SUPPORTED_REQUIRES.has(r)));
     const fallback = child(c, 'mc:Fallback');
     // Choice 里有我们画不了的内容（公式、墨迹）时，用 Fallback 里 PowerPoint 存好的图片
-    const picked = choice && fallback && UNRENDERED.some((n) => findAll(choice, n).length) ? fallback : choice ?? fallback;
+    if (choice && fallback && UNRENDERED.some((n) => findAll(choice, n).length)) {
+      out.push(...expandAlternate(fallback.children).map((e) => ({ ...e, attrs: { ...e.attrs, [SNAPSHOT]: '1' } })));
+      continue;
+    }
+    const picked = choice ?? fallback;
     if (picked) out.push(...expandAlternate(picked.children));
   }
   return out;
