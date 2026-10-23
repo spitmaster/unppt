@@ -32,6 +32,13 @@ npm publish --access public --otp=<验证器里的 6 位数字>
 npm view @unppt/fonts@<版本> dist.fileCount --registry https://registry.npmjs.org/   # 能查到才算发好了
 ```
 
+容易踩的坑（0.3.1 第一次发布时遇到的）：
+
+- 一定要先 `cd packages/fonts` 再发：在仓库根目录运行会去发整个仓库（`unppt-monorepo`，标了 private，npm 会拒绝，报 EPRIVATE）。
+- `npm login` 拿到的登录凭证有效期很短，过期后 `npm whoami` 报 401、发布的 PUT 请求报 404（npm 对没登录的作用域包发布回 404），重新 `npm login` 再马上发。
+- 新包第一次发布会走"暂存发布"：npm 先公开一个 `0.0.0-stage` 占位版本，真正的版本要到 npmjs.com → 左边 Staged Packages 里点 Approve（要两步验证）才公开；
+  批准前 `npm view @unppt/fonts@<版本>` 查不到是正常的。
+
 发完到 npmjs.com → @unppt/fonts → Settings → Trusted Publisher 绑定 GitHub Actions：`spitmaster/unppt` 的 `release.yml`（和 @unppt/unppt 一样，环境名留空）。
 之后推转码器的版本标签，工作流会跳过已经发过的字体包、自动发转码器。
 
