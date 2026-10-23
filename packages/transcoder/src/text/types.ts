@@ -1,6 +1,7 @@
 /** 文字排版用到的数据结构 */
 import type { ColorContext, Rgba } from '../model/color';
-import type { FontFace, FontLibrary } from '../font/font';
+import type { FontFace } from '../font/font';
+import type { FontLibrary } from '../font/library';
 import type { FontUse } from '../font/check';
 import type { Theme } from '../model/model';
 import type { SvgDoc } from '../common/svg';

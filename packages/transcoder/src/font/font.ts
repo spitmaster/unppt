@@ -8,6 +8,7 @@ import { GlyphOutlines, type Contour } from './glyf';
 import { CffOutlines } from './cff';
 import { buildKerning } from './kern';
 import { buildCmap } from './cmap';
+import { parseAxes, type VarAxis } from './fvar';
 import { toSource, type InputSource, type RandomAccessSource } from '../io/source';
 
 export interface FontFace {
@@ -26,6 +27,10 @@ export interface FontFace {
   rank?: number;
   /** 默认字体包里的字体：显示用的开源字体名（字体检查报告用） */
   shownFamily?: string;
+  /** 默认字体包里的原字体（微软雅黑等）：只有原字体的度量，字形是别的开源字体的（font/pack.ts） */
+  metricsOnly?: boolean;
+  /** 可变字体（有 fvar 表）的轴：这时 bold、weight、字宽都是默认实例的，不能直接用，字体库按要的粗细取实例（font/instance.ts） */
+  axes?: VarAxis[];
 }
 
 export interface FontMetrics {
@@ -134,9 +139,11 @@ async function makeFace(src: RandomAccessSource, faceOffset: number): Promise<Fo
     italic = (fsSel & 1) !== 0;
     bold = (fsSel & 32) !== 0 || weight >= 600;
   }
+  const fvar = tables.get('fvar');
+  const axes = fvar ? parseAxes(await src.read(fvar.offset, fvar.length)) : [];
   let metrics: Promise<FontMetrics> | undefined;
   return {
-    families, displayFamily: display, bold, italic, weight, source: src, offset: faceOffset,
+    families, displayFamily: display, bold, italic, weight, source: src, offset: faceOffset, ...(axes.length ? { axes } : {}),
     load() {
       metrics ??= loadMetrics(src, tables, os2b);
       return metrics;
@@ -232,66 +239,6 @@ export async function loadFontFile(input: InputSource): Promise<FontFace[]> {
     // 损坏或不支持的字体文件直接忽略
   }
   return faces;
-}
-
-// ---------------------------------------------------------------- 字体库与测量
-
-/** 只有字宽、没有字形的字体（默认字体包里没有显示字体的符号字体）：只用来排版，见 FontLibrary.widths */
-export interface WidthFace {
-  families: string[];
-  bold: boolean;
-  italic: boolean;
-  load(): Promise<Pick<FontMetrics, 'advance'>>;
-}
-
-export class FontLibrary {
-  private byFamily = new Map<string, FontFace[]>();
-  private widthFaces = new Map<string, WidthFace[]>();
-  readonly missing = new Set<string>();
-
-  addWidths(faces: WidthFace[]) {
-    for (const f of faces) for (const fam of f.families) this.widthFaces.set(fam, [...this.widthFaces.get(fam) ?? [], f]);
-  }
-
-  /** 找不到可用字体时原字体的字宽（排版按它，字形用替代字体画） */
-  widths(family: string, bold: boolean, italic: boolean): Promise<Pick<FontMetrics, 'advance'>> | undefined {
-    const list = this.widthFaces.get(family.toLowerCase().trim());
-    if (!list?.length) return undefined;
-    const best = list.find((f) => f.bold === bold && f.italic === italic) ?? list.find((f) => !f.bold && !f.italic) ?? list[0];
-    return best.load();
-  }
-
-  add(faces: FontFace[]) {
-    for (const f of faces) {
-      for (const fam of f.families) {
-        const list = this.byFamily.get(fam) ?? [];
-        list.push(f);
-        this.byFamily.set(fam, list);
-      }
-    }
-  }
-
-  find(family: string, bold: boolean, italic: boolean): FontFace | undefined {
-    const want = family.toLowerCase().trim();
-    const all = this.byFamily.get(want)?.filter((f) => !f.unusable);
-    if (!all?.length) return undefined;
-    // 同名时只在优先级最高的一组里挑（PPT 嵌入的、调用方指定的字体压过默认字体包）
-    const top = Math.min(...all.map((f) => f.rank ?? 0));
-    const list = all.filter((f) => (f.rank ?? 0) === top);
-    let best = list[0], bestScore = -1;
-    for (const f of list) {
-      // 同分时选主名字（名字表里第一个家族名）就是要的这个的：要 Aptos 时选 Aptos，不选家族名里也有 Aptos 的 Aptos Display。
-      // 要粗体时选字重最接近 700 的（同一家族的 SemiBold、Bold、Black 都算粗体，GDI 选 Bold）
-      const w = bold ? 0.1 * (1 - Math.min(Math.abs(f.weight - 700), 500) / 500) : f.weight === 400 ? 0.1 : 0;
-      const score = (f.bold === bold ? 2 : 0) + (f.italic === italic ? 1 : 0) + w + (f.families[0] === want ? 0.05 : 0);
-      if (score > bestScore) { best = f; bestScore = score; }
-    }
-    return best;
-  }
-
-  has(family: string): boolean {
-    return !!this.byFamily.get(family.toLowerCase().trim())?.some((f) => !f.unusable);
-  }
 }
 
 /** 没有字体文件时的估算字宽（单位 em） */

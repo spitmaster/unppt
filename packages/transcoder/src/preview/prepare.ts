@@ -206,9 +206,10 @@ async function rewriteFonts(svg: string, fonts: FontResolver, used: Set<FontFace
     last = m.index! + all.length;
     if (!face) { parts.push(tag + text); continue; }
     for (const f of found) used.add(f);
-    // 同一家族的常规 / 粗体都交给 resvg，它按 font-weight 自己挑
+    // 同一家族的常规 / 粗体都交给 resvg，它按 font-weight 自己挑。先读出来（draws 会 load）：可变字体的实例、嵌入字体读出来以后
+    // 才有真正的字体数据，读不出来的不给
     const other = fonts(face.displayFamily, !bold, italic);
-    if (other) used.add(other);
+    if (other && (await draws(other), !other.unusable)) used.add(other);
     let out = tag.replace(/\sfont-family="[^"]*"/, ` font-family="${fileFamily(face).replace(/"/g, '')}"`);
     // 同一个开源家族里有细体、常规体时按字重挑（微软雅黑 Light -> 思源黑体 Light）
     const w = Math.round(face.weight / 100) * 100;
