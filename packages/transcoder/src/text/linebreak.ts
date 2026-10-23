@@ -38,22 +38,33 @@ function canBreakBetween(a: Atom, b: Atom, kinsoku: boolean, latin: boolean): bo
   return false;
 }
 
+/** 每个位置往前、往后最近的非空格字（含自己）：很长的空格段里不用每次都往两边找 */
+interface Around { prev: Int32Array; next: Int32Array }
+function around(atoms: Atom[]): Around {
+  const n = atoms.length;
+  const prev = new Int32Array(n), next = new Int32Array(n + 1);
+  for (let k = 0, p = -1; k < n; k++) { if (!atoms[k].space) p = k; prev[k] = p; }
+  next[n] = n;
+  for (let k = n - 1; k >= 0; k--) next[k] = atoms[k].space ? next[k + 1] : k;
+  return { prev, next };
+}
+
 /**
  * 空格前面紧挨着的字是行尾禁则的字（"（ e.g."）：空格后面也不能断；空格后面紧挨着的是行首禁则的字（"。 ）"）：空格前面也不能断
  * （实测 tools/wraptest：PowerPoint 把"（"一起带到下一行，把"习。 ）"一起带到下一行）
  */
-function endsOpen(atoms: Atom[], i: number): boolean {
-  while (i >= 0 && atoms[i].space) i--;
-  return i >= 0 && NO_END.has(atoms[i].text) && !!atoms[i].style.eaBreak;
+function endsOpen(atoms: Atom[], ar: Around, i: number): boolean {
+  const j = ar.prev[i];
+  return j >= 0 && NO_END.has(atoms[j].text) && !!atoms[j].style.eaBreak;
 }
-function startsClose(atoms: Atom[], i: number): boolean {
-  while (i < atoms.length && atoms[i].space) i++;
-  return i < atoms.length && NO_START.has(atoms[i].text) && !!atoms[i].style.eaBreak;
+function startsClose(atoms: Atom[], ar: Around, i: number): boolean {
+  const j = ar.next[i];
+  return j < atoms.length && NO_START.has(atoms[j].text) && !!atoms[j].style.eaBreak;
 }
 /** 空格后面是中文里的破折号（"练习 ——"）：空格前面也不能断，破折号连同空格跟着前一个字（实测 tools/wraptest；英文里照样能断） */
-function startsDash(atoms: Atom[], i: number): boolean {
-  while (i < atoms.length && atoms[i].space) i++;
-  return i < atoms.length && atoms[i].text === '—' && !!atoms[i].style.eaBreak;
+function startsDash(atoms: Atom[], ar: Around, i: number): boolean {
+  const j = ar.next[i];
+  return j < atoms.length && atoms[j].text === '—' && !!atoms[j].style.eaBreak;
 }
 
 /**
@@ -66,13 +77,14 @@ function startsDash(atoms: Atom[], i: number): boolean {
  * latin：允许西文在单词中间换行（a:pPr latinLnBrk="1"）——任意两个字之间都能断，标点禁则照样管（实测 text-latin-break）
  */
 export function breakLines(atoms: Atom[], avail: (first: boolean) => number, wrap: boolean, hang = false, kinsoku = true, latin = false,
-  relayout?: (start: number, first: boolean) => void): Atom[][] {
+  relayout?: (start: number, first: boolean, limit: number) => void): Atom[][] {
   const lines: Atom[][] = [];
+  const ar = around(atoms);
   let start = 0;
   while (start < atoms.length) {
-    // 新的一行从头重排制表符（制表位按这一行的起点算）
-    if (start > 0) relayout?.(start, lines.length === 0);
     const max = avail(lines.length === 0);
+    // 新的一行从头重排制表符（制表位按这一行的起点算；只需排到这一行放不下为止，后面的字到它们那一行的开头再排）
+    if (start > 0) relayout?.(start, lines.length === 0, wrap ? max : Infinity);
     let width = 0;
     let lastBreak = -1;
     let i = start;
@@ -81,7 +93,7 @@ export function breakLines(atoms: Atom[], avail: (first: boolean) => number, wra
     for (; i < atoms.length; i++) {
       const a = atoms[i];
       if (a.text === '\n') { forced = i; break; }
-      if (i > start && canBreakBetween(atoms[i - 1], a, kinsoku, latin) && !(kinsoku && (atoms[i - 1].space && endsOpen(atoms, i - 1) || a.space && startsClose(atoms, i))) && !(a.space && startsDash(atoms, i))) lastBreak = i;
+      if (i > start && canBreakBetween(atoms[i - 1], a, kinsoku, latin) && !(kinsoku && (atoms[i - 1].space && endsOpen(atoms, ar, i - 1) || a.space && startsClose(atoms, ar, i))) && !(a.space && startsDash(atoms, ar, i))) lastBreak = i;
       const w = width + a.width;
       // 实测：行宽向上取整到排版单位（1/8 磅）后不超过可用宽度才放得下（可用宽度、内边距不取整；字间距让行宽不在格子上时，
       // 正好等宽也要换行）。这个字在行尾时不算它和后一个字的字距调整（实测 tools/wraptest：微软雅黑 "me|r-"，r 和 - 有负字距），

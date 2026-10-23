@@ -27,7 +27,8 @@ let convs = 0;
 /** 一次转换的出图准备（字体编号、背景层编号、超大图缩小结果都在这次转换里共用） */
 export class Preparer {
   readonly conv = `c${++convs}`;
-  private fontIds = new Map<FontFace, string>();
+  /** 字体编号按字体文件（和集合里的偏移）给：默认字体包里很多原字体共用一个开源字体文件，只读一份、只交给 resvg 一份 */
+  private fontIds = new Map<FontFace['source'], Map<number, string>>();
   private faces = new Map<string, FontFace>();
   private fontBytes = new Map<string, Promise<Uint8Array | undefined>>();
   private shrunk = new Map<string, Promise<Uint8Array | undefined>>();
@@ -91,7 +92,7 @@ export class Preparer {
     const flat = warpMeshes(svg, pageScale(svg), (content, width, warp) => this.raster(`mesh@${width}@${warp.dst.join(',')}@${content}`, content, width, warp));
     const out = rewriteFonts(await inlineSvgImages(splitMorphology(flat), this.image, (key, svg, width) => this.raster(key, svg, width)), this.fonts, used);
     const faces = [...used];
-    return { svg: out, fonts: faces.map((f) => this.fontId(f)), ...(faces[0] ? { defaultFamily: fileFamily(faces[0]) } : {}) };
+    return { svg: out, fonts: [...new Set(faces.map((f) => this.fontId(f)))], ...(faces[0] ? { defaultFamily: fileFamily(faces[0]) } : {}) };
   }
 
   /**
@@ -111,10 +112,12 @@ export class Preparer {
   }
 
   private fontId(f: FontFace): string {
-    let id = this.fontIds.get(f);
+    let byOffset = this.fontIds.get(f.source);
+    if (!byOffset) this.fontIds.set(f.source, (byOffset = new Map()));
+    let id = byOffset.get(f.offset);
     if (!id) {
-      id = `f${this.fontIds.size}`;
-      this.fontIds.set(f, id);
+      id = `f${this.faces.size}`;
+      byOffset.set(f.offset, id);
       this.faces.set(id, f);
     }
     return id;
