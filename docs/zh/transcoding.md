@@ -788,7 +788,7 @@ flowchart TD
 - **字体解析是自研的**（`font/font.ts`）：只读排版需要的表（`name`、`cmap`、`hmtx`/`hhea`、`head`、`OS/2`、`GPOS`/`kern`），而且懒加载——建索引时只读表目录和 `name` 表，真正用到才读字宽。
 - **嵌入字体还原**：PowerPoint 嵌入的字体是 EOT 外壳，里面一般经过 MicroType Express 压缩。`font/eot.ts` → `font/lzcomp.ts` → `font/ctf.ts` 把它还原成普通 TTF。
 - PowerPoint 自己不认的嵌入字体（CFF 格式的 `.otf`、表目录没排序的字体）和 PowerPoint 一样当作没有嵌入。
-- **默认字体包**（`font/pack.ts`）：每个原字体（微软雅黑、Calibri……）变成一个 `FontFace`：名字、粗斜体、字宽和行高来自度量包（`metrics/`，只有数字，覆盖 447 个 Windows / Office 字体），字形来自对应的开源字体文件（`files/`，按 `map.json` 的规则对照），子集化和出图都用开源字体。符号字体（Wingdings 等）在 `map.json` 里没有显示字体，没嵌入时记为 `symbol-missing`。
+- **默认字体包**（`font/pack.ts`）：每个原字体（微软雅黑、Calibri……）变成一个 `FontFace`：名字、粗斜体、字宽和行高来自度量包（`metrics/`，只有数字，覆盖 458 个 Windows / Office 字体），字形来自对应的开源字体文件（`files/`，按 `map.json` 的规则对照），子集化和出图都用开源字体。符号字体（Wingdings 等）在 `map.json` 里没有显示字体，没嵌入时记为 `symbol-missing`。
 - **什么时候嵌入**：0.3.0 起 `embedFonts` 默认 `true`，所有用到的字体都嵌入（`false` 只用于调试，这时只嵌入 pptx 自带的嵌入字体）。默认情况下嵌入的只有开源字体和作者自己嵌入 PPT 的字体；用 `--fonts` / `--system-fonts` 指定的商业字体，分发授权由调用方负责。
 - **子集化**：`font/subset.ts` 用 HarfBuzz 的 `hb-subset`（WASM，构建时直接打进 JS）只保留用到的字，打包成 WOFF。每个字体一个唯一别名 `unppt-f{n}`，SVG 里的 `font-family` 先写别名、再写原名。
 - 所有页处理完之后，产物形式调用 `fontFiles()` 才真正做子集化，这时已经知道全部用到的字了。

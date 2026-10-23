@@ -5,6 +5,8 @@
  */
 import type { InputSource } from '../io/source';
 import { isWide, loadFontFile, type FontFace, type FontMetrics, type WidthFace } from './font';
+import { SYMBOL_FONT } from './check';
+import { symbolByte } from './cmap';
 
 /** 度量包里一个字形的概要（metrics/index.json 的一项；长度单位是字体单位） */
 export interface PackFaceInfo {
@@ -115,10 +117,14 @@ export function packWidthFaces(pack: FontPack): WidthFace[] {
   });
 }
 
-/** 度量包的字宽查找（单位 em）：runs 按起始码点二分 */
+/**
+ * 度量包的字宽查找（单位 em）：runs 按起始码点二分。符号字体的度量按 0x20~0xFF 记（cmap.ts 的做法），
+ * "插入符号"存的私用区码点 U+F020~F0FF 和 cp1252 的 • – — 等先换成字节再查（cmap.ts symbolByte）
+ */
 function advanceOf(info: PackFaceInfo, d: PackFaceData): (cp: number) => number | undefined {
   const starts = d.runs.map((r) => r[0]);
-  return (cp) => {
+  const symbol = info.families.some((f) => SYMBOL_FONT.test(f));
+  const find = (cp: number) => {
     let lo = 0, hi = starts.length - 1, at = -1;
     while (lo <= hi) {
       const mid = (lo + hi) >> 1;
@@ -127,6 +133,11 @@ function advanceOf(info: PackFaceInfo, d: PackFaceData): (cp: number) => number 
     if (at < 0) return undefined;
     const [s, n, w] = d.runs[at];
     return cp < s + n ? w / info.upem : undefined;
+  };
+  return (cp) => {
+    if (!symbol) return find(cp);
+    const b = symbolByte(cp);
+    return b !== undefined ? find(b) : find(cp);
   };
 }
 

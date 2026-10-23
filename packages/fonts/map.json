@@ -1,6 +1,9 @@
 {
-  "comment": "原字体 -> 显示用的开源字体。按顺序匹配，第一条命中的生效；name 是不区分大小写的正则，匹配字体的任意一个名字；cjk 表示有大量汉字的字体；generic 是 Windows 的字体大类。show 为 null 表示不提供显示字体（符号字体、图标字体不替换，见 SPEC D3 ⑤；排版仍按度量包里的字宽）",
+  "comment": "原字体 -> 显示用的开源字体。按顺序匹配，第一条命中的生效；name 是不区分大小写的正则，匹配字体的任意一个名字；cjk 表示有大量汉字的字体；generic 是 Windows 的字体大类。show 为 null 表示不提供显示字体（还没做兼容字体的符号字体、图标字体，见 SPEC D3 ⑤；排版仍按度量包里的字宽）；Wingdings 1~3 显示用编码兼容的开源字体（compat/，课件里的字符不改）",
   "rules": [
+    { "name": "^wingdings$", "show": { "regular": "UnpptWingdingsCompat.ttf" } },
+    { "name": "^wingdings 2$", "show": { "regular": "UnpptWingdings2Compat.ttf" } },
+    { "name": "^wingdings 3$", "show": { "regular": "UnpptWingdings3Compat.ttf" } },
     { "name": "wingdings|webdings|^symbol$|marlett|mt extra|bookshelf symbol|ms reference specialty|ms outlook|segoe mdl2 assets|segoe fluent icons", "show": null },
     { "name": "^calibri", "show": { "regular": "Carlito-Regular.ttf", "bold": "Carlito-Bold.ttf", "italic": "Carlito-Italic.ttf", "boldItalic": "Carlito-BoldItalic.ttf" } },
     { "name": "^cambria", "show": { "regular": "Caladea-Regular.ttf", "bold": "Caladea-Bold.ttf", "italic": "Caladea-Italic.ttf", "boldItalic": "Caladea-BoldItalic.ttf" } },

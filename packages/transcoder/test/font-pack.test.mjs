@@ -5,7 +5,7 @@ import { readFile } from 'node:fs/promises';
 import { build } from 'esbuild';
 
 const r = await build({
-  stdin: { contents: `export { displayFile, packFaces } from './packages/transcoder/src/font/pack.ts'; export { FontLibrary } from './packages/transcoder/src/font/font.ts'; export { eotToTtf } from './packages/transcoder/src/font/eot.ts'; export { ZipReader } from './packages/transcoder/src/io/zip.ts'; export { toSource } from './packages/transcoder/src/io/source.ts';`, resolveDir: process.cwd(), loader: 'ts' },
+  stdin: { contents: `export { displayFile, packFaces } from './packages/transcoder/src/font/pack.ts'; export { symbolByte } from './packages/transcoder/src/font/cmap.ts'; export { FontLibrary } from './packages/transcoder/src/font/font.ts'; export { eotToTtf } from './packages/transcoder/src/font/eot.ts'; export { ZipReader } from './packages/transcoder/src/io/zip.ts'; export { toSource } from './packages/transcoder/src/io/source.ts';`, resolveDir: process.cwd(), loader: 'ts' },
   bundle: true, write: false, format: 'esm', platform: 'neutral', mainFields: ['module', 'main'], loader: { '.wasm': 'binary' }, logLevel: 'silent',
 });
 const m = await import('data:text/javascript;base64,' + Buffer.from(r.outputFiles[0].text).toString('base64'));
@@ -23,7 +23,9 @@ test('对照规则：中文按字体名分黑体、宋体、楷体、仿宋，�
   assert.equal(m.displayFile(face(['times new roman'], { generic: 'roman' }), rules), 'LiberationSerif-Regular.ttf');
   assert.equal(m.displayFile(face(['courier new']), rules), 'LiberationMono-Regular.ttf');
   assert.equal(m.displayFile(face(['segoe ui'], { generic: 'swiss' }), rules), 'LiberationSans-Regular.ttf');
-  assert.equal(m.displayFile(face(['wingdings']), rules), undefined, '符号字体没有显示字体');
+  assert.equal(m.displayFile(face(['wingdings']), rules), 'UnpptWingdingsCompat.ttf', 'Wingdings 用编码兼容的开源字体显示');
+  assert.equal(m.displayFile(face(['wingdings 3']), rules), 'UnpptWingdings3Compat.ttf');
+  assert.equal(m.displayFile(face(['webdings']), rules), undefined, '还没做兼容字体的符号字体没有显示字体');
   assert.equal(m.displayFile(face(['segoe mdl2 assets']), rules), undefined, '图标字体也是');
   assert.equal(m.displayFile(face(['monotype corsiva'], { generic: 'script' }), rules), 'LiberationSans-Regular.ttf', 'Monotype 不是等宽字体');
 });
@@ -54,4 +56,15 @@ test('原字体的字宽、字距来自度量包，嵌入用的字体来源是�
   const own = { ...orig, rank: undefined, families: ['测试原字体'] };
   lib.add([own]);
   assert.equal(lib.find('测试原字体', false, false), own);
+});
+
+test('符号字体的字节：0x20~0xFF 原样，U+F0xx 减去 0xF000，cp1252 的 • – — “ ” € 换成代码页字节，™ 不换', () => {
+  assert.equal(m.symbolByte(0x70), 0x70);
+  assert.equal(m.symbolByte(0xf070), 0x70);
+  assert.equal(m.symbolByte(0x2022), 0x95);
+  assert.equal(m.symbolByte(0x2014), 0x97);
+  assert.equal(m.symbolByte(0x201c), 0x93);
+  assert.equal(m.symbolByte(0x20ac), 0x80);
+  assert.equal(m.symbolByte(0x2122), undefined);
+  assert.equal(m.symbolByte(0x4e00), undefined);
 });
