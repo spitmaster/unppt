@@ -638,9 +638,13 @@ flowchart LR
 
 ### 8.2 Line breaking (linebreak.ts)
 
-- a line may break after spaces and tabs, and between CJK characters;
-- **punctuation rules (kinsoku)**: full stops, commas, closing brackets etc. may not start a line; opening brackets and opening quotes may not end a line (the `NO_START` and `NO_END` sets);
-- a word too long for the line is broken in the middle.
+One character off in a line break shifts every line after it, so every line-breaking rule is measured in PowerPoint first and then implemented (how it is measured: [Fidelity 2.5](fidelity.md#25-the-line-wrapping-test-toolswraptest)); each rule and its evidence is recorded in [SPEC section 7](../../SPEC.md#7-实测得到的-powerpoint-规则用-make-case-用例校准) (Chinese). The main groups:
+
+- a line may break after spaces and tabs, and between CJK characters; a word too long for the line is broken in the middle;
+- **punctuation rules (kinsoku)**: full stops, commas, closing brackets etc. may not start a line; opening brackets and opening quotes may not end a line (the `NO_START` and `NO_END` sets), also across a space; when "Use East Asian rules for first and last character" (`eaLnBrk`) is off, these rules are skipped;
+- **hanging punctuation**: a full stop or comma that does not fit at the end of a line hangs outside the box, except ASCII punctuation inside URLs and decimals, and when the punctuation right after it does not fit either;
+- **symbols**: a dash stays with the character before it, ellipses do not hang, curly quotes stay with adjacent letters and digits, no-break spaces never break, circled digits behave like CJK characters, and ★ ± × § ° behave like Latin characters;
+- **widths**: kerning between two characters only counts inside one line, so the pair at the end of a line takes no width; a tab whose stop lies beyond the line width moves to the next line together with the text after it.
 
 ### 8.3 Bullets and numbering (bullets.ts)
 
@@ -788,7 +792,8 @@ Key points:
 - **Font parsing is home-grown** (`font/font.ts`): it reads only the tables layout needs (`name`, `cmap`, `hmtx`/`hhea`, `head`, `OS/2`, `GPOS`/`kern`), lazily. Building the index reads only the table directory and the `name` table; widths are read on first use.
 - **Restoring embedded fonts**: PowerPoint embeds fonts in an EOT wrapper, usually MicroType Express compressed. `font/eot.ts`, `font/lzcomp.ts` and `font/ctf.ts` turn it back into a normal TTF.
 - Embedded fonts that PowerPoint itself refuses (CFF `.otf`, an unsorted table directory) are treated as not embedded, like PowerPoint.
-- **Default font pack** (`font/pack.ts`): each original font (Microsoft YaHei, Calibri, ...) becomes a `FontFace` whose names, bold/italic, widths and line metrics come from the metrics pack (`metrics/`, numbers only, covering 458 Windows / Office font faces) and whose glyphs come from the matching open-source font file (`files/`, mapped by the rules in `map.json`); subsetting and slide images use the open-source font. Symbol fonts (Wingdings etc.) have no display font in `map.json`; when not embedded they are reported as `symbol-missing`.
+- **Default font pack** (`font/pack.ts`): each original font (Microsoft YaHei, Calibri, ...) becomes a `FontFace` whose names, bold/italic, widths and line metrics come from the metrics pack (`metrics/`, numbers only, covering 458 Windows / Office font faces) and whose glyphs come from the matching open-source font file (`files/`, mapped by the rules in `map.json`); subsetting and slide images use the open-source font.
+- **Symbol fonts** (pictures in the places of letters): the deck's characters are never changed. Wingdings 1–3 are displayed with code-compatible open fonts in the pack (`compat/`: glyphs taken from Noto Sans Symbols and others and re-encoded at the Wingdings code points, built by `tools/fonts/build-symbol-compat.py`); other symbol fonts (Webdings, Symbol, ...) have no display font in `map.json` and are reported as `symbol-missing` when not embedded, but layout still uses the original font's widths from the metrics pack. Looking up a character in a symbol font (`symbolByte` in `font/cmap.ts`): 0x20–0xFF, the private-use range U+F020–F0FF, and • – — “ ” € from the Windows Western code page are all mapped to a byte before taking the glyph (measured; ™ is the exception).
 - **When fonts are embedded**: since 0.3.0 `embedFonts` defaults to `true` and every used font is embedded (`false` is for debugging; then only the pptx's own embedded fonts are). By default the only fonts embedded are open-source fonts and fonts the author embedded in the PPT; for commercial fonts given with `--fonts` / `--system-fonts`, the caller is responsible for the distribution licence.
 - **Subsetting**: `font/subset.ts` uses HarfBuzz's `hb-subset` (WASM, bundled into the JS at build time) to keep only used glyphs and packs them as WOFF. Each font gets a unique alias `unppt-f{n}`; the SVG `font-family` lists the alias first, then the original name.
 - Subsetting really happens only after all slides are done, when the output form calls `fontFiles()`; by then every used glyph is known.

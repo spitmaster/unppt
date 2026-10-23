@@ -638,9 +638,13 @@ flowchart LR
 
 ### 8.2 断行（linebreak.ts）
 
-- 空格、制表符后可以断；中日韩文字之间可以断；
-- **标点禁则**：句号、逗号、右括号等不能放在行首；左括号、左引号等不能放在行尾（`NO_START`、`NO_END` 两个集合）；
-- 放不下的长单词在字中间断。
+换行位置差一个字，后面的行就全部错开，所以断行规则都是先在 PowerPoint 里实测、再实现（测法见 [还原度 2.5](fidelity.md#25-自动换行专项测试toolswraptest)），每条规则和依据记在 [SPEC 第 7 节](../../SPEC.md#7-实测得到的-powerpoint-规则用-make-case-用例校准)。主要的几类：
+
+- 空格、制表符后可以断；中日韩文字之间可以断；放不下的长单词在字中间断；
+- **标点禁则**：句号、逗号、右括号等不能放在行首；左括号、左引号等不能放在行尾（`NO_START`、`NO_END` 两个集合）；隔着空格也管；"按中文习惯控制首尾字符"（`eaLnBrk`）关掉时不做禁则；
+- **标点悬挂**：行尾的句号、逗号放不下时挂在框外；例外是网址、小数里的半角标点，以及后面紧跟的标点也放不下的情况；
+- **符号**：破折号和前一个字不断开，省略号不悬挂，弯引号和紧挨着的字母数字不断开，不间断空格两边不断，带圈数字按汉字算，★ ± × § ° 等按西文算；
+- **宽度**：两个字之间的字距调整只在同一行里算，行尾那一对不占行宽；制表符要跳到的位置超出行宽时，连同后面的字一起换到下一行。
 
 ### 8.3 项目符号和编号（bullets.ts）
 
@@ -788,7 +792,8 @@ flowchart TD
 - **字体解析是自研的**（`font/font.ts`）：只读排版需要的表（`name`、`cmap`、`hmtx`/`hhea`、`head`、`OS/2`、`GPOS`/`kern`），而且懒加载——建索引时只读表目录和 `name` 表，真正用到才读字宽。
 - **嵌入字体还原**：PowerPoint 嵌入的字体是 EOT 外壳，里面一般经过 MicroType Express 压缩。`font/eot.ts` → `font/lzcomp.ts` → `font/ctf.ts` 把它还原成普通 TTF。
 - PowerPoint 自己不认的嵌入字体（CFF 格式的 `.otf`、表目录没排序的字体）和 PowerPoint 一样当作没有嵌入。
-- **默认字体包**（`font/pack.ts`）：每个原字体（微软雅黑、Calibri……）变成一个 `FontFace`：名字、粗斜体、字宽和行高来自度量包（`metrics/`，只有数字，覆盖 458 个 Windows / Office 字体），字形来自对应的开源字体文件（`files/`，按 `map.json` 的规则对照），子集化和出图都用开源字体。符号字体（Wingdings 等）在 `map.json` 里没有显示字体，没嵌入时记为 `symbol-missing`。
+- **默认字体包**（`font/pack.ts`）：每个原字体（微软雅黑、Calibri……）变成一个 `FontFace`：名字、粗斜体、字宽和行高来自度量包（`metrics/`，只有数字，覆盖 458 个 Windows / Office 字体），字形来自对应的开源字体文件（`files/`，按 `map.json` 的规则对照），子集化和出图都用开源字体。
+- **符号字体**（字母的位置上放的是图形）：课件里的字符不改。Wingdings 1~3 的显示字体是字体包里编码兼容的开源字体（`compat/`，字形取自 Noto Sans Symbols 等，按 Wingdings 的编码重新排放，生成脚本 `tools/fonts/build-symbol-compat.py`）；其它符号字体（Webdings、Symbol 等）在 `map.json` 里没有显示字体，没嵌入时记为 `symbol-missing`，但排版仍按度量包里原字体的字宽。符号字体里查字（`font/cmap.ts` 的 `symbolByte`）：0x20~0xFF、私用区 U+F020~F0FF、以及 Windows 西文代码页里的 • – — “ ” € 都换成字节再取字形（实测，™ 除外）。
 - **什么时候嵌入**：0.3.0 起 `embedFonts` 默认 `true`，所有用到的字体都嵌入（`false` 只用于调试，这时只嵌入 pptx 自带的嵌入字体）。默认情况下嵌入的只有开源字体和作者自己嵌入 PPT 的字体；用 `--fonts` / `--system-fonts` 指定的商业字体，分发授权由调用方负责。
 - **子集化**：`font/subset.ts` 用 HarfBuzz 的 `hb-subset`（WASM，构建时直接打进 JS）只保留用到的字，打包成 WOFF。每个字体一个唯一别名 `unppt-f{n}`，SVG 里的 `font-family` 先写别名、再写原名。
 - 所有页处理完之后，产物形式调用 `fontFiles()` 才真正做子集化，这时已经知道全部用到的字了。
