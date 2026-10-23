@@ -12,7 +12,8 @@ import { DECK_FORMAT, DECK_FORMAT_VERSION, UNPPT_VERSION, type DeckReport, type 
 import { compileAdvance, compileTiming, compileTransition, soundRids } from './anim/anim';
 import { mergeTiming } from './anim/inherited-timing';
 import { lazyEmbeddedFont } from './font/eot';
-import { FontLibrary, loadFontFile, type FontFace } from './font/font';
+import { loadFontFile, type FontFace } from './font/font';
+import { FontLibrary } from './font/library';
 import { packFaces, packWidthFaces, type FontPack } from './font/pack';
 import { FontCheckLog, type FontCheck } from './font/check';
 import { subsetFont } from './font/subset';
@@ -147,6 +148,8 @@ export async function convert(input: InputSource, options: ConvertOptions): Prom
     for (const [face, u] of usage) {
       // 只排了空格之类的字（一个可见字都没用到）：不出字体文件（空的子集没有 cmap，浏览器解码报错）
       if (!u.cps.size) continue;
+      // 字体数据在 load() 之后才定下来（嵌入字体解压、可变字体取实例）；用到的字体都已经读过，这里只是保险
+      await face.load();
       const data = await subsetFont(face.source, face.offset, u.cps, u.alias);
       if (!data) { pres.warn(`字体子集化失败，没有嵌入：${face.displayFamily}`); continue; }
       const font: DeckFont = { family: u.alias, source: face.displayFamily, weight: face.bold ? 'bold' : 'normal', style: face.italic ? 'italic' : 'normal', format: 'woff' };

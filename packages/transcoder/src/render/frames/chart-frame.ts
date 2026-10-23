@@ -2,7 +2,8 @@
 import { attr, child, findAll, type XEl } from '../../io/xml';
 import { renderChart, type ChartEnv } from '../../chart/chart';
 import type { TextWidth } from '../../chart/layout';
-import { fallbackAdvance, isWide, type FontLibrary, type FontMetrics } from '../../font/font';
+import { fallbackAdvance, isWide, type FontMetrics } from '../../font/font';
+import type { FontLibrary } from '../../font/library';
 import type { SlideMapping, Theme } from '../../model/model';
 import { chartUid } from '../../common/uid';
 import type { FrameHandler } from './frame-handler';

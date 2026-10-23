@@ -4,6 +4,7 @@
  * WASM 在构建时直接打进 JS（esbuild 的 binary loader），不需要调用方另外提供。
  * 保留字体微调（hinting）和 gasp、hdmx、VDMX 等渲染表：实测嵌入后的显示和直接用系统字体逐像素一致（6 个文字用例 8 页里 7 页一致；
  * 以前自研的子集化不带这些表，只有 1 页一致）。去掉字距和排版特性表：文字按排版算好的位置逐字放置，用不到它们。
+ * 可变字体取实例（instanceFont）也交给 hb-subset：固定各轴的位置，得到一个普通字体。
  */
 import hbWasm from 'harfbuzzjs/dist/harfbuzz-subset.wasm';
 import type { RandomAccessSource } from '../io/source';
@@ -28,6 +29,9 @@ interface HbExports {
   hb_subset_input_unicode_set(i: number): number;
   hb_subset_input_set(i: number, which: number): number;
   hb_subset_input_set_flags(i: number, flags: number): void;
+  hb_subset_input_keep_everything(i: number): void;
+  hb_subset_input_pin_all_axes_to_default(i: number, face: number): number;
+  hb_subset_input_pin_axis_location(i: number, face: number, axis: number, value: number): number;
   hb_subset_or_fail(face: number, input: number): number;
 }
 
@@ -37,11 +41,10 @@ const HB_SUBSET_SETS_DROP_TABLE_TAG = 3;
 const FLAGS = 0x40 | 0x200;
 const DROP = ['GSUB', 'GPOS', 'GDEF', 'BASE', 'JSTF', 'MATH', 'kern', 'DSIG'];
 
+let compiled: Promise<WebAssembly.Module> | undefined;
+const fresh = async () => (await WebAssembly.instantiate(await (compiled ??= WebAssembly.compile(hbWasm as Uint8Array<ArrayBuffer>)))).exports as unknown as HbExports;
 let instance: Promise<HbExports> | undefined;
-function hb(): Promise<HbExports> {
-  instance ??= WebAssembly.instantiate(hbWasm as Uint8Array<ArrayBuffer>).then((r) => r.instance.exports as unknown as HbExports);
-  return instance;
-}
+const hb = () => (instance ??= fresh());
 
 const tagNum = (t: string) => ((t.charCodeAt(0) << 24) | (t.charCodeAt(1) << 16) | (t.charCodeAt(2) << 8) | t.charCodeAt(3)) >>> 0;
 
@@ -53,17 +56,8 @@ function faceIndex(bytes: Uint8Array, faceOffset: number): number {
   return 0;
 }
 
-/**
- * 只保留 codepoints 用到的字，返回 WOFF 字节；字体解不开或子集化失败返回 undefined。
- * family 是嵌入后用的别名：浏览器按 @font-face 声明的名字找字体，不看字体内部的名字，所以不必改写 name 表。
- */
-export async function subsetFont(src: RandomAccessSource, faceOffset: number, codepoints: Iterable<number>, _family: string): Promise<Uint8Array | undefined> {
-  let bytes = await src.read(0, src.size);
-  const cps = [...codepoints];
-  // 只有符号 cmap 的字体（Wingdings 等）先换成 Unicode cmap，否则子集里没有字形、没有 cmap（symbol-cmap.ts）
-  const patched = withUnicodeCmap(bytes, faceOffset, cps);
-  if (patched) { bytes = patched; faceOffset = 0; }
-  const e = await hb();
+/** 用 hb-subset 处理字体文件里 faceOffset 处的字体：setup 设置子集化的参数；返回结果字体（sfnt）的字节，失败返回 undefined */
+function runSubset(e: HbExports, bytes: Uint8Array, faceOffset: number, setup: (input: number, face: number) => void): Uint8Array | undefined {
   const ptr = e.malloc(bytes.length);
   if (!ptr) return undefined;
   new Uint8Array(e.memory.buffer).set(bytes, ptr);
@@ -73,11 +67,7 @@ export async function subsetFont(src: RandomAccessSource, faceOffset: number, co
   const input = e.hb_subset_input_create_or_fail();
   let out: Uint8Array | undefined;
   if (input) {
-    const unicodes = e.hb_subset_input_unicode_set(input);
-    for (const cp of cps) e.hb_set_add(unicodes, cp);
-    const drop = e.hb_subset_input_set(input, HB_SUBSET_SETS_DROP_TABLE_TAG);
-    for (const t of DROP) e.hb_set_add(drop, tagNum(t));
-    e.hb_subset_input_set_flags(input, FLAGS);
+    setup(input, face);
     const sub = e.hb_subset_or_fail(face, input);
     e.hb_subset_input_destroy(input);
     if (sub) {
@@ -91,12 +81,56 @@ export async function subsetFont(src: RandomAccessSource, faceOffset: number, co
   }
   e.hb_face_destroy(face);
   e.free(ptr);
+  return out;
+}
+
+/**
+ * 只保留 codepoints 用到的字，返回 WOFF 字节；字体解不开或子集化失败返回 undefined。
+ * family 是嵌入后用的别名：浏览器按 @font-face 声明的名字找字体，不看字体内部的名字，所以不必改写 name 表。
+ */
+export async function subsetFont(src: RandomAccessSource, faceOffset: number, codepoints: Iterable<number>, _family: string): Promise<Uint8Array | undefined> {
+  let bytes = await src.read(0, src.size);
+  const cps = [...codepoints];
+  // 只有符号 cmap 的字体（Wingdings 等）先换成 Unicode cmap，否则子集里没有字形、没有 cmap（symbol-cmap.ts）
+  const patched = withUnicodeCmap(bytes, faceOffset, cps);
+  if (patched) { bytes = patched; faceOffset = 0; }
+  // 可变字体一般已经取了实例（instance.ts）；漏网的固定在默认实例：产物里的字体不带可变数据，否则浏览器按 font-weight 自己改字重轴，和排版的字宽对不上
+  const variable = readSfnt(bytes, faceOffset).has('fvar');
+  const e = await hb();
+  const out = runSubset(e, bytes, faceOffset, (input, face) => {
+    const unicodes = e.hb_subset_input_unicode_set(input);
+    for (const cp of cps) e.hb_set_add(unicodes, cp);
+    const drop = e.hb_subset_input_set(input, HB_SUBSET_SETS_DROP_TABLE_TAG);
+    for (const t of DROP) e.hb_set_add(drop, tagNum(t));
+    e.hb_subset_input_set_flags(input, FLAGS);
+    if (variable) e.hb_subset_input_pin_all_axes_to_default(input, face);
+  });
   if (!out) return undefined;
   const tables = readSfnt(out);
   // 没有 cmap 的字体浏览器拒绝加载：当作子集化失败（调用方提示没有嵌入），不输出坏字体
   if (!tables.has('cmap')) return undefined;
   clearReservedGlyphFlags(tables);
   return woff([...tables].sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0)));
+}
+
+/**
+ * 可变字体取实例：字重轴固定在 wght（undefined 时取默认值）、其它轴固定在默认值，所有字和表都保留，返回普通字体（sfnt）的字节；
+ * 做不了时返回 undefined。每次用一个新的 WASM 实例、用完就丢：harfbuzz-subset.wasm 的内存最多约 64 MB，大字体取实例会占满它，
+ * 不能影响子集化用的那个实例。内存不够时 hb-subset 不报错、只是输出的字形表是空的（实测 Windows 的 Noto Serif SC 可变字体，
+ * 25 MB），所以逐个检查字形、字宽、cmap 表还在，结果里还有 fvar 也算失败
+ */
+export async function instanceFont(src: RandomAccessSource, faceOffset: number, wght: number | undefined): Promise<Uint8Array | undefined> {
+  const bytes = await src.read(0, src.size);
+  const e = await fresh();
+  const out = runSubset(e, bytes, faceOffset, (input, face) => {
+    e.hb_subset_input_keep_everything(input);
+    e.hb_subset_input_pin_all_axes_to_default(input, face);
+    if (wght !== undefined) e.hb_subset_input_pin_axis_location(input, face, tagNum('wght'), wght);
+  });
+  if (!out) return undefined;
+  const before = readSfnt(bytes, faceOffset), after = readSfnt(out);
+  const lost = ['glyf', 'CFF ', 'CFF2', 'hmtx', 'cmap'].some((t) => !!before.get(t)?.length && !after.get(t)?.length);
+  return lost || after.has('fvar') ? undefined : out;
 }
 
 async function deflate(data: Uint8Array): Promise<Uint8Array> {

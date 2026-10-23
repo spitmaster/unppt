@@ -5,6 +5,8 @@
  */
 import { ctfToTtf } from './ctf';
 import { loadFontFile, type FontFace, type FontMetrics } from './font';
+import { instanceWeight } from './fvar';
+import { variableInstance } from './instance';
 import { toSource } from '../io/source';
 import { lzcompDecompress } from './lzcomp';
 
@@ -102,13 +104,16 @@ export function lazyEmbeddedFont(read: () => Promise<Uint8Array | undefined>, ty
         const bytes = await read();
         const reason = bytes ? unusableReason(bytes) : undefined;
         if (reason) { face.unusable = true; onFail(reason); return EMPTY; }
-        const real = bytes ? (await loadEmbeddedFont(bytes, typeface, bold, italic))[0] : undefined;
-        if (!real) { face.unusable = true; onFail(); return EMPTY; }
+        const file = bytes ? (await loadEmbeddedFont(bytes, typeface, bold, italic))[0] : undefined;
+        // 嵌入的是可变字体：和本机装的一样按粗细取实例（instance.ts）
+        const real = file?.axes ? variableInstance(file, instanceWeight(file.axes, bold)) : file;
+        const metrics = await real?.load();
+        if (!real || !metrics || real.unusable) { face.unusable = true; onFail(real ? '嵌入的可变字体取不了实例' : undefined); return EMPTY; }
         // 子集化要用真正的字体数据
         face.source = real.source;
         face.offset = real.offset;
         face.displayFamily = real.displayFamily;
-        return real.load();
+        return metrics;
       })();
       return loaded;
     },

@@ -5,7 +5,7 @@ import { readFile } from 'node:fs/promises';
 import { build } from 'esbuild';
 
 const r = await build({
-  stdin: { contents: `export { eotToTtf, lazyEmbeddedFont } from './packages/transcoder/src/font/eot.ts'; export { FontLibrary } from './packages/transcoder/src/font/font.ts'; export { ZipReader } from './packages/transcoder/src/io/zip.ts'; export { toSource } from './packages/transcoder/src/io/source.ts';`, resolveDir: process.cwd(), loader: 'ts' },
+  stdin: { contents: `export { eotToTtf, lazyEmbeddedFont } from './packages/transcoder/src/font/eot.ts'; export { FontLibrary } from './packages/transcoder/src/font/library.ts'; export { ZipReader } from './packages/transcoder/src/io/zip.ts'; export { toSource } from './packages/transcoder/src/io/source.ts';`, resolveDir: process.cwd(), loader: 'ts' },
   bundle: true, write: false, format: 'esm', platform: 'neutral', mainFields: ['module', 'main'], loader: { '.wasm': 'binary' }, logLevel: 'silent',
 });
 const m = await import('data:text/javascript;base64,' + Buffer.from(r.outputFiles[0].text).toString('base64'));

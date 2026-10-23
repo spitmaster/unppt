@@ -3,7 +3,8 @@
  * 图表画好后，每段文字的每个字按和正文一样的办法找到字体（图表写的字体 -> 替代字体 -> 默认字体包的开源字体），记进嵌入的子集，
  * font-family 换成嵌入字体的别名（拉丁字母、汉字各在自己的子集里，浏览器按列表顺序逐字找到有字形的那个），字体检查也记一笔
  */
-import type { FontFace, FontLibrary, FontMetrics } from '../../font/font';
+import type { FontFace, FontMetrics } from '../../font/font';
+import type { FontLibrary } from '../../font/library';
 import type { FontUse } from '../../font/check';
 import type { FontEmbedder } from '../../text/types';
 

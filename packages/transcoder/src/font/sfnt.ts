@@ -38,12 +38,12 @@ export function checksum(b: Uint8Array): number {
 
 export type SfntTables = [string, Uint8Array][];
 
-/** 读内存里一个 TTF 的表目录：标签 -> 表数据（不复制） */
-export function readSfnt(b: Uint8Array): Map<string, Uint8Array> {
+/** 读内存里一个 TTF 的表目录：标签 -> 表数据（不复制）；at 是字体集合（.ttc）里这个字体的表目录位置 */
+export function readSfnt(b: Uint8Array, at = 0): Map<string, Uint8Array> {
   const out = new Map<string, Uint8Array>();
-  const n = be16(b, 4);
+  const n = be16(b, at + 4);
   for (let i = 0; i < n; i++) {
-    const r = 12 + i * 16, off = be32(b, r + 8), len = be32(b, r + 12);
+    const r = at + 12 + i * 16, off = be32(b, r + 8), len = be32(b, r + 12);
     if (off + len <= b.length) out.set(tagOf(b, r), b.subarray(off, off + len));
   }
   return out;

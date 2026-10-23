@@ -4,7 +4,8 @@
  * 每个原字体变成一个 FontFace：名字、粗斜体是原字体的，load() 给原字体的度量，source / offset 指向开源字体（子集化、出图用）。
  */
 import type { InputSource } from '../io/source';
-import { isWide, loadFontFile, type FontFace, type FontMetrics, type WidthFace } from './font';
+import { isWide, loadFontFile, type FontFace, type FontMetrics } from './font';
+import type { WidthFace } from './library';
 import { SYMBOL_FONT } from './check';
 import { symbolByte } from './cmap';
 
@@ -77,7 +78,12 @@ export function displayFile(info: Pick<PackFaceInfo, 'families' | 'bold' | 'ital
   return undefined;
 }
 
-/** 字体包里的所有字体：原字体（度量包 + 开源字形）和开源字体本身（PPT 直接写开源字体名时用） */
+/**
+ * 字体包里的所有字体：开源字体本身（PPT 直接写开源字体名时用，例如思源黑体、思源宋体的常规体和粗体）和原字体（度量包 + 开源字形）。
+ * 开源字体是对照规则里出现的所有文件：以前只打开度量包里有原字体用到的，没有原字体对到思源宋体粗体，粗体的思源宋体只能人工加粗（10/23 全量比对发现）。
+ * 字体包里有字体文件的家族不再用度量包里的同名原字体（字宽、字形以字体文件为准）：度量包里的 Noto Sans SC / Noto Serif SC 是从
+ * Windows 的可变字体量的，记的是默认实例 Thin / ExtraLight 的字宽
+ */
 export async function packFaces(pack: FontPack): Promise<FontFace[]> {
   const opened = new Map<string, Promise<FontFace | undefined>>();
   const open = (name: string) => {
@@ -90,15 +96,19 @@ export async function packFaces(pack: FontPack): Promise<FontFace[]> {
     return p;
   };
   const out: FontFace[] = [];
+  for (const r of pack.rules) for (const file of Object.values(r.show ?? {})) if (file) await open(file);
+  const own = new Set<string>();
+  for (const p of opened.values()) {
+    const f = await p;
+    if (!f) continue;
+    out.push({ ...f, rank: PACK_RANK, shownFamily: f.displayFamily });
+    for (const fam of f.families) own.add(fam);
+  }
   for (const info of pack.faces) {
+    if (info.families.some((fam) => own.has(fam))) continue;
     const file = displayFile(info, pack.rules);
     const shown = file ? await open(file) : undefined;
     if (shown) out.push(metricFace(info, shown, () => pack.metrics(info.id)));
-  }
-  // 开源字体本身也能直接用（例如 PPT 里写的就是思源黑体）
-  for (const p of opened.values()) {
-    const f = await p;
-    if (f) out.push({ ...f, rank: PACK_RANK, shownFamily: f.displayFamily });
   }
   return out;
 }
@@ -145,7 +155,7 @@ function metricFace(info: PackFaceInfo, shown: FontFace, data: () => Promise<Pac
   let metrics: Promise<FontMetrics> | undefined;
   return {
     families: info.families, displayFamily: info.display, bold: info.bold, italic: info.italic, weight: info.weight,
-    source: shown.source, offset: shown.offset, rank: PACK_RANK, shownFamily: shown.displayFamily,
+    source: shown.source, offset: shown.offset, rank: PACK_RANK, shownFamily: shown.displayFamily, metricsOnly: true,
     load() {
       metrics ??= (async () => {
         const sm = await shown.load();
