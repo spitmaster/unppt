@@ -1,0 +1,247 @@
+{
+ "version": 8,
+ "level": "full",
+ "slideWidthPt": 960.0,
+ "slideHeightPt": 540.0,
+ "imageWidth": 1280,
+ "imageHeight": 720,
+ "slides": [
+  {
+   "index": 0,
+   "hidden": false,
+   "shapes": [
+    {
+     "id": 2,
+     "name": "TextBox 1",
+     "type": 17,
+     "x": 30.0,
+     "y": 8.0,
+     "w": 900.0,
+     "h": 29.081,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 13,
+       "text": "渐变加粗 Bold 123",
+       "x": 37.2,
+       "y": 11.6,
+       "w": 462.255,
+       "h": 64.8
+      }
+     ]
+    },
+    {
+     "id": 3,
+     "name": "TextBox 2",
+     "type": 17,
+     "x": 30.0,
+     "y": 112.0,
+     "w": 900.0,
+     "h": 29.081,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 13,
+       "text": "渐变加粗 Bold 123",
+       "x": 37.2,
+       "y": 115.6,
+       "w": 462.255,
+       "h": 64.8
+      }
+     ]
+    },
+    {
+     "id": 4,
+     "name": "TextBox 3",
+     "type": 17,
+     "x": 30.0,
+     "y": 216.0,
+     "w": 900.0,
+     "h": 29.081,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 13,
+       "text": "渐变加粗 Bold 123",
+       "x": 37.2,
+       "y": 219.6,
+       "w": 462.255,
+       "h": 64.8
+      }
+     ]
+    },
+    {
+     "id": 5,
+     "name": "TextBox 4",
+     "type": 17,
+     "x": 30.0,
+     "y": 320.0,
+     "w": 900.0,
+     "h": 29.081,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 13,
+       "text": "渐变加粗 Bold 123",
+       "x": 37.2,
+       "y": 323.6,
+       "w": 462.255,
+       "h": 64.8
+      }
+     ]
+    },
+    {
+     "id": 6,
+     "name": "TextBox 5",
+     "type": 17,
+     "x": 30.0,
+     "y": 424.0,
+     "w": 900.0,
+     "h": 29.081,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 13,
+       "text": "渐变加粗 Bold 123",
+       "x": 37.2,
+       "y": 427.6,
+       "w": 472.255,
+       "h": 64.8
+      }
+     ]
+    }
+   ],
+   "effects": [],
+   "triggerHidden": [],
+   "steps": 0,
+   "keptSlideshow": false
+  },
+  {
+   "index": 1,
+   "hidden": false,
+   "shapes": [
+    {
+     "id": 2,
+     "name": "TextBox 1",
+     "type": 17,
+     "x": 30.0,
+     "y": 8.0,
+     "w": 900.0,
+     "h": 29.081,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 13,
+       "text": "渐变加粗 Bold 123",
+       "x": 37.2,
+       "y": 11.6,
+       "w": 459.005,
+       "h": 64.8
+      }
+     ]
+    },
+    {
+     "id": 3,
+     "name": "TextBox 2",
+     "type": 17,
+     "x": 30.0,
+     "y": 112.0,
+     "w": 900.0,
+     "h": 29.081,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 13,
+       "text": "渐变加粗 Bold 123",
+       "x": 37.2,
+       "y": 115.6,
+       "w": 462.255,
+       "h": 64.8
+      }
+     ]
+    },
+    {
+     "id": 4,
+     "name": "TextBox 3",
+     "type": 17,
+     "x": 30.0,
+     "y": 216.0,
+     "w": 900.0,
+     "h": 29.081,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 13,
+       "text": "渐变加粗 Bold 123",
+       "x": 37.2,
+       "y": 219.6,
+       "w": 462.255,
+       "h": 64.8
+      }
+     ]
+    },
+    {
+     "id": 5,
+     "name": "TextBox 4",
+     "type": 17,
+     "x": 30.0,
+     "y": 320.0,
+     "w": 900.0,
+     "h": 29.081,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 13,
+       "text": "图片填充 Picture\r",
+       "x": 37.2,
+       "y": 323.6,
+       "w": 462.25,
+       "h": 64.8
+      },
+      {
+       "start": 13,
+       "len": 10,
+       "text": "第二行 Line 2",
+       "x": 37.2,
+       "y": 388.4,
+       "w": 353.505,
+       "h": 64.8
+      }
+     ]
+    }
+   ],
+   "effects": [],
+   "triggerHidden": [],
+   "steps": 0,
+   "keptSlideshow": false
+  }
+ ],
+ "ok": true
+}
