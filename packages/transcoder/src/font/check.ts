@@ -5,8 +5,8 @@
 import type { FontFace } from './font';
 
 /** 排版时每个字用了什么字体：requested 是文字要的字体，picked 是按名字找到或替代来的字体，
- * face 是实际画这个字的字形来源（没有字形时 undefined） */
-export interface FontUse { requested: string; picked: string; pickedFace?: FontFace; face?: FontFace; cp: number }
+ * face 是实际画这个字的字形来源（没有字形时 undefined）；symbol：这个字是"插入符号"（a:sym）插的，requested 是那个符号字体 */
+export interface FontUse { requested: string; picked: string; pickedFace?: FontFace; face?: FontFace; cp: number; symbol?: boolean }
 
 /** 符号字体：字母的位置上放的是图形（Wingdings 等），换成别的字体就变成普通字母（SPEC D3） */
 export const SYMBOL_FONT = /wingdings|webdings|^symbol$|marlett|mt extra|bookshelf symbol|ms reference specialty|ms outlook|segoe mdl2 assets|segoe fluent icons/i;
@@ -53,7 +53,7 @@ export class FontCheckLog {
     const key = u.requested;
     if (!key) return;
     // 符号字体只用在空格上（常见：整段设成 Wingdings 的空行、项目符号后的空格）：没有要显示的符号，不算问题
-    if (SYMBOL_FONT.test(key) && (u.cp <= 0x20 || /\s/u.test(String.fromCodePoint(u.cp)))) return;
+    if ((u.symbol || SYMBOL_FONT.test(key)) && (u.cp <= 0x20 || /\s/u.test(String.fromCodePoint(u.cp)))) return;
     const status = this.classify(u);
     let e = this.fonts.get(key.toLowerCase());
     if (!e) { e = { pages: new Set(), status: status.status }; this.fonts.set(key.toLowerCase(), e); }
@@ -72,9 +72,11 @@ export class FontCheckLog {
 
   private classify(u: FontUse): { status: FontStatus; substitute?: string; shownWith?: string } {
     const f = u.pickedFace;
-    if (!f) return { status: SYMBOL_FONT.test(u.requested) ? 'symbol-missing' : 'missing' };
+    // "插入符号"的字体（Euclid Symbol、FontAwesome 等名字不在 SYMBOL_FONT 里的也算）没嵌入：请作者嵌入，不是缺字体包
+    const symbol = u.symbol || SYMBOL_FONT.test(u.requested);
+    if (!f) return { status: symbol ? 'symbol-missing' : 'missing' };
     if (u.picked.toLowerCase() !== u.requested.toLowerCase()) {
-      return { status: SYMBOL_FONT.test(u.requested) ? 'symbol-missing' : 'substituted', substitute: u.picked, shownWith: f.shownFamily ?? f.displayFamily };
+      return { status: symbol ? 'symbol-missing' : 'substituted', substitute: u.picked, shownWith: f.shownFamily ?? f.displayFamily };
     }
     if (this.embedded(f)) return { status: 'embedded', shownWith: f.displayFamily };
     if ((f.rank ?? 0) > 0) return { status: 'default', shownWith: f.shownFamily ?? f.displayFamily };

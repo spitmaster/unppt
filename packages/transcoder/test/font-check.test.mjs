@@ -22,3 +22,16 @@ test('符号字体没嵌入是必须处理的问题；没有任何字体时是 m
   assert.ok(c.fonts.some((f) => f.status === 'missing'));
   assert.ok(c.errors >= 1);
 });
+
+test('"插入符号"的字体（名字不在符号字体名单里的也算）没嵌入：symbol-missing，只用在空格上不算', async () => {
+  const { build } = await import('esbuild');
+  const r = await build({ stdin: { contents: `export { FontCheckLog } from './packages/transcoder/src/font/check.ts';`, resolveDir: process.cwd(), loader: 'ts' }, bundle: true, write: false, format: 'esm', platform: 'neutral', logLevel: 'silent' });
+  const { FontCheckLog } = await import('data:text/javascript;base64,' + Buffer.from(r.outputFiles[0].text).toString('base64'));
+  const log = new FontCheckLog(() => false);
+  log.record({ requested: 'Euclid Symbol', picked: 'Euclid Symbol', cp: 0xf061, symbol: true }, 1);
+  log.record({ requested: 'Space Icons', picked: 'Space Icons', cp: 0x20, symbol: true }, 1);
+  log.record({ requested: 'Arial', picked: 'Arial', cp: 0x41 }, 2);
+  const c = log.result();
+  assert.deepEqual(c.fonts.map((f) => [f.font, f.status]), [['Arial', 'missing'], ['Euclid Symbol', 'symbol-missing']]);
+  assert.equal(c.errors, 2);
+});
