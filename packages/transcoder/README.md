@@ -1,22 +1,29 @@
 # @unppt/unppt
 
-把 PowerPoint（.pptx）转成**自带播放器的网页**：浏览器打开就能播放，可以用 iframe 嵌入任意网页，也可以由外部 JS 控制翻页、播放动画（适合直播课：老师和学生看同一份课件，外部程序用信令同步进度）。目标是效果和 Microsoft PowerPoint 一致。
-
-- 转码器是纯函数：字节进、文件出，不读写磁盘、不联网，不依赖外部程序和原生插件，可以直接放进云函数；
-- 产物里自带播放器（零依赖），观看只需要浏览器；
-- 播放时不用观看者电脑上的字体：用到的字做成字体子集打包进产物，所有观看者看到的完全一样；
-- 当前版本 0.3.0。
+把 PowerPoint 课件（.pptx）一条命令转成网页：浏览器打开就能播放，动画、页面切换、音视频都保留，效果和 PowerPoint 一致；也能嵌进任何网页或 App，用代码控制翻页。
 
 ## 安装
 
+需要 Node.js 20.12 或更高版本。
+
 ```bash
-npm install @unppt/unppt                   # 在代码里调用
-npx -p @unppt/unppt unppt 课件.pptx  # 或者不安装，直接用命令行
+npm install -g @unppt/unppt          # 命令行
+npm install @unppt/unppt             # 在代码里调用
 ```
 
-需要 Node.js 20.12 及以上。安装时会自动带上默认字体包 `@unppt/fonts`（开源字体 + 排版用的字体度量，下载约 67MB，装好后约 100MB）。
+会自动带上默认字体包 `@unppt/fonts`（开源字体 + 排版用的字体度量，下载约 67MB，装好后约 100MB），不用另外装字体。
+公司内网镜像装不上（`EALLOWREMOTE`、`ETARGET`）时加 `--registry https://registry.npmjs.org/`；
+不能连 npm 时从 GitHub Release 下载 `unppt-fonts.tgz` 和 `unppt.tgz`，`npm install -g ./unppt-fonts.tgz ./unppt.tgz`。
 
-也可以从 GitHub Release 下载安装包再安装（npm 审核新版本期间、公司内网镜像下载失败时用）：先下载 `https://github.com/spitmaster/unppt/releases/latest/download/unppt-fonts.tgz` 和 `.../unppt.tgz`，再 `npm install -g ./unppt-fonts.tgz ./unppt.tgz`。
+## 用法
+
+```bash
+unppt 课件.pptx          # 产物放在课件旁边的同名文件夹里，用浏览器打开 课件/index.html 播放
+npx @unppt/unppt 课件.pptx   # 不安装，临时用一次
+```
+
+特点：转码器是纯函数（字节进、文件出，不读写磁盘、不联网、不依赖外部程序和原生插件，可以放进云函数）；产物自带零依赖的播放器，观看只需要浏览器；
+播放时不用观看者电脑上的字体，用到的字做成子集打包进产物，所有观看者看到的一样。
 
 ## 命令行
 
