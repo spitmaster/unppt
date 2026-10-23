@@ -49,6 +49,41 @@ flowchart LR
 
 ![播放器](docs/images/player.png)
 
+## 实现思路
+
+**一句话：能在转码时算好的，都在转码时算好；播放器只管显示和播放。** PowerPoint 的继承、排版、图表、动画规则都在转码器里按实测结果算完：每页变成一段矢量 SVG（每个字的位置都已排定），动画变成"每次点击做哪些动作"的数据。转码器和播放器只通过[产物格式](docs/zh/output-format.md)联系，可以各自部署、各自升级。
+
+```mermaid
+flowchart LR
+  A["入口<br/>unppt 命令 / convert()"] --> B["① 读取<br/>io/"] --> C["② 文档模型<br/>model/"] --> D["③ 字体库<br/>font/"]
+  subgraph E["④ 逐页流水线（一页处理完就写出、释放内存）"]
+    direction TB
+    E1["渲染成 SVG<br/>render/ text/ chart/ …"] --> E2["编译动画和切换<br/>anim/"] --> E3["图片、整页图<br/>media/ preview/"]
+  end
+  D --> E
+  E --> F["⑤ 写出产物<br/>output/"] --> G["⑥ 播放器<br/>浏览器 / iframe / App"]
+```
+
+| 步骤 | 为什么需要它 | 它做什么 | 详细 |
+|---|---|---|---|
+| 入口 `cli.ts` / `convert()` | 命令行、服务器、云函数共用同一个纯函数 | 输入是字节或"按位置读取"的对象，输出全部交给 `write` 回调；转码器自己不碰磁盘、不联网 | [转码原理 3–4](docs/zh/transcoding.md#3-一次转码的全过程总览) |
+| ① 读取 `io/` | .pptx 是装满 XML 的 ZIP 包，文件可能上 GB | 只读 ZIP 目录，用到哪个部件才解压哪个；音视频从 ZIP 流式写出，不进内存 | [5](docs/zh/transcoding.md#5-第-2-步按需读取-zip-和-xml) |
+| ② 文档模型 `model/` | 一个形状的颜色、字体、位置可能写在主题、母版、版式、幻灯片任何一层 | 建主题 → 母版 → 版式 → 幻灯片的继承链，按 PowerPoint 的规则合并占位符、颜色、文字样式 | [6](docs/zh/transcoding.md#6-第-3-步演示文稿模型-presentation) |
+| ③ 字体库 `font/` | 换行位置由字宽决定，观看者电脑上又没有这些字体 | 嵌入字体 > 指定字体 > 默认字体包；排版用原字体的度量，显示用开源字体 | [11](docs/zh/transcoding.md#11-字体查找替代嵌入和子集化) |
+| ④ 渲染 `render/` 等 | 浏览器不认识 PowerPoint 的形状、效果、图表，也排不出一样的换行 | 预设形状、填充线条、阴影发光、三维、表格、图表、SmartArt 画成 SVG；文字按 PowerPoint 实测规则断行，每个字的坐标写死 | [7–9](docs/zh/transcoding.md#7-第-4-步逐页渲染成-svg) |
+| ④ 动画 `anim/` | PowerPoint 的动画是一棵很深的时间树，不该让播放器去理解 | 编译成"每次点击做哪些动作"，PowerPoint 原始的关键帧和公式原样带上 | [10](docs/zh/transcoding.md#10-动画和页面切换) |
+| ④ 媒体和出图 `media/` `preview/` | EMF / WMF / TIFF 浏览器不认；列表页、分享要预览图 | 图片转换、去重；用 resvg（WASM）把每页画成整页图和缩略图 | [12–13](docs/zh/transcoding.md#12-图片音视频) |
+| ⑤ 写出 `output/` | 有人要一个文件当附件，有人要放 CDN 按需加载 | 只把用到的字做成字体子集（HarfBuzz WASM），按产物形式写出 HTML、每页数据、`prop.json` | [14](docs/zh/transcoding.md#14-写出产物四种产物形式) |
+| ⑥ 播放器 `packages/player` | 产物要能嵌进任何网页和 App | 零依赖：显示 SVG、翻页、播动画和切换，响应宿主的指令 | [播放器原理](docs/zh/player.md) |
+
+几个关键的设计决定（全貌见 [架构入门](docs/zh/architecture.md)）：
+
+- **排版自己做，不交给浏览器**：浏览器的换行、字宽和 PowerPoint 不一样，不同浏览器之间也不一样。断行规则（标点禁则、悬挂、破折号、制表位……）都是先用 PowerPoint 实测、再实现，记在 [SPEC 第 7 节](SPEC.md#7-实测得到的-powerpoint-规则用-make-case-用例校准)。
+- **排版和显示分开用字体**：没嵌入的微软雅黑、Calibri 等，按原字体的度量（只有字宽等数字，没有字形）排版，换行和 PowerPoint 一样；字形用对应的开源字体，观看的人不用装字体，也不分发商业字体（见下面的「字体」）。
+- **纯函数、流式处理**：字节进、文件出，不依赖外部程序和原生插件，所以能放进云函数；一页一页处理、按位置读输入，1GB 的文件小内存也能转。
+- **加功能 = 加一个文件 + 注册表一行**：图表类型、图片格式、形状效果、页面切换、动画效果都是扩展点，见 [开发用架构说明](docs/architecture.md)。
+- **"和 PowerPoint 一样"靠测量**：本机 PowerPoint 导出参考图逐页打分，自动换行另有逐行对照的专项测试；修一类问题先合成中性用例实测，改完做 A/B 对照；客户课件只在本机使用，内容不外传。见 [还原度与评测](docs/zh/fidelity.md)。
+
 ## 现状和准确度
 
 当前版本 **0.3.0**。
@@ -57,10 +92,10 @@ flowchart LR
 
 | 测试集 | 规模 | 转码失败 | 通过率（SSIM ≥ 0.95） | 平均 SSIM |
 |---|---|---|---|---|
-| 合成测试用例（`testcases/`） | 228 份 / 504 页 | — | 92.3% | 0.984 |
+| 合成测试用例（`testcases/`） | 242 份 / 524 页 | 0 | 92.7% | 0.984 |
 | 随机抽取的真实课件 | 100 份 / 3527 页 | 0 | 78.8%（约 95% 的页 SSIM ≥ 0.90） | 0.967 |
 
-没通过的页面大多只是细节不同（文字差几个像素、某个图表标签位置不一样），整体上看不出区别。
+没通过的页面大多只是细节不同（文字差几个像素、某个图表标签位置不一样），整体上看不出区别。**自动换行**另外逐行对照：991 份真实课件里约 4 万个多行文本框 99.8%、6051 个多行表格单元格 99.9% 的换行和 PowerPoint 完全一致。
 
 **已知还没做好的地方**：
 
@@ -93,23 +128,7 @@ unppt 演示文稿.pptx -o out/index.html
 
 安装时会自动带上默认字体包 `@unppt/fonts`（开源字体 + 排版用的字体度量，下载约 60MB），不用另外装字体，见下面的「字体」。
 
-**或者从 GitHub 下载安装**（npm 审核新版本期间、公司内网镜像下载失败时用；说明见 [快速上手](docs/zh/getting-started.md)）。要下载两个文件：字体包 `unppt-fonts.tgz` 和程序 `unppt.tgz`，一起安装：
-
-```powershell
-Invoke-WebRequest https://github.com/spitmaster/unppt/releases/latest/download/unppt-fonts.tgz -OutFile unppt-fonts.tgz
-Invoke-WebRequest https://github.com/spitmaster/unppt/releases/latest/download/unppt.tgz -OutFile unppt.tgz
-npm install -g .\unppt-fonts.tgz .\unppt.tgz
-```
-
-macOS / Linux（在"终端"里运行）：
-
-```bash
-curl -L -o unppt-fonts.tgz https://github.com/spitmaster/unppt/releases/latest/download/unppt-fonts.tgz
-curl -L -o unppt.tgz https://github.com/spitmaster/unppt/releases/latest/download/unppt.tgz
-npm install -g ./unppt-fonts.tgz ./unppt.tgz
-```
-
-提示权限不足（`EACCES` / `permission denied`）时，最后一行前面加 `sudo`（`sudo npm install -g ./unppt-fonts.tgz ./unppt.tgz`），按提示输入电脑登录密码。装好后运行 `unppt -v` 查看版本号。
+**或者从 GitHub 下载安装**（npm 审核新版本期间、公司内网镜像下载失败时用）：从 [Releases](https://github.com/spitmaster/unppt/releases/latest) 下载字体包 `unppt-fonts.tgz` 和程序 `unppt.tgz`，运行 `npm install -g ./unppt-fonts.tgz ./unppt.tgz`。Windows / macOS / Linux 的完整命令见 [快速上手第 3 节](docs/zh/getting-started.md#3-安装)。装好后运行 `unppt -v` 查看版本号。
 
 想先看看课件的字体有没有问题：`unppt check 演示文稿.pptx`（只检查，不输出文件）。
 
@@ -117,31 +136,21 @@ npm install -g ./unppt-fonts.tgz ./unppt.tgz
 
 用浏览器打开生成的 `index.html` 就能播放。不写 `-o` 时，产物都放在 pptx 旁边新建的、和 pptx 同名的文件夹里（例如 `演示文稿.pptx` → `演示文稿/index.html`）。
 
-**命令行选项**（完整说明运行 `unppt` 不带参数查看，或见 [使用指南](docs/zh/usage.md)）：
+**常用命令行选项**（全部选项见 [使用指南第 2 节](docs/zh/usage.md#2-命令行参考)，或运行 `unppt` 不带参数查看）：
 
 | 选项 | 说明 |
 |---|---|
 | `-o, --out <文件>` | 输出文件，默认是 pptx 旁边同名文件夹里的 `index.html`；`paged` / `pages` 形式下是输出目录 |
-| `--output <形式>` | 产物形式：`paged`（命令行默认，按需加载）、`single`（一个自包含的 HTML，API 的默认）、`pages`（paged 再加每页一个 HTML）、`data`（同 `--data`） |
-| `--fonts <目录>` | 指定字体目录（可以写多次）：同名时压过默认字体包，排版和显示都用它，用到的字嵌入产物 |
-| `--system-fonts` | 也用本机系统字体和 Office 字体（0.3.0 起**默认关闭**；用到的字嵌入产物，注意商业字体的分发授权） |
-| `--no-default-fonts` | 不用默认字体包（调试用） |
-| `--data` | 只输出演示数据 `deck.json`（开发调试用） |
-| `--no-images` | 不输出整页图 `pic/` 和缩略图 `thum/`（`prop.json` 照常输出） |
-| `--jobs <n\|auto>` | 出图用几个线程同时画，默认 `auto`；`1` 是在主线程画 |
-| `--inline-limit <字节>` | 小于这个大小的图片内联进 HTML，默认 2097152（2MB）；视频音频总是单独输出到 `media/` |
-| `--stats` | 结束时显示用时和峰值内存 |
-| `-q, --quiet` | 不显示进度 |
-
-旧选项 `--embed-fonts`、`--no-system-fonts` 照样接受，但没有作用了。另有子命令 `unppt check <文件.pptx> [--json]`：只检查字体，有必须处理的问题时退出码是 1。
+| `--output <形式>` | 产物形式：`paged`（命令行默认，按需加载）、`single`（一个自包含的 HTML）、`pages`（paged 再加每页一个 HTML） |
+| `--fonts <目录>` | 指定字体目录（可以写多次）：同名时压过默认字体包 |
+| `--no-images` | 不输出整页图 `pic/` 和缩略图 `thum/` |
 
 ## 字体
 
 - **播放时绝不用观看者电脑上的字体**：用到的每个字都做成字体子集打包进产物，Windows、Mac、安卓、iPhone 上看到的完全一样（例如直播课里几千个学生）。
-- **产物里的字体只有两个来源**（除非你用 `--fonts` / `--system-fonts` 明确指定）：作者嵌入在 PPT 里的字体（原样使用），和默认字体包 `@unppt/fonts` 里的开源字体（SIL OFL 1.1：思源黑体、思源宋体、霞鹜文楷、朱雀仿宋、Carlito、Caladea、Liberation Sans / Serif / Mono）。字体包约 87MB，只在转码的电脑上需要，观看的人不会下载它。
-- **排版按原字体，显示用开源字体**：没嵌入的微软雅黑、宋体、Calibri 等，按原字体的度量（只有字宽等数字，没有字形）排版，所以换行和文字位置和 PowerPoint 一样；显示用对应的开源字体（微软雅黑 → 思源黑体、Calibri → Carlito ……），字形会略有不同。
-- **字体包也不认识的字体**：和 PowerPoint 一样找替代字体（中文 → 微软雅黑、西文 → Calibri、日文 → Yu Gothic），再用对应的开源字体显示。
-- **符号字体**（Wingdings 等）：不改动你的字符。作者嵌入了就照常显示；Wingdings 1~3 没嵌入时用字体包里编码兼容的开源字体显示成符号；其它符号字体（Webdings、Symbol 等）没嵌入时显示成字母，转码报告和 `unppt check` 会提示作者在 PowerPoint 里“将字体嵌入文件”。
+- **产物里的字体只有两个来源**（除非你用 `--fonts` / `--system-fonts` 明确指定）：作者嵌入在 PPT 里的字体（原样使用），和默认字体包 `@unppt/fonts` 里的开源字体（SIL OFL 1.1：思源黑体、思源宋体、霞鹜文楷、朱雀仿宋、Carlito、Caladea、Liberation 等）。字体包只在转码的电脑上需要，观看的人不会下载它。
+- **没嵌入的字体**：按原字体的度量排版、用对应的开源字体显示（微软雅黑 → 思源黑体、Calibri → Carlito ……），换行和 PowerPoint 一样、字形略有不同；字体包也不认识的字体和 PowerPoint 一样找替代字体。
+- **符号字体**：不改动你的字符。Wingdings 1~3 没嵌入时用字体包里编码兼容的开源字体显示成符号；其它符号字体（Webdings、Symbol 等）没嵌入时显示成字母，`unppt check` 会提示作者“将字体嵌入文件”。
 
 详见 [快速上手第 7 节](docs/zh/getting-started.md#7-字体为什么重要以及现在怎么处理)。
 

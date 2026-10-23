@@ -49,6 +49,41 @@ The player (click, arrow keys, space bar or swipe left/right to move on):
 
 ![Player](docs/images/player.png)
 
+## How it works
+
+**In one sentence: everything that can be computed at conversion time is computed at conversion time; the player only displays and plays.** PowerPoint's inheritance, text layout, chart and animation rules are all worked out in the transcoder from measured behaviour: each slide becomes a vector SVG (with every character already positioned) and animations become "what happens on each click" data. The transcoder and the player talk only through the [output format](docs/en/output-format.md), so they can be deployed and upgraded independently.
+
+```mermaid
+flowchart LR
+  A["Entry<br/>unppt CLI / convert()"] --> B["① Read<br/>io/"] --> C["② Document model<br/>model/"] --> D["③ Font library<br/>font/"]
+  subgraph E["④ Per-slide pipeline (one slide at a time)"]
+    direction TB
+    E1["Render to SVG<br/>render/ text/ chart/ …"] --> E2["Compile animations and transitions<br/>anim/"] --> E3["Images, slide images<br/>media/ preview/"]
+  end
+  D --> E
+  E --> F["⑤ Write the output<br/>output/"] --> G["⑥ Player<br/>browser / iframe / app"]
+```
+
+| Step | Why it exists | What it does | Details |
+|---|---|---|---|
+| Entry `cli.ts` / `convert()` | The CLI, servers and cloud functions share one pure function | Input is bytes or a "read at offset" object; all output goes to a `write` callback; the transcoder itself never touches the disk or the network | [Transcoding 3–4](docs/en/transcoding.md#3-one-conversion-end-to-end-overview) |
+| ① Read `io/` | A .pptx is a ZIP full of XML, possibly gigabytes in size | Reads only the ZIP directory and inflates a part when it is needed; audio and video stream straight from the ZIP, never held in memory | [5](docs/en/transcoding.md#5-step-2-reading-the-zip-and-xml-lazily) |
+| ② Document model `model/` | A shape's colour, font or position may come from the theme, master, layout or slide | Builds the theme → master → layout → slide inheritance chain and merges placeholders, colours and text styles the way PowerPoint does | [6](docs/en/transcoding.md#6-step-3-the-presentation-model) |
+| ③ Font library `font/` | Line breaks depend on character widths, and viewers do not have these fonts | Embedded fonts > explicit fonts > default font pack; layout uses the original font's metrics, display uses an open-source font | [11](docs/en/transcoding.md#11-fonts-lookup-substitution-embedding-and-subsetting) |
+| ④ Render `render/` etc. | Browsers know nothing about PowerPoint shapes, effects or charts and cannot reproduce its line breaks | Draws preset shapes, fills and lines, shadows and glow, 3D, tables, charts and SmartArt as SVG; breaks text by PowerPoint's measured rules and fixes every character's position | [7–9](docs/en/transcoding.md#7-step-4-rendering-each-slide-to-svg) |
+| ④ Animations `anim/` | PowerPoint animations are a deep timing tree the player should not have to understand | Compiles them into "what happens on each click", carrying PowerPoint's original keyframes and formulas along | [10](docs/en/transcoding.md#10-animations-and-transitions) |
+| ④ Media and slide images `media/` `preview/` | Browsers cannot show EMF / WMF / TIFF; listings and sharing need previews | Converts and de-duplicates images; draws each slide as a full image and a thumbnail with resvg (WASM) | [12–13](docs/en/transcoding.md#12-images-audio-and-video) |
+| ⑤ Write `output/` | Some want one file to attach, others want on-demand loading from a CDN | Subsets fonts to the characters used (HarfBuzz WASM) and writes the HTML, per-slide data and `prop.json` for the chosen output form | [14](docs/en/transcoding.md#14-writing-the-output-four-output-forms) |
+| ⑥ Player `packages/player` | The output must embed in any web page or app | Zero dependencies: shows the SVG, pages, plays animations and transitions, responds to the host's commands | [How the player works](docs/en/player.md) |
+
+Key design decisions (the full picture is in [Architecture](docs/en/architecture.md)):
+
+- **Lay out text ourselves instead of leaving it to the browser**: browsers break lines and measure text differently from PowerPoint and from each other. Every line-breaking rule (CJK line-start / line-end rules, hanging punctuation, dashes, tab stops, ...) is measured in PowerPoint first and then implemented, and recorded in [SPEC section 7](SPEC.md#7-实测得到的-powerpoint-规则用-make-case-用例校准) (Chinese).
+- **Separate fonts for layout and display**: non-embedded Microsoft YaHei, Calibri and so on are laid out with the original font's metrics (numbers such as advance widths, no glyph shapes), so lines break exactly like PowerPoint; glyphs come from the matching open-source font, so viewers need no fonts installed and no commercial font is redistributed (see "Fonts" below).
+- **Pure function, streaming**: bytes in, files out, no external programs or native add-ons, so it runs in cloud functions; slides are processed one at a time and the input is read at offsets, so a 1 GB file converts in little memory.
+- **New feature = new file + one registry line**: chart types, image formats, shape effects, transitions and animation effects are all extension points; see the [developer architecture notes](docs/architecture.md) (Chinese).
+- **"Looks like PowerPoint" is measured, not eyeballed**: images exported by a local copy of PowerPoint are scored page by page, and line wrapping has its own line-by-line test; each class of problem is first reproduced with a neutral synthetic deck and measured, and every change is A/B compared; customer decks are only used on the local machine and their content never leaves it. See [Fidelity and evaluation](docs/en/fidelity.md).
+
 ## Status and accuracy
 
 Current version: **0.3.0**.
@@ -57,10 +92,10 @@ Accuracy is measured with **SSIM** (structural similarity, a number from 0 to 1 
 
 | Test set | Size | Conversion failures | Pass rate (SSIM ≥ 0.95) | Mean SSIM |
 |---|---|---|---|---|
-| Synthetic test cases (`testcases/`) | 228 decks / 504 pages | — | 92.3% | 0.984 |
+| Synthetic test cases (`testcases/`) | 242 decks / 524 pages | 0 | 92.7% | 0.984 |
 | Random batch of real-world decks | 100 decks / 3527 pages | 0 | 78.8% (about 95% of pages at SSIM ≥ 0.90) | 0.967 |
 
-Most failing pages differ only in details (text a few pixels off, one chart label in a different place) and look the same at a glance.
+Most failing pages differ only in details (text a few pixels off, one chart label in a different place) and look the same at a glance. **Line wrapping** is also compared line by line: across 991 real decks, 99.8% of about 40,000 multi-line text boxes and 99.9% of 6,051 multi-line table cells break exactly like PowerPoint.
 
 **Known gaps**:
 
@@ -93,23 +128,7 @@ unppt presentation.pptx -o out/index.html
 
 The default font pack `@unppt/fonts` (open-source fonts plus font metrics for layout; about 60 MB to download) is installed automatically, so no fonts need to be installed separately; see "Fonts" below.
 
-**Or download and install from GitHub** (while npm reviews a new version, or behind a corporate mirror; see [Getting started](docs/en/getting-started.md)). Download two files, the font pack `unppt-fonts.tgz` and the program `unppt.tgz`, and install them together:
-
-```powershell
-Invoke-WebRequest https://github.com/spitmaster/unppt/releases/latest/download/unppt-fonts.tgz -OutFile unppt-fonts.tgz
-Invoke-WebRequest https://github.com/spitmaster/unppt/releases/latest/download/unppt.tgz -OutFile unppt.tgz
-npm install -g .\unppt-fonts.tgz .\unppt.tgz
-```
-
-macOS / Linux (in Terminal):
-
-```bash
-curl -L -o unppt-fonts.tgz https://github.com/spitmaster/unppt/releases/latest/download/unppt-fonts.tgz
-curl -L -o unppt.tgz https://github.com/spitmaster/unppt/releases/latest/download/unppt.tgz
-npm install -g ./unppt-fonts.tgz ./unppt.tgz
-```
-
-If you get a permission error (`EACCES` / `permission denied`), prefix the last line with `sudo` (`sudo npm install -g ./unppt-fonts.tgz ./unppt.tgz`) and enter your login password. Run `unppt -v` afterwards to check the version.
+**Or download and install from GitHub** (while npm reviews a new version, or behind a corporate mirror): download the font pack `unppt-fonts.tgz` and the program `unppt.tgz` from [Releases](https://github.com/spitmaster/unppt/releases/latest) and run `npm install -g ./unppt-fonts.tgz ./unppt.tgz`. Full commands for Windows / macOS / Linux are in [Getting started, section 3](docs/en/getting-started.md#3-install). Run `unppt -v` afterwards to check the version.
 
 To check a deck's fonts first: `unppt check presentation.pptx` (checks only, writes no files).
 
@@ -117,31 +136,21 @@ To check a deck's fonts first: `unppt check presentation.pptx` (checks only, wri
 
 Open the generated `index.html` in a browser and it plays. Without `-o`, all output goes into a new folder next to the .pptx with the same name (e.g. `deck.pptx` → `deck/index.html`).
 
-**Command-line options** (run `unppt` with no arguments for the built-in help, or see the [usage guide](docs/en/usage.md)):
+**Common command-line options** (all options are in [Usage, section 2](docs/en/usage.md#2-cli-reference), or run `unppt` with no arguments):
 
 | Option | Meaning |
 |---|---|
 | `-o, --out <file>` | Output file, defaults to `index.html` in a new folder named after the .pptx; for the `paged` / `pages` forms it is an output folder |
-| `--output <form>` | Output form: `paged` (CLI default, on-demand loading), `single` (one self-contained HTML, the API default), `pages` (paged plus one HTML per slide), `data` (same as `--data`) |
-| `--fonts <dir>` | Explicit font folder (repeatable): wins over the default font pack for the same name, used for layout and display, characters used are embedded |
-| `--system-fonts` | Also use this machine's system fonts and Office fonts (**off by default** since 0.3.0; characters used are embedded, mind commercial font licenses) |
-| `--no-default-fonts` | Do not use the default font pack (debugging) |
-| `--data` | Output only the deck data `deck.json` (for development and debugging) |
-| `--no-images` | Do not output slide images `pic/` and thumbnails `thum/` (`prop.json` is still written) |
-| `--jobs <n\|auto>` | How many threads draw slide images in parallel, default `auto`; `1` draws on the main thread |
-| `--inline-limit <bytes>` | Images smaller than this are inlined into the HTML, default 2097152 (2 MB); video and audio always go to `media/` |
-| `--stats` | Print time taken and peak memory at the end |
-| `-q, --quiet` | Do not show progress |
-
-The old options `--embed-fonts` and `--no-system-fonts` are still accepted but have no effect. There is also a sub-command `unppt check <file.pptx> [--json]`: it only checks fonts and exits with code 1 when there is a problem that must be fixed.
+| `--output <form>` | Output form: `paged` (CLI default, on-demand loading), `single` (one self-contained HTML), `pages` (paged plus one HTML per slide) |
+| `--fonts <dir>` | Explicit font folder (repeatable): wins over the default font pack for the same name |
+| `--no-images` | Do not output slide images `pic/` and thumbnails `thum/` |
 
 ## Fonts
 
 - **Playback never uses fonts on the viewer's computer**: every character used is packed into the output as a font subset, so Windows, Mac, Android and iPhone viewers see exactly the same thing (e.g. thousands of students in a live class).
-- **Fonts in the output come from only two sources** (unless you explicitly specify fonts with `--fonts` / `--system-fonts`): fonts the author embedded in the PPT (used as-is), and open-source fonts from the default font pack `@unppt/fonts` (SIL OFL 1.1: Noto Sans SC, Noto Serif SC, LXGW WenKai, Zhuque Fangsong, Carlito, Caladea, Liberation Sans / Serif / Mono). The pack is about 87 MB and only needed on the machine that converts; viewers never download it.
-- **Layout with the original font, display with an open-source font**: non-embedded Microsoft YaHei, SimSun, Calibri and so on are laid out with the original font's metrics (numbers such as advance widths only, no glyph shapes), so line breaks and text positions match PowerPoint; they are displayed with the matching open-source font (Microsoft YaHei → Noto Sans SC, Calibri → Carlito, ...), so glyph shapes differ slightly.
-- **Fonts the pack does not know**: substituted like PowerPoint does (Chinese → Microsoft YaHei, Latin → Calibri, Japanese → Yu Gothic), then displayed with the matching open-source font.
-- **Symbol fonts** (Wingdings etc.): your characters are never changed. If the author embedded the font it displays normally; Wingdings 1–3 that are not embedded display as symbols through code-compatible open fonts in the pack; other symbol fonts (Webdings, Symbol, ...) show as letters when not embedded, and the conversion report and `unppt check` tell the author to "Embed fonts in the file" in PowerPoint.
+- **Fonts in the output come from only two sources** (unless you explicitly specify fonts with `--fonts` / `--system-fonts`): fonts the author embedded in the PPT (used as-is), and open-source fonts from the default font pack `@unppt/fonts` (SIL OFL 1.1: Noto Sans SC, Noto Serif SC, LXGW WenKai, Zhuque Fangsong, Carlito, Caladea, Liberation and others). The pack is only needed on the machine that converts; viewers never download it.
+- **Non-embedded fonts**: laid out with the original font's metrics and displayed with the matching open-source font (Microsoft YaHei → Noto Sans SC, Calibri → Carlito, ...), so lines break like PowerPoint and glyph shapes differ slightly; fonts the pack does not know are substituted the way PowerPoint does.
+- **Symbol fonts**: your characters are never changed. Wingdings 1–3 that are not embedded display as symbols through code-compatible open fonts in the pack; other symbol fonts (Webdings, Symbol, ...) show as letters when not embedded, and `unppt check` tells the author to "Embed fonts in the file".
 
 Details: [Getting started, section 7](docs/en/getting-started.md#7-fonts-why-they-matter-and-how-they-are-handled-now).
 
