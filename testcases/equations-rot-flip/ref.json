@@ -1,0 +1,819 @@
+{
+ "version": 8,
+ "level": "full",
+ "slideWidthPt": 960.0,
+ "slideHeightPt": 540.0,
+ "imageWidth": 1280,
+ "imageHeight": 720,
+ "slides": [
+  {
+   "index": 0,
+   "hidden": false,
+   "shapes": [
+    {
+     "id": 2,
+     "name": "TextBox 1",
+     "type": 17,
+     "x": 40.0,
+     "y": 40.0,
+     "w": 46.0,
+     "h": 54.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 1,
+       "text": "¬",
+       "x": 46.56,
+       "y": 40.0,
+       "w": 32.88,
+       "h": 52.8
+      }
+     ]
+    },
+    {
+     "id": 3,
+     "name": "TextBox 2",
+     "type": 17,
+     "x": 140.0,
+     "y": 40.0,
+     "w": 46.0,
+     "h": 54.0,
+     "rot": 90.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 1,
+       "text": "¬",
+       "x": 137.2,
+       "y": 50.56,
+       "w": 52.8,
+       "h": 32.88
+      }
+     ]
+    },
+    {
+     "id": 4,
+     "name": "TextBox 3",
+     "type": 17,
+     "x": 240.0,
+     "y": 40.0,
+     "w": 46.0,
+     "h": 54.0,
+     "rot": 180.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 1,
+       "text": "¬",
+       "x": 246.56,
+       "y": 41.2,
+       "w": 32.88,
+       "h": 52.8
+      }
+     ]
+    },
+    {
+     "id": 5,
+     "name": "TextBox 4",
+     "type": 17,
+     "x": 340.0,
+     "y": 40.0,
+     "w": 46.0,
+     "h": 54.0,
+     "rot": 270.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 1,
+       "text": "¬",
+       "x": 336.0,
+       "y": 50.56,
+       "w": 52.8,
+       "h": 32.88
+      }
+     ]
+    },
+    {
+     "id": 6,
+     "name": "TextBox 5",
+     "type": 17,
+     "x": 440.0,
+     "y": 40.0,
+     "w": 46.0,
+     "h": 54.0,
+     "rot": 30.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 1,
+       "text": "¬",
+       "x": 435.862,
+       "y": 35.397,
+       "w": 54.875,
+       "h": 62.166
+      }
+     ]
+    },
+    {
+     "id": 7,
+     "name": "TextBox 6",
+     "type": 17,
+     "x": 540.0,
+     "y": 40.0,
+     "w": 46.0,
+     "h": 54.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 1,
+       "text": "¬",
+       "x": 546.56,
+       "y": 40.0,
+       "w": 32.88,
+       "h": 52.8
+      }
+     ]
+    },
+    {
+     "id": 8,
+     "name": "TextBox 7",
+     "type": 17,
+     "x": 640.0,
+     "y": 40.0,
+     "w": 46.0,
+     "h": 54.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 1,
+       "text": "¬",
+       "x": 646.56,
+       "y": 41.2,
+       "w": 32.88,
+       "h": 52.8
+      }
+     ]
+    },
+    {
+     "id": 9,
+     "name": "TextBox 8",
+     "type": 17,
+     "x": 740.0,
+     "y": 40.0,
+     "w": 46.0,
+     "h": 54.0,
+     "rot": 90.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 1,
+       "text": "¬",
+       "x": 737.2,
+       "y": 50.56,
+       "w": 52.8,
+       "h": 32.88
+      }
+     ]
+    },
+    {
+     "id": 10,
+     "name": "TextBox 9",
+     "type": 17,
+     "x": 840.0,
+     "y": 40.0,
+     "w": 46.0,
+     "h": 54.0,
+     "rot": 90.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 1,
+       "text": "¬",
+       "x": 836.0,
+       "y": 50.56,
+       "w": 52.8,
+       "h": 32.88
+      }
+     ]
+    },
+    {
+     "id": 11,
+     "name": "TextBox 10",
+     "type": 17,
+     "x": 40.0,
+     "y": 180.0,
+     "w": 46.0,
+     "h": 54.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 2,
+       "text": "𝐹",
+       "x": 48.7,
+       "y": 180.0,
+       "w": 26.88,
+       "h": 52.8
+      }
+     ]
+    },
+    {
+     "id": 12,
+     "name": "TextBox 11",
+     "type": 17,
+     "x": 140.0,
+     "y": 180.0,
+     "w": 46.0,
+     "h": 54.0,
+     "rot": 90.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 2,
+       "text": "𝐹",
+       "x": 137.2,
+       "y": 192.7,
+       "w": 52.8,
+       "h": 26.88
+      }
+     ]
+    },
+    {
+     "id": 13,
+     "name": "TextBox 12",
+     "type": 17,
+     "x": 240.0,
+     "y": 180.0,
+     "w": 46.0,
+     "h": 54.0,
+     "rot": 180.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 2,
+       "text": "𝐹",
+       "x": 250.42,
+       "y": 181.2,
+       "w": 26.88,
+       "h": 52.8
+      }
+     ]
+    },
+    {
+     "id": 14,
+     "name": "TextBox 13",
+     "type": 17,
+     "x": 340.0,
+     "y": 180.0,
+     "w": 46.0,
+     "h": 54.0,
+     "rot": 270.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 2,
+       "text": "𝐹",
+       "x": 336.0,
+       "y": 194.42,
+       "w": 52.8,
+       "h": 26.88
+      }
+     ]
+    },
+    {
+     "id": 15,
+     "name": "TextBox 14",
+     "type": 17,
+     "x": 440.0,
+     "y": 180.0,
+     "w": 46.0,
+     "h": 54.0,
+     "rot": 30.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 2,
+       "text": "𝐹",
+       "x": 437.716,
+       "y": 176.467,
+       "w": 49.679,
+       "h": 59.166
+      }
+     ]
+    },
+    {
+     "id": 16,
+     "name": "TextBox 15",
+     "type": 17,
+     "x": 540.0,
+     "y": 180.0,
+     "w": 46.0,
+     "h": 54.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 2,
+       "text": "𝐹",
+       "x": 548.7,
+       "y": 180.0,
+       "w": 26.88,
+       "h": 52.8
+      }
+     ]
+    },
+    {
+     "id": 17,
+     "name": "TextBox 16",
+     "type": 17,
+     "x": 640.0,
+     "y": 180.0,
+     "w": 46.0,
+     "h": 54.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 2,
+       "text": "𝐹",
+       "x": 650.42,
+       "y": 181.2,
+       "w": 26.88,
+       "h": 52.8
+      }
+     ]
+    },
+    {
+     "id": 18,
+     "name": "TextBox 17",
+     "type": 17,
+     "x": 740.0,
+     "y": 180.0,
+     "w": 46.0,
+     "h": 54.0,
+     "rot": 90.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 2,
+       "text": "𝐹",
+       "x": 737.2,
+       "y": 192.7,
+       "w": 52.8,
+       "h": 26.88
+      }
+     ]
+    },
+    {
+     "id": 19,
+     "name": "TextBox 18",
+     "type": 17,
+     "x": 840.0,
+     "y": 180.0,
+     "w": 46.0,
+     "h": 54.0,
+     "rot": 90.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 2,
+       "text": "𝐹",
+       "x": 836.0,
+       "y": 194.42,
+       "w": 52.8,
+       "h": 26.88
+      }
+     ]
+    },
+    {
+     "id": 20,
+     "name": "TextBox 19",
+     "type": 17,
+     "x": 25.0,
+     "y": 340.0,
+     "w": 80.0,
+     "h": 54.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 3,
+       "text": "F¬g",
+       "x": 25.0,
+       "y": 340.0,
+       "w": 78.255,
+       "h": 52.8
+      }
+     ]
+    },
+    {
+     "id": 21,
+     "name": "TextBox 20",
+     "type": 17,
+     "x": 125.0,
+     "y": 340.0,
+     "w": 80.0,
+     "h": 54.0,
+     "rot": 90.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 3,
+       "text": "F¬g",
+       "x": 139.2,
+       "y": 327.0,
+       "w": 52.8,
+       "h": 78.255
+      }
+     ]
+    },
+    {
+     "id": 22,
+     "name": "TextBox 21",
+     "type": 17,
+     "x": 225.0,
+     "y": 340.0,
+     "w": 80.0,
+     "h": 54.0,
+     "rot": 180.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 3,
+       "text": "F¬g",
+       "x": 226.745,
+       "y": 341.2,
+       "w": 78.255,
+       "h": 52.8
+      }
+     ]
+    },
+    {
+     "id": 23,
+     "name": "TextBox 22",
+     "type": 17,
+     "x": 325.0,
+     "y": 340.0,
+     "w": 80.0,
+     "h": 54.0,
+     "rot": 270.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 3,
+       "text": "F¬g",
+       "x": 338.0,
+       "y": 328.745,
+       "w": 52.8,
+       "h": 78.255
+      }
+     ]
+    },
+    {
+     "id": 24,
+     "name": "TextBox 23",
+     "type": 17,
+     "x": 425.0,
+     "y": 340.0,
+     "w": 80.0,
+     "h": 54.0,
+     "rot": 30.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 3,
+       "text": "F¬g",
+       "x": 417.459,
+       "y": 323.617,
+       "w": 94.171,
+       "h": 84.854
+      }
+     ]
+    },
+    {
+     "id": 25,
+     "name": "TextBox 24",
+     "type": 17,
+     "x": 525.0,
+     "y": 340.0,
+     "w": 80.0,
+     "h": 54.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 3,
+       "text": "F¬g",
+       "x": 525.0,
+       "y": 340.0,
+       "w": 78.255,
+       "h": 52.8
+      }
+     ]
+    },
+    {
+     "id": 26,
+     "name": "TextBox 25",
+     "type": 17,
+     "x": 625.0,
+     "y": 340.0,
+     "w": 80.0,
+     "h": 54.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 3,
+       "text": "F¬g",
+       "x": 626.745,
+       "y": 341.2,
+       "w": 78.255,
+       "h": 52.8
+      }
+     ]
+    },
+    {
+     "id": 27,
+     "name": "TextBox 26",
+     "type": 17,
+     "x": 725.0,
+     "y": 340.0,
+     "w": 80.0,
+     "h": 54.0,
+     "rot": 90.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 3,
+       "text": "F¬g",
+       "x": 739.2,
+       "y": 327.0,
+       "w": 52.8,
+       "h": 78.255
+      }
+     ]
+    },
+    {
+     "id": 28,
+     "name": "TextBox 27",
+     "type": 17,
+     "x": 825.0,
+     "y": 340.0,
+     "w": 80.0,
+     "h": 54.0,
+     "rot": 90.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 3,
+       "text": "F¬g",
+       "x": 838.0,
+       "y": 328.745,
+       "w": 52.8,
+       "h": 78.255
+      }
+     ]
+    }
+   ],
+   "effects": [],
+   "triggerHidden": [],
+   "steps": 0,
+   "keptSlideshow": false
+  },
+  {
+   "index": 1,
+   "hidden": false,
+   "shapes": [
+    {
+     "id": 2,
+     "name": "Oval 1",
+     "type": 1,
+     "x": 60.0,
+     "y": 60.0,
+     "w": 180.0,
+     "h": 120.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 9,
+     "lines": [
+      {
+       "start": 0,
+       "len": 2,
+       "text": "𝐹",
+       "x": 135.7,
+       "y": 93.6,
+       "w": 26.88,
+       "h": 52.8
+      }
+     ]
+    },
+    {
+     "id": 3,
+     "name": "Rectangle 2",
+     "type": 1,
+     "x": 360.0,
+     "y": 60.0,
+     "w": 180.0,
+     "h": 120.0,
+     "rot": 30.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 2,
+       "text": "𝐹",
+       "x": 424.373,
+       "y": 89.962,
+       "w": 49.679,
+       "h": 59.166
+      }
+     ]
+    },
+    {
+     "id": 4,
+     "name": "Rectangle 3",
+     "type": 1,
+     "x": 660.0,
+     "y": 60.0,
+     "w": 180.0,
+     "h": 120.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 2,
+       "text": "𝐹",
+       "x": 737.47,
+       "y": 93.6,
+       "w": 26.88,
+       "h": 52.8
+      }
+     ]
+    },
+    {
+     "id": 7,
+     "name": "Group 6",
+     "type": 6,
+     "x": 120.0,
+     "y": 320.0,
+     "w": 140.0,
+     "h": 100.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "children": [
+      {
+       "id": 5,
+       "name": "TextBox 4",
+       "type": 17,
+       "x": 214.0,
+       "y": 330.0,
+       "w": 46.0,
+       "h": 54.0,
+       "rot": 0.0,
+       "visible": true,
+       "autoShapeType": 1,
+       "lines": [
+        {
+         "start": 0,
+         "len": 1,
+         "text": "¬",
+         "x": 220.56,
+         "y": 330.0,
+         "w": 32.88,
+         "h": 52.8
+        }
+       ]
+      },
+      {
+       "id": 6,
+       "name": "Rectangle 5",
+       "type": 1,
+       "x": 120.0,
+       "y": 320.0,
+       "w": 60.0,
+       "h": 100.0,
+       "rot": 0.0,
+       "visible": true,
+       "autoShapeType": 1
+      }
+     ]
+    },
+    {
+     "id": 10,
+     "name": "Group 9",
+     "type": 6,
+     "x": 520.0,
+     "y": 320.0,
+     "w": 140.0,
+     "h": 100.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "children": [
+      {
+       "id": 8,
+       "name": "TextBox 7",
+       "type": 17,
+       "x": 520.0,
+       "y": 356.0,
+       "w": 46.0,
+       "h": 54.0,
+       "rot": 0.0,
+       "visible": true,
+       "autoShapeType": 1,
+       "lines": [
+        {
+         "start": 0,
+         "len": 1,
+         "text": "¬",
+         "x": 526.56,
+         "y": 357.2,
+         "w": 32.88,
+         "h": 52.8
+        }
+       ]
+      },
+      {
+       "id": 9,
+       "name": "Rectangle 8",
+       "type": 1,
+       "x": 600.0,
+       "y": 320.0,
+       "w": 60.0,
+       "h": 100.0,
+       "rot": 0.0,
+       "visible": true,
+       "autoShapeType": 1
+      }
+     ]
+    }
+   ],
+   "effects": [],
+   "triggerHidden": [],
+   "steps": 0,
+   "keptSlideshow": false
+  }
+ ],
+ "ok": true
+}
