@@ -11,7 +11,6 @@ import { basename, dirname, extname, join, resolve } from 'node:path';
 import { homedir, platform } from 'node:os';
 import { checkFonts, convert, UNPPT_VERSION, type RandomAccessSource, type WriteData } from './index';
 import { formatFontCheck } from './cli-check';
-import { SYMBOL_FONT } from './font/check';
 import { autoWorkers, createRasterPool } from './node-pool';
 import { loadFontPack } from './node-fonts';
 
@@ -227,11 +226,8 @@ async function main() {
     process.stderr.write('\n');
     console.log(`完成：${result.slides} 页，用时 ${((Date.now() - t0) / 1000).toFixed(1)} 秒 -> ${out}`);
     if (result.fontCheck.errors || result.fontCheck.warnings) console.log(formatFontCheck({ slides: result.slides, ...result.fontCheck }, basename(input), true));
-    // 符号字体的提示上面的字体检查已经列了（字体检查漏了哪个时照样显示）
-    const listed = new Set(result.fontCheck.fonts.filter((f) => f.status === 'symbol-missing').map((f) => f.font.toLowerCase()));
-    const symbols = result.report.missingFonts.filter((f) => SYMBOL_FONT.test(f));
-    const allListed = symbols.every((f) => listed.has(f.toLowerCase()));
-    for (const w of result.report.warnings) if (!(allListed && w.startsWith('用了符号字体'))) console.log(`提示：${w}`);
+    // 符号字体的提示上面的字体检查已经列了（这条提示就是按字体检查的结论生成的）
+    for (const w of result.report.warnings) if (!w.startsWith('用了符号字体')) console.log(`提示：${w}`);
   }
 }
 

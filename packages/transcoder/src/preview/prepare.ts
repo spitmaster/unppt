@@ -91,12 +91,14 @@ export class Preparer {
     // 透视投影的图片先换成单独画的位图（内容在它自己的准备里处理）；先拆发光的外扩再展开嵌套的 SVG 图片：
     // 图片里的 feMorphology 有自己的缩放，不按页面的缩放改
     const flat = warpMeshes(svg, pageScale(svg), (content, width, warp) => this.raster(`mesh@${width}@${warp.dst.join(',')}@${content}`, content, width, warp));
-    const out = rewriteFonts(await inlineSvgImages(splitMorphology(flat), this.image, (key, svg, width) => this.raster(key, svg, width)), this.fonts, used);
+    const out = await rewriteFonts(await inlineSvgImages(splitMorphology(flat), this.image, (key, svg, width) => this.raster(key, svg, width)), this.fonts, used);
     const faces = [...used];
-    // resvg 缺字时按加载顺序找第一个有这个字的字体，这个字体能画整段时整段都换成它画（不看字重）：常规体排在前面，
-    // 否则页面上有粗体标题时，图表里中西文混排的标签整个画成粗体
-    const regularFirst = [...faces.filter((f) => !f.bold && !f.italic), ...faces.filter((f) => f.bold || f.italic)];
-    return { svg: out, fonts: [...new Set(regularFirst.map((f) => this.fontId(f)))], ...(faces[0] ? { defaultFamily: fileFamily(faces[0]) } : {}) };
+    // resvg 缺字时按加载顺序找第一个有这个字的字体（不看字重），写的字体找不到时用默认字体：符号字体（Wingdings 兼容字体）排在最后、
+    // 不当默认字体，否则别的字体缺的字、写了找不到的字体的文字（EMF 里的公式）会画成 Wingdings 的图形；其余的常规体在前
+    const symbol = (f: FontFace) => SYMBOL_FONT.test(f.displayFamily) || SYMBOL_FONT.test(fileFamily(f));
+    const ordered = [...faces.filter((f) => !symbol(f) && !f.bold && !f.italic), ...faces.filter((f) => !symbol(f) && (f.bold || f.italic)), ...faces.filter(symbol)];
+    const def = ordered.find((f) => !symbol(f));
+    return { svg: out, fonts: [...new Set(ordered.map((f) => this.fontId(f)))], ...(def ? { defaultFamily: fileFamily(def) } : {}) };
   }
 
   /**
@@ -141,23 +143,52 @@ function pageScale(svg: string): number {
  */
 const fileFamily = (f: FontFace) => f.shownFamily ?? f.displayFamily;
 
+/** XML 文本里的转义还原成字（判断一个字体能不能画全这段文字用） */
+const unesc = (s: string) => s.replace(/&#x([0-9a-f]+);/gi, (_, h: string) => String.fromCodePoint(parseInt(h, 16)))
+  .replace(/&#(\d+);/g, (_, d: string) => String.fromCodePoint(+d))
+  .replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&apos;|&#39;/g, "'").replace(/&amp;/g, '&');
+/** 私用区的字（原样的，或者写成十六进制转义的） */
+const PUA = /&#x(?:e[0-9a-f]{3}|f[0-8][0-9a-f]{2});|[\ue000-\uf8ff]/gi;
+
 /**
- * font-family="'甲','乙',sans-serif" 换成能找到的字体文件的英文名；找到的字体记进 used。
- * 找不到字体的符号字体文字（没嵌入的 Webdings、Symbol 用"插入符号"插的 U+F0xx）：resvg 会拿这一页别的字体里有这个码点的字形来画，
- * 而 Wingdings 兼容字体正好有 U+F020~F0FF，画出来是 Wingdings 的符号（错的）；这些字换成方框，和观看者没装这个字体时一样
+ * font-family="'甲','乙',sans-serif" 换成一个字体文件的英文名；列表里找得到的字体都记进 used。
+ * resvg 不像浏览器那样按列表逐字找：缺字时找加载顺序里第一个有这个字的字体，能画整段就整段换成它画（不看字重），
+ * 所以选列表里第一个能画全这段文字的字体（图表标签 "1月" 写的是 Calibri、等线，选等线），都画不全才用第一个找得到的。
+ * 选定的字体画不了的私用区字（没嵌入的 Webdings、Symbol "插入符号"插的 U+F0xx 等）换成方框：否则 resvg 借用 Wingdings 兼容字体
+ * 画成别的符号；观看者没有这个字体时看到的也是方框
  */
-function rewriteFonts(svg: string, fonts: FontResolver, used: Set<FontFace>): string {
-  return svg.replace(/<(text|tspan)\b([^>]*)>([^<]*)/g, (all, _name: string, attrs: string, content: string) => {
-    const tag = all.slice(0, all.length - content.length);
+async function rewriteFonts(svg: string, fonts: FontResolver, used: Set<FontFace>): Promise<string> {
+  const coverage = new Map<FontFace, Promise<(cp: number) => boolean>>();
+  const draws = (f: FontFace) => {
+    let p = coverage.get(f);
+    if (!p) {
+      p = f.load().then((m) => (cp: number) => (m.shown ? m.shown(cp) : m.advance(cp) !== undefined), () => () => false);
+      coverage.set(f, p);
+    }
+    return p;
+  };
+  const parts: string[] = [];
+  let last = 0;
+  for (const m of svg.matchAll(/<(text|tspan)\b([^>]*)>([^<]*)/g)) {
+    const [all, , attrs, content] = m;
     const fam = /\sfont-family="([^"]*)"/.exec(attrs)?.[1];
-    if (!fam) return all;
+    if (!fam) continue;
+    const tag = all.slice(0, all.length - content.length);
     const bold = /\sfont-weight="(bold|[6-9]00)"/.test(attrs), italic = /\sfont-style="italic"/.test(attrs);
     const names = fam.replace(/&quot;|&#39;|'/g, '').split(',').map((s) => s.trim()).filter(Boolean);
-    // 第一个找得到的字体写进 font-family；列表里其它找得到的字体也交给 resvg（图表标签 "1月" 的列表是 Calibri、等线：
-    // resvg 不像浏览器那样按列表逐字找，汉字只能从加载了的字体里找替代，不加载等线就画成方框）
     const found = names.map((n) => fonts(n, bold, italic)).filter((f): f is FontFace => !!f);
-    const face = found[0];
-    if (!face) return SYMBOL_FONT.test(names[0] ?? '') ? tag + content.replace(/[\uf020-\uf0ff]/g, '\u25a1') : all;
+    const cps = [...unesc(content)].map((c) => c.codePointAt(0)!).filter((cp) => cp > 0x20);
+    let face: FontFace | undefined;
+    for (const f of found) {
+      const d = await draws(f);
+      if (cps.every(d)) { face = f; break; }
+    }
+    face ??= found[0];
+    const d = face ? await draws(face) : () => false;
+    const text = content.replace(PUA, (c) => (d(unesc(c).codePointAt(0)!) ? c : '\u25a1'));
+    parts.push(svg.slice(last, m.index));
+    last = m.index! + all.length;
+    if (!face) { parts.push(tag + text); continue; }
     for (const f of found) used.add(f);
     // 同一家族的常规 / 粗体都交给 resvg，它按 font-weight 自己挑
     const other = fonts(face.displayFamily, !bold, italic);
@@ -166,6 +197,8 @@ function rewriteFonts(svg: string, fonts: FontResolver, used: Set<FontFace>): st
     // 同一个开源家族里有细体、常规体时按字重挑（微软雅黑 Light -> 思源黑体 Light）
     const w = Math.round(face.weight / 100) * 100;
     if (!bold && !/\sfont-weight=/.test(attrs) && w > 0 && w !== 400) out = out.replace(/>$/, ` font-weight="${w}">`);
-    return out + content;
-  });
+    parts.push(out + text);
+  }
+  parts.push(svg.slice(last));
+  return parts.join('');
 }
