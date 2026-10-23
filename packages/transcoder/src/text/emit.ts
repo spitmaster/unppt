@@ -143,7 +143,7 @@ function centerShift(layouts: ParagraphLayout[], contentW: number): number {
 export function emitParagraphs(
   layouts: ParagraphLayout[], b: BodyProps, outer: { w: number; h: number }, contentW: number, env: TextEnv, out?: { height: number },
 ): string[] {
-  const { lIns, uprightAll, uprightWide } = b;
+  const { uprightAll, uprightWide } = b;
   const placed = placeLines(layouts, b, outer, contentW, out, env.snapY, env.pixelScale);
   const parts: string[] = [];
   let k0 = 0;
@@ -154,14 +154,17 @@ export function emitParagraphs(
     const under: string[] = [];
     const over: string[] = [];
     for (; k0 < placed.length && placed[k0].pi === i; k0++) {
-      const { line, li, baseline, top, lh, x, xs, extra, colX } = placed[k0];
+      const { line, li, baseline, top, lh, x, xs, extra } = placed[k0];
       const lineStart = pParts.length;
       // 渐变文字按行铺：行的外框（横向从行首到最后一个非空白字的右边）
       const last = line.atoms.reduce((k, a, j) => (a.space || a.tab ? k : j), -1);
       env.lineBox = { x, y: top, w: last >= 0 ? xs[last] + line.atoms[last].width - x : 0, h: lh };
       if (li === 0 && pl.bullet) {
         const b = pl.bullet;
-        const bx = pl.algn === 'l' || pl.algn === 'just' ? lIns + colX + b.x : x - b.width;
+        // 项目符号跟第一行一起走：和第一行起点保持左对齐时的距离（line.x0 − b.x，悬挂缩进时就是悬挂的距离），居中、右对齐时
+        // 不贴着文字，水平居中（anchorCtr）整块右移时也跟着移（实测 text-bullet-align：5 种对齐 × 5 种缩进 × 圆点 / 缺字体 /
+        // Wingdings / 编号，符号墨迹和左对齐时的位移等于第一个字的位移，误差 ≤ 0.25 磅）
+        const bx = x - (line.x0 - b.x);
         const bAlias = b.face && env.embed ? env.embed.alias(b.face) : undefined;
         if (b.image) {
           // 实测：图片底边在基线下约 0.075 倍边长

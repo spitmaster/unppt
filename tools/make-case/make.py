@@ -7502,6 +7502,23 @@ def _para_xml(algn="l", marL=0, marR=0, indent=0, runs=(("", 0),), size=14, bold
 
 def _patch_txbodies(path, bodies, cells=None, widths=None):
     """把记号文字所在形状的 txBody 换成 bodies[记号]、表格单元格 <a:tc> 换成 cells[记号]；widths[记号] 改形状宽度（EMU）"""
+def _marked_boxes(p, boxes):
+    """按 (页, x, y, 宽, 高) 加文本框，文字是占位标记 BXMARK<k>，保存后由 _patch_marked 换成 XML 写的段落"""
+    for k, (si, x, y, w, h) in enumerate(boxes):
+        while p.Slides.Count < si:
+            p.Slides.Add(p.Slides.Count + 1, LAYOUT_BLANK)
+        tb = p.Slides(si).Shapes.AddTextbox(1, x, y, w, h)
+        tb.TextFrame.WordWrap = -1
+        tb.TextFrame.AutoSize = 0
+        tb.Height = h
+        tb.TextFrame.TextRange.Text = f"BXMARK{k}"
+        tb.Line.Visible = -1
+        tb.Line.ForeColor.RGB = RGB(200, 200, 200)
+        tb.Line.Weight = 0.5
+
+
+def _patch_marked(path, bodies):
+    """把第 k 个标记所在的段落换成 bodies[k] = (段落 XML, bodyPr 要加的属性)"""
     import re
     import zipfile
     tmp = path.with_suffix(".tmp")
@@ -7519,6 +7536,20 @@ def _patch_txbodies(path, bodies, cells=None, widths=None):
                     xml = re.sub(r"<p:txBody>(?:(?!</p:txBody>).)*?" + mark + r".*?</p:txBody>", lambda m: body, xml, count=1, flags=re.S)
                 for mark, tc in (cells or {}).items():
                     xml = re.sub(r"<a:tc>(?:(?!</a:tc>).)*?" + mark + r".*?</a:tc>", lambda m: tc, xml, count=1, flags=re.S)
+            if re.fullmatch(r"ppt/slides/slide\d+\.xml", item.filename):
+                xml = data.decode("utf8")
+                for k, (body, body_attrs) in enumerate(bodies):
+                    if f"BXMARK{k}<" not in xml:
+                        continue
+                    if body_attrs:
+                        # 同名属性（COM 写的 wrap="square" 等）先去掉
+                        names = re.findall(r"(\w+)=", body_attrs)
+
+                        def fix_body(m, a=body_attrs, names=names):
+                            tag = re.sub(r"\s(?:" + "|".join(names) + r')="[^"]*"', "", m.group(1))
+                            return f"<a:bodyPr {a}{tag}" + m.group(2)
+                        xml = re.sub(rf"<a:bodyPr([^>]*>)((?:(?!<a:bodyPr).)*?BXMARK{k}<)", fix_body, xml, count=1, flags=re.S)
+                    xml = re.sub(rf"<a:p>(?:(?!</a:p>).)*?BXMARK{k}<(?:(?!</a:p>).)*?</a:p>", lambda m, body=body: body, xml, count=1, flags=re.S)
                 data = xml.encode("utf8")
             zout.writestr(item, data)
     tmp.replace(path)
@@ -7637,7 +7668,54 @@ def _patch_indent_round(path):
 text_indent_round.patch = _patch_indent_round
 
 
-CASES = [shapes_all, text_sizes, text_align, text_spacing, text_bullets, text_missing_font, shapes_basic, fills_lines, table_basic, group_rotate, anim_basic, anim_auto, charts_basic, pictures, smartart, text_effects, text_layout, table_merge, links, emf_images, anim_advanced, charts_labels, freeform_icons, media_audio, anim_trigger, wmf_images, anim_iterate, picture_transparent, charts_more, shape_effects, equations, anim_path, anim_emphasis, transitions, fills_patterns, text_decoration, anim_entrance, svg_images, charts_markers, hidden_slides, media_background, text_glow_reflection, text_tabs, text_picture_bullets, fills_texture, transition_morph, text_embedded_fonts, text_warp, anim_repeat, charts_sizes, slide_timings, lines_compound, table_diagonal, lines_gradient, fills_radial, fills_rect_gradient, shapes_3d, table_vertical, transitions_more, anim_sound, anim_build, anim_after, anim_text_emphasis, charts_bubble, media_video, charts_options, charts_negative, shapes_bevel, charts_legend, shapes_3d_rotation, smartart_3d, charts_ofpie, charts_3d, anim_group_emphasis, activex_controls, charts_extras, charts_axis_titles, charts_fills, charts_outlines, charts_labels_more, group_scale, group_flip, charts_3d_line, charts_legend_pos, charts_crowded_labels, charts_label_skip, charts_bar_long_names, charts_multilevel, picture_recolor, text_symbols, text_numbering, lines_arrows, table_styles, shapes_styles, charts_styles, placeholders_inherit, text_bold_light, ole_objects, text_hanging_punct, speaker_notes, pictures_tiff, placeholders_picture, pictures_exif, text_picture_fill, pictures_mislabeled, emf_alphablend, placeholders_orphan, picture_fill_rect, slide_number_fields, table_builtin_styles, smartart_matrix, text_layout_unit, colors_gamma, text_latin_cjk_font, text_default_style, text_missing_font_jp, text_ea_line_break, text_ambiguous_punct, text_charset_slides, table_rowspan_tall, text_autofit_round, shapes_3d_contour, emf_clip_modes, placeholders_picture_geom, emf_gradient_fill, text_theme_font_lang, text_anchor_linespacing, table_linespacing, table_fontalgn, text_theme_font_latin, text_margin_right, text_charset_gap, slide_size_repair, fills_shape_gradient, text_shadow_runs, picture_3d_shadow, charts_axis_ea_vert, fills_tile_resample, text_shadow_dist, text_shadow_size, text_shadow_scale, text_shadow_blur, text_glow_scale, text_reflection_dist, shapes_bg_fill, text_control_chars, placeholders_no_index, text_ambiguous_missing_ea, text_missing_panose, emf_bitmap_src, fills_group, fills_rot_with_shape, fills_rot_cut, charts_pct_stacked, picture_bg_fill, charts_legend_manual, charts_long_cats, charts_cat_vertical, charts_cat_rot_len, charts_cat_rot_short, charts_cat_rot_threshold, charts_pie_label_sep, text_slash_break, smartart_colors, text_fontref_ph, text_hanging_unset, table_default_bold, text_missing_cjk_name, text_fakebold_width, text_br_empty_line, text_ea_lang, slide_number_bare_field, text_neg_indent, text_mix_wrap_lines, text_theme_ea_altlang, charts_inner_titles, charts_line_dash, charts_rich_title, text_ea_slot_symbols, charts_date_extra_vals, shape_shadow_nofill_text, text_fontalgn, charts_legend_overflow, group_effects, charts_point_labels, picture_bevel_border, text_outline_fakebold, text_just_hang, text_just_spaces, charts_axis_ea_vert_latin, charts_title_moved, charts_dtable_fonts, charts_pie_manual_labels, charts_axis_title_moved, charts_pie_bestfit, charts_dtable_wrap, charts_axis_min_offset, text_bullet_pos_indent, text_spcpts_round, charts_na_values, lines_dash_caps, text_anchor_ctr, custgeom_no_wh, text_link_kinds, fills_blip_no_mode, text_buchar_multi, text_font_substitutes, charts_empty_series_name, charts_cat_custom_rot, text_ea_latin_cjk, placeholders_footer_base, table_no_style_other, lines_thin_dash, text_super_spc, text_pua_nosym, text_vert_insets, table_fontalgn_tall, charts_dlbl_numfmt, charts_user_shapes, charts_dlbl_clamp, charts_axis_no_sppr, charts_axis_style_defaults, text_cr_paragraph, charts_pie_label_pos, text_autonum_symbol_font, text_kern_zero, charts_legend_truncate, table_latin_rows, text_latin_break, charts_legend_bottom_wrap, charts_dtable_manual, fonts_showcase, table_anchor_ctr, text_noto_weights, equations_rot_flip, text_anchor_ctr_indent, text_indent_round, text_dash_ealnbrk, text_latin_break_hang, text_fakebold_gradfill, charts_pie_bestfit_fit]
+def _paras(ppr, texts, latin="微软雅黑", ea=None, sz=1400):
+    rpr = f'<a:rPr lang="zh-CN" altLang="en-US" sz="{sz}"><a:latin typeface="{latin}"/><a:ea typeface="{ea or latin}"/></a:rPr>'
+    pprs = ppr if isinstance(ppr, list) else [ppr] * len(texts)
+    return "".join(f"<a:p>{pp}<a:r>{rpr}<a:t>{t}</a:t></a:r></a:p>" for pp, t in zip(pprs, texts))
+
+
+BU_DOT = '<a:buFont typeface="Arial"/><a:buChar char="&#8226;"/>'
+# 项目符号在各种对齐下的位置：行 = (缩进, 符号)，列 = 对齐方式
+BULLET_ALIGN_ROWS = [('marL="342900" indent="-342900"', BU_DOT),
+                     ('marL="571500" indent="-228600"', '<a:buFont typeface="Wingdings" pitchFamily="2" charset="2"/><a:buChar char="&#167;"/>'),
+                     ('marL="228600" indent="228600"', BU_DOT),
+                     ('marL="0" indent="-342900"', '<a:buFont typeface="+mj-lt"/><a:buAutoNum type="arabicPeriod"/>')]
+BULLET_ALIGNS = ["l", "ctr", "r", "just", "dist"]
+
+
+def _bullet_align_bodies():
+    hang = 'marL="285750" indent="-285750"'
+    bodies = []
+    for ind, bu in BULLET_ALIGN_ROWS:
+        for a in BULLET_ALIGNS:
+            bodies.append((_paras(f'<a:pPr {ind} algn="{a}">{bu}</a:pPr>', ["ABC一二三", "一二三四五六七八九十一二三四五六"]), ""))
+    texts = ["一二三四", "一二三四五六七八九十一二三四五六七八九十", "ABC 123"]
+    bodies += [
+        (_paras(f'<a:pPr {hang} algn="ctr">{BU_DOT}</a:pPr>', texts, sz=1600), ""),
+        (_paras(f'<a:pPr {hang} algn="r">{BU_DOT}</a:pPr>', texts, sz=1600), ""),
+        (_paras(f'<a:pPr {hang} algn="l">{BU_DOT}</a:pPr>', ["一二三", "一二三四五六七八"], sz=1600), 'anchorCtr="1"'),
+        (_paras(f'<a:pPr marL="342900" indent="-342900" algn="ctr">{BU_DOT}</a:pPr>', ["一二三四五六", "ABC一二三"], sz=2000), 'wrap="none"'),
+        (_paras(f'<a:pPr {hang} algn="dist">{BU_DOT}</a:pPr>', ["一二三四五", "一二三四五六七八九十一二三四五六七八九十"], sz=1600), ""),
+        (_paras('<a:pPr marL="342900" indent="-342900" algn="ctr"><a:buFont typeface="+mj-lt"/><a:buAutoNum type="arabicPeriod"/></a:pPr>', texts, sz=1600), ""),
+    ]
+    return bodies
+
+
+def text_bullet_align(app):
+    """项目符号在各种对齐下的位置（保存后改 XML）：第 1 页 4 种缩进 / 符号（悬挂圆点、悬挂比左缩进小的 Wingdings、正的首行缩进、
+    marL 0 + 负缩进的编号）× 左 / 居中 / 右 / 两端 / 分散对齐；第 2 页常见的居中、右对齐列表，水平居中（anchorCtr）、不自动换行、
+    分散对齐、居中的编号。微软雅黑"""
+    p = new_pres(app)
+    boxes = [(1, 8 + c * 190, 6 + r * 133, 182, 127) for r in range(len(BULLET_ALIGN_ROWS)) for c in range(len(BULLET_ALIGNS))]
+    boxes += [(2, 20, 20, 300, 170), (2, 340, 20, 300, 170), (2, 660, 20, 280, 170), (2, 20, 220, 300, 120), (2, 340, 220, 300, 120), (2, 660, 220, 280, 170)]
+    _marked_boxes(p, boxes)
+    return p
+
+
+text_bullet_align.patch = lambda path: _patch_marked(path, _bullet_align_bodies())
+
+
+CASES = [shapes_all, text_sizes, text_align, text_spacing, text_bullets, text_missing_font, shapes_basic, fills_lines, table_basic, group_rotate, anim_basic, anim_auto, charts_basic, pictures, smartart, text_effects, text_layout, table_merge, links, emf_images, anim_advanced, charts_labels, freeform_icons, media_audio, anim_trigger, wmf_images, anim_iterate, picture_transparent, charts_more, shape_effects, equations, anim_path, anim_emphasis, transitions, fills_patterns, text_decoration, anim_entrance, svg_images, charts_markers, hidden_slides, media_background, text_glow_reflection, text_tabs, text_picture_bullets, fills_texture, transition_morph, text_embedded_fonts, text_warp, anim_repeat, charts_sizes, slide_timings, lines_compound, table_diagonal, lines_gradient, fills_radial, fills_rect_gradient, shapes_3d, table_vertical, transitions_more, anim_sound, anim_build, anim_after, anim_text_emphasis, charts_bubble, media_video, charts_options, charts_negative, shapes_bevel, charts_legend, shapes_3d_rotation, smartart_3d, charts_ofpie, charts_3d, anim_group_emphasis, activex_controls, charts_extras, charts_axis_titles, charts_fills, charts_outlines, charts_labels_more, group_scale, group_flip, charts_3d_line, charts_legend_pos, charts_crowded_labels, charts_label_skip, charts_bar_long_names, charts_multilevel, picture_recolor, text_symbols, text_numbering, lines_arrows, table_styles, shapes_styles, charts_styles, placeholders_inherit, text_bold_light, ole_objects, text_hanging_punct, speaker_notes, pictures_tiff, placeholders_picture, pictures_exif, text_picture_fill, pictures_mislabeled, emf_alphablend, placeholders_orphan, picture_fill_rect, slide_number_fields, table_builtin_styles, smartart_matrix, text_layout_unit, colors_gamma, text_latin_cjk_font, text_default_style, text_missing_font_jp, text_ea_line_break, text_ambiguous_punct, text_charset_slides, table_rowspan_tall, text_autofit_round, shapes_3d_contour, emf_clip_modes, placeholders_picture_geom, emf_gradient_fill, text_theme_font_lang, text_anchor_linespacing, table_linespacing, table_fontalgn, text_theme_font_latin, text_margin_right, text_charset_gap, slide_size_repair, fills_shape_gradient, text_shadow_runs, picture_3d_shadow, charts_axis_ea_vert, fills_tile_resample, text_shadow_dist, text_shadow_size, text_shadow_scale, text_shadow_blur, text_glow_scale, text_reflection_dist, shapes_bg_fill, text_control_chars, placeholders_no_index, text_ambiguous_missing_ea, text_missing_panose, emf_bitmap_src, fills_group, fills_rot_with_shape, fills_rot_cut, charts_pct_stacked, picture_bg_fill, charts_legend_manual, charts_long_cats, charts_cat_vertical, charts_cat_rot_len, charts_cat_rot_short, charts_cat_rot_threshold, charts_pie_label_sep, text_slash_break, smartart_colors, text_fontref_ph, text_hanging_unset, table_default_bold, text_missing_cjk_name, text_fakebold_width, text_br_empty_line, text_ea_lang, slide_number_bare_field, text_neg_indent, text_mix_wrap_lines, text_theme_ea_altlang, charts_inner_titles, charts_line_dash, charts_rich_title, text_ea_slot_symbols, charts_date_extra_vals, shape_shadow_nofill_text, text_fontalgn, charts_legend_overflow, group_effects, charts_point_labels, picture_bevel_border, text_outline_fakebold, text_just_hang, text_just_spaces, charts_axis_ea_vert_latin, charts_title_moved, charts_dtable_fonts, charts_pie_manual_labels, charts_axis_title_moved, charts_pie_bestfit, charts_dtable_wrap, charts_axis_min_offset, text_bullet_pos_indent, text_spcpts_round, charts_na_values, lines_dash_caps, text_anchor_ctr, custgeom_no_wh, text_link_kinds, fills_blip_no_mode, text_buchar_multi, text_font_substitutes, charts_empty_series_name, charts_cat_custom_rot, text_ea_latin_cjk, placeholders_footer_base, table_no_style_other, lines_thin_dash, text_super_spc, text_pua_nosym, text_vert_insets, table_fontalgn_tall, charts_dlbl_numfmt, charts_user_shapes, charts_dlbl_clamp, charts_axis_no_sppr, charts_axis_style_defaults, text_cr_paragraph, charts_pie_label_pos, text_autonum_symbol_font, text_kern_zero, charts_legend_truncate, table_latin_rows, text_latin_break, charts_legend_bottom_wrap, charts_dtable_manual, fonts_showcase, table_anchor_ctr, text_noto_weights, equations_rot_flip, text_anchor_ctr_indent, text_indent_round, text_dash_ealnbrk, text_latin_break_hang, text_fakebold_gradfill, charts_pie_bestfit_fit, text_bullet_align]
 
 
 def main():
