@@ -1,6 +1,23 @@
 # 更新日志 / Changelog
 
-## 0.3.0（2026-10-23）
+## 0.3.1（未发布）
+
+**中文**
+
+0.3.0 发布当天发现表格问题，已从 npm 撤回；0.3.1 包含 0.3.0 的全部内容，另外：
+
+- 表格单元格的"水平居中"（`anchorCtr`）：和文本框一样，整块文字在单元格里居中、各段的对齐在块里。以前（0.2.x 起）没处理，
+  单元格写"左对齐 + 水平居中"的表格（常见于模板）整列文字靠左。
+
+**English**
+
+0.3.0 was withdrawn from npm on release day because of a table problem; 0.3.1 contains everything in 0.3.0, plus:
+
+- Table cells honour "center horizontally" (`anchorCtr`) like text boxes: the block of text is centered in the cell, each paragraph keeps its own
+  alignment inside the block. Before (since 0.2.x) it was ignored, so tables whose cells say "left aligned + centered" (common in templates) showed
+  their text flush left.
+
+## 0.3.0（2026-10-23，已撤回 / withdrawn）
 
 **中文**
 
