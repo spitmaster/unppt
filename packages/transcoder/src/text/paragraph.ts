@@ -101,7 +101,7 @@ export async function layoutParagraph(p: XEl, pi: number, ctx: ParagraphContext)
   const stops0 = tabStops(pPr);
   const stops = indent < 0 && marL > firstX ? [...stops0, { pos: marL, algn: 'l' }].sort((a, b) => a.pos - b.pos) : stops0;
   layoutTabs(atoms, stops, defTab, firstX);
-  const relayout = atoms.some((a) => a.tab) ? (start: number, first: boolean) => layoutTabs(atoms, stops, defTab, first ? firstX : marL, start) : undefined;
+  const relayout = atoms.some((a) => a.tab) ? (start: number, first: boolean, limit: number) => layoutTabs(atoms, stops, defTab, first ? firstX : marL, start, limit) : undefined;
 
   // 标点溢出边界：哪里都没写时也开着（实测 text-hanging-unset：老 .ppt 转来的课件常不写），只有写了 "0" 才关
   const rows = breakLines(atoms, (first) => (first ? availFirst : availRest), wrap, attr(pPr, 'hangingPunct') !== '0', attr(pPr, 'eaLnBrk') !== '0', attr(pPr, 'latinLnBrk') === '1', relayout);

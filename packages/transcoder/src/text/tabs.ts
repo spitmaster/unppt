@@ -25,12 +25,19 @@ function followingWidth(atoms: Atom[], from: number, toDot: boolean): number {
   return w;
 }
 
-/** x0 是第 from 个字（默认是这一段第一个字）的横坐标（相对文本框内边距左侧）；折行后从新一行的第一个字重排（见 linebreak.ts） */
-export function layoutTabs(atoms: Atom[], stops: TabStop[], defTab: number, x0: number, from = 0) {
+/**
+ * x0 是第 from 个字（默认是这一段第一个字）的横坐标（相对文本框内边距左侧）；折行后从新一行的第一个字重排（见 linebreak.ts）。
+ * 重排（from > 0）只排这一行：到换行符、或者超出行宽 limit 就停——后面的字到它们那一行的开头会再排一次
+ */
+export function layoutTabs(atoms: Atom[], stops: TabStop[], defTab: number, x0: number, from = 0, limit = Infinity) {
   let x = x0;
-  atoms.forEach((a, i) => {
-    if (i < from) return;
-    if (a.text === '\n') { x = x0; return; }
+  for (let i = from; i < atoms.length; i++) {
+    const a = atoms[i];
+    if (a.text === '\n') {
+      if (from > 0) break;
+      x = x0;
+      continue;
+    }
     if (a.tab) {
       const stop = stops.find((s) => s.pos > x + 0.01);
       if (stop) {
@@ -44,5 +51,6 @@ export function layoutTabs(atoms: Atom[], stops: TabStop[], defTab: number, x0: 
       }
     }
     x += a.width;
-  });
+    if (x - x0 > limit + 1) break;
+  }
 }
