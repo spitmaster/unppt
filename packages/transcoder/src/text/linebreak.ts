@@ -1,9 +1,7 @@
 /** 换行：中英文断行规则和标点禁则（行首不放句号逗号等，行尾不放左括号等） */
 import type { Atom } from './types';
 import { LAYOUT_UNIT, eaSlot } from './measure';
-
-const NO_START = new Set([...'、。，．・：；？！゛゜ヽヾゝゞ々ー）］｝」』〕〉》】〙〗〟’”｠»,.:;?!)]}%…‥']);
-const NO_END = new Set([...'（［｛「『〔〈《【〘〖〝‘“｟«([{']);
+import { NO_END, NO_START } from '../common/kinsoku';
 
 /**
  * 可以悬挂在行外的字：行首禁则的标点，但半角 % 和省略号不挂，后面紧跟半角字符的半角 . , :（网址、小数、"CEO,CFO"）也不挂

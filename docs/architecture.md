@@ -52,7 +52,7 @@ flowchart TB
   font["font/<br/>TrueType 解析、cmap.ts 码点→字形（含符号字体）、字距、字形轮廓 glyf.ts（TrueType）/ cff.ts（CFF，.otf）、子集化 subset.ts（HarfBuzz 的 hb-subset WASM，打进 JS；glyf-flags.ts 清掉浏览器不认的点标志保留位）<br/>嵌入字体还原 eot.ts → lzcomp.ts → ctf.ts，sfnt.ts 读写公共部分<br/>默认字体包 pack.ts：原字体的度量（度量包）+ 开源字体的字形，按 map.json 对照（SPEC D3）；字体库 library.ts 按优先级 rank 挑：PPT 嵌入的、指定的字体压过字体包<br/>可变字体：fvar.ts 读轴、定常规 / 粗体的字重，instance.ts 用 hb-subset 取实例（SPEC 第 7 节）<br/>字体检查 check.ts：排版时记下每个字用了什么字体，汇总成每个字体的结论（unppt check、checkFonts()，输出见 cli-check.ts）"]
   geometry["geometry/<br/>公式引擎、187 种预设形状、40 种文字变形<br/>路径遍历 walkGeometry（输出 SVG 或按点采样）<br/>转动后轮廓的外接矩形 turned-bounds"]
   model["model/<br/>演示文稿 / 主题 / 母版 / 版式、颜色、notes 演讲者备注<br/>font-charsets 字体名的字符集（缺失字体选替代字体用）"]
-  common["common/<br/>SVG 输出工具、超链接"]
+  common["common/<br/>SVG 输出工具、超链接、标点禁则（kinsoku.ts，正文换行和图表标签折行共用）"]
   io["io/<br/>数据源、ZIP（zip.js）、XML（saxes）、OPC 包"]
   entry --> anim & render & media & font & output & preview
   preview --> media
