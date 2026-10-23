@@ -3,7 +3,7 @@ import { colorIn } from '../model/color';
 import { BLIP_PART } from '../model/model';
 import { attr, child, numAttr, type XEl } from '../io/xml';
 import { makeAtoms, type Measurer } from './measure';
-import { GROUP, resolveTypeface } from './style';
+import { GROUP, resolveTypeface, scriptOf } from './style';
 import type { Atom, Bullet, RunStyle, TextEnv } from './types';
 
 const roman = (x: number) => {
@@ -100,12 +100,24 @@ export async function makeBullet(
   let size = baseStyle.size;
   if (buSzPct) size = baseStyle.size * (numAttr(buSzPct, 'val') ?? 100000) / 100000;
   if (buSzPts) size = (numAttr(buSzPts, 'val') ?? 1800) / 100 * fontScale * 96 / 72;
-  // 编号样式自带字体（Wingdings 带圈数字）时用它；编号遇到符号字体（继承来的或自己写的 Wingdings 等）不用它，按正文字体画（实测 text-autonum-symbol-font）
-  const symbolFont = !!buFont && (attr(buFont, 'charset') === '2' || /^(wingdings|webdings|symbol|marlett)/i.test(attr(buFont, 'typeface') ?? ''));
-  const font = numFont ?? (buFont && !(bu?.name === 'a:buAutoNum' && symbolFont) ? (resolveTypeface(attr(buFont, 'typeface'), env.theme) ?? baseStyle.latin) : baseStyle.latin);
-  // 实测：空格当符号时不用符号字体，而是跟正文第一个字用同一种字体（中文正文时是东亚字体的半角空格宽度）
-  const buFace = !text.trim() && atoms[0]?.family ? atoms[0].family : font;
-  const style: RunStyle = { ...baseStyle, size, latin: buFace, ea: buFace, color: buClr ? (colorIn(buClr, env.colors) ?? baseStyle.color) : baseStyle.color, underline: false, strike: false, spc: 0 };
+  const colorStyle = { size, color: buClr ? (colorIn(buClr, env.colors) ?? baseStyle.color) : baseStyle.color, underline: false, strike: false, spc: 0 };
+  let style: RunStyle;
+  if (bu?.name === 'a:buAutoNum') {
+    // 编号不用 a:buFont 写的字体（+mj-lt、Arial、Courier New、宋体、Wingdings 都一样），按第一段文字的字体画：数字、字母用西文字体，
+    // 中日韩编号（ea1*：一.、壹.）连后缀整个用东亚字体；编号样式自带字体（Wingdings 带圈数字）时用它
+    // （实测 text-bullet-fonts：Arial + 宋体、Times New Roman + 楷体、雅黑正文 × 8 种 buFont × 12 种编号，编号宽度全部等于正文字体的）
+    const ea = /^ea1/.test(attr(bu, 'type') ?? '');
+    style = { ...baseStyle, ...colorStyle, latin: numFont ?? (ea ? baseStyle.ea : baseStyle.latin), ea: numFont ?? baseStyle.ea,
+      latinScript: ea ? baseStyle.eaScript : baseStyle.latinScript };
+  } else {
+    const font = buFont ? (resolveTypeface(attr(buFont, 'typeface'), env.theme) ?? baseStyle.latin) : baseStyle.latin;
+    // 实测：空格当符号时不用符号字体，而是跟正文第一个字用同一种字体（中文正文时是东亚字体的半角空格宽度）
+    const buFace = !text.trim() && atoms[0]?.family ? atoms[0].family : font;
+    // 符号字体没装时按它自己写的字符集找替代字体（没写或西文字符集用 Calibri，GB2312 用雅黑），和正文的字符集无关
+    // （实测 text-bullet-fonts："•" 缺字体、雅黑和 Times New Roman 正文都是 Calibri 的 0.5em，标了 GB2312 的都是雅黑的宽度）
+    const script = buFont && buFace === font ? scriptOf(buFont, font, env) : undefined;
+    style = { ...baseStyle, ...colorStyle, latin: buFace, ea: buFace, ...(buFont && buFace === font ? { latinScript: script, eaScript: script } : {}) };
+  }
   // 图片符号：实测边长约 0.70 倍字号 × 符号大小；取不到图片时退回圆点
   if (bu?.name === 'a:buBlip' && env.images && env.part) {
     const rid = attr(child(bu, 'a:blip'), 'r:embed');

@@ -13,7 +13,7 @@ const JP_CHARSETS = new Set(['-128', '128']);
 const EA_NAMES = /^(楷体_GB2312|KaiTi_GB2312)$/i;
 
 /** 字体的字符集类别：同一个字体名以加载到这一页为止最后一次明确写的为准（font-charsets.ts），没有时用这里写的 */
-function scriptOf(el: XEl | undefined, typeface: string, env: TextEnv): 'jp' | 'ea' | undefined {
+export function scriptOf(el: XEl | undefined, typeface: string, env: TextEnv): 'jp' | 'ea' | undefined {
   const cs = env.fontCharsets?.get(typeface.toLowerCase()) ?? attr(el, 'charset') ?? (EA_NAMES.test(typeface) ? '134' : '');
   return JP_CHARSETS.has(cs) ? 'jp' : EA_CHARSETS.has(cs) ? 'ea' : undefined;
 }
