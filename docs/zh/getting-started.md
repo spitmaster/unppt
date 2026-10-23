@@ -408,7 +408,7 @@ flowchart TD
   E -->|"嵌入了"| EMB["排版、显示都用嵌入的字体"]
   E -->|"没有"| S{"用 --fonts 指定了同名字体吗？"}
   S -->|"指定了"| SPEC["排版、显示都用指定的字体"]
-  S -->|"没有"| K{"字体包认识它吗？<br/>（度量包里有 447 个 Windows / Office 字体）"}
+  S -->|"没有"| K{"字体包认识它吗？<br/>（度量包里有 458 个 Windows / Office 字体）"}
   K -->|"认识"| DEF["排版按原字体的字宽<br/>显示用对应的开源字体"]
   K -->|"不认识"| SUB["和 PowerPoint 一样找替代字体<br/>（中文→微软雅黑，西文→Calibri，日文→Yu Gothic）<br/>再按上一格处理"]
   EMB --> OUT[("用到的字做成子集<br/>嵌入产物")]
@@ -424,7 +424,7 @@ flowchart TD
 
 微软雅黑、宋体、Calibri 这些字体是商业字体，不能随产物分发。unppt 的做法是把“排版”和“显示”分开：
 
-- **排版**用原字体的**度量数据**：字体包里有一个度量包，只有数字（每个字的宽度、上下高度、字距调整），**没有字形**，覆盖 447 个 Windows / Office 字体。所以换行位置、每个字的位置、行距和 PowerPoint 一样。
+- **排版**用原字体的**度量数据**：字体包里有一个度量包，只有数字（每个字的宽度、上下高度、字距调整），**没有字形**，覆盖 458 个 Windows / Office 字体。所以换行位置、每个字的位置、行距和 PowerPoint 一样。
 - **显示**用对应的开源字体。字形会和原字体略有不同（例如微软雅黑显示成思源黑体），但位置不变。
 
 | 原字体（举例） | 显示用的开源字体 |
@@ -443,10 +443,11 @@ flowchart TD
 
 ### 7.4 符号字体（Wingdings、Webdings、Symbol 等）
 
-符号字体里，字母的位置放的是图形（例如 Wingdings 的 `l` 是一个实心圆点）。开源字体里没有能代替它们的，unppt 也**不会改动你的字符**：
+符号字体里，字母的位置放的是图形（例如 Wingdings 的 `l` 是一个实心圆点）。unppt **不会改动你的字符**：
 
 - 作者把符号字体嵌入了 PPT：照常使用，显示正确。
-- 没有嵌入：符号会显示成普通字母，转码报告和 `unppt check` 会提示作者嵌入字体。
+- **Wingdings、Wingdings 2、Wingdings 3 没有嵌入**：用默认字体包里"编码兼容"的开源字体显示——字形取自 Noto Sans Symbols 等开源字体，按 Wingdings 的编码放好，课件里的字符不变，画出来就是对应的符号（■ ➢ ● ✔ ◆ ❖ 等），大小、位置按 Wingdings 的字宽和字形外框对齐。字形和 Wingdings 略有不同（就像思源黑体之于微软雅黑）。
+- 其它符号字体（Webdings、Symbol 等）没有嵌入：符号会显示成普通字母，转码报告和 `unppt check` 会提示作者嵌入字体。
 
 在 PowerPoint 里嵌入字体：**文件 → 选项 → 保存 → 勾选“将字体嵌入文件”**，然后重新保存。也可以用 `--fonts` 指定符号字体文件。
 
@@ -467,10 +468,10 @@ unppt check text-latin-cjk-font.pptx
 结论：0 个必须处理的问题（✗），1 个提醒（⚠）
 ```
 
-用了 Wingdings 又没有嵌入时会看到：
+用了 Webdings 又没有嵌入时会看到：
 
 ```text
-  ✗ Wingdings  第 1 页   符号字体没有嵌入，符号会显示成字母：请在 PowerPoint 里勾选"将字体嵌入文件"
+  ✗ Webdings   第 1 页   符号字体没有嵌入，符号会显示成字母：请在 PowerPoint 里勾选"将字体嵌入文件"
 ```
 
 每种结论的意思（括号里是 `--json` 输出里的 `status`）：
@@ -557,7 +558,7 @@ unppt demo.pptx -o out --system-fonts
 | 文字换行和 PowerPoint 不一样 | 转码时缺字体。运行 `unppt check 文件.pptx` 看哪些字体是 ⚠ 替代或 ✗；请作者在 PowerPoint 里嵌入字体，或用 `--fonts <目录>` 提供这些字体。见 [第 7 节](#7-字体为什么重要以及现在怎么处理) |
 | 提示“没找到默认字体包 @unppt/fonts” | 字体包没装上（例如只装了 `unppt.tgz`）。重新 `npm install -g @unppt/unppt`，或者从 GitHub 安装时把 `unppt-fonts.tgz` 一起装上 |
 | 字形和作者电脑上看到的不完全一样 | 正常现象：没有嵌入的商业字体（微软雅黑、Calibri 等）用开源字体显示，位置和换行不变。要完全一样，请作者嵌入字体，或者在你有授权时用 `--system-fonts` / `--fonts` |
-| 符号（勾、箭头、圆点）显示成了字母 | 用了 Wingdings 这类符号字体但没有嵌入。请作者在 PowerPoint 里“将字体嵌入文件”，见 [7.4 节](#74-符号字体wingdingswebdingssymbol-等) |
+| 符号（勾、箭头、圆点）显示成了字母 | 用了 Webdings、Symbol 这类符号字体但没有嵌入（Wingdings 1~3 不会这样）。请作者在 PowerPoint 里“将字体嵌入文件”，见 [7.4 节](#74-符号字体wingdingswebdingssymbol-等) |
 | `.pptx` 旁边多出一堆 `pic/`、`thum/`、`prop.json` | 0.2.1 及以前不写 `-o` 时输出直接写在输入文件旁边。升级到 0.2.2 以上（默认放进同名文件夹），或用 `-o out/index.html` 指定目录 |
 | 提示“没有 resvg.wasm，不输出整页图和缩略图” | 程序找不到出图用的 `resvg.wasm`（通常是安装不完整）。重新安装；不需要图片时加 `--no-images` |
 | 转码很慢或内存不够 | 出图最耗时。加 `--no-images` 跳过出图，或用 `--jobs 1`、`--jobs 2` 减少同时出图的线程数。用 `--stats` 查看用时和峰值内存 |

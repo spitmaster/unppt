@@ -6,10 +6,10 @@
 
 **字体方案改了（不兼容变化）**：播放时绝不用观看者电脑上的字体，所有观看者看到的完全一样（直播课几千人同时看也一样）。
 
-- 新增默认字体包 `@unppt/fonts`（安装 `@unppt/unppt` 时自动带上，约 60MB）：开源字体（思源黑体 / 宋体、霞鹜文楷、朱雀仿宋、Carlito、Caladea、Liberation，都是 SIL OFL 1.1）+ 447 个 Windows / Office 字体的度量数据（只有字宽等数字，没有字形）。
+- 新增默认字体包 `@unppt/fonts`（安装 `@unppt/unppt` 时自动带上，约 60MB）：开源字体（思源黑体 / 宋体、霞鹜文楷、朱雀仿宋、Carlito、Caladea、Liberation，都是 SIL OFL 1.1）+ 458 个 Windows / Office 字体的度量数据（只有字宽等数字，没有字形）。
 - **排版按原字体，显示用开源字体**：没嵌入的微软雅黑、宋体、Calibri 等按原字体的字宽排，换行和文字位置和 PowerPoint 一样；显示用对应的开源字体，每个字放在原字体的格子里（横向居中，汉字竖直中心对齐）。
 - 产物里的字体只有两个来源：PPT 里嵌入的字体和默认字体包。**默认不再用转码电脑上的系统字体**（要用加 `--system-fonts`）；`--fonts <目录>` 指定字体文件，同名时优先。用到的字一律做成子集嵌入产物（`--embed-fonts` 不再需要）。
-- 符号字体（Wingdings 等）不替换、不改动原文的字；没嵌入时转码报告提示作者在 PowerPoint 里嵌入字体（排版仍按原字体的宽度）。
+- 符号字体不改动原文的字：**Wingdings、Wingdings 2、Wingdings 3 没嵌入时用字体包里编码兼容的开源字体显示成符号**（■ ➢ ● ✔ ◆ ❖ 等项目符号和正文里的符号，字形取自 Noto Sans Symbols 等，大小位置按 Wingdings 对齐）；其它符号字体（Webdings、Symbol 等）没嵌入时转码报告提示作者在 PowerPoint 里嵌入字体。
 - 新增字体检查：`unppt check 课件.pptx [--json]` / `checkFonts()`，列出每个字体是嵌入的、默认字体包的、被替代的还是缺的，以及哪些字没有字形；转码结束时也提示有问题的字体。
 - 能读 CFF 轮廓的字体（.otf，例如思源字体），艺术字变形也能用。
 - 图表文字、整页图和缩略图同样只用嵌入的字体；显示用的开源字体缺字时换字体包里别的开源字体画（不交给浏览器）。
@@ -21,10 +21,10 @@
 
 **New font strategy (breaking change)**: the player never uses fonts installed on the viewer's device, so every viewer sees exactly the same thing.
 
-- New default font pack `@unppt/fonts` (installed with `@unppt/unppt`, ~60 MB): open fonts (Noto Sans / Serif SC, LXGW WenKai, Zhuque Fangsong, Carlito, Caladea, Liberation — all SIL OFL 1.1) plus metrics (advance widths etc., no glyphs) of 447 Windows / Office fonts.
+- New default font pack `@unppt/fonts` (installed with `@unppt/unppt`, ~60 MB): open fonts (Noto Sans / Serif SC, LXGW WenKai, Zhuque Fangsong, Carlito, Caladea, Liberation — all SIL OFL 1.1) plus metrics (advance widths etc., no glyphs) of 458 Windows / Office fonts.
 - **Layout uses the original font, display uses an open font**: Microsoft YaHei, SimSun, Calibri… that are not embedded are laid out with their own metrics, so line breaks and positions match PowerPoint; glyphs come from the matching open font, centered in the original font's cell (CJK vertically centered).
 - Fonts in the output come only from fonts embedded in the .pptx and the default pack. **System fonts on the converting machine are no longer used by default** (`--system-fonts` to opt in); `--fonts <dir>` adds your own fonts, which win on name clashes. Used glyphs are always subset into the output (`--embed-fonts` is no longer needed).
-- Symbol fonts (Wingdings…) are never substituted and characters are never remapped; when not embedded the report asks the author to embed them (layout still uses their real widths).
+- Characters in symbol fonts are never changed: **Wingdings, Wingdings 2 and Wingdings 3 that are not embedded display as symbols through code-compatible open fonts in the pack** (■ ➢ ● ✔ ◆ ❖ bullets and inline symbols; glyphs from Noto Sans Symbols and others, sized and positioned like Wingdings); other symbol fonts (Webdings, Symbol, …) that are not embedded make the report ask the author to embed them.
 - New font check: `unppt check deck.pptx [--json]` / `checkFonts()` lists each font as embedded / default pack / substituted / missing, plus characters without glyphs; conversion also prints problem fonts.
 - CFF-outline fonts (.otf, e.g. Source Han) are supported, including WordArt warps.
 - Chart text, page images and thumbnails also use only embedded fonts; characters missing from an open display font are drawn with another font from the pack instead of the browser's.

@@ -7,6 +7,25 @@ import { be16, be32 } from './sfnt';
 
 export type CmapLookup = (cp: number) => number;
 
+/**
+ * Windows 西文代码页（cp1252）0x80~0x9F 这段的字符 -> 字节（0x81、0x8D、0x8F、0x90、0x9D 没有字符）。™（0x99）例外：
+ * 实测 PowerPoint 用 Wingdings 写的 ™ 照常显示成 ™（它用东亚字体那一槽排，见 text/measure.ts EA_SLOT）
+ */
+const CP1252 = [0x20ac, 0, 0x201a, 0x192, 0x201e, 0x2026, 0x2020, 0x2021, 0x2c6, 0x2030, 0x160, 0x2039, 0x152, 0, 0x17d, 0,
+  0, 0x2018, 0x2019, 0x201c, 0x201d, 0x2022, 0x2013, 0x2014, 0x2dc, 0, 0x161, 0x203a, 0x153, 0, 0x17e, 0x178];
+const CP1252_BYTE = new Map(CP1252.map((u, i) => [u, 0x80 + i] as const).filter(([u]) => u));
+
+/**
+ * 符号字体里一个字对应的字节（0x20~0xFF）：本身在这个范围里的就是它，U+F020~F0FF（"插入符号"存的）减去 0xF000，
+ * cp1252 里有的其它字（• – — “ ” € 等）按代码页换成字节——实测 PowerPoint：Wingdings 写的 •（U+2022）画的是 0x95 的 ⓾，
+ * – — “ ” € 也都画成对应字节的符号（tools/wraptest 之外的单独实测，导出图逐个对照）
+ */
+export function symbolByte(cp: number): number | undefined {
+  if (cp >= 0x20 && cp <= 0xff) return cp;
+  if (cp >= 0xf020 && cp <= 0xf0ff) return cp - 0xf000;
+  return CP1252_BYTE.get(cp);
+}
+
 export function buildCmap(t: Uint8Array): CmapLookup {
   const num = be16(t, 2);
   let best = -1, bestFmt = 0, symbol = -1;
@@ -22,7 +41,10 @@ export function buildCmap(t: Uint8Array): CmapLookup {
   if (best >= 0) return bestFmt === 12 ? format12(t, best) : format4(t, best);
   if (symbol < 0) return () => 0;
   const f4 = format4(t, symbol);
-  return (cp) => (cp >= 0x20 && cp <= 0xff ? f4(0xf000 + cp) || f4(cp) : f4(cp));
+  return (cp) => {
+    const b = symbolByte(cp);
+    return b !== undefined ? f4(0xf000 + b) || f4(b) : f4(cp);
+  };
 }
 
 function format12(t: Uint8Array, at: number): CmapLookup {

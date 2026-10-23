@@ -141,7 +141,7 @@ npm install -g ./unppt-fonts.tgz ./unppt.tgz
 - **产物里的字体只有两个来源**（除非你用 `--fonts` / `--system-fonts` 明确指定）：作者嵌入在 PPT 里的字体（原样使用），和默认字体包 `@unppt/fonts` 里的开源字体（SIL OFL 1.1：思源黑体、思源宋体、霞鹜文楷、朱雀仿宋、Carlito、Caladea、Liberation Sans / Serif / Mono）。字体包约 87MB，只在转码的电脑上需要，观看的人不会下载它。
 - **排版按原字体，显示用开源字体**：没嵌入的微软雅黑、宋体、Calibri 等，按原字体的度量（只有字宽等数字，没有字形）排版，所以换行和文字位置和 PowerPoint 一样；显示用对应的开源字体（微软雅黑 → 思源黑体、Calibri → Carlito ……），字形会略有不同。
 - **字体包也不认识的字体**：和 PowerPoint 一样找替代字体（中文 → 微软雅黑、西文 → Calibri、日文 → Yu Gothic），再用对应的开源字体显示。
-- **符号字体**（Wingdings 等）：不改动你的字符。作者嵌入了就照常显示；没嵌入时符号会显示成字母，转码报告和 `unppt check` 会提示作者在 PowerPoint 里“将字体嵌入文件”。
+- **符号字体**（Wingdings 等）：不改动你的字符。作者嵌入了就照常显示；Wingdings 1~3 没嵌入时用字体包里编码兼容的开源字体显示成符号；其它符号字体（Webdings、Symbol 等）没嵌入时显示成字母，转码报告和 `unppt check` 会提示作者在 PowerPoint 里“将字体嵌入文件”。
 
 详见 [快速上手第 7 节](docs/zh/getting-started.md#7-字体为什么重要以及现在怎么处理)。
 

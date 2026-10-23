@@ -90,7 +90,7 @@ unppt <输入.pptx> [-o 输出] [选项]
 统计：12 页，用时 4.2 秒，峰值内存 310 MB         ← 加了 --stats 时（在“完成”之前打印）
 完成：12 页，用时 4.2 秒 -> D:\work\out\index.html
 字体：                                            ← 有字体问题时，只列 ⚠ / ✗ 的字体（格式同 unppt check）
-  ✗ Wingdings  第 3 页   符号字体没有嵌入，符号会显示成字母：请在 PowerPoint 里勾选"将字体嵌入文件"
+  ✗ Webdings   第 3 页   符号字体没有嵌入，符号会显示成字母：请在 PowerPoint 里勾选"将字体嵌入文件"
 提示：……                                          ← 每条警告一行
 ```
 
@@ -413,7 +413,7 @@ try {
 |---|---|---|
 | PPT 里嵌入的字体 | 不用给，自动读取 | PowerPoint 自己不认的嵌入字体（CFF `.otf`、表目录没排序）和 PowerPoint 一样当作没有 |
 | 指定的字体 | `fonts: [...]` | 你有分发授权的字体文件 |
-| 默认字体包 | `fontPack` | 开源字体 + 447 个 Windows / Office 字体的度量数据（只有数字，没有字形）：排版按原字体，显示用开源字体 |
+| 默认字体包 | `fontPack` | 开源字体 + 458 个 Windows / Office 字体的度量数据（只有数字，没有字形）：排版按原字体，显示用开源字体 |
 
 在 Node 里读默认字体包（安装 `@unppt/unppt` 时 `@unppt/fonts` 会自动装上）：
 
@@ -468,7 +468,7 @@ if (r.errors > 0) {
 | `specified` | 用 `fonts` 指定的字体 |
 | `default` | 默认字体包：排版按原字体，显示用开源字体（`shownWith`） |
 | `substituted` | 字体包也不认识，按 PowerPoint 的规则替代（`substitute`），字形和换行可能和作者电脑上不同 |
-| `symbol-missing` | 符号字体（Wingdings 等）没有嵌入，符号会显示成字母 |
+| `symbol-missing` | 符号字体（Webdings、Symbol 等，Wingdings 1~3 除外）没有嵌入，符号会显示成字母 |
 | `missing` | 连替代字体都没有，字宽只能估算（通常是没传 `fontPack`） |
 
 ### 3.9 进度、警告、字体问题

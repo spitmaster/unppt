@@ -49,7 +49,7 @@ So **glyph shapes** look slightly different from the author's computer, but posi
 No.
 
 - The default font pack contains **only open-source fonts**, all under SIL OFL 1.1, which may be freely distributed and embedded: Noto Sans SC, Noto Serif SC, LXGW WenKai, Zhuque Fangsong, Carlito, Caladea, Liberation Sans / Serif / Mono. The license files are in `packages/fonts/LICENSES/`.
-- The **metrics pack** inside the font pack contains **numbers only** (advance widths, ascent/descent, kerning), no glyph shapes, for 447 Windows / Office font faces. It is used only for layout and never ends up in the output.
+- The **metrics pack** inside the font pack contains **numbers only** (advance widths, ascent/descent, kerning), no glyph shapes, for 458 Windows / Office font faces. It is used only for layout and never ends up in the output.
 - The output only ever contains subsets of: the open-source fonts, fonts the author embedded in the PPT, and fonts you explicitly specify with `--fonts` / `--system-fonts`. **For the last two, the author / you are responsible for the distribution license**: embedding means distributing font subsets to every viewer, so check the license of commercial fonts first.
 
 ### Q: How do I find out whether a deck has font problems?
@@ -82,7 +82,7 @@ Characters that no font has (rare: emoji, rare CJK characters) are left to the b
 
 ### Q: Symbols (ticks, arrows, bullets) show as letters. What now?
 
-The deck uses a symbol font such as Wingdings, Webdings or Symbol without embedding it in the PPT. Symbol fonts put pictures where letters normally are; no open-source font can stand in for them, and unppt **never changes your characters**, so they show as ordinary letters. The conversion output and `unppt check` mark this ✗.
+The deck uses a symbol font such as Webdings or Symbol without embedding it in the PPT. Symbol fonts put pictures where letters normally are, and unppt **never changes your characters**; Wingdings, Wingdings 2 and Wingdings 3 have code-compatible open fonts in the default pack and display as symbols even when not embedded, other symbol fonts do not yet, so they show as ordinary letters. The conversion output and `unppt check` mark this ✗.
 
 Fix: ask the author to choose **File → Options → Save → "Embed fonts in the file"** in PowerPoint, save again and convert again; or provide the symbol font file with `--fonts` (mind the license).
 

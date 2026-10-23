@@ -205,7 +205,8 @@ export async function convert(input: InputSource, options: ConvertOptions): Prom
 
   const meta = () => {
     report.missingFonts = [...missingFonts].filter((f) => f && !fonts.has(f)).sort();
-    // 符号字体（字母位置上放的是图形）没有开源替代，也不改原文的字（用户 2026-10-22）：没嵌入时提示作者嵌入
+    // 符号字体（字母位置上放的是图形）不改原文的字（用户 2026-10-22）：Wingdings 1~3 有编码兼容的开源显示字体（字体包 compat/）；
+    // 其它的（Webdings、Symbol 等）没嵌入时提示作者嵌入
     const symbols = report.missingFonts.filter((f) => SYMBOL_FONT.test(f));
     report.warnings = [...pres.warnings].map(([m, n]) => (n > 1 ? `${m}（${n} 处）` : m));
     if (symbols.length) report.warnings.push(`用了符号字体 ${symbols.join('、')} 但没有嵌入，这些符号会显示成普通字母或方框：请在 PowerPoint 里勾选"将字体嵌入文件"后重新转码，或用 --fonts 指定字体`);

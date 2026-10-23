@@ -92,11 +92,11 @@ The CLI messages are in Chinese:
 统计：12 页，用时 4.2 秒，峰值内存 310 MB         ← stats: slides, time, peak memory (with --stats; printed before the "done" line)
 完成：12 页，用时 4.2 秒 -> D:\work\out\index.html  ← done: slides, seconds, output path
 字体：                                            ← fonts: only when there are font problems; lists ⚠ / ✗ fonts (same format as unppt check)
-  ✗ Wingdings  第 3 页   符号字体没有嵌入，符号会显示成字母：请在 PowerPoint 里勾选"将字体嵌入文件"
+  ✗ Webdings   第 3 页   符号字体没有嵌入，符号会显示成字母：请在 PowerPoint 里勾选"将字体嵌入文件"
 提示：……                                          ← one line per warning ("notice")
 ```
 
-(The `✗` line says: Wingdings on slide 3 is a symbol font that is not embedded, so symbols will show as letters; tick "Embed fonts in the file" in PowerPoint.)
+(The `✗` line says: Webdings on slide 3 is a symbol font that is not embedded, so symbols will show as letters; tick "Embed fonts in the file" in PowerPoint.)
 
 If the default font pack cannot be found, an extra line `提示：没找到默认字体包 @unppt/fonts，没有嵌入的字体只能估算字宽` ("default font pack not found; widths of non-embedded fonts can only be estimated") is printed first.
 
@@ -417,7 +417,7 @@ try {
 |---|---|---|
 | Fonts embedded in the PPT | Nothing to do, read automatically | Embedded fonts PowerPoint itself refuses (CFF `.otf`, unsorted table directory) are treated as missing, like PowerPoint |
 | Specified fonts | `fonts: [...]` | Font files you are licensed to distribute |
-| Default font pack | `fontPack` | Open-source fonts + metrics of 447 Windows / Office fonts (numbers only, no glyph shapes): layout with the original font, display with an open-source font |
+| Default font pack | `fontPack` | Open-source fonts + metrics of 458 Windows / Office fonts (numbers only, no glyph shapes): layout with the original font, display with an open-source font |
 
 Loading the default font pack in Node (`@unppt/fonts` is installed automatically with `@unppt/unppt`):
 
@@ -472,7 +472,7 @@ if (r.errors > 0) {
 | `specified` | A font given in `fonts` |
 | `default` | Default font pack: layout with the original font, display with an open-source font (`shownWith`) |
 | `substituted` | Unknown even to the font pack; substituted by PowerPoint's rules (`substitute`), so glyphs and line breaks may differ from the author's computer |
-| `symbol-missing` | A symbol font (Wingdings etc.) is not embedded; symbols will show as letters |
+| `symbol-missing` | A symbol font (Webdings, Symbol, ...; not Wingdings 1–3) is not embedded; symbols will show as letters |
 | `missing` | Not even a substitute is available; widths can only be estimated (usually no `fontPack` was passed) |
 
 ### 3.9 Progress, warnings, font problems

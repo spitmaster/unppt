@@ -1,4 +1,5 @@
 // 按 packages/fonts/fonts.json 下载默认字体包的字体文件到 packages/fonts/files/，校验 SHA-256（已有且校验对的跳过）。
+// 写了 path 的是仓库里生成好的字体（符号字体的兼容字体，tools/fonts/build-symbol-compat.py），从 packages/fonts/<path> 复制过去。
 // 字体文件不进 git 仓库（太大），开发前和发布前各运行一次：node scripts/fetch-fonts.mjs
 import { createHash } from 'node:crypto';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
@@ -56,6 +57,13 @@ for (const f of manifest.files) {
   try {
     if (sha(await readFile(target)) === f.sha256) continue;
   } catch { /* 没有这个文件 */ }
+  if (f.path) {
+    const data = await readFile(new URL(f.path, root));
+    if (sha(data) !== f.sha256) throw new Error(`${f.path} 校验不对（重新生成后要更新 fonts.json）`);
+    await writeFile(target, data);
+    fetched++;
+    continue;
+  }
   const raw = await download(f.url);
   const data = !f.archivePath ? raw : f.url.endsWith('.zip') ? await fromZip(raw, f.archivePath) : fromTar(gunzipSync(raw), f.archivePath);
   if (sha(data) !== f.sha256) throw new Error(`${f.file} 校验不对（来源可能变了）：${f.url}`);

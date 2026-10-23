@@ -61,7 +61,7 @@ console.log(result.slides, result.fontCheck, result.report.warnings);
 
 - **产物里的字体只有两个来源**（除非用 `--fonts` / `--system-fonts` 明确指定）：PPT 里嵌入的字体，和默认字体包 `@unppt/fonts` 里的开源字体（SIL OFL 1.1）。
 - **排版按原字体，显示用开源字体**：没嵌入的微软雅黑、宋体、Calibri 等按原字体的度量（只有字宽等数字）排版，换行和文字位置和 PowerPoint 一致；显示用对应的开源字体（微软雅黑 → 思源黑体、Calibri → Carlito ……）。
-- **符号字体**（Wingdings 等）不替换、不改动字符：没嵌入时转码报告和 `unppt check` 提示作者在 PowerPoint 里"将字体嵌入文件"。
+- **符号字体**（Wingdings 等）不改动字符：Wingdings 1~3 没嵌入时用字体包里编码兼容的开源字体显示成符号；其它符号字体没嵌入时转码报告和 `unppt check` 提示作者在 PowerPoint 里"将字体嵌入文件"。
 
 大文件不必整个读进内存，传 `{ size, read(offset, length) }` 这样按位置读取的对象即可。
 

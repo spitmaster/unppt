@@ -409,7 +409,7 @@ flowchart TD
   E -->|"Yes"| EMB["Layout and display use the embedded font"]
   E -->|"No"| S{"Was a font with this name given via --fonts?"}
   S -->|"Yes"| SPEC["Layout and display use the specified font"]
-  S -->|"No"| K{"Does the font pack know it?<br/>(metrics of 447 Windows / Office fonts)"}
+  S -->|"No"| K{"Does the font pack know it?<br/>(metrics of 458 Windows / Office fonts)"}
   K -->|"Yes"| DEF["Layout with the original font's widths<br/>display with the matching open-source font"]
   K -->|"No"| SUB["Substitute like PowerPoint<br/>(CJK → Microsoft YaHei, Latin → Calibri, Japanese → Yu Gothic)<br/>then as in the box above"]
   EMB --> OUT[("Subsets of the characters used<br/>embedded in the output")]
@@ -425,7 +425,7 @@ Characters that no font has (rare: emoji, rare CJK characters) are left to the b
 
 Microsoft YaHei, SimSun, Calibri and the like are commercial fonts that cannot be shipped with the output. unppt therefore separates "layout" from "display":
 
-- **Layout** uses the original font's **metrics**: the font pack contains a metrics pack with numbers only (advance width of each character, ascent/descent, kerning), **no glyph shapes**, covering 447 Windows / Office font faces. So line breaks, character positions and line spacing are the same as in PowerPoint.
+- **Layout** uses the original font's **metrics**: the font pack contains a metrics pack with numbers only (advance width of each character, ascent/descent, kerning), **no glyph shapes**, covering 458 Windows / Office font faces. So line breaks, character positions and line spacing are the same as in PowerPoint.
 - **Display** uses the matching open-source font. Glyph shapes differ slightly from the original (e.g. Microsoft YaHei is shown as Noto Sans SC), but positions do not change.
 
 | Original font (examples) | Displayed with |
@@ -444,10 +444,11 @@ The mapping rules live in `packages/fonts/map.json`; they are tried in order and
 
 ### 7.4 Symbol fonts (Wingdings, Webdings, Symbol, ...)
 
-Symbol fonts put pictures where letters normally are (e.g. `l` in Wingdings is a solid dot). No open-source font can stand in for them, and unppt **never changes your characters**:
+Symbol fonts put pictures where letters normally are (e.g. `l` in Wingdings is a solid dot). unppt **never changes your characters**:
 
 - The author embedded the symbol font in the PPT: it is used and displays correctly.
-- Not embedded: the symbols show as ordinary letters, and the conversion report and `unppt check` tell the author to embed fonts.
+- **Wingdings, Wingdings 2 and Wingdings 3 not embedded**: shown with a code-compatible open font from the default pack — glyphs taken from Noto Sans Symbols and other open fonts, placed at the Wingdings code points, so the characters stay as they are and draw as the intended symbols (■ ➢ ● ✔ ◆ ❖ …), sized and positioned by Wingdings' widths and glyph boxes. The glyph designs differ slightly from Wingdings (like Noto Sans SC vs Microsoft YaHei).
+- Other symbol fonts (Webdings, Symbol, ...) not embedded: the symbols show as ordinary letters, and the conversion report and `unppt check` tell the author to embed fonts.
 
 To embed fonts in PowerPoint: **File → Options → Save → check "Embed fonts in the file"**, then save again. You can also provide the symbol font file with `--fonts`.
 
@@ -470,10 +471,10 @@ unppt check text-latin-cjk-font.pptx
 
 (The CLI prints Chinese. Line by line: 楷体_GB2312 is not available and is substituted with Microsoft YaHei; 等线, 宋体 and Arial are laid out with the original font and displayed with Noto Sans SC, Noto Serif SC and Liberation Sans; summary: 0 problems that must be fixed, 1 warning.)
 
-A deck that uses Wingdings without embedding it shows:
+A deck that uses Webdings without embedding it shows:
 
 ```text
-  ✗ Wingdings  第 1 页   符号字体没有嵌入，符号会显示成字母：请在 PowerPoint 里勾选"将字体嵌入文件"
+  ✗ Webdings   第 1 页   符号字体没有嵌入，符号会显示成字母：请在 PowerPoint 里勾选"将字体嵌入文件"
 ```
 
 ("Symbol font not embedded, symbols will show as letters: tick 'Embed fonts in the file' in PowerPoint.")
@@ -562,7 +563,7 @@ Known gaps: time scaling on chart date axes (min/max, month/year intervals), ver
 | Line breaks differ from PowerPoint | A font was missing at conversion time. Run `unppt check file.pptx` to see which fonts are ⚠ substituted or ✗; ask the author to embed fonts in PowerPoint, or provide them with `--fonts <dir>`. See [section 7](#7-fonts-why-they-matter-and-how-they-are-handled-now) |
 | Hint saying the default font pack @unppt/fonts was not found (`没找到默认字体包 @unppt/fonts`) | The font pack is not installed (e.g. only `unppt.tgz` was installed). Reinstall with `npm install -g @unppt/unppt`, or when installing from GitHub install `unppt-fonts.tgz` too |
 | Glyphs look slightly different from the author's computer | Expected: non-embedded commercial fonts (Microsoft YaHei, Calibri, ...) are displayed with open-source fonts; positions and line breaks do not change. For identical glyphs, have the author embed the fonts, or use `--system-fonts` / `--fonts` if you are licensed to |
-| Symbols (ticks, arrows, bullets) show as letters | A symbol font such as Wingdings is used but not embedded. Ask the author to "Embed fonts in the file" in PowerPoint; see [section 7.4](#74-symbol-fonts-wingdings-webdings-symbol-) |
+| Symbols (ticks, arrows, bullets) show as letters | A symbol font such as Webdings or Symbol is used but not embedded (Wingdings 1–3 no longer do this). Ask the author to "Embed fonts in the file" in PowerPoint; see [section 7.4](#74-symbol-fonts-wingdings-webdings-symbol-) |
 | `pic/`, `thum/`, `prop.json` appear next to my `.pptx` | Versions up to 0.2.1 wrote output next to the input when `-o` was omitted. Upgrade to 0.2.2+ (default is a folder named after the .pptx), or use `-o out/index.html` |
 | Notice saying there is no resvg.wasm and no slide images/thumbnails are written | The program cannot find `resvg.wasm` (usually an incomplete install). Reinstall; add `--no-images` if you do not need images |
 | Slow conversion or out of memory | Image rendering takes the most time. Add `--no-images` to skip it, or use `--jobs 1` / `--jobs 2` to draw with fewer threads. `--stats` shows time and peak memory |

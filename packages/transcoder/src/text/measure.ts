@@ -1,5 +1,6 @@
 /** 测量：按字体文件的真实字宽把文字拆成字符（Atom），缺字体时按 PowerPoint 的规则替代，含字距调整 */
 import { fallbackAdvance, isWide, type FontFace, type FontMetrics } from '../font/font';
+import { SYMBOL_FONT } from '../font/check';
 import { kernOn } from './style';
 import type { Atom, FontEmbedder, RunStyle, TextEnv } from './types';
 
@@ -219,7 +220,11 @@ export async function makeAtoms(text: string, style: RunStyle, m: Measurer): Pro
     let drawFace = adv !== undefined ? usedM?.face : undefined;
     let drawFamily = family;
     let shift = adv !== undefined ? used?.displayShift?.(cp) : undefined;
-    if (drawFace && used?.shown && cp > 0x20 && !used.shown(cp)) {
+    // 符号字体不换别的字体画（画出来是字母，不是作者要的符号；字体检查会列出这些字）
+    if (drawFace && used?.shown && cp > 0x20 && !used.shown(cp) && SYMBOL_FONT.test(family)) {
+      drawFace = undefined;
+      shift = undefined;
+    } else if (drawFace && used?.shown && cp > 0x20 && !used.shown(cp)) {
       const fb = await drawFallback(cp, used.generic === 'roman' || SERIF_NAME.test(family));
       drawFace = fb?.face;
       drawFamily = fb ? fb.face.displayFamily : family;

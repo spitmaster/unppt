@@ -228,6 +228,33 @@
    "license": "OFL-1.1",
    "licenseFile": "LICENSES/ZhuqueFangsong-OFL.txt",
    "archivePath": "ZhuqueFangsong-Regular.ttf"
+  },
+  {
+   "file": "UnpptWingdingsCompat.ttf",
+   "sha256": "6b83b05c7833c6531e2f59e7da444064cdfbccca1f632969d926a7e6c756e4d8",
+   "size": 58404,
+   "path": "compat/UnpptWingdingsCompat.ttf",
+   "generated": "tools/fonts/build-symbol-compat.py（字形来自 Noto Sans Symbols / Symbols 2、Noto Sans SC、Carlito，按 Wingdings 编码重排）",
+   "license": "OFL-1.1",
+   "licenseFile": "LICENSES/NotoSymbols-OFL.txt"
+  },
+  {
+   "file": "UnpptWingdings2Compat.ttf",
+   "sha256": "fbc5e6d359d4385101eede142ef864d9dd40a285246460f6211db7e5260e69a9",
+   "size": 45308,
+   "path": "compat/UnpptWingdings2Compat.ttf",
+   "generated": "tools/fonts/build-symbol-compat.py（字形来自 Noto Sans Symbols / Symbols 2、Noto Sans SC、Carlito，按 Wingdings 编码重排）",
+   "license": "OFL-1.1",
+   "licenseFile": "LICENSES/NotoSymbols-OFL.txt"
+  },
+  {
+   "file": "UnpptWingdings3Compat.ttf",
+   "sha256": "3b4b98fb4dcf07cabb4d783958a05f8fe9e971c930a1727e09398aefe52cc5ec",
+   "size": 14508,
+   "path": "compat/UnpptWingdings3Compat.ttf",
+   "generated": "tools/fonts/build-symbol-compat.py（字形来自 Noto Sans Symbols / Symbols 2、Noto Sans SC、Carlito，按 Wingdings 编码重排）",
+   "license": "OFL-1.1",
+   "licenseFile": "LICENSES/NotoSymbols-OFL.txt"
   }
  ]
 }

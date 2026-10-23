@@ -4,12 +4,11 @@
 
 ## 〇、0.3.0（10/23 早上看这里）
 
-**状态：开发完成，等你做两件事再发布**（版本号、CHANGELOG 已经改好，都在 dev 分支；没有合到 main、没有打标签）。
+**状态：开发完成，等你手动发一次字体包再发布**（版本号、CHANGELOG 已经改好，都在 dev 分支；没有合到 main、没有打标签）。
 
 ### 你要做的
 
-1. **决定 Wingdings 项目符号怎么办**（见下面「要你决定」第 1 条，数据很硬）；
-2. **第一次手动发布字体包**（npm 的可信发布只能绑定已经存在的包，只需做这一次）：
+1. **第一次手动发布字体包**（npm 的可信发布只能绑定已经存在的包，只需做这一次）：
    ```bash
    node scripts/fetch-fonts.mjs
    cd packages/fonts
@@ -19,8 +18,7 @@
 
 ### 要你决定
 
-1. **Wingdings 项目符号**：按你定的规则（符号字体不替换、没嵌入就提示作者嵌入），没嵌入 Wingdings 时 ■ ➢ ● ✔ ◆ ❖ 这些项目符号显示成字母 p Ø l ü u v。统计 400 份真实课件：**236 份的项目符号用了 Wingdings，嵌入了符号字体的 0 份**（作者基本不会去嵌入）；正文里用符号字体的只有 30 份。
-   - 建议：**只对项目符号**（a:buChar + 符号字体）按固定对照表画成对应的 Unicode 符号（用字体包里的开源字体），正文里的字照你的规则一个不改、照样提示嵌入。常用的十来个（p ■、Ø ➢、l ●、ü ✔、n ■、u ◆、§ ▪、v ❖、q ❑ ……）就覆盖了绝大多数。你同意的话我半天内做完（需要下载一个开源符号字体 Noto Sans Symbols 2，约 1MB，OFL）。
+1. ~~**Wingdings 项目符号**~~ 已做（10/23 你同意）：没做逐个画图形，而是做了编码兼容的开源字体——字形取自 Noto Sans Symbols / Symbols 2（OFL），按 Unicode 7.0 为兼容 Wingdings 收录的对应字符放在 Wingdings 原来的编码位置，课件里的字符一个不改；Wingdings、Wingdings 2、Wingdings 3 共 648 个字符只差 1 个（Wingdings 2 的 ⸿，开源字体里没有）和 Windows 标志。项目符号和正文里的 Wingdings 一起解决，Webdings、Symbol 还没做。顺带实测出 PowerPoint 把符号字体里的 • – — “ ” € 按西文代码页换成对应字节的符号（™ 例外）。
 2. **度量包的授权**：字体包里开源字体是 OFL；`metrics/`（447 个 Windows / Office 字体量出来的字宽等数字）的授权说法待法务确认。我把 `@unppt/fonts` 的 license 字段改成了 `SEE LICENSE IN README.md`，README 里如实写了"待法务确认"。
 
 ### 今晚做了什么
