@@ -1,0 +1,451 @@
+{
+ "version": 8,
+ "level": "full",
+ "slideWidthPt": 960.0,
+ "slideHeightPt": 540.0,
+ "imageWidth": 1280,
+ "imageHeight": 720,
+ "slides": [
+  {
+   "index": 0,
+   "hidden": false,
+   "shapes": [
+    {
+     "id": 2,
+     "name": "TextBox 1",
+     "type": 17,
+     "x": 20.0,
+     "y": 10.0,
+     "w": 194.784,
+     "h": 29.081,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 16,
+       "text": "字重测试 Weight 2468",
+       "x": 27.2,
+       "y": 13.6,
+       "w": 178.505,
+       "h": 21.6
+      }
+     ]
+    },
+    {
+     "id": 3,
+     "name": "TextBox 2",
+     "type": 17,
+     "x": 490.0,
+     "y": 10.0,
+     "w": 201.474,
+     "h": 29.081,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 16,
+       "text": "字重测试 Weight 2468",
+       "x": 497.2,
+       "y": 13.6,
+       "w": 185.13,
+       "h": 21.6
+      }
+     ]
+    },
+    {
+     "id": 4,
+     "name": "TextBox 3",
+     "type": 17,
+     "x": 20.0,
+     "y": 44.0,
+     "w": 199.202,
+     "h": 29.081,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 16,
+       "text": "字重测试 Weight 2468",
+       "x": 27.2,
+       "y": 47.6,
+       "w": 182.88,
+       "h": 21.6
+      }
+     ]
+    },
+    {
+     "id": 5,
+     "name": "TextBox 4",
+     "type": 17,
+     "x": 490.0,
+     "y": 44.0,
+     "w": 204.755,
+     "h": 29.081,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 16,
+       "text": "字重测试 Weight 2468",
+       "x": 497.2,
+       "y": 47.6,
+       "w": 188.38,
+       "h": 21.6
+      }
+     ]
+    },
+    {
+     "id": 6,
+     "name": "TextBox 5",
+     "type": 17,
+     "x": 20.0,
+     "y": 90.0,
+     "w": 335.015,
+     "h": 46.045,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 16,
+       "text": "字重测试 Weight 2468",
+       "x": 27.2,
+       "y": 93.6,
+       "w": 317.38,
+       "h": 38.4
+      }
+     ]
+    },
+    {
+     "id": 7,
+     "name": "TextBox 6",
+     "type": 17,
+     "x": 490.0,
+     "y": 90.0,
+     "w": 346.501,
+     "h": 46.045,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 16,
+       "text": "字重测试 Weight 2468",
+       "x": 497.2,
+       "y": 93.6,
+       "w": 328.755,
+       "h": 38.4
+      }
+     ]
+    },
+    {
+     "id": 8,
+     "name": "TextBox 7",
+     "type": 17,
+     "x": 20.0,
+     "y": 150.0,
+     "w": 342.967,
+     "h": 46.045,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 16,
+       "text": "字重测试 Weight 2468",
+       "x": 27.2,
+       "y": 153.6,
+       "w": 325.255,
+       "h": 38.4
+      }
+     ]
+    },
+    {
+     "id": 9,
+     "name": "TextBox 8",
+     "type": 17,
+     "x": 490.0,
+     "y": 150.0,
+     "w": 352.433,
+     "h": 46.045,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 16,
+       "text": "字重测试 Weight 2468",
+       "x": 497.2,
+       "y": 153.6,
+       "w": 334.63,
+       "h": 38.4
+      }
+     ]
+    },
+    {
+     "id": 10,
+     "name": "TextBox 9",
+     "type": 17,
+     "x": 20.0,
+     "y": 250.0,
+     "w": 225.0,
+     "h": 84.82,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 26,
+       "text": "The quick brown fox jumps ",
+       "x": 27.2,
+       "y": 253.6,
+       "w": 204.25,
+       "h": 19.2
+      },
+      {
+       "start": 26,
+       "len": 27,
+       "text": "over the lazy dog. Pack my ",
+       "x": 27.2,
+       "y": 272.8,
+       "w": 200.375,
+       "h": 19.2
+      },
+      {
+       "start": 53,
+       "len": 27,
+       "text": "box with five dozen liquor ",
+       "x": 27.2,
+       "y": 292.0,
+       "w": 195.0,
+       "h": 19.2
+      },
+      {
+       "start": 80,
+       "len": 5,
+       "text": "jugs.",
+       "x": 27.2,
+       "y": 311.2,
+       "w": 35.13,
+       "h": 19.2
+      }
+     ]
+    },
+    {
+     "id": 11,
+     "name": "TextBox 10",
+     "type": 17,
+     "x": 255.0,
+     "y": 250.0,
+     "w": 225.0,
+     "h": 84.82,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 20,
+       "text": "The quick brown fox ",
+       "x": 262.2,
+       "y": 253.6,
+       "w": 162.25,
+       "h": 19.2
+      },
+      {
+       "start": 20,
+       "len": 25,
+       "text": "jumps over the lazy dog. ",
+       "x": 262.2,
+       "y": 272.8,
+       "w": 194.5,
+       "h": 19.2
+      },
+      {
+       "start": 45,
+       "len": 22,
+       "text": "Pack my box with five ",
+       "x": 262.2,
+       "y": 292.0,
+       "w": 173.375,
+       "h": 19.2
+      },
+      {
+       "start": 67,
+       "len": 18,
+       "text": "dozen liquor jugs.",
+       "x": 262.2,
+       "y": 311.2,
+       "w": 139.755,
+       "h": 19.2
+      }
+     ]
+    },
+    {
+     "id": 12,
+     "name": "TextBox 11",
+     "type": 17,
+     "x": 490.0,
+     "y": 250.0,
+     "w": 225.0,
+     "h": 84.82,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 20,
+       "text": "The quick brown fox ",
+       "x": 497.2,
+       "y": 253.6,
+       "w": 165.0,
+       "h": 19.2
+      },
+      {
+       "start": 20,
+       "len": 25,
+       "text": "jumps over the lazy dog. ",
+       "x": 497.2,
+       "y": 272.8,
+       "w": 193.375,
+       "h": 19.2
+      },
+      {
+       "start": 45,
+       "len": 22,
+       "text": "Pack my box with five ",
+       "x": 497.2,
+       "y": 292.0,
+       "w": 173.25,
+       "h": 19.2
+      },
+      {
+       "start": 67,
+       "len": 18,
+       "text": "dozen liquor jugs.",
+       "x": 497.2,
+       "y": 311.2,
+       "w": 139.63,
+       "h": 19.2
+      }
+     ]
+    },
+    {
+     "id": 13,
+     "name": "TextBox 12",
+     "type": 17,
+     "x": 725.0,
+     "y": 250.0,
+     "w": 225.0,
+     "h": 84.82,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 20,
+       "text": "The quick brown fox ",
+       "x": 732.2,
+       "y": 253.6,
+       "w": 171.75,
+       "h": 19.2
+      },
+      {
+       "start": 20,
+       "len": 25,
+       "text": "jumps over the lazy dog. ",
+       "x": 732.2,
+       "y": 272.8,
+       "w": 201.0,
+       "h": 19.2
+      },
+      {
+       "start": 45,
+       "len": 22,
+       "text": "Pack my box with five ",
+       "x": 732.2,
+       "y": 292.0,
+       "w": 180.125,
+       "h": 19.2
+      },
+      {
+       "start": 67,
+       "len": 18,
+       "text": "dozen liquor jugs.",
+       "x": 732.2,
+       "y": 311.2,
+       "w": 146.005,
+       "h": 19.2
+      }
+     ]
+    },
+    {
+     "id": 14,
+     "name": "TextBox 13",
+     "type": 17,
+     "x": 20.0,
+     "y": 455.0,
+     "w": 280.235,
+     "h": 72.703,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 8,
+       "text": "粗细 Ag 90",
+       "x": 27.2,
+       "y": 458.6,
+       "w": 263.13,
+       "h": 64.8
+      }
+     ]
+    },
+    {
+     "id": 15,
+     "name": "TextBox 14",
+     "type": 17,
+     "x": 490.0,
+     "y": 455.0,
+     "w": 202.105,
+     "h": 55.739,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 8,
+       "text": "粗细 Ag 90",
+       "x": 497.2,
+       "y": 458.6,
+       "w": 185.755,
+       "h": 48.0
+      }
+     ]
+    }
+   ],
+   "effects": [],
+   "triggerHidden": [],
+   "steps": 0,
+   "keptSlideshow": false
+  }
+ ],
+ "ok": true
+}
