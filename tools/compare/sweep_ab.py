@@ -1,12 +1,13 @@
 """全量课件逐页效果比对（发版前用）：每份课件用几个版本的转码器出整页图（pic/，resvg 画的），和 PowerPoint 的参考图逐页算 SSIM。
 
   python tools/compare/sweep_ab.py run <结果目录> --cli 名字=cli.js[,参数...] [--cli ...] [--workers N] [--only 哈希,...] [--limit N]
-  python tools/compare/sweep_ab.py report <结果目录> --base 名字 --new 名字 [--top N]
+  python tools/compare/sweep_ab.py report <结果目录> --base 名字 --new 名字 [--top N] [--base-dir 另一个结果目录]
 
 例：--cli new=packages/transcoder/dist/cli.js,--system-fonts --cli old=<0.2.6 的 dist/cli.js>,--system-fonts
 
 - 只记数字（样本用哈希），产物转完就删，不占磁盘；结果是 <结果目录>/results.jsonl，一份课件一行，中断后再跑会跳过已有的
 - 所有进程用最低优先级（Windows 上是"空闲"），不和用户的程序抢 CPU（转码每份只用一个出图线程）
+- 修了代码再比时只需转新版：run 只给 --cli new=...，report 用 --base-dir 指向上一次的结果目录取旧版的分数
 - 和 run.py 的区别：run.py 用浏览器截播放器的图、存图出报告，适合看细节；这里比整页图、不存图，适合几千份课件找"哪一类变差了"
 样本安全：结果只在 .cache/ 下（gitignore），不出本机。
 """
@@ -125,6 +126,14 @@ def run(args) -> None:
 def report(args) -> None:
     rows = [json.loads(line) for line in (Path(args.dir) / "results.jsonl").read_text(encoding="utf-8").splitlines() if line.strip()]
     base, new = args.base, args.new
+    if args.base_dir:  # 旧版的分数取另一次比对的结果（只比两边都有的课件）
+        old = {}
+        for line in (Path(args.base_dir) / "results.jsonl").read_text(encoding="utf-8").splitlines():
+            if line.strip():
+                r = json.loads(line)
+                if base in r["variants"]:
+                    old[r["h"]] = r["variants"][base]
+        rows = [{**r, "variants": {**r["variants"], base: old[r["h"]]}} for r in rows if r["h"] in old]
     fails = {name: [r["h"] for r in rows if not r["variants"].get(name, {}).get("ok")] for name in (base, new)}
     pairs = []
     for r in rows:
@@ -168,6 +177,7 @@ def main() -> None:
     ap.add_argument("--base", default="old")
     ap.add_argument("--new", default="new")
     ap.add_argument("--top", type=int, default=30)
+    ap.add_argument("--base-dir", default=None, help="report：旧版的分数从这个结果目录取")
     a = ap.parse_args()
     run(a) if a.cmd == "run" else report(a)
 
