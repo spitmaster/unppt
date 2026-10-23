@@ -156,11 +156,3 @@ export function lineOf(s: Series, i: number, fallback?: Line): Line | undefined 
   const ln = pl !== undefined ? pl : s.noLine ? null : s.line ?? fallback ?? null;
   return ln?.color ? ln : undefined;
 }
-
-/** 多行标签（文字里有换行）：每行居中对齐，行距 1.44 × 字号（实测饼图标签），整体以 (x, y) 为中心 */
-export function multiLabel(s: string, x: number, y: number, st: TextStyle, anchor: 'start' | 'middle' | 'end' = 'middle'): string {
-  const lines = s.split('\n');
-  if (lines.length === 1) return label(s, x, y, st, anchor);
-  const pitch = 1.44 * st.size;
-  return lines.map((t, k) => label(t, x, y + (k - (lines.length - 1) / 2) * pitch, st, anchor)).join('');
-}

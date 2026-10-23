@@ -1,9 +1,11 @@
 /** 饼图、圆环图：自己占满绘图区，图例按分类列出 */
 import { css, type ColorContext } from '../../model/color';
 import { n2 } from '../../common/svg';
-import { accentColor, cpart, multiLabel, strokeOf } from '../draw';
+import { accentColor, cpart, strokeOf } from '../draw';
 import { labelParts, labelText, piePercents, sourceFmt } from '../format';
 import { pointLabel, pointLabelText, shiftLabel } from '../point-labels';
+import { labelMaxWidth, wrapLabel } from '../label-wrap';
+import { drawLines, fitInside, measureLines, placeOutside } from '../pie-labels';
 import type { TextWidth } from '../layout';
 import type { ChartContext, Plot, Rect } from '../model';
 import type { Line } from '../../style/line';
@@ -28,29 +30,6 @@ export function slicePath(cx: number, cy: number, r: number, ri: number, a1: num
 
 /** 没写边框时扇区之间的白线 */
 const PIE_EDGE: Line = { color: { r: 255, g: 255, b: 255, a: 1 }, width: 1.5, cap: 'butt', join: 'round' };
-
-/** 实测："最佳位置"的标签框离饼外边的距离（像素） */
-const BESTFIT_GAP = 1.8 * 96 / 72;
-/** 实测（charts-pie-label-wrap：300 磅宽的饼图，9/12/16 磅标签都在约 70 像素处折行）：数据标签最宽 = 图表宽 × 0.173（68~70.8 像素之间） */
-const LABEL_MAX_W = 0.173;
-
-/**
- * 数据标签太宽时折行：优先在", "后面折（逗号留在上一行），汉字之间也能折，西文单词不拆（实测 charts-pie-label-wrap）
- */
-function wrapLabel(text: string, maxW: number, size: number, tw: TextWidth, font?: string): string {
-  return text.split('\n').map((para) => {
-    // 断点：", " 之后、汉字前后；token 是不能拆开的一段，逗号跟着前面的字（不放在行首：窄图里折成"甲 / 乙, / 2"，实测）
-    const tokens = para.match(/[⺀-鿿豈-﫿＀-￯](?:, ?)?|[^,\s⺀-鿿豈-﫿＀-￯]+(?:, ?)?|, ?|\s+/g) ?? [para];
-    const lines: string[] = [];
-    let cur = '';
-    for (const t of tokens) {
-      if (cur && tw((cur + t).trimEnd(), size, font) > maxW) { lines.push(cur.trimEnd()); cur = t.trimStart(); }
-      else cur += t;
-    }
-    if (cur) lines.push(cur.trimEnd());
-    return lines.join('\n');
-  }).join('\n');
-}
 
 function renderPie(p: Plot, x: number, y: number, w: number, h: number, colors: ColorContext, tw: TextWidth, box: { w: number; h: number }, manual = false): string {
   const s = p.series[0];
@@ -86,27 +65,33 @@ function renderPie(p: Plot, x: number, y: number, w: number, h: number, colors: 
       // 没写分隔符时：有百分比是换行，类别名 + 值是", "（实测 charts-pie-label-sep、charts-pie-bestfit）
       const sep = lb.pct ? '\n' : ', ';
       const raw = pointLabelText(s, pl, i, () => labelText(lb, v, total, s.cats[i] ?? '', s.name, vf, pcts[i], sep), () => labelParts(lb, v, total, s.cats[i] ?? '', vf, pcts[i]));
-      const text = box.w ? wrapLabel(raw, box.w * LABEL_MAX_W, lb.style.size, tw, lb.style.font) : raw;
+      const st = lb.style, maxW = box.w ? labelMaxWidth(box.w) : Infinity;
       const cos = Math.cos(mid), sin = Math.sin(mid);
+      const manualMove = !!(pl.dx || pl.dy);
+      // "最佳位置"（没写位置也是）：放得进扇区（必要时折窄）就放在里面，放不下放到饼外（实测，见 pie-labels.ts）；手动拖开的不管
+      if (!ri && (!lb.pos || lb.pos === 'bestFit') && !manualMove) {
+        const sector = { r, a1: ang, a2 };
+        const inside = fitInside(raw, maxW, st, tw, sector);
+        const l = inside?.l ?? measureLines(wrapLabel(raw, maxW, st.size, tw, st.font), st, tw);
+        const at = inside ? { x: cx + ex * cos + inside.x, y: cy + ex * sin + inside.y } : placeOutside(l, cx, cy, r + ex, mid, box);
+        labels.push(cpart(`${s.index}x${i}l`, drawLines(l, at.x, at.y, st)));
+        ang = a2;
+        return;
+      }
+      const l = measureLines(wrapLabel(raw, maxW, st.size, tw, st.font), st, tw);
+      const bw = Math.max(...l.widths), bh = l.heights.reduce((a, b) => a + b, 0);
       let lx: number, ly: number;
-      const lines = text.split('\n');
-      const bw = Math.max(...lines.map((t) => tw(t, lb.style.size))), bh = lines.length * 1.44 * lb.style.size;
-      // "最佳位置"（没写位置也是）：标签放在扇区里贴着外边（标签框沿半径方向的半宽 + 1.8 磅；实测 charts-pie-bestfit）
-      const radial = Math.abs(cos) * bw / 2 + Math.abs(sin) * bh / 2;
-      const fitD = r - radial - BESTFIT_GAP;
-      const bestFit = !ri && (!lb.pos || lb.pos === 'bestFit');
-      // 放不下时 PowerPoint 有时挪到外侧（小扇区），规律还没量准（todo），先都放在里面
       // 手动拖开的标签：偏移是相对外侧的位置算的（实测 charts-point-labels）
-      if (!ri && (lb.pos === 'outEnd' || ((pl.dx || pl.dy) && lb.pos !== 'ctr' && lb.pos !== 'inEnd'))) {
+      if (!ri && (lb.pos === 'outEnd' || (manualMove && lb.pos !== 'ctr' && lb.pos !== 'inEnd'))) {
         // 外侧：从圆心沿角平分线走到"半径 + 1.25 × 字号"处，标签往外摆（右边的从这里往右、上面的往上，实测）
-        const d = r + ex + 1.25 * lb.style.size;
+        const d = r + ex + 1.25 * st.size;
         lx = cx + d * cos + (cos * bw) / 2; ly = cy + d * sin + (sin * bh) / 2;
       } else {
-        // 圆环在环的中间（随分离的扇区一起移出）
-        const rr = (ri ? (r + ri) / 2 : lb.pos === 'ctr' ? r * 0.5 : bestFit ? fitD : r * 0.8) + ex;
+        // 圆环在环的中间，居中在半径的一半处，数据标签内在 0.8 倍半径处（都随分离的扇区一起移出）
+        const rr = (ri ? (r + ri) / 2 : lb.pos === 'ctr' ? r * 0.5 : r * 0.8) + ex;
         lx = cx + rr * cos; ly = cy + rr * sin;
       }
-      labels.push(cpart(`${s.index}x${i}l`, shiftLabel(multiLabel(text, lx, ly, lb.style), pl, box)));
+      labels.push(cpart(`${s.index}x${i}l`, shiftLabel(drawLines(l, lx, ly, st), pl, box)));
     }
     ang = a2;
   });
