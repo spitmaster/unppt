@@ -9,6 +9,7 @@ import hbWasm from 'harfbuzzjs/dist/harfbuzz-subset.wasm';
 import type { RandomAccessSource } from '../io/source';
 import { clearReservedGlyphFlags } from './glyf-flags';
 import { be32, checksum, readSfnt, Writer, type SfntTables } from './sfnt';
+import { withUnicodeCmap } from './symbol-cmap';
 
 interface HbExports {
   memory: WebAssembly.Memory;
@@ -57,7 +58,11 @@ function faceIndex(bytes: Uint8Array, faceOffset: number): number {
  * family 是嵌入后用的别名：浏览器按 @font-face 声明的名字找字体，不看字体内部的名字，所以不必改写 name 表。
  */
 export async function subsetFont(src: RandomAccessSource, faceOffset: number, codepoints: Iterable<number>, _family: string): Promise<Uint8Array | undefined> {
-  const bytes = await src.read(0, src.size);
+  let bytes = await src.read(0, src.size);
+  const cps = [...codepoints];
+  // 只有符号 cmap 的字体（Wingdings 等）先换成 Unicode cmap，否则子集里没有字形、没有 cmap（symbol-cmap.ts）
+  const patched = withUnicodeCmap(bytes, faceOffset, cps);
+  if (patched) { bytes = patched; faceOffset = 0; }
   const e = await hb();
   const ptr = e.malloc(bytes.length);
   if (!ptr) return undefined;
@@ -69,7 +74,7 @@ export async function subsetFont(src: RandomAccessSource, faceOffset: number, co
   let out: Uint8Array | undefined;
   if (input) {
     const unicodes = e.hb_subset_input_unicode_set(input);
-    for (const cp of codepoints) e.hb_set_add(unicodes, cp);
+    for (const cp of cps) e.hb_set_add(unicodes, cp);
     const drop = e.hb_subset_input_set(input, HB_SUBSET_SETS_DROP_TABLE_TAG);
     for (const t of DROP) e.hb_set_add(drop, tagNum(t));
     e.hb_subset_input_set_flags(input, FLAGS);
@@ -88,6 +93,8 @@ export async function subsetFont(src: RandomAccessSource, faceOffset: number, co
   e.free(ptr);
   if (!out) return undefined;
   const tables = readSfnt(out);
+  // 没有 cmap 的字体浏览器拒绝加载：当作子集化失败（调用方提示没有嵌入），不输出坏字体
+  if (!tables.has('cmap')) return undefined;
   clearReservedGlyphFlags(tables);
   return woff([...tables].sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0)));
 }

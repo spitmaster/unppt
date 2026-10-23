@@ -7,6 +7,7 @@
  * 绘制要的字体、图片、背景层按编号从这里取（PaintResources）；超大图片先缩小（huge-images.ts）。
  */
 import type { FontFace } from '../font/font';
+import { SYMBOL_FONT } from '../font/check';
 import { HUGE_PIXELS, withHugeImagesShrunk } from './huge-images';
 import { splitTemplate } from './layers';
 import { splitMorphology } from './morphology';
@@ -92,7 +93,10 @@ export class Preparer {
     const flat = warpMeshes(svg, pageScale(svg), (content, width, warp) => this.raster(`mesh@${width}@${warp.dst.join(',')}@${content}`, content, width, warp));
     const out = rewriteFonts(await inlineSvgImages(splitMorphology(flat), this.image, (key, svg, width) => this.raster(key, svg, width)), this.fonts, used);
     const faces = [...used];
-    return { svg: out, fonts: [...new Set(faces.map((f) => this.fontId(f)))], ...(faces[0] ? { defaultFamily: fileFamily(faces[0]) } : {}) };
+    // resvg 缺字时按加载顺序找第一个有这个字的字体，这个字体能画整段时整段都换成它画（不看字重）：常规体排在前面，
+    // 否则页面上有粗体标题时，图表里中西文混排的标签整个画成粗体
+    const regularFirst = [...faces.filter((f) => !f.bold && !f.italic), ...faces.filter((f) => f.bold || f.italic)];
+    return { svg: out, fonts: [...new Set(regularFirst.map((f) => this.fontId(f)))], ...(faces[0] ? { defaultFamily: fileFamily(faces[0]) } : {}) };
   }
 
   /**
@@ -137,20 +141,24 @@ function pageScale(svg: string): number {
  */
 const fileFamily = (f: FontFace) => f.shownFamily ?? f.displayFamily;
 
-/** font-family="'甲','乙',sans-serif" 换成能找到的字体文件的英文名；找到的字体记进 used */
+/**
+ * font-family="'甲','乙',sans-serif" 换成能找到的字体文件的英文名；找到的字体记进 used。
+ * 找不到字体的符号字体文字（没嵌入的 Webdings、Symbol 用"插入符号"插的 U+F0xx）：resvg 会拿这一页别的字体里有这个码点的字形来画，
+ * 而 Wingdings 兼容字体正好有 U+F020~F0FF，画出来是 Wingdings 的符号（错的）；这些字换成方框，和观看者没装这个字体时一样
+ */
 function rewriteFonts(svg: string, fonts: FontResolver, used: Set<FontFace>): string {
-  return svg.replace(/<(text|tspan)\b([^>]*)>/g, (tag, _name: string, attrs: string) => {
+  return svg.replace(/<(text|tspan)\b([^>]*)>([^<]*)/g, (all, _name: string, attrs: string, content: string) => {
+    const tag = all.slice(0, all.length - content.length);
     const fam = /\sfont-family="([^"]*)"/.exec(attrs)?.[1];
-    if (!fam) return tag;
+    if (!fam) return all;
     const bold = /\sfont-weight="(bold|[6-9]00)"/.test(attrs), italic = /\sfont-style="italic"/.test(attrs);
     const names = fam.replace(/&quot;|&#39;|'/g, '').split(',').map((s) => s.trim()).filter(Boolean);
-    let face: FontFace | undefined;
-    for (const n of names) {
-      face = fonts(n, bold, italic);
-      if (face) break;
-    }
-    if (!face) return tag;
-    used.add(face);
+    // 第一个找得到的字体写进 font-family；列表里其它找得到的字体也交给 resvg（图表标签 "1月" 的列表是 Calibri、等线：
+    // resvg 不像浏览器那样按列表逐字找，汉字只能从加载了的字体里找替代，不加载等线就画成方框）
+    const found = names.map((n) => fonts(n, bold, italic)).filter((f): f is FontFace => !!f);
+    const face = found[0];
+    if (!face) return SYMBOL_FONT.test(names[0] ?? '') ? tag + content.replace(/[\uf020-\uf0ff]/g, '\u25a1') : all;
+    for (const f of found) used.add(f);
     // 同一家族的常规 / 粗体都交给 resvg，它按 font-weight 自己挑
     const other = fonts(face.displayFamily, !bold, italic);
     if (other) used.add(other);
@@ -158,6 +166,6 @@ function rewriteFonts(svg: string, fonts: FontResolver, used: Set<FontFace>): st
     // 同一个开源家族里有细体、常规体时按字重挑（微软雅黑 Light -> 思源黑体 Light）
     const w = Math.round(face.weight / 100) * 100;
     if (!bold && !/\sfont-weight=/.test(attrs) && w > 0 && w !== 400) out = out.replace(/>$/, ` font-weight="${w}">`);
-    return out;
+    return out + content;
   });
 }

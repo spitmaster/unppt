@@ -280,8 +280,10 @@ export class FontLibrary {
     const list = all.filter((f) => (f.rank ?? 0) === top);
     let best = list[0], bestScore = -1;
     for (const f of list) {
-      // 同分时选主名字（名字表里第一个家族名）就是要的这个的：要 Aptos 时选 Aptos，不选家族名里也有 Aptos 的 Aptos Display
-      const score = (f.bold === bold ? 2 : 0) + (f.italic === italic ? 1 : 0) + (f.weight === 400 ? 0.1 : 0) + (f.families[0] === want ? 0.05 : 0);
+      // 同分时选主名字（名字表里第一个家族名）就是要的这个的：要 Aptos 时选 Aptos，不选家族名里也有 Aptos 的 Aptos Display。
+      // 要粗体时选字重最接近 700 的（同一家族的 SemiBold、Bold、Black 都算粗体，GDI 选 Bold）
+      const w = bold ? 0.1 * (1 - Math.min(Math.abs(f.weight - 700), 500) / 500) : f.weight === 400 ? 0.1 : 0;
+      const score = (f.bold === bold ? 2 : 0) + (f.italic === italic ? 1 : 0) + w + (f.families[0] === want ? 0.05 : 0);
       if (score > bestScore) { best = f; bestScore = score; }
     }
     return best;
