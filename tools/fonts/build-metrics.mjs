@@ -30,15 +30,17 @@ async function listFonts(d) {
 
 // 排版会问到的字：基本多文种平面全部 + 扩展 B 区（有的话）
 const RANGES = [[0x20, 0xd7ff], [0xe000, 0xfffd], [0x20000, 0x2a6df]];
-// 字距调整只记基本拉丁字母、数字和标点之间的（中文字体基本没有字距数据；带重音的字母太多，数据量翻几倍，收益很小）
+// 字距调整只记基本拉丁字母、数字、标点和空格之间的（中文字体基本没有字距数据；带重音的字母太多，数据量翻几倍，收益很小）。
+// 空格不能少：Arial、Times New Roman 的 " A"、Gill Sans MT 的 " T" 都有字距，PowerPoint 照算（SPEC 第 7 节，Gallery 主题标题）
 const KERN_SET = [];
-for (let c = 0x21; c <= 0x7e; c++) KERN_SET.push(c);
+for (let c = 0x20; c <= 0x7e; c++) KERN_SET.push(c);
 KERN_SET.push(0x2018, 0x2019, 0x201c, 0x201d);
 
 await rm(join(out, 'faces'), { recursive: true, force: true });
 await mkdir(join(out, 'faces'), { recursive: true });
 const index = [];
 const seen = new Set();
+const skipped = [];
 for (const d of dirs) {
   for (const path of await listFonts(d)) {
     let faces;
@@ -50,6 +52,11 @@ for (const d of dirs) {
       seen.add(key);
       let m;
       try { m = await f.load(); } catch { continue; }
+      // 补字字体（只有扩展 A 区等生僻字，没有拉丁字母、也没有常用汉字，例如汉仪中黑 197）：不当成这个名字的字体，
+      // 否则课件写这个名字时排版查不到常用字，退回宋体之类，字体检查却说没问题
+      let extA = 0;
+      for (let cp = 0x3400; cp <= 0x4dbf; cp++) if (m.advance(cp) !== undefined) extA++;
+      if (m.advance(0x41) === undefined && m.advance(0x4e2d) === undefined && extA > 100) { skipped.push(f.families[0]); continue; }
       const upem = m.unitsPerEm;
       const runs = [];
       let cjk = 0;
@@ -95,4 +102,4 @@ for (const d of dirs) {
   }
 }
 await writeFile(join(out, 'index.json'), JSON.stringify(index));
-console.log(`${index.length} 个字形`);
+console.log(`${index.length} 个字形${skipped.length ? `，跳过补字字体：${skipped.join('、')}` : ''}`);

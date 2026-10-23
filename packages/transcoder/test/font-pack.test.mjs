@@ -68,3 +68,27 @@ test('符号字体的字节：0x20~0xFF 原样，U+F0xx 减去 0xF000，cp1252 �
   assert.equal(m.symbolByte(0x2122), undefined);
   assert.equal(m.symbolByte(0x4e00), undefined);
 });
+
+test('仓库里生成的兼容字体有家族名、全名和 PostScript 名（resvg 不认没有 PostScript 名的字体，整页图会画成字母）', async () => {
+  const { readdir } = await import('node:fs/promises');
+  const be16 = (b, o) => (b[o] << 8) | b[o + 1];
+  const be32 = (b, o) => b.readUInt32BE(o);
+  for (const name of (await readdir('packages/fonts/compat')).filter((n) => n.endsWith('.ttf'))) {
+    const b = await readFile(`packages/fonts/compat/${name}`);
+    let table;
+    for (let i = 0; i < be16(b, 4); i++) if (b.toString('latin1', 12 + i * 16, 16 + i * 16) === 'name') table = be32(b, 12 + i * 16 + 8);
+    assert.ok(table !== undefined, `${name} 没有 name 表`);
+    const ids = new Set();
+    for (let i = 0; i < be16(b, table + 2); i++) ids.add(be16(b, table + 6 + i * 12 + 6));
+    for (const id of [1, 2, 4, 6]) assert.ok(ids.has(id), `${name} 缺 name ${id}`);
+  }
+});
+
+test('同一家族有几个粗字重时，粗体选 Bold（700），常规选 400（实测 PowerPoint，SPEC 第 7 节）', () => {
+  const lib = new m.FontLibrary();
+  const f = (name, weight, bold) => ({ families: ['montserrat', name], displayFamily: name, bold, italic: false, weight, offset: 0, source: {}, load: async () => ({}) });
+  // 度量包里 Black 排在 Bold 前面（按文件名排序）
+  lib.add([f('montserrat black', 900, true), f('montserrat semibold', 600, true), f('montserrat bold', 700, true), f('montserrat', 400, false), f('montserrat light', 300, false)]);
+  assert.equal(lib.find('Montserrat', true, false).weight, 700);
+  assert.equal(lib.find('Montserrat', false, false).weight, 400);
+});

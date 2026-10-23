@@ -9,7 +9,7 @@ The default font pack of [unppt](https://github.com/spitmaster/unppt), a depende
 | 目录 | 内容 |
 |---|---|
 | `files/` | 显示用的开源字体（30 个文件）：思源黑体 / 思源宋体（Noto Sans SC / Noto Serif SC）、霞鹜文楷（LXGW WenKai）、朱雀仿宋（Zhuque Fangsong）、Carlito、Caladea、Liberation Sans / Serif / Mono，以及 Wingdings 1~3 的编码兼容字体（见下） |
-| `metrics/` | 排版用的字体度量：458 个 Windows / Office 字体的字宽、上下高度、字距调整等**数字**，没有字形 |
+| `metrics/` | 排版用的字体度量：457 个 Windows / Office 字体的字宽、上下高度、字距调整等**数字**，没有字形 |
 | `map.json` | 原字体 → 显示用的开源字体的对照规则 |
 | `fonts.json` | 每个字体文件的来源网址、SHA-256、许可证 |
 
