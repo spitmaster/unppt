@@ -46,7 +46,7 @@ unppt <输入.pptx> [-o 输出] [选项]
 - 0.1.0 及以前的写法 `unppt convert <输入.pptx>` 仍然可用（从 0.2.0 起 `convert` 可以省略）。
 - `unppt check <输入.pptx> [--json] [字体选项]` 只检查字体，不写文件，见 [2.6](#26-只检查字体unppt-check)。
 - `unppt -v` 显示版本号，`unppt -h` 显示用法。
-- 不带参数、参数不对、或者写了不认识的选项时，会打印版本号和用法，然后以退出码 1 结束。
+- 不带参数、参数不对、或者写了不认识的选项时，会打印版本号和用法，然后以退出码 2 结束（0.3.0 起；1 留给 `unppt check` 发现必须处理的问题）。
 - 转码出错（例如文件不是有效的 pptx）时打印错误信息，退出码 1。成功时退出码 0。
 
 ### 2.2 全部选项
@@ -90,7 +90,7 @@ unppt <输入.pptx> [-o 输出] [选项]
 统计：12 页，用时 4.2 秒，峰值内存 310 MB         ← 加了 --stats 时（在“完成”之前打印）
 完成：12 页，用时 4.2 秒 -> D:\work\out\index.html
 字体：                                            ← 有字体问题时，只列 ⚠ / ✗ 的字体（格式同 unppt check）
-  ✗ Webdings   第 3 页   符号字体没有嵌入，符号会显示成字母：请在 PowerPoint 里勾选"将字体嵌入文件"
+  ✗ Webdings   第 3 页   符号字体没有嵌入，符号会显示成字母或方框：请在 PowerPoint 里勾选"将字体嵌入文件"
 提示：……                                          ← 每条警告一行
 ```
 
@@ -142,7 +142,7 @@ unppt check <输入.pptx> [--json] [--fonts 目录]... [--system-fonts] [--no-de
 ```
 
 - 加 `--json` 时输出和 [`checkFonts()`](#38-checkfontsinput-options只检查字体) 的返回值一样的 JSON。
-- 有 ✗（必须处理的问题，例如符号字体没嵌入）时**退出码是 1**，没有时是 0。产品里可以用它在上传时拒绝有问题的课件，或提示作者。
+- 有 ✗（必须处理的问题，例如符号字体没嵌入）时**退出码是 1**，没有时是 0。产品里可以用它在上传时拒绝有问题的课件，或提示作者。文件读不出来（不是有效的 pptx 等）时退出码也是 1，这时标准输出没有内容，错误信息在标准错误里。
 - 每种结论（✓ / ⚠ / ✗）的意思见 [快速上手 7.5](getting-started.md#75-检查字体unppt-check)。
 
 ---
@@ -413,7 +413,7 @@ try {
 |---|---|---|
 | PPT 里嵌入的字体 | 不用给，自动读取 | PowerPoint 自己不认的嵌入字体（CFF `.otf`、表目录没排序）和 PowerPoint 一样当作没有 |
 | 指定的字体 | `fonts: [...]` | 你有分发授权的字体文件 |
-| 默认字体包 | `fontPack` | 开源字体 + 458 个 Windows / Office 字体的度量数据（只有数字，没有字形）：排版按原字体，显示用开源字体 |
+| 默认字体包 | `fontPack` | 开源字体 + 457 个 Windows / Office 字体的度量数据（只有数字，没有字形）：排版按原字体，显示用开源字体 |
 
 在 Node 里读默认字体包（安装 `@unppt/unppt` 时 `@unppt/fonts` 会自动装上）：
 
@@ -468,7 +468,7 @@ if (r.errors > 0) {
 | `specified` | 用 `fonts` 指定的字体 |
 | `default` | 默认字体包：排版按原字体，显示用开源字体（`shownWith`） |
 | `substituted` | 字体包也不认识，按 PowerPoint 的规则替代（`substitute`），字形和换行可能和作者电脑上不同 |
-| `symbol-missing` | 符号字体（Webdings、Symbol 等，Wingdings 1~3 除外）没有嵌入，符号会显示成字母 |
+| `symbol-missing` | 符号字体（Webdings、Symbol 等，Wingdings 1~3 除外）没有嵌入，符号会显示成字母或方框 |
 | `missing` | 连替代字体都没有，字宽只能估算（通常是没传 `fontPack`） |
 
 ### 3.9 进度、警告、字体问题
@@ -644,7 +644,7 @@ export async function handler(event) {
 要点：
 
 - 文件很大时，`toBuffer` 会把一个视频完整放进内存。如果你的 SDK 支持流式上传，直接把 `data`（`AsyncIterable`）交给它更省内存；输入也可以用 [3.5](#35-大文件按位置读取) 的方式按范围读取（很多对象存储支持 Range 请求）。
-- 云函数里一般没有任何字体，也**不需要**装：部署时带上 `@unppt/unppt`（会自动带上 `@unppt/fonts`，约 87MB），调用 `loadFontPack()` 并传 `fontPack`，结果和在桌面电脑上转码完全一样。注意云函数的代码包大小限制；字体包超限时可以把它放进层（layer）或挂载的文件系统，再用 `loadFontPack(目录)` 指定位置。
+- 云函数里一般没有任何字体，也**不需要**装：部署时带上 `@unppt/unppt`（会自动带上 `@unppt/fonts`，装好后约 100MB，连同 `@unppt/unppt` 约 110MB），调用 `loadFontPack()` 并传 `fontPack`，结果和在桌面电脑上转码完全一样。注意云函数的代码包大小限制；字体包超限时可以把它放进层（layer）或挂载的文件系统，再用 `loadFontPack(目录)` 指定位置。
 - 有自己的字体（并且有分发授权）时，再用 `fonts: [...]` 传入字体文件的字节，同名时压过字体包。
 - 把 `index.html`、`pages/`、`media/` 放在同一个前缀下，通过 CDN 提供访问即可，不需要服务器端程序。
 

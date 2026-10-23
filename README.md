@@ -126,7 +126,7 @@ npm install -g @unppt/unppt
 unppt 演示文稿.pptx -o out/index.html
 ```
 
-安装时会自动带上默认字体包 `@unppt/fonts`（开源字体 + 排版用的字体度量，下载约 60MB），不用另外装字体，见下面的「字体」。
+安装时会自动带上默认字体包 `@unppt/fonts`（开源字体 + 排版用的字体度量，下载约 67MB，装好后约 100MB），不用另外装字体，见下面的「字体」。
 
 **或者从 GitHub 下载安装**（npm 审核新版本期间、公司内网镜像下载失败时用）：从 [Releases](https://github.com/spitmaster/unppt/releases/latest) 下载字体包 `unppt-fonts.tgz` 和程序 `unppt.tgz`，运行 `npm install -g ./unppt-fonts.tgz ./unppt.tgz`。Windows / macOS / Linux 的完整命令见 [快速上手第 3 节](docs/zh/getting-started.md#3-安装)。装好后运行 `unppt -v` 查看版本号。
 
@@ -147,10 +147,10 @@ unppt 演示文稿.pptx -o out/index.html
 
 ## 字体
 
-- **播放时绝不用观看者电脑上的字体**：用到的每个字都做成字体子集打包进产物，Windows、Mac、安卓、iPhone 上看到的完全一样（例如直播课里几千个学生）。
+- **播放时绝不用观看者电脑上的字体**：用到的每个字都做成字体子集打包进产物，Windows、Mac、安卓、iPhone 上看到的完全一样（例如直播课里几千个学生）；只有所有字体都没有的字才交给浏览器，`unppt check` 会列出来。
 - **产物里的字体只有两个来源**（除非你用 `--fonts` / `--system-fonts` 明确指定）：作者嵌入在 PPT 里的字体（原样使用），和默认字体包 `@unppt/fonts` 里的开源字体（SIL OFL 1.1：思源黑体、思源宋体、霞鹜文楷、朱雀仿宋、Carlito、Caladea、Liberation 等）。字体包只在转码的电脑上需要，观看的人不会下载它。
 - **没嵌入的字体**：按原字体的度量排版、用对应的开源字体显示（微软雅黑 → 思源黑体、Calibri → Carlito ……），换行和 PowerPoint 一样、字形略有不同；字体包也不认识的字体和 PowerPoint 一样找替代字体。
-- **符号字体**：不改动你的字符。Wingdings 1~3 没嵌入时用字体包里编码兼容的开源字体显示成符号；其它符号字体（Webdings、Symbol 等）没嵌入时显示成字母，`unppt check` 会提示作者“将字体嵌入文件”。
+- **符号字体**：不改动你的字符。Wingdings 1~3 没嵌入时用字体包里编码兼容的开源字体显示成符号；其它符号字体（Webdings、Symbol 等）没嵌入时显示成字母或方框，`unppt check` 会提示作者“将字体嵌入文件”。
 
 详见 [快速上手第 7 节](docs/zh/getting-started.md#7-字体为什么重要以及现在怎么处理)。
 
@@ -191,7 +191,7 @@ const source = {
     return buf.subarray(0, bytesRead);
   },
 };
-await convert(source, { write });
+await convert(source, { write, fontPack });
 await fh.close();
 ```
 

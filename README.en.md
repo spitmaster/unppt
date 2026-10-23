@@ -126,7 +126,7 @@ npm install -g @unppt/unppt
 unppt presentation.pptx -o out/index.html
 ```
 
-The default font pack `@unppt/fonts` (open-source fonts plus font metrics for layout; about 60 MB to download) is installed automatically, so no fonts need to be installed separately; see "Fonts" below.
+The default font pack `@unppt/fonts` (open-source fonts plus font metrics for layout; about 67 MB to download, about 100 MB installed) is installed automatically, so no fonts need to be installed separately; see "Fonts" below.
 
 **Or download and install from GitHub** (while npm reviews a new version, or behind a corporate mirror): download the font pack `unppt-fonts.tgz` and the program `unppt.tgz` from [Releases](https://github.com/spitmaster/unppt/releases/latest) and run `npm install -g ./unppt-fonts.tgz ./unppt.tgz`. Full commands for Windows / macOS / Linux are in [Getting started, section 3](docs/en/getting-started.md#3-install). Run `unppt -v` afterwards to check the version.
 
@@ -147,10 +147,10 @@ Open the generated `index.html` in a browser and it plays. Without `-o`, all out
 
 ## Fonts
 
-- **Playback never uses fonts on the viewer's computer**: every character used is packed into the output as a font subset, so Windows, Mac, Android and iPhone viewers see exactly the same thing (e.g. thousands of students in a live class).
+- **Playback never uses fonts on the viewer's computer**: every character used is packed into the output as a font subset, so Windows, Mac, Android and iPhone viewers see exactly the same thing (e.g. thousands of students in a live class); only characters that no font has are left to the browser, and `unppt check` lists them.
 - **Fonts in the output come from only two sources** (unless you explicitly specify fonts with `--fonts` / `--system-fonts`): fonts the author embedded in the PPT (used as-is), and open-source fonts from the default font pack `@unppt/fonts` (SIL OFL 1.1: Noto Sans SC, Noto Serif SC, LXGW WenKai, Zhuque Fangsong, Carlito, Caladea, Liberation and others). The pack is only needed on the machine that converts; viewers never download it.
 - **Non-embedded fonts**: laid out with the original font's metrics and displayed with the matching open-source font (Microsoft YaHei → Noto Sans SC, Calibri → Carlito, ...), so lines break like PowerPoint and glyph shapes differ slightly; fonts the pack does not know are substituted the way PowerPoint does.
-- **Symbol fonts**: your characters are never changed. Wingdings 1–3 that are not embedded display as symbols through code-compatible open fonts in the pack; other symbol fonts (Webdings, Symbol, ...) show as letters when not embedded, and `unppt check` tells the author to "Embed fonts in the file".
+- **Symbol fonts**: your characters are never changed. Wingdings 1–3 that are not embedded display as symbols through code-compatible open fonts in the pack; other symbol fonts (Webdings, Symbol, ...) show as letters or boxes when not embedded, and `unppt check` tells the author to "Embed fonts in the file".
 
 Details: [Getting started, section 7](docs/en/getting-started.md#7-fonts-why-they-matter-and-how-they-are-handled-now).
 
@@ -191,7 +191,7 @@ const source = {
     return buf.subarray(0, bytesRead);
   },
 };
-await convert(source, { write });
+await convert(source, { write, fontPack });
 await fh.close();
 ```
 

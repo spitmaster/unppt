@@ -14,7 +14,7 @@ npm install @unppt/unppt                   # 在代码里调用
 npx -p @unppt/unppt unppt 课件.pptx  # 或者不安装，直接用命令行
 ```
 
-需要 Node.js 20.12 及以上。安装时会自动带上默认字体包 `@unppt/fonts`（开源字体 + 排版用的字体度量，下载约 60MB）。
+需要 Node.js 20.12 及以上。安装时会自动带上默认字体包 `@unppt/fonts`（开源字体 + 排版用的字体度量，下载约 67MB，装好后约 100MB）。
 
 也可以从 GitHub Release 下载安装包再安装（npm 审核新版本期间、公司内网镜像下载失败时用）：先下载 `https://github.com/spitmaster/unppt/releases/latest/download/unppt-fonts.tgz` 和 `.../unppt.tgz`，再 `npm install -g ./unppt-fonts.tgz ./unppt.tgz`。
 
@@ -40,6 +40,7 @@ unppt check 课件.pptx                             # 只检查字体（嵌入�
 
 ```js
 import { convert } from '@unppt/unppt';
+import { loadFontPack } from '@unppt/unppt/node';   // Node 专用：读已安装的默认字体包
 import { readFile } from 'node:fs/promises';
 
 const result = await convert(pptxBytes, {
@@ -47,14 +48,15 @@ const result = await convert(pptxBytes, {
   // 产物文件交给你写：index.html、prop.json、pages/…、media/…、pic/1.jpg、thum/1.jpg……
   // data 可能是字符串、Uint8Array 或 AsyncIterable<Uint8Array>（数据流要读完，转码才会继续往下走）
   write: async (path, data) => { /* 写到磁盘、对象存储…… */ },
-  fonts: [fontBytes],                                   // 可选：字体文件内容
+  // 默认字体包：不传时没嵌入的字体只能估算字宽、由观看者电脑上的字体显示
+  fontPack: await loadFontPack(),
+  fonts: [fontBytes],                                   // 可选：你自己的字体文件内容，同名时压过字体包
   // 出整页图和缩略图要用 resvg 的 wasm（包里的 dist/resvg.wasm）；不给就只输出 prop.json
   rasterWasm: readFile(new URL(import.meta.resolve('@unppt/unppt/resvg.wasm'))),
 });
 console.log(result.slides, result.fontCheck, result.report.warnings);
 ```
 
-默认字体包（Node）：`import { loadFontPack } from '@unppt/unppt/node'`，`convert(bytes, { fontPack: await loadFontPack(), ... })`。
 只检查字体：`checkFonts(pptxBytes, { fontPack })`。
 
 ## 字体

@@ -3,7 +3,7 @@
 发布两个包（0.3.0 起）：
 
 - 转码器 `@unppt/unppt`（`packages/transcoder`；不带作用域的 `unppt` 被 npm 判为和 unpdf、unpipe、nopt 太像而拒绝，`@unppt` 是发布账号的用户名作用域）：播放器已经内嵌在它的产物里，`@unppt/format`、`@unppt/player` 暂不发布；
-- 默认字体包 `@unppt/fonts`（`packages/fonts`）：开源字体文件 + 字体度量包，转码器依赖它（`^0.3.0`）。**字体包要先发**，否则装转码器时找不到依赖。字体包的版本号单独管理：字体文件、对照表 `map.json`、度量包有变化时才加版本号（同时改转码器 `package.json` 里依赖它的版本范围），没变就不发。
+- 默认字体包 `@unppt/fonts`（`packages/fonts`）：开源字体文件 + 字体度量包，转码器依赖它（`^0.3.1`）。**字体包要先发**，否则装转码器时找不到依赖。字体包的版本号单独管理：字体文件、对照表 `map.json`、度量包有变化时才加版本号（同时改转码器 `package.json` 里依赖它的版本范围），没变就不发。
 
 字体文件不在 git 里（约 87MB）：`node scripts/fetch-fonts.mjs` 按 `packages/fonts/fonts.json` 下载并校验 SHA-256，放进 `packages/fonts/files/`；`npm pack` / `npm publish` 前 `prepack` 会检查文件齐全，缺文件就失败（避免发出一个没有字体的包）。
 
@@ -20,19 +20,24 @@ npm whoami --registry https://registry.npmjs.org/
 
 npm 要求发布包的账号**必须开启双重验证（2FA）**，否则发布报 403：到 npmjs.com 右上角头像 → Account → Two-Factor Authentication 开启（用手机验证器 App 扫码）。之后发布时带上验证器里的 6 位数字：`npm publish --otp=123456`。
 
-## 0.3.0：字体包第一次发布（只需要手动做一次）
+## 字体包第一次发布（只需要手动做一次）
 
-npm 的"可信发布"只能给已经存在的包绑定，所以 `@unppt/fonts` 第一次要在本机手动发：
+npm 的"可信发布"只能给已经存在的包绑定，所以 `@unppt/fonts` 第一次要在本机手动发（先 `git pull` 到要发布的那次提交）：
 
 ```bash
 node scripts/fetch-fonts.mjs
 cd packages/fonts
-npm pack --dry-run            # 应该有 files/ 下 27 个字体文件、metrics/、LICENSES/、map.json、fonts.json、index.js
+npm pack --dry-run            # files/ 下应该是 fonts.json 列的全部字体文件（现在 30 个），还有 metrics/、LICENSES/、map.json、fonts.json、index.js
 npm publish --access public --otp=<验证器里的 6 位数字>
+npm view @unppt/fonts@<版本> dist.fileCount --registry https://registry.npmjs.org/   # 能查到才算发好了
 ```
 
 发完到 npmjs.com → @unppt/fonts → Settings → Trusted Publisher 绑定 GitHub Actions：`spitmaster/unppt` 的 `release.yml`（和 @unppt/unppt 一样，环境名留空）。
-之后再推 `v0.3.0` 标签，工作流会跳过已经发过的字体包、自动发转码器。
+之后推转码器的版本标签，工作流会跳过已经发过的字体包、自动发转码器。
+
+字体包的内容（字体文件、`compat/` 里的兼容字体、`map.json`、`metrics/`）有任何变化都要加版本号，转码器 `package.json` 里依赖它的范围跟着改：
+同一个版本号 npm 只收一次，内容不同却用同一个版本号，npm 上的和 GitHub Release 里的就对不上了。
+（0.3.0 发布前的审查发现兼容字体缺名字、度量包缺空格的字距，字体包改成 0.3.1 发布，转码器依赖 `^0.3.1`。）
 
 ## 每次发布
 
@@ -48,9 +53,10 @@ npm publish --access public --otp=<验证器里的 6 位数字>
 
 ## GitHub Release 和安装包（自动）
 
-推送 `v*` 标签后，GitHub Actions（`.github/workflows/release.yml`）自动构建、测试、`npm pack`，创建同名 Release，附上两个安装包：
-`unppt-unppt-<版本>.tgz` 和固定名字的 `unppt.tgz`（所以 `https://github.com/spitmaster/unppt/releases/latest/download/unppt.tgz` 总是最新版）。
-用户下载后 `npm install -g ./unppt.tgz` 即可安装，不经过 npm 官方源（npm 12 起默认不允许直接从网址或 git 安装，所以文档里写的是先下载再安装）。
+推送 `v*` 标签后，GitHub Actions（`.github/workflows/release.yml`）自动构建、测试、`npm pack`，创建同名 Release，附上三个安装包：
+`unppt-unppt-<版本>.tgz`、固定名字的 `unppt.tgz` 和字体包 `unppt-fonts.tgz`（所以 `https://github.com/spitmaster/unppt/releases/latest/download/unppt.tgz` 总是最新版）。
+用户下载 `unppt-fonts.tgz` 和 `unppt.tgz` 后 `npm install -g ./unppt-fonts.tgz ./unppt.tgz` 一起安装，不经过 npm 官方源
+（转码器依赖字体包，只装 `unppt.tgz` 会去 npm 源下载字体包；npm 12 起默认不允许直接从网址或 git 安装，所以文档里写的是先下载再安装）。
 
 已经推送过的标签（例如加这个工作流之前的 v0.2.0）：GitHub 仓库 → Actions → release → Run workflow，填标签名。
 标签和 `packages/transcoder/package.json` 的版本号不一致时工作流会失败。

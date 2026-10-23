@@ -66,7 +66,7 @@ npm install -g @unppt/unppt
 unppt deck.pptx -o out/index.html
 ```
 
-The default font pack `@unppt/fonts` (open-source fonts plus font metrics for layout; about 60 MB to download, about 87 MB installed) is installed automatically with it. It is only needed on the machine that converts; viewers never download it. See [section 7](#7-fonts-why-they-matter-and-how-they-are-handled-now) for why.
+The default font pack `@unppt/fonts` (open-source fonts plus font metrics for layout; about 67 MB to download, about 100 MB installed) is installed automatically with it. It is only needed on the machine that converts; viewers never download it. See [section 7](#7-fonts-why-they-matter-and-how-they-are-handled-now) for why.
 
 **Option 2: install into your project**
 
@@ -401,7 +401,7 @@ unppt's principle (SPEC D3): **the player never uses fonts installed on the view
 Unless you explicitly specify font files, the fonts in the output come from only two sources:
 
 1. **Fonts the author embedded in the `.pptx`**: used as-is. Exception: embedded fonts that PowerPoint itself refuses (CFF `.otf`, fonts with an unsorted table directory) are treated as not embedded, just like PowerPoint does.
-2. **The default font pack `@unppt/fonts`**: installed automatically with `@unppt/unppt` (it is a dependency). It contains only open-source fonts, all under SIL OFL 1.1, which may be freely redistributed. About 87 MB, needed only on the machine that converts; viewers never download it (the output only contains subsets of the characters used).
+2. **The default font pack `@unppt/fonts`**: installed automatically with `@unppt/unppt` (it is a dependency). It contains only open-source fonts, all under SIL OFL 1.1, which may be freely redistributed. About 100 MB installed, needed only on the machine that converts; viewers never download it (the output only contains subsets of the characters used).
 
 ```mermaid
 flowchart TD
@@ -409,7 +409,7 @@ flowchart TD
   E -->|"Yes"| EMB["Layout and display use the embedded font"]
   E -->|"No"| S{"Was a font with this name given via --fonts?"}
   S -->|"Yes"| SPEC["Layout and display use the specified font"]
-  S -->|"No"| K{"Does the font pack know it?<br/>(metrics of 458 Windows / Office fonts)"}
+  S -->|"No"| K{"Does the font pack know it?<br/>(metrics of 457 Windows / Office fonts)"}
   K -->|"Yes"| DEF["Layout with the original font's widths<br/>display with the matching open-source font"]
   K -->|"No"| SUB["Substitute like PowerPoint<br/>(CJK → Microsoft YaHei, Latin → Calibri, Japanese → Yu Gothic)<br/>then as in the box above"]
   EMB --> OUT[("Subsets of the characters used<br/>embedded in the output")]
@@ -425,7 +425,7 @@ Characters that no font has (rare: emoji, rare CJK characters) are left to the b
 
 Microsoft YaHei, SimSun, Calibri and the like are commercial fonts that cannot be shipped with the output. unppt therefore separates "layout" from "display":
 
-- **Layout** uses the original font's **metrics**: the font pack contains a metrics pack with numbers only (advance width of each character, ascent/descent, kerning), **no glyph shapes**, covering 458 Windows / Office font faces. So line breaks, character positions and line spacing are the same as in PowerPoint.
+- **Layout** uses the original font's **metrics**: the font pack contains a metrics pack with numbers only (advance width of each character, ascent/descent, kerning), **no glyph shapes**, covering 457 Windows / Office font faces. So line breaks, character positions and line spacing are the same as in PowerPoint.
 - **Display** uses the matching open-source font. Glyph shapes differ slightly from the original (e.g. Microsoft YaHei is shown as Noto Sans SC), but positions do not change.
 
 | Original font (examples) | Displayed with |
@@ -448,7 +448,7 @@ Symbol fonts put pictures where letters normally are (e.g. `l` in Wingdings is a
 
 - The author embedded the symbol font in the PPT: it is used and displays correctly.
 - **Wingdings, Wingdings 2 and Wingdings 3 not embedded**: shown with a code-compatible open font from the default pack — glyphs taken from Noto Sans Symbols and other open fonts, placed at the Wingdings code points, so the characters stay as they are and draw as the intended symbols (■ ➢ ● ✔ ◆ ❖ …), sized and positioned by Wingdings' widths and glyph boxes. The glyph designs differ slightly from Wingdings (like Noto Sans SC vs Microsoft YaHei).
-- Other symbol fonts (Webdings, Symbol, ...) not embedded: the symbols show as ordinary letters, and the conversion report and `unppt check` tell the author to embed fonts.
+- Other symbol fonts (Webdings, Symbol, ...) not embedded: characters typed as letters show as ordinary letters; symbols added with Insert → Symbol are in no packed font and are left to the browser (symbols on computers that have the font, boxes elsewhere). The conversion report and `unppt check` tell the author to embed fonts.
 
 To embed fonts in PowerPoint: **File → Options → Save → check "Embed fonts in the file"**, then save again. You can also provide the symbol font file with `--fonts`.
 
@@ -474,10 +474,10 @@ unppt check text-latin-cjk-font.pptx
 A deck that uses Webdings without embedding it shows:
 
 ```text
-  ✗ Webdings   第 1 页   符号字体没有嵌入，符号会显示成字母：请在 PowerPoint 里勾选"将字体嵌入文件"
+  ✗ Webdings   第 1 页   符号字体没有嵌入，符号会显示成字母或方框：请在 PowerPoint 里勾选"将字体嵌入文件"
 ```
 
-("Symbol font not embedded, symbols will show as letters: tick 'Embed fonts in the file' in PowerPoint.")
+("Symbol font not embedded, symbols will show as letters or boxes: tick 'Embed fonts in the file' in PowerPoint.")
 
 What each status means (the `status` value in `--json` output in parentheses):
 
@@ -487,7 +487,7 @@ What each status means (the `status` value in `--json` output in parentheses):
 | ✓ | Specified (`specified`) | A font given with `--fonts` / `--system-fonts` |
 | ✓ | Default pack (`default`) | Laid out with the original font's widths, displayed with an open-source font |
 | ⚠ | Substituted (`substituted`) | The font pack does not know this font either; a substitute was chosen by PowerPoint's rules, so glyphs and line breaks may differ from the author's computer |
-| ✗ | Symbol font missing (`symbol-missing`) | Symbols will show as letters; see [section 7.4](#74-symbol-fonts-wingdings-webdings-symbol-) |
+| ✗ | Symbol font missing (`symbol-missing`) | Symbols will show as letters or boxes; see [section 7.4](#74-symbol-fonts-wingdings-webdings-symbol-) |
 | ✗ | Missing (`missing`) | Not even a substitute is available; widths can only be estimated (usually the default font pack is not installed) |
 
 - `--json` prints JSON: `fonts` (per font: `font`, `pages`, `status`, plus optional `substitute` and `shownWith`), `missingChars` (characters no font can show, per page), `errors` (number of ✗), `warnings` (number of ⚠) and `slides` (slide count).
