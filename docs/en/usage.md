@@ -46,7 +46,7 @@ unppt <input.pptx> [-o output] [options]
 - The 0.1.0-and-earlier form `unppt convert <input.pptx>` still works (`convert` is optional since 0.2.0).
 - `unppt check <input.pptx> [--json] [font options]` only checks fonts and writes no files; see [2.6](#26-checking-fonts-only-unppt-check).
 - `unppt -v` prints the version, `unppt -h` prints the usage.
-- With no arguments, wrong arguments, or an unknown option, it prints the version and usage and exits with code 1.
+- With no arguments, wrong arguments, or an unknown option, it prints the version and usage and exits with code 2 (since 0.3.0; 1 is reserved for `unppt check` finding problems that must be fixed).
 - If conversion fails (e.g. the file is not a valid pptx) it prints the error and exits with code 1. On success the exit code is 0.
 
 ### 2.2 All options
@@ -92,11 +92,11 @@ The CLI messages are in Chinese:
 统计：12 页，用时 4.2 秒，峰值内存 310 MB         ← stats: slides, time, peak memory (with --stats; printed before the "done" line)
 完成：12 页，用时 4.2 秒 -> D:\work\out\index.html  ← done: slides, seconds, output path
 字体：                                            ← fonts: only when there are font problems; lists ⚠ / ✗ fonts (same format as unppt check)
-  ✗ Webdings   第 3 页   符号字体没有嵌入，符号会显示成字母：请在 PowerPoint 里勾选"将字体嵌入文件"
+  ✗ Webdings   第 3 页   符号字体没有嵌入，符号会显示成字母或方框：请在 PowerPoint 里勾选"将字体嵌入文件"
 提示：……                                          ← one line per warning ("notice")
 ```
 
-(The `✗` line says: Webdings on slide 3 is a symbol font that is not embedded, so symbols will show as letters; tick "Embed fonts in the file" in PowerPoint.)
+(The `✗` line says: Webdings on slide 3 is a symbol font that is not embedded, so symbols will show as letters or boxes; tick "Embed fonts in the file" in PowerPoint.)
 
 If the default font pack cannot be found, an extra line `提示：没找到默认字体包 @unppt/fonts，没有嵌入的字体只能估算字宽` ("default font pack not found; widths of non-embedded fonts can only be estimated") is printed first.
 
@@ -146,7 +146,7 @@ Only checks fonts (which are missing, what substitutes them, whether symbol font
 ```
 
 - With `--json` it prints the same JSON that [`checkFonts()`](#38-checkfontsinput-options-checking-fonts-only) returns.
-- The **exit code is 1** when there is any ✗ (a problem that must be fixed, e.g. a symbol font not embedded), otherwise 0. A product can use it to reject problematic decks on upload, or to warn the author.
+- The **exit code is 1** when there is any ✗ (a problem that must be fixed, e.g. a symbol font not embedded), otherwise 0. A product can use it to reject problematic decks on upload, or to warn the author. The exit code is also 1 when the file cannot be read (not a valid pptx, etc.); then nothing is written to standard output and the error goes to standard error.
 - See [Getting started 7.5](getting-started.md#75-checking-fonts-unppt-check) for what each mark (✓ / ⚠ / ✗) means and an English reading of the output.
 
 ---
@@ -417,7 +417,7 @@ try {
 |---|---|---|
 | Fonts embedded in the PPT | Nothing to do, read automatically | Embedded fonts PowerPoint itself refuses (CFF `.otf`, unsorted table directory) are treated as missing, like PowerPoint |
 | Specified fonts | `fonts: [...]` | Font files you are licensed to distribute |
-| Default font pack | `fontPack` | Open-source fonts + metrics of 458 Windows / Office fonts (numbers only, no glyph shapes): layout with the original font, display with an open-source font |
+| Default font pack | `fontPack` | Open-source fonts + metrics of 457 Windows / Office fonts (numbers only, no glyph shapes): layout with the original font, display with an open-source font |
 
 Loading the default font pack in Node (`@unppt/fonts` is installed automatically with `@unppt/unppt`):
 
@@ -472,7 +472,7 @@ if (r.errors > 0) {
 | `specified` | A font given in `fonts` |
 | `default` | Default font pack: layout with the original font, display with an open-source font (`shownWith`) |
 | `substituted` | Unknown even to the font pack; substituted by PowerPoint's rules (`substitute`), so glyphs and line breaks may differ from the author's computer |
-| `symbol-missing` | A symbol font (Webdings, Symbol, ...; not Wingdings 1–3) is not embedded; symbols will show as letters |
+| `symbol-missing` | A symbol font (Webdings, Symbol, ...; not Wingdings 1–3) is not embedded; symbols will show as letters or boxes |
 | `missing` | Not even a substitute is available; widths can only be estimated (usually no `fontPack` was passed) |
 
 ### 3.9 Progress, warnings, font problems
@@ -648,7 +648,7 @@ export async function handler(event) {
 Notes:
 
 - For big files, `toBuffer` holds a whole video in memory. If your SDK supports streaming uploads, pass `data` (the `AsyncIterable`) straight to it to save memory; the input can also be read by range as in [3.5](#35-large-files-random-access-reading) (many object stores support Range requests).
-- Cloud functions usually have no fonts at all, and **need none**: deploy `@unppt/unppt` (which brings `@unppt/fonts`, about 87 MB), call `loadFontPack()` and pass `fontPack`; the result is identical to converting on a desktop. Mind the code package size limit of your platform; if the font pack does not fit, put it in a layer or a mounted file system and pass its location with `loadFontPack(dir)`.
+- Cloud functions usually have no fonts at all, and **need none**: deploy `@unppt/unppt` (which brings `@unppt/fonts`, about 100 MB installed, about 110 MB together with `@unppt/unppt`), call `loadFontPack()` and pass `fontPack`; the result is identical to converting on a desktop. Mind the code package size limit of your platform; if the font pack does not fit, put it in a layer or a mounted file system and pass its location with `loadFontPack(dir)`.
 - If you have your own fonts (and the right to distribute them), pass their bytes with `fonts: [...]`; they win over the font pack for the same name.
 - Put `index.html`, `pages/` and `media/` under the same prefix and serve them through a CDN; no server-side code is needed.
 

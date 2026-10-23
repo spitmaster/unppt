@@ -6,7 +6,7 @@
 
 **字体方案改了（不兼容变化）**：播放时绝不用观看者电脑上的字体，所有观看者看到的完全一样（直播课几千人同时看也一样）。
 
-- 新增默认字体包 `@unppt/fonts`（安装 `@unppt/unppt` 时自动带上，约 60MB）：开源字体（思源黑体 / 宋体、霞鹜文楷、朱雀仿宋、Carlito、Caladea、Liberation，都是 SIL OFL 1.1）+ 458 个 Windows / Office 字体的度量数据（只有字宽等数字，没有字形）。
+- 新增默认字体包 `@unppt/fonts`（安装 `@unppt/unppt` 时自动带上，下载约 67MB）：开源字体（思源黑体 / 宋体、霞鹜文楷、朱雀仿宋、Carlito、Caladea、Liberation，都是 SIL OFL 1.1）+ 457 个 Windows / Office 字体的度量数据（只有字宽等数字，没有字形）。
 - **排版按原字体，显示用开源字体**：没嵌入的微软雅黑、宋体、Calibri 等按原字体的字宽排，换行和文字位置和 PowerPoint 一样；显示用对应的开源字体，每个字放在原字体的格子里（横向居中，汉字竖直中心对齐）。
 - 产物里的字体只有两个来源：PPT 里嵌入的字体和默认字体包。**默认不再用转码电脑上的系统字体**（要用加 `--system-fonts`）；`--fonts <目录>` 指定字体文件，同名时优先。用到的字一律做成子集嵌入产物（`--embed-fonts` 不再需要）。
 - 符号字体不改动原文的字：**Wingdings、Wingdings 2、Wingdings 3 没嵌入时用字体包里编码兼容的开源字体显示成符号**（■ ➢ ● ✔ ◆ ❖ 等项目符号和正文里的符号，字形取自 Noto Sans Symbols 等，大小位置按 Wingdings 对齐）；其它符号字体（Webdings、Symbol 等）没嵌入时转码报告提示作者在 PowerPoint 里嵌入字体。
@@ -14,6 +14,7 @@
 - 能读 CFF 轮廓的字体（.otf，例如思源字体），艺术字变形也能用。
 - 图表文字、整页图和缩略图同样只用嵌入的字体；显示用的开源字体缺字时换字体包里别的开源字体画（不交给浏览器）。
 - 思源黑体 / Source Han Sans（含"CN"和粗细后缀）、思源宋体按字体包里同一套字形的思源字体排版和显示。
+- 发布前的代码审查修正：默认字体包为 **0.3.1**（度量包补上含空格的字距对——Arial、Times New Roman、Gill Sans MT 等带空格的行排版和 PowerPoint 一致；去掉一个只有生僻字的补字字体；Wingdings 兼容字体补上名字，整页图和缩略图里的符号也能画出来）；同一家族有几个粗字重时粗体按 Bold（700）排版（实测）；图表里中西文混排的标签（例如"1月"）在整页图、缩略图里按各自的字体画；符号字体用 PPT 嵌入的、`--fonts` / `--system-fonts` 给的字体时，嵌入的子集能正确显示；多个原字体共用一个开源字体文件时出图只加载一份（省内存）；很长的空格段、很多制表符的段落排版不再变慢；命令行参数写错时退出码是 2（1 留给 `unppt check` 发现必须处理的问题）。
 
 **自动换行和 PowerPoint 一致**：新增专项测试（`tools/wraptest`：用 PowerPoint 随机造几千个文本框、表格和各种形状，并对照真实课件读出每一行），按实测改了二十多条规则——破折号、省略号、弯引号、不间断空格、行首 / 行尾禁则（含隔着空格）、标点悬挂的例外、网址和小数里的半角标点、± × § ° 等符号、行尾字距、段落缩进的取整、自动缩小不缩字间距、没嵌入的符号字体项目符号的宽度、没写文字矩形的几何（自定义形状、宽度为 0 的老标题）不换行、饼形的文字区域等。对照结果：PowerPoint 随机生成的 3400 多个文本框、761 个表格单元格、181 种预设形状，换行和 PowerPoint 完全一致的 99.6% 以上；真实课件 398 份、约 1.45 万个多行文本框和 886 个多行表格单元格，和 PowerPoint 不一致的行从 512 行降到 45 行（共约 6.5 万行）；扩大到 991 份真实课件（约 4 万个多行文本框）99.8% 完全一致。
 
@@ -21,7 +22,7 @@
 
 **New font strategy (breaking change)**: the player never uses fonts installed on the viewer's device, so every viewer sees exactly the same thing.
 
-- New default font pack `@unppt/fonts` (installed with `@unppt/unppt`, ~60 MB): open fonts (Noto Sans / Serif SC, LXGW WenKai, Zhuque Fangsong, Carlito, Caladea, Liberation — all SIL OFL 1.1) plus metrics (advance widths etc., no glyphs) of 458 Windows / Office fonts.
+- New default font pack `@unppt/fonts` (installed with `@unppt/unppt`, ~67 MB download): open fonts (Noto Sans / Serif SC, LXGW WenKai, Zhuque Fangsong, Carlito, Caladea, Liberation — all SIL OFL 1.1) plus metrics (advance widths etc., no glyphs) of 457 Windows / Office fonts.
 - **Layout uses the original font, display uses an open font**: Microsoft YaHei, SimSun, Calibri… that are not embedded are laid out with their own metrics, so line breaks and positions match PowerPoint; glyphs come from the matching open font, centered in the original font's cell (CJK vertically centered).
 - Fonts in the output come only from fonts embedded in the .pptx and the default pack. **System fonts on the converting machine are no longer used by default** (`--system-fonts` to opt in); `--fonts <dir>` adds your own fonts, which win on name clashes. Used glyphs are always subset into the output (`--embed-fonts` is no longer needed).
 - Characters in symbol fonts are never changed: **Wingdings, Wingdings 2 and Wingdings 3 that are not embedded display as symbols through code-compatible open fonts in the pack** (■ ➢ ● ✔ ◆ ❖ bullets and inline symbols; glyphs from Noto Sans Symbols and others, sized and positioned like Wingdings); other symbol fonts (Webdings, Symbol, …) that are not embedded make the report ask the author to embed them.
@@ -29,6 +30,7 @@
 - CFF-outline fonts (.otf, e.g. Source Han) are supported, including WordArt warps.
 - Chart text, page images and thumbnails also use only embedded fonts; characters missing from an open display font are drawn with another font from the pack instead of the browser's.
 - Source Han Sans / Serif (including "CN" names and weight suffixes) are laid out and shown with the pack's identical Noto Sans / Serif SC.
+- Fixes from the pre-release review: the default font pack is **0.3.1** (metrics now include kerning pairs with the space, so Arial, Times New Roman, Gill Sans MT etc. lay out lines with spaces like PowerPoint; a supplement-only font was removed; the Wingdings compat fonts got proper names so symbols also draw in page images and thumbnails); when a family has several bold weights, bold uses Bold (700) (measured); chart labels mixing Latin and CJK (e.g. "1月") draw each part with its own font in page images and thumbnails; symbol fonts embedded in the PPT or given with `--fonts` / `--system-fonts` now embed working subsets; original fonts sharing one open font file load it once for page images (less memory); very long runs of spaces or many tabs no longer slow layout down; wrong command-line arguments exit with code 2 (1 is reserved for `unppt check` finding problems that must be fixed).
 
 **Automatic line wrapping matches PowerPoint**: a new test harness (`tools/wraptest`: thousands of random text boxes, tables and shapes generated in PowerPoint, plus real decks, compared line by line) drove 20+ rule fixes — dashes, ellipses, curly quotes, no-break spaces, CJK line-start/line-end rules (also across spaces), hanging punctuation exceptions, ASCII punctuation in URLs and decimals, ± × § °, kerning at line ends, paragraph indent rounding, autofit not shrinking letter spacing, widths of non-embedded symbol bullet fonts; geometries without a text rectangle (custom shapes, zero-width legacy titles) no longer wrap, and the pie text area is fixed. Over 3,400 random text boxes, 761 table cells and all 181 preset shapes generated in PowerPoint, 99.6%+ break exactly like PowerPoint; on 398 real decks (~14.5k multi-line text boxes and 886 multi-line table cells) lines that differ from PowerPoint dropped from 512 to 45 (out of ~65k); across 991 real decks (~40k multi-line text boxes) 99.8% break exactly like PowerPoint.
 
