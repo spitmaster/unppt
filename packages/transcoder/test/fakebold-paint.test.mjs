@@ -1,4 +1,5 @@
-// 人工加粗（字体没有粗体字形）的描边和填充用同一种颜料：渐变、图片填充的文字描边也是同一个渐变、图片（不另生成定义）
+// 人工加粗（字体没有粗体字形）的描边和填充用同一种颜料：渐变、图片填充的文字描边也是同一个渐变、图片（不另生成定义）；
+// 半透明的纯色文字整个字形按同一个透明度画（颜色不透明、透明度放在外面的组上），不加粗的照旧写 fill-opacity
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { build } from 'esbuild';
@@ -37,3 +38,14 @@ test('图片填充的文字人工加粗：描边和填充是同一个图案', ()
   assert.equal(e.doc.defsXml().match(/<pattern /g).length, 1);
 });
 
+test('半透明纯色人工加粗：颜色不透明、透明度放在外面的组上；不加粗的照旧 fill-opacity', () => {
+  const half = { r: 220, g: 0, b: 0, a: 0.5 };
+  const out = textEl('半透明', 0, 60, style({ color: half }), 'SimSun', false, undefined, env());
+  assert.match(out, /^<g opacity="0.5"><text /);
+  assert.equal(attr(out, 'stroke'), attr(out, 'fill'));
+  assert.equal(attr(out, 'fill-opacity'), undefined);
+  assert.equal(attr(out, 'stroke-opacity'), undefined);
+  const plain = textEl('半透明', 0, 60, style({ color: half, fakeBold: false }), 'SimSun', false, undefined, env());
+  assert.match(plain, /^<text /);
+  assert.equal(attr(plain, 'fill-opacity'), '0.5');
+});

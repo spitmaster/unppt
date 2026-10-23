@@ -25,8 +25,12 @@ export function textEl(txt: string, x: number | number[], y: number | number[], 
   const xa = typeof x === 'number' ? n2(x) : x.map(n2).join(' ');
   const ya = typeof y === 'number' ? n2(y) : y.map(n2).join(' ');
   const { paint, opacity } = textPaint(s, env);
+  // 半透明的人工加粗：PowerPoint 把加粗后的整个字形按同一个透明度画（实测 text-fakebold-gradfill 第 2 页：50% 透明的红色宋体加粗，
+  // 字里颜色均匀）。填充、描边各自半透明时，描边压进字里的那半圈画了两遍、颜色更深，所以颜色写成不透明、透明度放到外面套的组上
+  const whole = !!s.fakeBold && !s.outline && opacity < 0.999;
+  const alpha = whole ? 1 : opacity;
   let a = `${bullet ? 'data-bu="1" ' : ''}x="${xa}" y="${ya}" font-family="${esc(fontList(family, alias))}" font-size="${n2(s.size)}" fill="${paint}"`;
-  if (opacity < 0.999) a += ` fill-opacity="${n2(opacity)}"`;
+  if (alpha < 0.999) a += ` fill-opacity="${n2(alpha)}"`;
   if (s.bold) a += ' font-weight="bold"';
   if (s.italic) a += ' font-style="italic"';
   if (s.spc && typeof x === 'number') a += ` letter-spacing="${n2(s.spc)}"`;
@@ -39,7 +43,7 @@ export function textEl(txt: string, x: number | number[], y: number | number[], 
   const outline = s.outline ? ` stroke="${css(s.outline.color)}" stroke-width="${n2(s.outline.width)}"${s.outline.color.a < 0.999 ? ` stroke-opacity="${n2(s.outline.color.a)}"` : ''}` : '';
   // 人工加粗：描边宽度是字号的 1/56（实测 text-bold-light：按加粗前后笔画浓度的增量对齐）；描边和填充用同一种颜料——
   // 渐变、图片填充的文字加粗多出来的笔画也是渐变、图片的颜色（实测 text-fakebold-gradfill：宋体、楷体左右 / 上下渐变、四色竖条图片）
-  const bold = s.fakeBold ? ` stroke="${paint}" stroke-width="${n2(s.size / 56)}" stroke-linejoin="round"${opacity < 0.999 ? ` stroke-opacity="${n2(opacity)}"` : ''}` : '';
+  const bold = s.fakeBold ? ` stroke="${paint}" stroke-width="${n2(s.size / 56)}" stroke-linejoin="round"${alpha < 0.999 ? ` stroke-opacity="${n2(alpha)}"` : ''}` : '';
   const fid = env ? textFilter(s, env) : '';
   const t = esc(txt);
   // 既有轮廓又要人工加粗：轮廓以加粗后的字形边缘为中心（实测 text-outline-fakebold：宋体、楷体粗体加白轮廓，字的颜色基本完整、
@@ -54,6 +58,11 @@ export function textEl(txt: string, x: number | number[], y: number | number[], 
     return fid ? `<g filter="url(#${fid})">${pair}</g>` : pair;
   }
   a += outline || bold;
+  if (whole) {
+    // 滤镜（阴影等）套在透明度组的外面：和半透明的文字直接加滤镜一样，阴影按半透明的字形算
+    const g = `<g opacity="${n2(opacity)}"><text ${a} xml:space="preserve">${t}</text></g>`;
+    return fid ? `<g filter="url(#${fid})">${g}</g>` : g;
+  }
   if (fid) a += ` filter="url(#${fid})"`;
   return `<text ${a} xml:space="preserve">${t}</text>`;
 }
