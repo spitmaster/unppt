@@ -39,7 +39,10 @@ npm view @unppt/fonts@<版本> dist.fileCount --registry https://registry.npmjs.
 - 新包第一次发布会走"暂存发布"：npm 先公开一个 `0.0.0-stage` 占位版本，真正的版本要到 npmjs.com → 左边 Staged Packages 里点 Approve（要两步验证）才公开；
   批准前 `npm view @unppt/fonts@<版本>` 查不到是正常的。
 
-发完到 npmjs.com → @unppt/fonts → Settings → Trusted Publisher 绑定 GitHub Actions：`spitmaster/unppt` 的 `release.yml`（和 @unppt/unppt 一样，环境名留空）。
+发完到 npmjs.com → @unppt/fonts → Settings → Trusted Publisher 绑定 GitHub Actions：`spitmaster/unppt` 的 `release.yml`（和 @unppt/unppt 一样，环境名留空），
+"Allowed actions" 要勾 **Allow npm publish**（工作流用的是 `npm publish`；不勾只能暂存发布，工作流发字体包会失败，后面的转码器也发不出去）。
+绑定后显示 Pending validation：要在约两天内通过这个工作流真正发布一次才算验证（2026-10-23 绑定的这条期限是 10/25）；
+没有新字体包要发时不必为此发版，过期了就在下次发字体包前删掉重建。
 之后推转码器的版本标签，工作流会跳过已经发过的字体包、自动发转码器。
 
 字体包的内容（字体文件、`compat/` 里的兼容字体、`map.json`、`metrics/`）有任何变化都要加版本号，转码器 `package.json` 里依赖它的范围跟着改：
