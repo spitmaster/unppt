@@ -4,13 +4,13 @@
 
 ## 〇、0.3.0（10/23 看这里）
 
-**状态：测试完成、问题已修；字体包 `@unppt/fonts` 0.3.1 已发布（10/23 17:29 公开，501 个文件，和测试过的包逐字节一致），下一步合 main、打 v0.3.0 标签**（都在 dev 分支）。
-字体包内容在测试中改过，版本号是 0.3.1，转码器依赖 `^0.3.1`；npm 上另有一个 `0.0.0-stage`，是第一次暂存发布时 npm 自动建的占位版本。
+**状态：已发布（10/23）**——`@unppt/unppt` 0.3.0 和 `@unppt/fonts` 0.3.1 都在 npm 上（latest），GitHub Release v0.3.0 带三个安装包，main 和 v0.3.0 标签在 a8126aa。
+从 npm 安装（`npm install -g @unppt/unppt`）会自动带上字体包 0.3.1，已实际装过、转码和字体检查正常。字体包内容在测试中改过，所以是 0.3.1；
+npm 上另有一个 `0.0.0-stage`，是第一次暂存发布时 npm 自动建的占位版本。
 
 ### 你要做的
 
-1. 到 npmjs.com → @unppt/fonts → Settings → Trusted Publisher 绑定 `spitmaster/unppt` 的 `release.yml`（环境名留空），以后字体包也能由工作流发（这次不影响：工作流会跳过已经发过的 0.3.1）。
-2. 测试全部通过后我按你说的把 dev 合到 main、推 `v0.3.0` 标签（工作流跳过已发的字体包，自动发转码器、建 GitHub Release）。详见 [docs/release.md](../release.md)。
+1. 有空时到 npmjs.com → @unppt/fonts → Settings → Trusted Publisher 绑定 `spitmaster/unppt` 的 `release.yml`（环境名留空），以后字体包更新也能由工作流发。
 
 ### 要你决定
 
