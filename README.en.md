@@ -2,12 +2,46 @@ English | [中文](README.md)
 
 # unppt
 
-**Turn PowerPoint files (.pptx) into web pages that play in the browser and look the same as in Microsoft PowerPoint.**
-
-You have a .pptx lesson or presentation and want to play it on a website, in an app or in an online classroom, without asking users to install Office and without flattening it into static images (which loses animations, transitions and video). That is what unppt does: one command turns a .pptx into **one self-contained HTML file** (double-click to play) containing vector SVG pages and a zero-dependency player. Animations, slide transitions, audio/video and hyperlinks are kept. The HTML can be embedded in any web page with an `<iframe>`, and the host page or a native app can control it with JS (next slide, play animations, and so on).
+Convert PowerPoint decks (.pptx) into web pages with one command: open in a browser to play, with animations, transitions, audio and video kept and the look matching PowerPoint; embed them in any web page or app and control them from code.
 
 [![npm](https://img.shields.io/npm/v/@unppt/unppt)](https://www.npmjs.com/package/@unppt/unppt)
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue)](LICENSE)
+
+## Install
+
+Requires [Node.js](https://nodejs.org/) 20.12 or later (run `node -v` to check).
+
+```bash
+npm install -g @unppt/unppt
+```
+
+Run `unppt -v` afterwards to check the version. The default font pack (about 67 MB download) comes with it; no fonts need to be installed separately.
+
+- **Behind a corporate npm mirror** (`EALLOWREMOTE`, `ETARGET`, version not found): use the official registry, `npm install -g @unppt/unppt --registry https://registry.npmjs.org/`
+- **No access to npm**: download `unppt-fonts.tgz` and `unppt.tgz` from [Releases](https://github.com/spitmaster/unppt/releases/latest) and run `npm install -g ./unppt-fonts.tgz ./unppt.tgz` (full steps in [Getting started, section 3](docs/en/getting-started.md#3-install))
+
+## Usage
+
+```bash
+unppt deck.pptx
+```
+
+The output goes into a new folder next to the deck with the same name (`deck.pptx` → `deck/index.html`); open `index.html` in a browser to play (click, arrow keys, space bar or swipe to move on).
+
+Common forms:
+
+```bash
+unppt deck.pptx -o out              # write into the folder out
+unppt deck.pptx --output single     # one self-contained HTML file, handy as an attachment
+unppt check deck.pptx               # only check the fonts, write no files
+npx @unppt/unppt deck.pptx          # run once without installing
+```
+
+Run `unppt` with no arguments for all options, or see [Usage, section 2](docs/en/usage.md#2-cli-reference); to call it from code see "Using it from code" below.
+
+## Features
+
+From .pptx to playback:
 
 ```mermaid
 flowchart LR
@@ -21,8 +55,6 @@ flowchart LR
 
 > Terms: **SVG** is a vector image format that browsers display natively and that stays sharp when zoomed; an **iframe** is the HTML tag that embeds one web page inside another; the **transcoder** is the program that turns a .pptx into web files, and the **player** is the JS that plays those files in the browser.
 
-## Features
-
 - **Matches PowerPoint**: during development, images exported by a local copy of PowerPoint are the "answer key"; every page is compared and scored automatically (see "Status and accuracy" below).
 - **Fast to open, made for online viewing**: the CLI writes the on-demand form by default (without `-o` it goes into a new folder named after the .pptx, e.g. `deck/index.html`): the entry HTML is only tens of KB and each slide's data and images load when that slide is shown, with the next one preloaded; works from a local double-click, any static server or a CDN. `--output single` gives one self-contained HTML file for sending as an attachment.
 - **Animations and transitions**: entrance, exit, emphasis and motion-path animations, triggers, automatic advance timings, slide transitions, audio and video.
@@ -31,7 +63,7 @@ flowchart LR
 - **The transcoder is a pure function**: bytes in, files out; it does not touch the disk or the network and needs no external programs or native add-ons (slide images and thumbnails use the bundled resvg WASM), so it runs in cloud functions as is.
 - **Big files, little memory**: the input is read by position, so 1 GB-class files convert with little memory.
 - **Zero-dependency player**: about 58 KB (about 21 KB gzipped); supports Chrome, Firefox and mobile WebViews.
-- **Several output forms**: a single HTML file (default), on-demand loading (one data file per slide), or one HTML per slide.
+- **Several output forms**: on-demand loading (the CLI default, one data file per slide), a single HTML file (the `convert()` default), or on-demand loading plus one HTML per slide.
 
 ## Side-by-side comparison
 
@@ -108,42 +140,6 @@ Most failing pages differ only in details (text a few pixels off, one chart labe
 - the truncation threshold for category labels rotated 45 degrees.
 
 If a deck does not look right, please open an issue (make sure the file can be shared publicly, or rebuild a deck with neutral content that reproduces the problem).
-
-## 5-minute quick start
-
-You need [Node.js](https://nodejs.org/) **20.12 or later** (run `node -v` to check).
-
-**Step 1: convert a file with npx, no install needed**
-
-```bash
-npx @unppt/unppt presentation.pptx
-```
-
-**Or install globally and use the `unppt` command**
-
-```bash
-npm install -g @unppt/unppt
-unppt presentation.pptx -o out/index.html
-```
-
-The default font pack `@unppt/fonts` (open-source fonts plus font metrics for layout; about 67 MB to download, about 100 MB installed) is installed automatically, so no fonts need to be installed separately; see "Fonts" below.
-
-**Or download and install from GitHub** (while npm reviews a new version, or behind a corporate mirror): download the font pack `unppt-fonts.tgz` and the program `unppt.tgz` from [Releases](https://github.com/spitmaster/unppt/releases/latest) and run `npm install -g ./unppt-fonts.tgz ./unppt.tgz`. Full commands for Windows / macOS / Linux are in [Getting started, section 3](docs/en/getting-started.md#3-install). Run `unppt -v` afterwards to check the version.
-
-To check a deck's fonts first: `unppt check presentation.pptx` (checks only, writes no files).
-
-**Step 2: open the output**
-
-Open the generated `index.html` in a browser and it plays. Without `-o`, all output goes into a new folder next to the .pptx with the same name (e.g. `deck.pptx` → `deck/index.html`).
-
-**Common command-line options** (all options are in [Usage, section 2](docs/en/usage.md#2-cli-reference), or run `unppt` with no arguments):
-
-| Option | Meaning |
-|---|---|
-| `-o, --out <file>` | Output file, defaults to `index.html` in a new folder named after the .pptx; for the `paged` / `pages` forms it is an output folder |
-| `--output <form>` | Output form: `paged` (CLI default, on-demand loading), `single` (one self-contained HTML), `pages` (paged plus one HTML per slide) |
-| `--fonts <dir>` | Explicit font folder (repeatable): wins over the default font pack for the same name |
-| `--no-images` | Do not output slide images `pic/` and thumbnails `thum/` |
 
 ## Fonts
 

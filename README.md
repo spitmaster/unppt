@@ -2,12 +2,46 @@
 
 # unppt
 
-**把 PowerPoint 文件（.pptx）转成网页，在浏览器里播放，效果和 Microsoft PowerPoint 一致。**
-
-你有一份 .pptx 课件或演示文稿，想放到网站、App 或在线课堂里播放，又不想让用户装 Office、也不想把它转成一张张静态图片（那样动画、切换、视频都没了）。unppt 做的就是这件事：用一条命令把 .pptx 转成**一个自包含的 HTML 文件**（双击就能播放），里面是矢量的 SVG 页面和一个零依赖的播放器；动画、页面切换、音视频、超链接都保留。这个 HTML 可以用 `<iframe>` 嵌进任何网页，宿主页面或原生 App 还能用 JS 控制它翻页、播放动画。
+把 PowerPoint 课件（.pptx）一条命令转成网页：浏览器打开就能播放，动画、页面切换、音视频都保留，效果和 PowerPoint 一致；也能嵌进任何网页或 App，用代码控制翻页。
 
 [![npm](https://img.shields.io/npm/v/@unppt/unppt)](https://www.npmjs.com/package/@unppt/unppt)
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue)](LICENSE)
+
+## 安装
+
+需要 [Node.js](https://nodejs.org/) 20.12 或更高版本（命令行运行 `node -v` 查看）。
+
+```bash
+npm install -g @unppt/unppt
+```
+
+装好后运行 `unppt -v` 查看版本号。会自动带上默认字体包（下载约 67MB），不用另外装字体。
+
+- **公司内网镜像装不上**（报 `EALLOWREMOTE`、`ETARGET`、找不到版本）：指定 npm 官方源 `npm install -g @unppt/unppt --registry https://registry.npmjs.org/`
+- **不能连 npm**：从 [Releases](https://github.com/spitmaster/unppt/releases/latest) 下载 `unppt-fonts.tgz` 和 `unppt.tgz`，运行 `npm install -g ./unppt-fonts.tgz ./unppt.tgz`（完整步骤见 [快速上手第 3 节](docs/zh/getting-started.md#3-安装)）
+
+## 使用
+
+```bash
+unppt 课件.pptx
+```
+
+转好的文件放在课件旁边新建的同名文件夹里（`课件.pptx` → `课件/index.html`），用浏览器打开 `index.html` 就能播放（点击、方向键、空格、触屏滑动都能翻页）。
+
+常用写法：
+
+```bash
+unppt 课件.pptx -o out              # 输出到 out 文件夹
+unppt 课件.pptx --output single     # 输出一个自包含的 HTML 文件，方便当附件发送
+unppt check 课件.pptx               # 只检查字体有没有问题，不输出文件
+npx @unppt/unppt 课件.pptx          # 不安装，临时用一次
+```
+
+全部选项运行 `unppt` 不带参数查看，或见 [使用指南第 2 节](docs/zh/usage.md#2-命令行参考)；在代码里调用见后面的「在代码里使用」。
+
+## 特点
+
+从 .pptx 到播放：
 
 ```mermaid
 flowchart LR
@@ -21,8 +55,6 @@ flowchart LR
 
 > 名词：**SVG** 是浏览器能直接显示的矢量图格式，放大不糊；**iframe** 是网页里嵌入另一个网页的标签；**转码器**指把 .pptx 变成网页文件的那段程序，**播放器**指在浏览器里把这些文件放出来的那段 JS。
 
-## 特点
-
 - **效果对齐 PowerPoint**：开发时用本机 PowerPoint 导出的图片作"标准答案"，逐页自动比对打分（见下面的「现状和准确度」）。
 - **打开快、适合在线看**：命令行默认输出按需加载的形式（不写 `-o` 时放进 pptx 旁边新建的同名文件夹，例如 `演示文稿/index.html`）：入口 HTML 只有几十 KB，每页的数据和图片看到那一页才加载、并预加载下一页；本地双击、静态服务器、CDN 都能用。也可以用 `--output single` 输出一个自包含的 HTML 文件，方便当附件发送。
 - **动画和切换**：进入、退出、强调、路径动画，触发器，自动换片计时，页面切换效果，音视频。
@@ -31,7 +63,7 @@ flowchart LR
 - **转码器是纯函数**：字节进、文件出，不读写磁盘、不联网，不依赖外部程序和原生插件（整页图、缩略图用打包在内的 resvg WASM），可以直接放进云函数。
 - **大文件小内存**：按位置读取输入文件，1GB 级的文件也能在小内存下转码。
 - **播放器零依赖**：约 58KB（gzip 后约 21KB），支持 Chrome、Firefox、移动端 WebView。
-- **多种产物形式**：单文件 HTML（默认）、按需加载（每页单独一个数据文件）、每页一个 HTML。
+- **多种产物形式**：按需加载（命令行的默认，每页单独一个数据文件）、单文件 HTML（`convert()` 的默认）、每页再加一个 HTML。
 
 ## 效果对比
 
@@ -108,42 +140,6 @@ flowchart LR
 - 分类标签倾斜 45 度时的截断阈值。
 
 遇到效果不对的 PPT，欢迎提 Issue（请先确认文件可以公开，或者用中性内容重新做一份能复现问题的 PPT）。
-
-## 5 分钟上手
-
-需要 [Node.js](https://nodejs.org/) **20.12 或更高版本**（在命令行运行 `node -v` 查看）。
-
-**第 1 步：不安装，直接用 npx 转一个文件**
-
-```bash
-npx @unppt/unppt 演示文稿.pptx
-```
-
-**或者全局安装后用 `unppt` 命令**
-
-```bash
-npm install -g @unppt/unppt
-unppt 演示文稿.pptx -o out/index.html
-```
-
-安装时会自动带上默认字体包 `@unppt/fonts`（开源字体 + 排版用的字体度量，下载约 67MB，装好后约 100MB），不用另外装字体，见下面的「字体」。
-
-**或者从 GitHub 下载安装**（npm 审核新版本期间、公司内网镜像下载失败时用）：从 [Releases](https://github.com/spitmaster/unppt/releases/latest) 下载字体包 `unppt-fonts.tgz` 和程序 `unppt.tgz`，运行 `npm install -g ./unppt-fonts.tgz ./unppt.tgz`。Windows / macOS / Linux 的完整命令见 [快速上手第 3 节](docs/zh/getting-started.md#3-安装)。装好后运行 `unppt -v` 查看版本号。
-
-想先看看课件的字体有没有问题：`unppt check 演示文稿.pptx`（只检查，不输出文件）。
-
-**第 2 步：打开产物**
-
-用浏览器打开生成的 `index.html` 就能播放。不写 `-o` 时，产物都放在 pptx 旁边新建的、和 pptx 同名的文件夹里（例如 `演示文稿.pptx` → `演示文稿/index.html`）。
-
-**常用命令行选项**（全部选项见 [使用指南第 2 节](docs/zh/usage.md#2-命令行参考)，或运行 `unppt` 不带参数查看）：
-
-| 选项 | 说明 |
-|---|---|
-| `-o, --out <文件>` | 输出文件，默认是 pptx 旁边同名文件夹里的 `index.html`；`paged` / `pages` 形式下是输出目录 |
-| `--output <形式>` | 产物形式：`paged`（命令行默认，按需加载）、`single`（一个自包含的 HTML）、`pages`（paged 再加每页一个 HTML） |
-| `--fonts <目录>` | 指定字体目录（可以写多次）：同名时压过默认字体包 |
-| `--no-images` | 不输出整页图 `pic/` 和缩略图 `thum/` |
 
 ## 字体
 
