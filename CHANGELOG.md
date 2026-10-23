@@ -8,6 +8,7 @@
 
 - 表格单元格的"水平居中"（`anchorCtr`）：和文本框一样，整块文字在单元格里居中、各段的对齐在块里。以前（0.2.x 起）没处理，
   单元格写"左对齐 + 水平居中"的表格（常见于模板）整列文字靠左。
+- 字体名写"思源黑体 CN Light / ExtraLight"（Source Han Sans Light）的文字用字体包里的思源黑体细体（Noto Sans SC Light），以前按常规体显示。
 
 **English**
 
@@ -16,6 +17,7 @@
 - Table cells honour "center horizontally" (`anchorCtr`) like text boxes: the block of text is centered in the cell, each paragraph keeps its own
   alignment inside the block. Before (since 0.2.x) it was ignored, so tables whose cells say "left aligned + centered" (common in templates) showed
   their text flush left.
+- Text in "Source Han Sans CN Light / ExtraLight" (思源黑体 CN Light) uses the pack's Noto Sans SC Light; before it was shown in the regular weight.
 
 ## 0.3.0（2026-10-23，已撤回 / withdrawn）
 
