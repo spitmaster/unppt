@@ -113,6 +113,7 @@ export function runStyle(r: XEl, env: TextEnv, scale: number): RunStyle {
     size: (scale === 1 ? sz : Math.round(sz * scale)) * 96 / 72,
     latin, ea,
     sym: resolveTypeface(attr(child(r, 'a:sym'), 'typeface'), env.theme),
+    ...(attr(child(r, 'a:sym'), 'charset') === '2' ? { symCharset: true } : {}),
     bold: attr(r, 'b') === '1' || attr(r, 'b') === 'true',
     italic: attr(r, 'i') === '1' || attr(r, 'i') === 'true',
     color,

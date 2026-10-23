@@ -193,9 +193,11 @@ async function rewriteFonts(svg: string, fonts: FontResolver, used: Set<FontFace
     }
     face ??= found[0];
     const d = face ? await draws(face) : () => false;
-    // 选定的字体有 □ 就画 □；没有时（Caladea、Wingdings 兼容字体）换成哪个字体都没有的 U+F0000，只显示这个字体自己的缺字框——
-    // 写 □ 的话 resvg 会把整段换成另一个有 □ 的字体画
-    const box = !face || d(0x25a1) ? '\u25a1' : '\u{f0000}';
+    // 选定的字体有 □ 就画 □；没有时（Caladea、Wingdings 兼容字体）、而且这个字体能画这段其余所有的字，换成哪个字体都没有的
+    // U+F0000，只显示它自己的缺字框（写 □ 的话 resvg 把整段换成另一个有 □ 的字体画）。其余的字也要别的字体画时仍写 □：
+    // resvg 遇到哪个字体都没有的字就不再给后面的字找替代字体，后面的汉字会变成缺字框
+    const rest = cps.filter((cp) => cp < 0xe000 || cp > 0xf8ff);
+    const box = !face || d(0x25a1) || !rest.every(d) ? '\u25a1' : '\u{f0000}';
     const text = content.replace(PUA, (c) => {
       const cp = unesc(c).codePointAt(0)!;
       return cp < 0xe000 || cp > 0xf8ff || d(cp) ? c : box;

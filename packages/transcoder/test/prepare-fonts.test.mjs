@@ -90,3 +90,8 @@ test('选定的字体没有 □ 时私用区字换成哪个字体都没有的字
   assert.ok(main.svg.includes(`font-family="Liberation Sans">${BOX}x<`));
   assert.ok(main.svg.includes(`font-family="Liberation Sans">&#8226;y<`), '不是私用区的转义不动');
 });
+
+test('私用区字后面还有要别的字体画的字（Cambria 标签里的汉字）时写 □：哪个字体都没有的字会让 resvg 不再给后面的字找替代', async () => {
+  const { main } = await new Preparer(resolve, async () => undefined).job(1, page(`<text font-family="'Cambria','等线',sans-serif">${String.fromCodePoint(0xf0e0)} Up 增长</text>`), size);
+  assert.ok(main.svg.includes(`>${BOX} Up 增长<`));
+});

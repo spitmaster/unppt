@@ -253,8 +253,9 @@ export async function makeAtoms(text: string, style: RunStyle, m: Measurer): Pro
     const desc = Math.max(ownDesc, mix ? other!.descent : 0);
     if (m.fontUse) {
       // "插入符号"的字记在它的符号字体名下（带 symbol 标记）：没嵌入、也没有字体包的度量时排版退回西文字体，
-      // 但字体检查要报这个符号字体没嵌入、请作者嵌入（名字不在 SYMBOL_FONT 里的 Euclid Symbol、FontAwesome 等也一样）
-      const symRun = isSym || (!!style.sym && cp >= 0xf000 && cp <= 0xf0ff);
+      // 但字体检查要报这个符号字体没嵌入、请作者嵌入。只算符号字体：名字在 SYMBOL_FONT 里的，或者 a:sym 标了符号字符集的
+      // （Euclid Symbol 等）；别的工具把 a:sym 写成正文字体（+mn-ea、和这段文字同一个字体）时不算，免得把正文字体报成符号字体
+      const symRun = isSym || (!!style.sym && cp >= 0xf000 && cp <= 0xf0ff && (SYMBOL_FONT.test(style.sym) || !!style.symCharset));
       const requested = symRun ? style.sym! : eaFont ? style.ea : style.latin;
       m.fontUse({ requested, picked: symRun ? symFam : eaFont ? eaFam : latinFam, pickedFace: symRun ? symM?.face : primary?.face, face: drawFace, cp, ...(symRun ? { symbol: true } : {}) });
     }
