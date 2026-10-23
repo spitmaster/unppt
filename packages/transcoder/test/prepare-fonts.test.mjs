@@ -65,3 +65,28 @@ test('选定的字体画不了的私用区字画成方框，不借用 Wingdings 
   assert.ok(main.svg.includes(`font-family="Unppt Wingdings Compat">${wl}<`), 'Wingdings 兼容字体能画的不换');
   assert.ok(main.svg.includes(`font-family="Liberation Sans">${BOX}x<`), '写成转义的也换');
 });
+
+const caladea = file('Caladea-Regular', 'Caladea');
+faces.arial = face('Arial', lib, latin);
+faces.cambria = face('Cambria', caladea, (cp) => latin(cp) && cp !== 0x25a1);
+
+test('判断能不能画全时不算各种空格和不显示的字（全角空格、软连字符）：纯西文标签照样用西文字体', async () => {
+  const s = `Q1${String.fromCodePoint(0x3000)}Sales${String.fromCodePoint(0xad)}`;
+  const { main } = await new Preparer(resolve, async () => undefined).job(1, page(`<text font-family="'Calibri','等线',sans-serif">${s}</text>`), size);
+  assert.ok(main.svg.includes(`font-family="Liberation Sans">${s}<`));
+});
+
+test('用到的全是符号字体时补一个普通字体当默认字体（找不到字体的文字不画成 Wingdings 图形）', async () => {
+  const prep = new Preparer(resolve, async () => undefined);
+  const { main } = await prep.job(1, page(`<text font-family="'Wingdings',sans-serif">l</text><text font-family="'Helvetica',sans-serif">Voltage</text>`), size);
+  assert.equal(main.defaultFamily, 'Liberation Sans');
+  assert.deepEqual(files(prep, main), ['LiberationSans-Regular', 'UnpptWingdingsCompat']);
+});
+
+test('选定的字体没有 □ 时私用区字换成哪个字体都没有的字（只显示它自己的缺字框，不整段换字体）；十进制转义也换', async () => {
+  const { main } = await new Preparer(resolve, async () => undefined).job(1, page(`<text font-family="'Cambria',sans-serif">A${String.fromCodePoint(0xf0e0)}B</text>`
+    + `<text font-family="'Calibri',sans-serif">&#61623;x</text><text font-family="'Calibri',sans-serif">&#8226;y</text>`), size);
+  assert.ok(main.svg.includes(`font-family="Caladea">A${String.fromCodePoint(0xf0000)}B<`));
+  assert.ok(main.svg.includes(`font-family="Liberation Sans">${BOX}x<`));
+  assert.ok(main.svg.includes(`font-family="Liberation Sans">&#8226;y<`), '不是私用区的转义不动');
+});

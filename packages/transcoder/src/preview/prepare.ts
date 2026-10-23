@@ -97,7 +97,13 @@ export class Preparer {
     // 不当默认字体，否则别的字体缺的字、写了找不到的字体的文字（EMF 里的公式）会画成 Wingdings 的图形；其余的常规体在前
     const symbol = (f: FontFace) => SYMBOL_FONT.test(f.displayFamily) || SYMBOL_FONT.test(fileFamily(f));
     const ordered = [...faces.filter((f) => !symbol(f) && !f.bold && !f.italic), ...faces.filter((f) => !symbol(f) && (f.bold || f.italic)), ...faces.filter(symbol)];
-    const def = ordered.find((f) => !symbol(f));
+    let def = ordered.find((f) => !symbol(f));
+    // 用到的全是符号字体（只有 Wingdings 的页、图片）时补一个普通字体当默认字体，否则 resvg 拿第一个加载的（Wingdings）当默认，
+    // 写了找不到的字体的文字（EMF 里的 Helvetica、Symbol）就画成 Wingdings 的图形
+    if (!def && /<text\b/.test(out)) {
+      def = this.fonts('Arial', false, false);
+      if (def) ordered.unshift(def);
+    }
     return { svg: out, fonts: [...new Set(ordered.map((f) => this.fontId(f)))], ...(def ? { defaultFamily: fileFamily(def) } : {}) };
   }
 
@@ -147,8 +153,10 @@ const fileFamily = (f: FontFace) => f.shownFamily ?? f.displayFamily;
 const unesc = (s: string) => s.replace(/&#x([0-9a-f]+);/gi, (_, h: string) => String.fromCodePoint(parseInt(h, 16)))
   .replace(/&#(\d+);/g, (_, d: string) => String.fromCodePoint(+d))
   .replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&apos;|&#39;/g, "'").replace(/&amp;/g, '&');
-/** 私用区的字（原样的，或者写成十六进制转义的） */
-const PUA = /&#x(?:e[0-9a-f]{3}|f[0-8][0-9a-f]{2});|[\ue000-\uf8ff]/gi;
+/** 可能是私用区字的地方：原样的字和所有数字转义（十六进制、十进制，解出来再看是不是私用区） */
+const PUA = /&#x[0-9a-f]+;|&#\d+;|[\ue000-\uf8ff]/gi;
+/** resvg（rustybuzz）不用字体也能处理的字：各种空格按空格画，默认不显示的字（软连字符、零宽字符）不画——判断字体能不能画全时不算 */
+const NO_GLYPH = /[\p{Zs}\p{Default_Ignorable_Code_Point}]/u;
 
 /**
  * font-family="'甲','乙',sans-serif" 换成一个字体文件的英文名；列表里找得到的字体都记进 used。
@@ -177,7 +185,7 @@ async function rewriteFonts(svg: string, fonts: FontResolver, used: Set<FontFace
     const bold = /\sfont-weight="(bold|[6-9]00)"/.test(attrs), italic = /\sfont-style="italic"/.test(attrs);
     const names = fam.replace(/&quot;|&#39;|'/g, '').split(',').map((s) => s.trim()).filter(Boolean);
     const found = names.map((n) => fonts(n, bold, italic)).filter((f): f is FontFace => !!f);
-    const cps = [...unesc(content)].map((c) => c.codePointAt(0)!).filter((cp) => cp > 0x20);
+    const cps = [...unesc(content)].map((c) => c.codePointAt(0)!).filter((cp) => cp > 0x20 && !NO_GLYPH.test(String.fromCodePoint(cp)));
     let face: FontFace | undefined;
     for (const f of found) {
       const d = await draws(f);
@@ -185,7 +193,13 @@ async function rewriteFonts(svg: string, fonts: FontResolver, used: Set<FontFace
     }
     face ??= found[0];
     const d = face ? await draws(face) : () => false;
-    const text = content.replace(PUA, (c) => (d(unesc(c).codePointAt(0)!) ? c : '\u25a1'));
+    // 选定的字体有 □ 就画 □；没有时（Caladea、Wingdings 兼容字体）换成哪个字体都没有的 U+F0000，只显示这个字体自己的缺字框——
+    // 写 □ 的话 resvg 会把整段换成另一个有 □ 的字体画
+    const box = !face || d(0x25a1) ? '\u25a1' : '\u{f0000}';
+    const text = content.replace(PUA, (c) => {
+      const cp = unesc(c).codePointAt(0)!;
+      return cp < 0xe000 || cp > 0xf8ff || d(cp) ? c : box;
+    });
     parts.push(svg.slice(last, m.index));
     last = m.index! + all.length;
     if (!face) { parts.push(tag + text); continue; }
