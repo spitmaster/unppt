@@ -32,7 +32,7 @@ export function formatFontCheck(r: FontCheck & { slides: number }, name: string,
       specified: ['✓', '用指定的字体'],
       default: ['✓', `排版按原字体，显示用 ${shown(f.shownWith)}`],
       substituted: ['⚠', `没有这个字体，按 ${f.substitute} 替代（字形和换行可能和作者电脑上不同）`],
-      'symbol-missing': ['✗', '符号字体没有嵌入，符号会显示成字母：请在 PowerPoint 里勾选"将字体嵌入文件"'],
+      'symbol-missing': ['✗', '符号字体没有嵌入，符号会显示成字母或方框：请在 PowerPoint 里勾选"将字体嵌入文件"'],
       missing: ['✗', '没有这个字体，也没有替代字体，字宽只能估算（没装默认字体包 @unppt/fonts？）'],
     }[f.status];
     lines.push(`  ${what[0]} ${pad(f.font)}${where}   ${what[1]}`);
