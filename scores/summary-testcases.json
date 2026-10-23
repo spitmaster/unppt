@@ -1,21 +1,21 @@
 {
- "date": "2026-10-22 21:07",
+ "date": "2026-10-23 19:50",
  "set": "testcases",
- "files": 242,
+ "files": 243,
  "repairedFiles": 1,
  "failedToConvert": 0,
- "pages": 524,
- "passed": 486,
- "passRate": 0.9275,
- "meanSsim": 0.9838,
+ "pages": 525,
+ "passed": 487,
+ "passRate": 0.9276,
+ "meanSsim": 0.9837,
  "passLine": 0.95,
  "issues": {},
  "missingFontCount": 31,
  "practice": {
-  "files": 242,
-  "pages": 524,
-  "passRate": 0.9275,
-  "meanSsim": 0.9838
+  "files": 243,
+  "pages": 525,
+  "passRate": 0.9276,
+  "meanSsim": 0.9837
  },
  "holdout": {
   "files": 0,
