@@ -15,7 +15,7 @@ import { n2 } from '../common/svg';
 import { walkGeometry, warpGeometry, type PathSink } from '../geometry/geometry';
 import { attr, child, children, type XEl } from '../io/xml';
 import type { PlacedLine } from './emit';
-import { textFilter, textGradient, textPicture } from './svg-text';
+import { textFilter, textPaint } from './svg-text';
 import type { ParagraphLayout, RunStyle, TextEnv } from './types';
 
 type Pt = [number, number];
@@ -304,8 +304,8 @@ export async function warpText(warp: XEl, layouts: ParagraphLayout[], placed: Pl
 
 /** 填充、轮廓、效果（和普通文字一致） */
 function paint(s: RunStyle, env: TextEnv): string {
-  const pic = s.blip ? textPicture(s.blip, env) : '';
-  let a = pic ? ` fill="${pic}"` : env.doc && s.grad ? ` fill="${textGradient(s.grad, env)}"` : ` fill="${css(s.color)}"${s.color.a < 0.999 ? ` fill-opacity="${n2(s.color.a)}"` : ''}`;
+  const { paint: fill, opacity } = textPaint(s, env);
+  let a = ` fill="${fill}"${opacity < 0.999 ? ` fill-opacity="${n2(opacity)}"` : ''}`;
   if (s.outline) a += ` stroke="${css(s.outline.color)}" stroke-width="${n2(s.outline.width)}"${s.outline.color.a < 0.999 ? ` stroke-opacity="${n2(s.outline.color.a)}"` : ''}`;
   const fid = textFilter(s, env);
   if (fid) a += ` filter="url(#${fid})"`;

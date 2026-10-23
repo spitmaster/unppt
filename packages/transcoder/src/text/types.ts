@@ -70,7 +70,7 @@ export interface RunStyle {
   /** a:sym 标了符号字符集（charset="2"，PowerPoint "插入符号"插符号字体时写）：名字不在符号字体名单里的也按符号字体检查 */
   symCharset?: boolean;
   bold: boolean;
-  /** 人工加粗：标了粗体但字体只有细体字形（见 emit.ts），输出时描一圈同色的边，不让浏览器换成同族的粗体 */
+  /** 人工加粗：标了粗体但字体只有细体字形（见 emit.ts），输出时描一圈和填充同样颜色（含渐变、图片）的边，不让浏览器换成同族的粗体 */
   fakeBold?: boolean;
   italic: boolean;
   color: Rgba;

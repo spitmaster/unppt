@@ -24,8 +24,9 @@ function fontList(primary: string, alias?: string): string {
 export function textEl(txt: string, x: number | number[], y: number | number[], s: RunStyle, family: string, bullet = false, alias?: string, env?: TextEnv, anchor?: string): string {
   const xa = typeof x === 'number' ? n2(x) : x.map(n2).join(' ');
   const ya = typeof y === 'number' ? n2(y) : y.map(n2).join(' ');
-  let a = `${bullet ? 'data-bu="1" ' : ''}x="${xa}" y="${ya}" font-family="${esc(fontList(family, alias))}" font-size="${n2(s.size)}" fill="${css(s.color)}"`;
-  if (s.color.a < 0.999) a += ` fill-opacity="${n2(s.color.a)}"`;
+  const { paint, opacity } = textPaint(s, env);
+  let a = `${bullet ? 'data-bu="1" ' : ''}x="${xa}" y="${ya}" font-family="${esc(fontList(family, alias))}" font-size="${n2(s.size)}" fill="${paint}"`;
+  if (opacity < 0.999) a += ` fill-opacity="${n2(opacity)}"`;
   if (s.bold) a += ' font-weight="bold"';
   if (s.italic) a += ' font-style="italic"';
   if (s.spc && typeof x === 'number') a += ` letter-spacing="${n2(s.spc)}"`;
@@ -35,12 +36,10 @@ export function textEl(txt: string, x: number | number[], y: number | number[], 
   // 浏览器默认会做字距调整；PowerPoint 没开的地方关掉，保持和排版时算的宽度一致
   if (!kernOn(s)) css2.push('font-kerning:none');
   if (css2.length) a += ` style="${css2.join(';')}"`;
-  if (env?.doc && s.grad) a = a.replace(/ fill="[^"]*"( fill-opacity="[^"]*")?/, ` fill="${textGradient(s.grad, env)}"`);
-  const pic = env && s.blip ? textPicture(s.blip, env) : '';
-  if (pic) a = a.replace(/ fill="[^"]*"( fill-opacity="[^"]*")?/, ` fill="${pic}"`);
   const outline = s.outline ? ` stroke="${css(s.outline.color)}" stroke-width="${n2(s.outline.width)}"${s.outline.color.a < 0.999 ? ` stroke-opacity="${n2(s.outline.color.a)}"` : ''}` : '';
-  // 人工加粗：描边宽度是字号的 1/56（实测 text-bold-light：按加粗前后笔画浓度的增量对齐）
-  const bold = s.fakeBold ? ` stroke="${css(s.color)}" stroke-width="${n2(s.size / 56)}" stroke-linejoin="round"${s.color.a < 0.999 ? ` stroke-opacity="${n2(s.color.a)}"` : ''}` : '';
+  // 人工加粗：描边宽度是字号的 1/56（实测 text-bold-light：按加粗前后笔画浓度的增量对齐）；描边和填充用同一种颜料——
+  // 渐变、图片填充的文字加粗多出来的笔画也是渐变、图片的颜色（实测 text-fakebold-gradfill：宋体、楷体左右 / 上下渐变、四色竖条图片）
+  const bold = s.fakeBold ? ` stroke="${paint}" stroke-width="${n2(s.size / 56)}" stroke-linejoin="round"${opacity < 0.999 ? ` stroke-opacity="${n2(opacity)}"` : ''}` : '';
   const fid = env ? textFilter(s, env) : '';
   const t = esc(txt);
   // 既有轮廓又要人工加粗：轮廓以加粗后的字形边缘为中心（实测 text-outline-fakebold：宋体、楷体粗体加白轮廓，字的颜色基本完整、
@@ -59,6 +58,16 @@ export function textEl(txt: string, x: number | number[], y: number | number[], 
   return `<text ${a} xml:space="preserve">${t}</text>`;
 }
 
+/**
+ * 文字的填充颜料：图片填充 > 渐变 > 纯色，返回 fill 的值（颜色或 url(#编号)）和整体不透明度（渐变、图片的透明度在色标、图片里，这里是 1）。
+ * 渐变、图片每调用一次生成一个定义，同一段文字只调用一次、填充和人工加粗的描边共用
+ */
+export function textPaint(s: RunStyle, env?: TextEnv): { paint: string; opacity: number } {
+  const grad = env?.doc && s.grad ? textGradient(s.grad, env) : '';
+  const pic = env && s.blip ? textPicture(s.blip, env) : '';
+  return pic || grad ? { paint: pic || grad, opacity: 1 } : { paint: css(s.color), opacity: s.color.a };
+}
+
 /** 渐变、图片填充的文字铺在哪个范围：有行框时按行（横向是这一行文字的宽度、竖向是行高），艺术字变形时铺满整个文本框 */
 function fillBox(env: TextEnv): { x: number; y: number; w: number; h: number } {
   const lb = env.lineBox;
@@ -70,7 +79,7 @@ function fillBox(env: TextEnv): { x: number; y: number; w: number; h: number } {
  * 图片填充的文字（a:blipFill 拉伸）：实测（text-picture-fill）和渐变文字一样按行铺——图片拉伸到这一行的外框，
  * 每一行各铺一遍；艺术字变形时铺满整个文本框。返回 url(#编号)；图片解析不到时返回空串（退回文字颜色）。
  */
-export function textPicture(blip: XEl, env: TextEnv): string {
+function textPicture(blip: XEl, env: TextEnv): string {
   const href = env.blipHrefs?.get(blip);
   if (!href || !env.doc) return '';
   const b = fillBox(env);
@@ -84,7 +93,7 @@ export function textPicture(blip: XEl, env: TextEnv): string {
  * 每一行各自铺一遍渐变（两行文字各自从头开始），范围正好是这一行的外框——横向是这一行文字的宽度、竖向是行高，
  * 和文本框多高无关；艺术字变形（没有行框）时铺满整个文本框
  */
-export function textGradient(grad: XEl, env: TextEnv): string {
+function textGradient(grad: XEl, env: TextEnv): string {
   const doc = env.doc!;
   const id = doc.id('tg');
   const ang = ((numAttr(child(grad, 'a:lin'), 'ang') ?? 0) / 60000) * Math.PI / 180;
