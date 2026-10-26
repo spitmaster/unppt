@@ -72,11 +72,14 @@ export function placeLines(
       if (numCol > 1 && col < numCol - 1 && y + lh > tIns + availH + 0.5 && y > tIns) { col++; y = tIns; }
       const colX = col * (contentW + spcCol);
       // PowerPoint 单倍行高 = 1.2 × 字号，基线按字体的上下伸比例放在这 1.2 倍的行框里；
-      // 行高更大（多倍、固定行距）时基线在行框上沿下方 0.75 × 行高，和字体无关；行高更小时减少的高度全部从文字上方扣
-      // （PowerPoint 生成 5 种字体 × 0.9~2.5 倍行距的探针，逐像素读基线，误差 ≤ 0.1 像素）
+      // 行高更大（多倍、固定行距）时基线在行框上沿下方 0.75 × 行高，和字体无关（PowerPoint 生成 5 种字体 × 0.9~2.5 倍行距的探针，
+      // 逐像素读基线，误差 ≤ 0.1 像素）；行高更小时减少的高度先从文字上方扣，扣到基线离行框上沿只剩 0.75 × 行高为止，再小就停在
+      // 0.75 × 行高（实测：6 种字体 × 40%~95% 行距 × 40、18 磅按 4 倍导出读基线，误差 ≤ 0.25 磅；分界随字体的下伸比例变：Calibri Light 约 88%、
+      // 雅黑 79%、宋体 56%；自动缩小的 lnSpcReduction 等于直接减行距百分比）
       const box = line.size * 1.2;
       const natural = line.ascent + line.descent || 1;
-      let baseline = lh > box + 0.01 ? y + TALL_BASELINE * lh : y + (lh - box) + box * (line.ascent / natural);
+      let baseline = lh > box + 0.01 ? y + TALL_BASELINE * lh
+        : y + Math.max((lh - box) + box * (line.ascent / natural), lh < box - 0.01 ? TALL_BASELINE * lh : -Infinity);
       // 字体对齐（fontAlgn）：行高不小于单倍时，ctr 把字的上伸 + 下伸框居中放进行底那个单倍行框，t 让它的顶对齐单倍行框的顶，
       // b 在加大的行里比自动再上移半个下伸（实测 text-fontalgn：8 种字体 × 80/100/150% 行距逐行量墨迹，单倍和加大的行误差 ≤ 0.25 磅；
       // 行高小于单倍的没管）
