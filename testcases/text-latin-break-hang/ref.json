@@ -1,0 +1,405 @@
+{
+ "version": 8,
+ "level": "full",
+ "slideWidthPt": 960.0,
+ "slideHeightPt": 540.0,
+ "imageWidth": 1280,
+ "imageHeight": 720,
+ "slides": [
+  {
+   "index": 0,
+   "hidden": false,
+   "shapes": [
+    {
+     "id": 2,
+     "name": "LB ea=- hang=- latin=1 lang=en",
+     "type": 17,
+     "x": 20.0,
+     "y": 10.0,
+     "w": 202.0,
+     "h": 80.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 9,
+       "text": "示例文字比例为1:",
+       "x": 27.2,
+       "y": 13.6,
+       "w": 189.625,
+       "h": 28.8
+      },
+      {
+       "start": 9,
+       "len": 6,
+       "text": "3的后续文字",
+       "x": 27.2,
+       "y": 42.4,
+       "w": 134.755,
+       "h": 28.8
+      }
+     ]
+    },
+    {
+     "id": 3,
+     "name": "LB ea=- hang=- latin=- lang=en",
+     "type": 17,
+     "x": 490.0,
+     "y": 10.0,
+     "w": 202.0,
+     "h": 80.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 7,
+       "text": "示例文字比例为",
+       "x": 497.2,
+       "y": 13.6,
+       "w": 168.0,
+       "h": 28.8
+      },
+      {
+       "start": 7,
+       "len": 8,
+       "text": "1:3的后续文字",
+       "x": 497.2,
+       "y": 42.4,
+       "w": 156.38,
+       "h": 28.8
+      }
+     ]
+    },
+    {
+     "id": 4,
+     "name": "LB ea=- hang=- latin=1 lang=en",
+     "type": 17,
+     "x": 20.0,
+     "y": 98.0,
+     "w": 202.0,
+     "h": 80.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 9,
+       "text": "示例文字比例为a:",
+       "x": 27.2,
+       "y": 101.6,
+       "w": 188.75,
+       "h": 28.8
+      },
+      {
+       "start": 9,
+       "len": 6,
+       "text": "b的后续文字",
+       "x": 27.2,
+       "y": 130.4,
+       "w": 136.005,
+       "h": 28.8
+      }
+     ]
+    },
+    {
+     "id": 5,
+     "name": "LB ea=- hang=- latin=- lang=en",
+     "type": 17,
+     "x": 490.0,
+     "y": 98.0,
+     "w": 202.0,
+     "h": 80.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 7,
+       "text": "示例文字比例为",
+       "x": 497.2,
+       "y": 101.6,
+       "w": 168.0,
+       "h": 28.8
+      },
+      {
+       "start": 7,
+       "len": 8,
+       "text": "a:b的后续文字",
+       "x": 497.2,
+       "y": 130.4,
+       "w": 156.755,
+       "h": 28.8
+      }
+     ]
+    },
+    {
+     "id": 6,
+     "name": "LB ea=- hang=- latin=1 lang=en",
+     "type": 17,
+     "x": 20.0,
+     "y": 186.0,
+     "w": 202.0,
+     "h": 80.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 9,
+       "text": "示例文字比例为1.",
+       "x": 27.2,
+       "y": 189.6,
+       "w": 189.625,
+       "h": 28.8
+      },
+      {
+       "start": 9,
+       "len": 6,
+       "text": "5的后续文字",
+       "x": 27.2,
+       "y": 218.4,
+       "w": 134.755,
+       "h": 28.8
+      }
+     ]
+    },
+    {
+     "id": 7,
+     "name": "LB ea=- hang=- latin=- lang=en",
+     "type": 17,
+     "x": 490.0,
+     "y": 186.0,
+     "w": 202.0,
+     "h": 80.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 7,
+       "text": "示例文字比例为",
+       "x": 497.2,
+       "y": 189.6,
+       "w": 168.0,
+       "h": 28.8
+      },
+      {
+       "start": 7,
+       "len": 8,
+       "text": "1.5的后续文字",
+       "x": 497.2,
+       "y": 218.4,
+       "w": 156.38,
+       "h": 28.8
+      }
+     ]
+    },
+    {
+     "id": 8,
+     "name": "LB ea=- hang=- latin=1 lang=en",
+     "type": 17,
+     "x": 20.0,
+     "y": 274.0,
+     "w": 202.0,
+     "h": 80.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 9,
+       "text": "示例文字比例为1,",
+       "x": 27.2,
+       "y": 277.6,
+       "w": 189.625,
+       "h": 28.8
+      },
+      {
+       "start": 9,
+       "len": 6,
+       "text": "2的后续文字",
+       "x": 27.2,
+       "y": 306.4,
+       "w": 134.755,
+       "h": 28.8
+      }
+     ]
+    },
+    {
+     "id": 9,
+     "name": "LB ea=- hang=- latin=- lang=en",
+     "type": 17,
+     "x": 490.0,
+     "y": 274.0,
+     "w": 202.0,
+     "h": 80.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 7,
+       "text": "示例文字比例为",
+       "x": 497.2,
+       "y": 277.6,
+       "w": 168.0,
+       "h": 28.8
+      },
+      {
+       "start": 7,
+       "len": 8,
+       "text": "1,2的后续文字",
+       "x": 497.2,
+       "y": 306.4,
+       "w": 156.38,
+       "h": 28.8
+      }
+     ]
+    },
+    {
+     "id": 10,
+     "name": "LB ea=- hang=- latin=1 lang=en",
+     "type": 17,
+     "x": 20.0,
+     "y": 362.0,
+     "w": 202.0,
+     "h": 80.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 9,
+       "text": "示例文字比例为x:",
+       "x": 27.2,
+       "y": 365.6,
+       "w": 188.875,
+       "h": 28.8
+      },
+      {
+       "start": 9,
+       "len": 8,
+       "text": "//y的后续文字",
+       "x": 27.2,
+       "y": 394.4,
+       "w": 156.505,
+       "h": 28.8
+      }
+     ]
+    },
+    {
+     "id": 11,
+     "name": "LB ea=- hang=- latin=- lang=en",
+     "type": 17,
+     "x": 490.0,
+     "y": 362.0,
+     "w": 202.0,
+     "h": 80.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 7,
+       "text": "示例文字比例为",
+       "x": 497.2,
+       "y": 365.6,
+       "w": 168.0,
+       "h": 28.8
+      },
+      {
+       "start": 7,
+       "len": 10,
+       "text": "x://y的后续文字",
+       "x": 497.2,
+       "y": 394.4,
+       "w": 177.38,
+       "h": 28.8
+      }
+     ]
+    },
+    {
+     "id": 12,
+     "name": "LB ea=- hang=- latin=1 lang=en",
+     "type": 17,
+     "x": 20.0,
+     "y": 450.0,
+     "w": 202.0,
+     "h": 80.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 9,
+       "text": "示例文字比例为A.",
+       "x": 27.2,
+       "y": 453.6,
+       "w": 192.875,
+       "h": 28.8
+      },
+      {
+       "start": 9,
+       "len": 6,
+       "text": "B的后续文字",
+       "x": 27.2,
+       "y": 482.4,
+       "w": 136.38,
+       "h": 28.8
+      }
+     ]
+    },
+    {
+     "id": 13,
+     "name": "LB ea=- hang=- latin=- lang=en",
+     "type": 17,
+     "x": 490.0,
+     "y": 450.0,
+     "w": 202.0,
+     "h": 80.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 7,
+       "text": "示例文字比例为",
+       "x": 497.2,
+       "y": 453.6,
+       "w": 168.0,
+       "h": 28.8
+      },
+      {
+       "start": 7,
+       "len": 8,
+       "text": "A.B的后续文字",
+       "x": 497.2,
+       "y": 482.4,
+       "w": 161.255,
+       "h": 28.8
+      }
+     ]
+    }
+   ],
+   "effects": [],
+   "triggerHidden": [],
+   "steps": 0,
+   "keptSlideshow": false
+  }
+ ],
+ "ok": true
+}

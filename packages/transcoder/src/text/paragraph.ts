@@ -70,14 +70,13 @@ export async function layoutParagraph(p: XEl, pi: number, ctx: ParagraphContext)
   // 制表符：跳到下一个默认制表位
   const defTab = (numAttr(pPr, 'defTabSz') ?? 914400) / EMU_PER_PX;
 
-  // 左缩进、首行缩进：首行起点（marL + indent）和悬挂的距离（-indent）各自取整，见 snapIndent
+  // 缩进取整到 1/20 磅（见 twips）：首行起点（marL + indent）和首行缩进（indent）各自取整，左缩进是两者之差
   const marLEmu = numAttr(pPr, 'marL') ?? 0;
   const indentEmu = numAttr(pPr, 'indent') ?? 0;
-  const first = snapIndent(marLEmu + indentEmu);
-  const marL = indentEmu < 0 ? first + snapIndent(-indentEmu) : snapIndent(marLEmu);
-  const indent = first - marL;
+  const indent = twips(indentEmu);
+  const marL = twips(marLEmu + indentEmu) - indent;
   // 右缩进：换行和对齐都在扣掉它的宽度里（实测；PowerPoint 界面里没有，PDF 转换来的课件常见）
-  const marR = (numAttr(pPr, 'marR') ?? 0) / EMU_PER_PX;
+  const marR = twips(numAttr(pPr, 'marR') ?? 0);
   const algn = attr(pPr, 'algn') ?? 'l';
 
   // 项目符号
@@ -106,7 +105,9 @@ export async function layoutParagraph(p: XEl, pi: number, ctx: ParagraphContext)
   const relayout = atoms.some((a) => a.tab) ? (start: number, first: boolean, limit: number) => layoutTabs(atoms, stops, defTab, first ? firstX : marL, start, shrinks ? Infinity : limit) : undefined;
 
   // 标点溢出边界：哪里都没写时也开着（实测 text-hanging-unset：老 .ppt 转来的课件常不写），只有写了 "0" 才关
-  const rows = breakLines(atoms, (first) => (first ? availFirst : availRest), wrap, attr(pPr, 'hangingPunct') !== '0', attr(pPr, 'eaLnBrk') !== '0', attr(pPr, 'latinLnBrk') === '1', relayout);
+  // 断行看这一行的左右缩进之和（行首起点 + 右缩进）加上行宽，见 linebreak.ts
+  const roomFirst = { max: availFirst, lead: firstX + marR }, roomRest = { max: availRest, lead: marL + marR };
+  const rows = breakLines(atoms, (first) => (first ? roomFirst : roomRest), wrap, attr(pPr, 'hangingPunct') !== '0', attr(pPr, 'eaLnBrk') !== '0', attr(pPr, 'latinLnBrk') === '1', relayout);
   const lines: Line[] = rows.map((row, i) => {
     const vis = row.filter((a) => a.text !== '\n');
     // 只有一个换行的空行（两个 a:br 之间没有字）：行高按结束这一行的换行自己的字号（实测 text-br-empty-line）；
@@ -156,11 +157,11 @@ export async function layoutParagraph(p: XEl, pi: number, ctx: ParagraphContext)
 }
 
 /**
- * 段落缩进的取整（实测 tools/wraptest：雅黑 10.5 磅 9 个字刚好放得下的框宽）：先四舍五入到 1/20 磅（635 EMU），再向上取整到
- * 排版单位 1/8 磅。左缩进 16.8 / 16.85 / 16.87 磅都按 16.875 排，214313 EMU（16.87504 磅）按 17 磅排，5.06 磅按 5.125 磅排；
- * 悬挂缩进时首行起点和悬挂距离各自取整（marL 214313、indent -214312 的段落正文从 16.875 磅排）。内边距、框宽不取整。返回像素
+ * 段落缩进的取整（实测 tools/wraptest：COM 二分框宽找一行刚好放得下的宽度，雅黑 10 磅、带和不带字间距；各行第一个字的 BoundLeft
+ * 也都在 1/20 磅上）：四舍五入到 1/20 磅（635 EMU）。首行起点（marL + indent）和首行缩进各自取整，左缩进 = 两者之差
+ * （marL 214313 + indent -214312 的正文按 16.85 磅排，只写 marL 214313 按 16.9 磅；marL 1524 + indent 254 的左缩进按 0.15 磅），
+ * 右缩进单独取整。返回像素；1/8 磅的取整只在断行时对行尾做（linebreak.ts）
  */
-function snapIndent(emu: number): number {
-  const twips = Math.round(emu / 635);
-  return Math.ceil((twips * 2) / 5) * 2.5 / 15;
+function twips(emu: number): number {
+  return (Math.sign(emu) * Math.round(Math.abs(emu) / 635)) / 15;
 }

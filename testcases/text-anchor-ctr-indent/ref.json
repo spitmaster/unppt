@@ -1,0 +1,320 @@
+{
+ "version": 8,
+ "level": "full",
+ "slideWidthPt": 960.0,
+ "slideHeightPt": 540.0,
+ "imageWidth": 1280,
+ "imageHeight": 720,
+ "slides": [
+  {
+   "index": 0,
+   "hidden": false,
+   "shapes": [
+    {
+     "id": 2,
+     "name": "TextBox 1",
+     "type": 17,
+     "x": 15.0,
+     "y": 20.0,
+     "w": 220.0,
+     "h": 29.081,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 5,
+       "text": "一二三四五",
+       "x": 75.0,
+       "y": 23.6,
+       "w": 70.005,
+       "h": 16.8
+      }
+     ]
+    },
+    {
+     "id": 3,
+     "name": "TextBox 2",
+     "type": 17,
+     "x": 251.0,
+     "y": 20.0,
+     "w": 220.0,
+     "h": 29.081,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 5,
+       "text": "一二三四五",
+       "x": 316.0,
+       "y": 23.6,
+       "w": 70.005,
+       "h": 16.8
+      }
+     ]
+    },
+    {
+     "id": 4,
+     "name": "TextBox 3",
+     "type": 17,
+     "x": 487.0,
+     "y": 20.0,
+     "w": 220.0,
+     "h": 29.081,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 5,
+       "text": "一二三四五",
+       "x": 552.0,
+       "y": 23.6,
+       "w": 70.005,
+       "h": 16.8
+      }
+     ]
+    },
+    {
+     "id": 5,
+     "name": "TextBox 4",
+     "type": 17,
+     "x": 723.0,
+     "y": 20.0,
+     "w": 220.0,
+     "h": 29.081,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 5,
+       "text": "一二三四五",
+       "x": 788.0,
+       "y": 23.6,
+       "w": 70.005,
+       "h": 16.8
+      }
+     ]
+    },
+    {
+     "id": 6,
+     "name": "TextBox 5",
+     "type": 17,
+     "x": 15.0,
+     "y": 280.0,
+     "w": 220.0,
+     "h": 29.081,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 6,
+       "text": "一二三四五\r",
+       "x": 93.875,
+       "y": 283.6,
+       "w": 73.875,
+       "h": 16.8
+      },
+      {
+       "start": 6,
+       "len": 8,
+       "text": "一二三四五六七八",
+       "x": 56.125,
+       "y": 300.4,
+       "w": 112.005,
+       "h": 16.8
+      }
+     ]
+    },
+    {
+     "id": 7,
+     "name": "TextBox 6",
+     "type": 17,
+     "x": 251.0,
+     "y": 280.0,
+     "w": 220.0,
+     "h": 29.081,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 9,
+       "text": "一二三四五六七八\r",
+       "x": 288.25,
+       "y": 283.6,
+       "w": 115.875,
+       "h": 16.8
+      },
+      {
+       "start": 9,
+       "len": 5,
+       "text": "一二三四五",
+       "x": 343.75,
+       "y": 300.4,
+       "w": 70.005,
+       "h": 16.8
+      }
+     ]
+    },
+    {
+     "id": 8,
+     "name": "TextBox 7",
+     "type": 17,
+     "x": 487.0,
+     "y": 280.0,
+     "w": 220.0,
+     "h": 29.081,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 14,
+       "text": "一二三四五六七八九十一二三四",
+       "x": 498.0,
+       "y": 283.6,
+       "w": 196.0,
+       "h": 16.8
+      },
+      {
+       "start": 14,
+       "len": 12,
+       "text": "五六七八九十一二三四五六",
+       "x": 528.0,
+       "y": 300.4,
+       "w": 168.0,
+       "h": 16.8
+      },
+      {
+       "start": 26,
+       "len": 12,
+       "text": "七八九十一二三四五六七八",
+       "x": 528.0,
+       "y": 317.2,
+       "w": 168.0,
+       "h": 16.8
+      },
+      {
+       "start": 38,
+       "len": 3,
+       "text": "九十\r",
+       "x": 528.0,
+       "y": 334.0,
+       "w": 31.875,
+       "h": 16.8
+      },
+      {
+       "start": 41,
+       "len": 5,
+       "text": "一二三四五",
+       "x": 535.75,
+       "y": 350.8,
+       "w": 70.005,
+       "h": 16.8
+      }
+     ]
+    },
+    {
+     "id": 9,
+     "name": "TextBox 8",
+     "type": 17,
+     "x": 723.0,
+     "y": 280.0,
+     "w": 220.0,
+     "h": 29.081,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 10,
+       "text": "一二三四五六七八九十",
+       "x": 753.0,
+       "y": 283.6,
+       "w": 140.0,
+       "h": 16.8
+      },
+      {
+       "start": 10,
+       "len": 10,
+       "text": "一二三四五六七八九十",
+       "x": 753.0,
+       "y": 300.4,
+       "w": 140.0,
+       "h": 16.8
+      },
+      {
+       "start": 20,
+       "len": 10,
+       "text": "一二三四五六七八九十",
+       "x": 753.0,
+       "y": 317.2,
+       "w": 140.0,
+       "h": 16.8
+      },
+      {
+       "start": 30,
+       "len": 10,
+       "text": "一二三四五六七八九十",
+       "x": 753.0,
+       "y": 334.0,
+       "w": 140.005,
+       "h": 16.8
+      }
+     ]
+    }
+   ],
+   "effects": [],
+   "triggerHidden": [],
+   "steps": 0,
+   "keptSlideshow": false
+  },
+  {
+   "index": 1,
+   "hidden": false,
+   "shapes": [
+    {
+     "id": 2,
+     "name": "Table 1",
+     "type": 19,
+     "x": 30.0,
+     "y": 20.0,
+     "w": 900.0,
+     "h": 220.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": -2
+    },
+    {
+     "id": 3,
+     "name": "Table 2",
+     "type": 19,
+     "x": 30.0,
+     "y": 280.0,
+     "w": 900.0,
+     "h": 220.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": -2
+    }
+   ],
+   "effects": [],
+   "triggerHidden": [],
+   "steps": 0,
+   "keptSlideshow": false
+  }
+ ],
+ "ok": true
+}

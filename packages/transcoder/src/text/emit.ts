@@ -39,12 +39,7 @@ export function placeLines(
   layouts: ParagraphLayout[], b: BodyProps, outer: { w: number; h: number }, contentW: number, out?: { height: number }, snapY?: (y: number) => number, pixelScale = 1,
 ): PlacedLine[] {
   const { tIns, bIns, lIns, numCol, spcCol, anchor, wrap, linesLeftToRight } = b;
-  // 水平居中（anchorCtr）：按全宽折好的行，整块（最宽一行的外接框）在框里水平居中，各段自己的对齐在这个块里（诊断样本：左对齐的三段文字
-  // 整体右移 (内宽 − 最宽行) / 2）
-  // 两端 / 分散对齐的非末行会拉满可用宽度，按拉满后的宽度算
-  const stretched = (pl: ParagraphLayout, li: number) => (pl.algn === 'just' && li < pl.lines.length - 1) || pl.algn === 'dist';
-  const blockW = b.anchorCtr && numCol === 1 ? Math.max(0, ...layouts.flatMap((pl) => pl.lines.map((l, li) => l.x0 + (stretched(pl, li) ? l.avail : l.width)))) : 0;
-  const blockShift = blockW ? Math.max(0, (contentW - blockW) / 2) : 0;
+  const blockShift = b.anchorCtr && numCol === 1 ? centerShift(layouts, contentW) : 0;
   // 计算总高度
   const lineHeight = (l: Line, s: ParagraphLayout['lineSpc']) =>
     s.pts !== undefined ? s.pts * 96 / 72 : l.size * 1.2 * (s.pct ?? 1);
@@ -94,11 +89,8 @@ export function placeLines(
       if (linesLeftToRight) baseline = outer.h - y - lh + (baseline - y);
       // 横排文字的基线对齐整像素（TextEnv.pixelTop）：只对 20 磅以下的行（更大的字 PowerPoint 纵向按 1/4 像素抗锯齿，实测）
       else if (snapY && line.size * pixelScale <= SNAP_MAX_SIZE) baseline = snapY(baseline);
-      let x = lIns + colX + line.x0 + blockShift;
       const free = line.avail - line.width;
-      const alignFree = (blockW ? blockW - line.x0 : line.avail) - line.width;
-      if (pl.algn === 'ctr') x += alignFree / 2;
-      else if (pl.algn === 'r') x += alignFree;
+      const x = lIns + colX + line.x0 + blockShift + alignOffset(pl.algn, free);
       // 分散对齐：多出的宽度平均分到每两个字之间（西文单词里的字母之间、空格也算，实测）。两端对齐见 justAdds
       let lastInk = line.atoms.length - 1;
       while (lastInk > 0 && line.atoms[lastInk].space) lastInk--;
@@ -121,6 +113,30 @@ export function placeLines(
     if (pi < layouts.length - 1) y += pl.spcAft;
   });
   return placed;
+}
+
+/** 段落对齐时行首往右挪多少（free 是可用宽度里剩下的空；两端、分散对齐另外拉开，见 placeLines） */
+const alignOffset = (algn: string, free: number) => (algn === 'ctr' ? free / 2 : algn === 'r' ? free : 0);
+
+/**
+ * 水平居中（bodyPr / tcPr anchorCtr）整块文字右移多少：各行先照常排（各段自己的对齐、缩进，按全宽折行），每一行占的范围从
+ * "行首往左让出这一行的缩进起点"到"行尾加上右缩进"，所有行合起来的范围在内容区里居中（实测 text-anchor-ctr-indent：COM 读每行
+ * 第一个字的位置，左 / 中 / 右对齐、左右缩进各不相同的一段和几段、悬挂缩进、折行，文本框 15 种、表格单元格 16 种全部吻合）。
+ * 没有缩进时就是整块（最宽一行）居中、各段的对齐在块里；居中的一段有右缩进时整段在扣掉右缩进的宽度里居中。两端 / 分散对齐的
+ * 非末行拉满可用宽度，占满整行。放不下而超出内容区的行（没实测）按内容区边界算，和以前一样不往左挪
+ */
+function centerShift(layouts: ParagraphLayout[], contentW: number): number {
+  let lo = Infinity, hi = -Infinity;
+  for (const pl of layouts) {
+    pl.lines.forEach((l, li) => {
+      const free = (pl.algn === 'just' && li < pl.lines.length - 1) || pl.algn === 'dist' ? 0 : l.avail - l.width;
+      // 这一行占的范围（相对内容区左边）：[行首 − 缩进起点, 行尾 + 右缩进]，缩进起点 + 可用宽度 + 右缩进 = 内容区宽度
+      const o = alignOffset(pl.algn, free);
+      lo = Math.min(lo, o);
+      hi = Math.max(hi, o + contentW - free);
+    });
+  }
+  return lo <= hi ? contentW / 2 - (Math.max(0, lo) + Math.min(contentW, hi)) / 2 : 0;
 }
 
 /** outer 是文字方向上的文本框（竖排时宽高互换）；返回每段一个片段（带段落动画编号） */
