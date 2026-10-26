@@ -68,6 +68,12 @@ function startsDash(atoms: Atom[], ar: Around, i: number): boolean {
 }
 
 /**
+ * 一行的空间：max 是可用宽度，lead 是这一行的左右缩进之和（行首起点 + 右缩进，相对内容区左边），lead + max 是内容区宽度。
+ * 行尾按 lead + 行宽取整（实测：起点 16.8 磅、行宽 150.15 磅时 167 磅宽的框放得下；分别取整要 167.125 磅）
+ */
+export interface LineRoom { max: number; lead: number }
+
+/**
  * hang：允许标点溢出边界（a:pPr hangingPunct，中文版 PowerPoint 没写时也开着）——放不下的行首禁则标点不把前一个字带到下一行，
  * 而是挂在这一行的边界外面，每行最多挂一个。
  * kinsoku：按中文习惯控制首尾字符（a:pPr eaLnBrk，默认开）；实测（text-ea-line-break）关掉时行首可以是"，。"、行尾可以是"（"，
@@ -76,13 +82,15 @@ function startsDash(atoms: Atom[], ar: Around, i: number): boolean {
  * text-hanging-punct 里单独一段 en-US 的半角标点跟在中文后面照样悬挂）
  * latin：允许西文在单词中间换行（a:pPr latinLnBrk="1"）——任意两个字之间都能断，标点禁则照样管（实测 text-latin-break）
  */
-export function breakLines(atoms: Atom[], avail: (first: boolean) => number, wrap: boolean, hang = false, kinsoku = true, latin = false,
+export function breakLines(atoms: Atom[], room: (first: boolean) => LineRoom, wrap: boolean, hang = false, kinsoku = true, latin = false,
   relayout?: (start: number, first: boolean, limit: number) => void): Atom[][] {
   const lines: Atom[][] = [];
   const ar = around(atoms);
   let start = 0;
   while (start < atoms.length) {
-    const max = avail(lines.length === 0);
+    const { max, lead } = room(lines.length === 0);
+    // 行宽 wd 放不下：行首起点 + 行宽 + 右缩进向上取整到 1/8 磅后超出内容区（见下面断行的说明）
+    const over = (wd: number) => Math.ceil((lead + wd) / LAYOUT_UNIT - 1e-6) * LAYOUT_UNIT > lead + max + 1e-6;
     // 新的一行从头重排制表符（制表位按这一行的起点算；只需排到这一行放不下为止，后面的字到它们那一行的开头再排）
     if (start > 0) relayout?.(start, lines.length === 0, wrap ? max : Infinity);
     let width = 0;
@@ -95,17 +103,19 @@ export function breakLines(atoms: Atom[], avail: (first: boolean) => number, wra
       if (a.text === '\n') { forced = i; break; }
       if (i > start && canBreakBetween(atoms[i - 1], a, kinsoku, latin) && !(kinsoku && (atoms[i - 1].space && endsOpen(atoms, ar, i - 1) || a.space && startsClose(atoms, ar, i))) && !(a.space && startsDash(atoms, ar, i))) lastBreak = i;
       const w = width + a.width;
-      // 实测：行宽向上取整到排版单位（1/8 磅）后不超过可用宽度才放得下（可用宽度、内边距不取整；字间距让行宽不在格子上时，
-      // 正好等宽也要换行）。这个字在行尾时不算它和后一个字的字距调整（实测 tools/wraptest：微软雅黑 "me|r-"，r 和 - 有负字距），
+      // 实测：这一行的左右缩进之和（lead）加上行宽，向上取整到排版单位（1/8 磅）后不超过内容区宽度（lead + max）才放得下
+      // （内边距、框宽不取整；字间距让行宽不在格子上时，正好等宽也要换行；缩进本身只取整到 1/20 磅，见 paragraph.ts twips）。
+      // 这个字在行尾时不算它和后一个字的字距调整（实测 tools/wraptest：微软雅黑 "me|r-"，r 和 - 有负字距），
       // 后一个字是能悬挂的标点时还在这一行，照算（Arial 粗体 "Friday." 的 y. 有负字距，y 放得下、. 悬挂）
       const next = atoms[i + 1];
       const endKern = next && hang && hangable(next.text, atoms[i + 2]?.text) ? 0 : a.kern ?? 0;
-      if (wrap && Math.ceil((w - endKern) / LAYOUT_UNIT - 1e-6) * LAYOUT_UNIT > max + 1e-6 && i > start && !a.space) {
+      if (wrap && over(w - endKern) && i > start && !a.space) {
         // 前面也能正常断（"险——|。"）时，这一行剩下的空不到 0.1 个字才在前面断，否则照样悬挂
         // （实测 tools/wraptest 框宽扫描：宋体 10、20、40 磅都在剩 0.085~0.11 个字之间变）
-        // 前面的字本身就放不下（框比一个字还窄）时也不悬挂（实测 tools/wraptest：宋体 40 磅框宽 54 磅，"险|。"）
+        // 前面的字本身就放不下（框比一个字还窄，或者连同行尾的空格按上面的取整超出）时也不悬挂（实测 tools/wraptest：宋体 40 磅框宽 54 磅，
+        // "险|。"；随机用例：Calibri 32 磅 ".6% " 加左缩进取整后比内容区宽 0.07 磅，后面的"，"不悬挂、换到下一行）
         // 悬挂的标点后面得能断（后面紧跟的字不能和它分开时不挂）
-        if (!hang || hung >= 0 || (atoms[i + 1] && !atoms[i + 1].space && atoms[i + 1].text !== '\n' && !canBreakBetween(a, atoms[i + 1], kinsoku, latin)) || width > max + 1e-6 || (lastBreak === i && max - width < a.style.size * 0.1) || !hangable(a.text, atoms[i + 1]?.text) || !(a.style.eaBreak || atoms[i - 1].style.eaBreak)) break;
+        if (!hang || hung >= 0 || (atoms[i + 1] && !atoms[i + 1].space && atoms[i + 1].text !== '\n' && !canBreakBetween(a, atoms[i + 1], kinsoku, latin)) || over(width) || (lastBreak === i && max - width < a.style.size * 0.1) || !hangable(a.text, atoms[i + 1]?.text) || !(a.style.eaBreak || atoms[i - 1].style.eaBreak)) break;
         hung = i;
       }
       width = w;
