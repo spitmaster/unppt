@@ -6402,7 +6402,9 @@ def text_outline_fakebold(app):
 def text_fakebold_gradfill(app):
     """人工加粗（没有粗体字形的宋体、楷体标粗体）的渐变、图片填充文字：加粗多出来的笔画用什么颜色画。
     第 1 页：宋体左右渐变（红 -> 蓝）、楷体上下渐变（橙 -> 深绿）、宋体图片填充（四色竖条）、宋体渐变加深灰轮廓、
-    对照：有粗体字形的微软雅黑同样的渐变。第 2 页：宋体渐变不加粗（看笔画粗细）、宋体半透明渐变加粗、宋体半透明纯色加粗、楷体图片填充两行"""
+    对照：有粗体字形的微软雅黑同样的渐变。第 2 页：宋体渐变不加粗（看笔画粗细）、宋体半透明渐变加粗、宋体半透明纯色加粗、楷体图片填充两行。
+    第 3 页：分散对齐（每个字单独一段）加向左的硬阴影、阴影压到前一个字上：宋体半透明纯色加粗、对照不加粗、半透明渐变加粗、
+    渐变加深灰轮廓加粗、不透明纯色加粗"""
     from PIL import Image, ImageDraw
     png = (CACHE / "make-case" / "stripes4.png").resolve()
     png.parent.mkdir(parents=True, exist_ok=True)
@@ -6414,8 +6416,8 @@ def text_fakebold_gradfill(app):
     text = "渐变加粗 Bold 123"
     p = new_pres(app)
 
-    def box(s, y, font, bold=True, h=96, txt=text):
-        tb = s.Shapes.AddTextbox(1, 30, y, 900, h)
+    def box(s, y, font, bold=True, h=96, txt=text, w=900):
+        tb = s.Shapes.AddTextbox(1, 30, y, w, h)
         tf = tb.TextFrame
         tf.WordWrap = -1
         tf.AutoSize = 0
@@ -6454,6 +6456,35 @@ def text_fakebold_gradfill(app):
     tr.Font.Fill.ForeColor.RGB = red
     tr.Font.Fill.Transparency = 0.5
     box(s2, 320, "KaiTi", h=200, txt="图片填充 Picture|第二行 Line 2").Font.Fill.UserPicture(str(png))
+
+    def shadowed(y, bold=True):
+        # 框宽只比 8 个字多一点，字间距小；阴影向左 12 磅、不模糊，压到前一个字的右边
+        tr = box(s3, y, "SimSun", bold=bold, txt="分散对齐阴影加粗", w=470)
+        # 加了文字框高度会被自动调整缩到一行空文字的高度（29 磅）；文字不超出框，免得量到滤镜区域裁掉框外文字的老问题
+        s3.Shapes(s3.Shapes.Count).Height = 96
+        tr.ParagraphFormat.Alignment = 5   # msoAlignDistribute
+        sh = tr.Font.Shadow
+        sh.Visible = -1
+        sh.OffsetX, sh.OffsetY = -12, 0
+        sh.Blur = 0
+        sh.Transparency = 0.3
+        sh.ForeColor.RGB = RGB(0, 0, 0)
+        return tr
+
+    def solid(tr, alpha=0.0):
+        tr.Font.Fill.ForeColor.RGB = red
+        tr.Font.Fill.Transparency = alpha
+
+    s3 = blank(p)
+    solid(shadowed(8), 0.5)
+    solid(shadowed(112, bold=False), 0.5)
+    grad(shadowed(216), 2, red, blue, alpha=0.5)
+    tr = shadowed(320)
+    grad(tr, 2, red, blue)
+    tr.Font.Line.Visible = -1
+    tr.Font.Line.Weight = 1.5
+    tr.Font.Line.ForeColor.RGB = RGB(60, 60, 60)
+    solid(shadowed(424))
     return p
 
 

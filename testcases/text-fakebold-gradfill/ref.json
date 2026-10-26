@@ -241,6 +241,131 @@
    "triggerHidden": [],
    "steps": 0,
    "keptSlideshow": false
+  },
+  {
+   "index": 2,
+   "hidden": false,
+   "shapes": [
+    {
+     "id": 2,
+     "name": "TextBox 1",
+     "type": 17,
+     "x": 30.0,
+     "y": 8.0,
+     "w": 470.0,
+     "h": 96.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 8,
+       "text": "分散对齐阴影加粗",
+       "x": 37.2,
+       "y": 11.6,
+       "w": 455.505,
+       "h": 64.8
+      }
+     ]
+    },
+    {
+     "id": 3,
+     "name": "TextBox 2",
+     "type": 17,
+     "x": 30.0,
+     "y": 112.0,
+     "w": 470.0,
+     "h": 96.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 8,
+       "text": "分散对齐阴影加粗",
+       "x": 37.2,
+       "y": 115.6,
+       "w": 455.505,
+       "h": 64.8
+      }
+     ]
+    },
+    {
+     "id": 4,
+     "name": "TextBox 3",
+     "type": 17,
+     "x": 30.0,
+     "y": 216.0,
+     "w": 470.0,
+     "h": 96.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 8,
+       "text": "分散对齐阴影加粗",
+       "x": 37.2,
+       "y": 219.6,
+       "w": 455.505,
+       "h": 64.8
+      }
+     ]
+    },
+    {
+     "id": 5,
+     "name": "TextBox 4",
+     "type": 17,
+     "x": 30.0,
+     "y": 320.0,
+     "w": 470.0,
+     "h": 96.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 8,
+       "text": "分散对齐阴影加粗",
+       "x": 37.2,
+       "y": 323.6,
+       "w": 455.505,
+       "h": 64.8
+      }
+     ]
+    },
+    {
+     "id": 6,
+     "name": "TextBox 5",
+     "type": 17,
+     "x": 30.0,
+     "y": 424.0,
+     "w": 470.0,
+     "h": 96.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 8,
+       "text": "分散对齐阴影加粗",
+       "x": 37.2,
+       "y": 427.6,
+       "w": 455.505,
+       "h": 64.8
+      }
+     ]
+    }
+   ],
+   "effects": [],
+   "triggerHidden": [],
+   "steps": 0,
+   "keptSlideshow": false
   }
  ],
  "ok": true
