@@ -2,10 +2,9 @@
 import { css, type ColorContext } from '../../model/color';
 import { n2 } from '../../common/svg';
 import { accentColor, cpart, strokeOf } from '../draw';
-import { labelParts, labelText, piePercents, sourceFmt } from '../format';
-import { pointLabel, pointLabelText, shiftLabel } from '../point-labels';
-import { labelMaxWidth, wrapLabel } from '../label-wrap';
-import { drawLines, fitInside, measureLines, placeOutside } from '../pie-labels';
+import { piePercents } from '../format';
+import { pointLabel } from '../point-labels';
+import { sliceLabel, sliceLabelText } from '../pie-slice-label';
 import type { TextWidth } from '../layout';
 import type { ChartContext, Plot, Rect } from '../model';
 import type { Line } from '../../style/line';
@@ -61,37 +60,8 @@ function renderPie(p: Plot, x: number, y: number, w: number, h: number, colors: 
     out.push(cpart(`${s.index}x${i}`, `<path d="${d}" fill="${s.pointPaints?.get(i) ?? css(color)}" fill-rule="evenodd"${strokeOf(s, i, PIE_EDGE)}${move}/>`));
     const pl = pointLabel(s, i), lb = pl.labels;
     if (lb) {
-      const vf = sourceFmt(s, i);
-      // 没写分隔符时：有百分比是换行，类别名 + 值是", "（实测 charts-pie-label-sep、charts-pie-bestfit）
-      const sep = lb.pct ? '\n' : ', ';
-      const raw = pointLabelText(s, pl, i, () => labelText(lb, v, total, s.cats[i] ?? '', s.name, vf, pcts[i], sep), () => labelParts(lb, v, total, s.cats[i] ?? '', vf, pcts[i]));
-      const st = lb.style, maxW = box.w ? labelMaxWidth(box.w) : Infinity;
-      const cos = Math.cos(mid), sin = Math.sin(mid);
-      const manualMove = !!(pl.dx || pl.dy);
-      // "最佳位置"（没写位置也是）：放得进扇区（必要时折窄）就放在里面，放不下放到饼外（实测，见 pie-labels.ts）；手动拖开的不管
-      if (!ri && (!lb.pos || lb.pos === 'bestFit') && !manualMove) {
-        const sector = { r, a1: ang, a2 };
-        const inside = fitInside(raw, maxW, st, tw, sector);
-        const l = inside?.l ?? measureLines(wrapLabel(raw, maxW, st.size, tw, st.font), st, tw);
-        const at = inside ? { x: cx + ex * cos + inside.x, y: cy + ex * sin + inside.y } : placeOutside(l, cx, cy, r + ex, mid, box);
-        labels.push(cpart(`${s.index}x${i}l`, drawLines(l, at.x, at.y, st)));
-        ang = a2;
-        return;
-      }
-      const l = measureLines(wrapLabel(raw, maxW, st.size, tw, st.font), st, tw);
-      const bw = Math.max(...l.widths), bh = l.heights.reduce((a, b) => a + b, 0);
-      let lx: number, ly: number;
-      // 手动拖开的标签：偏移是相对外侧的位置算的（实测 charts-point-labels）
-      if (!ri && (lb.pos === 'outEnd' || (manualMove && lb.pos !== 'ctr' && lb.pos !== 'inEnd'))) {
-        // 外侧：从圆心沿角平分线走到"半径 + 1.25 × 字号"处，标签往外摆（右边的从这里往右、上面的往上，实测）
-        const d = r + ex + 1.25 * st.size;
-        lx = cx + d * cos + (cos * bw) / 2; ly = cy + d * sin + (sin * bh) / 2;
-      } else {
-        // 圆环在环的中间，居中在半径的一半处，数据标签内在 0.8 倍半径处（都随分离的扇区一起移出）
-        const rr = (ri ? (r + ri) / 2 : lb.pos === 'ctr' ? r * 0.5 : r * 0.8) + ex;
-        lx = cx + rr * cos; ly = cy + rr * sin;
-      }
-      labels.push(cpart(`${s.index}x${i}l`, shiftLabel(drawLines(l, lx, ly, st), pl, box)));
+      const raw = sliceLabelText(s, pl, i, lb, { v, total, cat: s.cats[i] ?? '', pct: pcts[i] });
+      labels.push(sliceLabel(`${s.index}x${i}`, raw, lb, pl, { cx, cy, r, ri, a1: ang, a2, ex }, tw, box));
     }
     ang = a2;
   });
