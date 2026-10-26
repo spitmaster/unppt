@@ -7233,7 +7233,157 @@ def text_noto_weights(app):
     return p
 
 
-CASES = [shapes_all, text_sizes, text_align, text_spacing, text_bullets, text_missing_font, shapes_basic, fills_lines, table_basic, group_rotate, anim_basic, anim_auto, charts_basic, pictures, smartart, text_effects, text_layout, table_merge, links, emf_images, anim_advanced, charts_labels, freeform_icons, media_audio, anim_trigger, wmf_images, anim_iterate, picture_transparent, charts_more, shape_effects, equations, anim_path, anim_emphasis, transitions, fills_patterns, text_decoration, anim_entrance, svg_images, charts_markers, hidden_slides, media_background, text_glow_reflection, text_tabs, text_picture_bullets, fills_texture, transition_morph, text_embedded_fonts, text_warp, anim_repeat, charts_sizes, slide_timings, lines_compound, table_diagonal, lines_gradient, fills_radial, fills_rect_gradient, shapes_3d, table_vertical, transitions_more, anim_sound, anim_build, anim_after, anim_text_emphasis, charts_bubble, media_video, charts_options, charts_negative, shapes_bevel, charts_legend, shapes_3d_rotation, smartart_3d, charts_ofpie, charts_3d, anim_group_emphasis, activex_controls, charts_extras, charts_axis_titles, charts_fills, charts_outlines, charts_labels_more, group_scale, group_flip, charts_3d_line, charts_legend_pos, charts_crowded_labels, charts_label_skip, charts_bar_long_names, charts_multilevel, picture_recolor, text_symbols, text_numbering, lines_arrows, table_styles, shapes_styles, charts_styles, placeholders_inherit, text_bold_light, ole_objects, text_hanging_punct, speaker_notes, pictures_tiff, placeholders_picture, pictures_exif, text_picture_fill, pictures_mislabeled, emf_alphablend, placeholders_orphan, picture_fill_rect, slide_number_fields, table_builtin_styles, smartart_matrix, text_layout_unit, colors_gamma, text_latin_cjk_font, text_default_style, text_missing_font_jp, text_ea_line_break, text_ambiguous_punct, text_charset_slides, table_rowspan_tall, text_autofit_round, shapes_3d_contour, emf_clip_modes, placeholders_picture_geom, emf_gradient_fill, text_theme_font_lang, text_anchor_linespacing, table_linespacing, table_fontalgn, text_theme_font_latin, text_margin_right, text_charset_gap, slide_size_repair, fills_shape_gradient, text_shadow_runs, picture_3d_shadow, charts_axis_ea_vert, fills_tile_resample, text_shadow_dist, text_shadow_size, text_shadow_scale, text_shadow_blur, text_glow_scale, text_reflection_dist, shapes_bg_fill, text_control_chars, placeholders_no_index, text_ambiguous_missing_ea, text_missing_panose, emf_bitmap_src, fills_group, fills_rot_with_shape, fills_rot_cut, charts_pct_stacked, picture_bg_fill, charts_legend_manual, charts_long_cats, charts_cat_vertical, charts_cat_rot_len, charts_cat_rot_short, charts_cat_rot_threshold, charts_pie_label_sep, text_slash_break, smartart_colors, text_fontref_ph, text_hanging_unset, table_default_bold, text_missing_cjk_name, text_fakebold_width, text_br_empty_line, text_ea_lang, slide_number_bare_field, text_neg_indent, text_mix_wrap_lines, text_theme_ea_altlang, charts_inner_titles, charts_line_dash, charts_rich_title, text_ea_slot_symbols, charts_date_extra_vals, shape_shadow_nofill_text, text_fontalgn, charts_legend_overflow, group_effects, charts_point_labels, picture_bevel_border, text_outline_fakebold, text_just_hang, text_just_spaces, charts_axis_ea_vert_latin, charts_title_moved, charts_dtable_fonts, charts_pie_manual_labels, charts_axis_title_moved, charts_pie_bestfit, charts_dtable_wrap, charts_axis_min_offset, text_bullet_pos_indent, text_spcpts_round, charts_na_values, lines_dash_caps, text_anchor_ctr, custgeom_no_wh, text_link_kinds, fills_blip_no_mode, text_buchar_multi, text_font_substitutes, charts_empty_series_name, charts_cat_custom_rot, text_ea_latin_cjk, placeholders_footer_base, table_no_style_other, lines_thin_dash, text_super_spc, text_pua_nosym, text_vert_insets, table_fontalgn_tall, charts_dlbl_numfmt, charts_user_shapes, charts_dlbl_clamp, charts_axis_no_sppr, charts_axis_style_defaults, text_cr_paragraph, charts_pie_label_pos, text_autonum_symbol_font, text_kern_zero, charts_legend_truncate, table_latin_rows, text_latin_break, charts_legend_bottom_wrap, charts_dtable_manual, fonts_showcase, table_anchor_ctr, text_noto_weights, equations_rot_flip]
+# ---------------------------------------------------------------- 缩进和水平居中（保存后整段重写 txBody）
+
+def _para_xml(algn="l", marL=0, marR=0, indent=0, runs=(("", 0),), size=14, bold=False, bu=False):
+    """一段：缩进是 EMU，runs 是 (文字, 字间距 1/100 磅)，项目符号是 Arial 圆点，微软雅黑"""
+    attrs = f' marL="{marL}" marR="{marR}" indent="{indent}" algn="{algn}"'
+    bux = '<a:buFont typeface="Arial"/><a:buChar char="&#8226;"/>' if bu else "<a:buNone/>"
+    rattr = f' lang="zh-CN" altLang="en-US" sz="{size * 100}"' + (' b="1"' if bold else "")
+    font = '<a:latin typeface="Microsoft YaHei"/><a:ea typeface="Microsoft YaHei"/>'
+    spcs = [f' spc="{spc}"' if spc else "" for _t, spc in runs]
+    rx = "".join(f"<a:r><a:rPr{rattr}{sp}>{font}</a:rPr><a:t>{t}</a:t></a:r>" for (t, _), sp in zip(runs, spcs))
+    return f"<a:p><a:pPr{attrs}>{bux}</a:pPr>{rx}<a:endParaRPr{rattr}/></a:p>"
+
+
+def _patch_txbodies(path, bodies, cells=None, widths=None):
+    """把记号文字所在形状的 txBody 换成 bodies[记号]、表格单元格 <a:tc> 换成 cells[记号]；widths[记号] 改形状宽度（EMU）"""
+    import re
+    import zipfile
+    tmp = path.with_suffix(".tmp")
+    with zipfile.ZipFile(path) as zin, zipfile.ZipFile(tmp, "w", zipfile.ZIP_DEFLATED) as zout:
+        for item in zin.infolist():
+            data = zin.read(item.filename)
+            if re.match(r"ppt/slides/slide\d+\.xml$", item.filename):
+                xml = data.decode("utf8")
+                for mark, body in bodies.items():
+                    if mark not in xml:
+                        continue
+                    if widths and mark in widths:
+                        xml = re.sub(r'(<p:sp>(?:(?!</p:sp>).)*?<a:ext cx=")\d+("(?:(?!</p:sp>).)*?' + mark + ")",
+                                     lambda m: m.group(1) + str(widths[mark]) + m.group(2), xml, count=1, flags=re.S)
+                    xml = re.sub(r"<p:txBody>(?:(?!</p:txBody>).)*?" + mark + r".*?</p:txBody>", lambda m: body, xml, count=1, flags=re.S)
+                for mark, tc in (cells or {}).items():
+                    xml = re.sub(r"<a:tc>(?:(?!</a:tc>).)*?" + mark + r".*?</a:tc>", lambda m: tc, xml, count=1, flags=re.S)
+                data = xml.encode("utf8")
+            zout.writestr(item, data)
+    tmp.replace(path)
+
+
+PT = 12700
+TEN = "一二三四五六七八九十"
+S5, S8, LONG_CN = TEN[:5], TEN[:8], TEN * 4
+# 水平居中的文本框：每个框若干段 (对齐, 左缩进, 右缩进, 首行缩进（磅）, 文字)
+ANCHOR_CTR_INDENT = [
+    [("ctr", 0, 30, 0, S5)],
+    [("ctr", 20, 40, 0, S5)],
+    [("l", 20, 40, 0, S5)],
+    [("r", 20, 40, 0, S5)],
+    [("ctr", 0, 40, 0, S5), ("l", 10, 0, 0, S8)],
+    [("l", 30, 10, 0, S8), ("r", 0, 50, 0, S5)],
+    [("l", 30, 0, -30, LONG_CN), ("ctr", 0, 60, 0, S5)],
+    [("ctr", 20, 40, 0, LONG_CN)],
+]
+# 水平居中的表格单元格：每行四个单元格的段落，各列右缩进不同
+ANCHOR_CTR_CELLS = [
+    [[("ctr", 0, 0, 0, S5)], [("ctr", 0, 10, 0, S5)], [("ctr", 0, 20, 0, S5)], [("ctr", 0, 30, 0, S5)]],
+    [[("ctr", 0, 0, 0, S5), ("l", 10, 0, 0, S8)], [("ctr", 0, 10, 0, TEN[:3]), ("l", 0, 0, 0, S8)], [("l", 20, 20, 0, S5)], [("r", 0, 30, 0, S5), ("r", 15, 0, 0, TEN[:3])]],
+    [[("ctr", 10, 25, 0, LONG_CN[:20])], [("ctr", 0, 10, 0, LONG_CN[:18])], [("l", 15, 15, 0, LONG_CN[:20])], [("ctr", 0, 30, 0, S8)]],
+]
+
+
+def _paras(ps, size):
+    return "".join(_para_xml(a, mL * PT, mR * PT, ind * PT, ((t, 0),), size) for a, mL, mR, ind, t in ps)
+
+
+def text_anchor_ctr_indent(app):
+    """水平居中（anchorCtr）+ 段落左右缩进：第 1 页文本框（左 / 中 / 右对齐、各段缩进不同的一段和几段、悬挂缩进、折行），第 2 页表格
+    单元格（上面一张单元格水平居中、各列右缩进 0/10/20/30 磅，下面一张不居中对照）。PowerPoint 先照常排每一行，再把所有行占的范围
+    （行首让出缩进起点、行尾加上右缩进）居中。14 磅微软雅黑（保存后改 XML）"""
+    p = new_pres(app)
+    s = blank(p)
+    for k in range(len(ANCHOR_CTR_INDENT)):
+        tb = s.Shapes.AddTextbox(1, 15 + (k % 4) * 236, 20 + (k // 4) * 260, 220, 230)
+        tb.TextFrame.WordWrap = -1
+        tb.TextFrame.AutoSize = 0
+        tb.TextFrame.TextRange.Text = f"ACINDK{k}Q"
+        tb.Line.Visible = -1
+        tb.Line.ForeColor.RGB = RGB(200, 200, 200)
+    s = blank(p)
+    for t in range(2):
+        sh = s.Shapes.AddTable(3, 4, 30, 20 + t * 260, 900, 220)
+        for r in range(3):
+            for c in range(4):
+                sh.Table.Cell(r + 1, c + 1).Shape.TextFrame.TextRange.Text = f"ACTCK{t}{r}{c}Q"
+    return p
+
+
+def _patch_anchor_ctr_indent(path):
+    bodies = {f"ACINDK{k}Q": '<p:txBody><a:bodyPr wrap="square" rtlCol="0" anchorCtr="1"><a:noAutofit/></a:bodyPr><a:lstStyle/>'
+              + _paras(ps, 14) + "</p:txBody>" for k, ps in enumerate(ANCHOR_CTR_INDENT)}
+    cells = {}
+    for t in range(2):
+        for r, row in enumerate(ANCHOR_CTR_CELLS):
+            for c, ps in enumerate(row):
+                ctr = ' anchorCtr="1"' if t == 0 else ""
+                cells[f"ACTCK{t}{r}{c}Q"] = f'<a:tc><a:txBody><a:bodyPr/><a:lstStyle/>{_paras(ps, 14)}</a:txBody><a:tcPr anchor="ctr"{ctr}/></a:tc>'
+    _patch_txbodies(path, bodies, cells)
+
+
+text_anchor_ctr_indent.patch = _patch_anchor_ctr_indent
+
+# 缩进取整、行尾取整：每个框 (记号, x, y, 宽（EMU）, 高, 左右内边距（EMU）, 段落 XML)。框宽按实测的规则算到第一行"刚好放得下"：
+# 起点、右缩进按 1/20 磅取整，起点 + 行宽 + 右缩进向上取整到 1/8 磅后不超过内容区
+INDENT_ROUND = [
+    # 悬挂缩进 25.95 / -25 磅带项目符号，20 磅，前两个字字间距 0.02 磅：一行 20 个字 400.04 磅，25.95 + 400.04 取整 426，内容区 426.08
+    ("IRNDK0Q", 10, 10, 5411216, 110, 0, _para_xml("l", 329565, 0, -317500, ((TEN[:2], 2), (TEN[2:] + TEN * 3, 0)), 20, bu=True)),
+    # 悬挂缩进 19.49 / -9.46 磅带项目符号，11 磅：正文从 19.5 磅排，一行 23 个字 253 磅，内容区 272.55
+    ("IRNDK1Q", 450, 10, 3644265, 110, 91440, _para_xml("l", 247547, 0, -120079, ((TEN * 5, 0),), 11, bu=True)),
+    # 左缩进 0、首行缩进 -29.87 磅带项目符号，16 磅粗体两端对齐：后面的行从 0 排，一行 20 个字 320 磅，内容区 320.05
+    ("IRNDK2Q", 10, 150, 4247515, 170, 91440, _para_xml("just", 0, 0, -379297, ((TEN * 5, 0),), 16, bold=True, bu=True)),
+    # 左缩进 16.8 磅，14 磅、字间距 0.01 磅：一行 15 个字 210.15 磅，16.8 + 210.15 取整 227，内容区 227.02
+    ("IRNDK3Q", 380, 150, 2883154, 80, 0, _para_xml("l", 213360, 0, 0, ((TEN * 3, 1),), 14)),
+    # 右缩进 16.8 磅，同上
+    ("IRNDK4Q", 640, 150, 2883154, 80, 0, _para_xml("l", 0, 213360, 0, ((TEN * 3, 1),), 14)),
+]
+
+
+def text_indent_round(app):
+    """段落缩进的取整和行尾取整（保存后改 XML）：缩进先四舍五入到 1/20 磅（首行起点、首行缩进各自取整，左缩进是两者之差），
+    断行时起点 + 行宽 + 右缩进向上取整到 1/8 磅后不超过内容区才放得下。五个文本框和一个表格单元格的第一行都"刚好放得下"：
+    悬挂缩进 25.95 / -25 磅、19.49 / -9.46 磅带项目符号，左缩进 0 + 首行缩进 -29.87 磅，左缩进 16.8 磅 + 字间距，右缩进 16.8 磅 + 字间距；
+    表格单元格左缩进 39.65、右缩进 66.55 磅，列宽 256.27 磅、边距 0，10 磅 15 个字"""
+    p = new_pres(app)
+    s = blank(p)
+    for mark, x, y, w, h, _ins, _para in INDENT_ROUND:
+        tb = s.Shapes.AddTextbox(1, x, y, w / PT, h)
+        tb.TextFrame.WordWrap = -1
+        tb.TextFrame.AutoSize = 0
+        tb.TextFrame.TextRange.Text = mark
+        tb.Line.Visible = -1
+        tb.Line.ForeColor.RGB = RGB(200, 200, 200)
+    sh = s.Shapes.AddTable(2, 1, 10, 360, 256.27, 80)
+    sh.Table.Columns(1).Width = 256.27
+    sh.Table.Cell(1, 1).Shape.TextFrame.TextRange.Text = "IRNDCELL0Q"
+    sh.Table.Cell(2, 1).Shape.TextFrame.TextRange.Text = "IRNDCELL1Q"
+    return p
+
+
+def _patch_indent_round(path):
+    bodies, widths = {}, {}
+    for mark, _x, _y, w, _h, ins, para in INDENT_ROUND:
+        bodies[mark] = f'<p:txBody><a:bodyPr wrap="square" lIns="{ins}" rIns="{ins}" rtlCol="0"><a:noAutofit/></a:bodyPr><a:lstStyle/>{para}</p:txBody>'
+        widths[mark] = w
+    cell = '<a:tc><a:txBody><a:bodyPr/><a:lstStyle/>{}</a:txBody><a:tcPr marL="0" marR="0"/></a:tc>'
+    cells = {"IRNDCELL0Q": cell.format(_para_xml("l", 503555, 845185, 0, ((TEN * 3, 0),), 10)),
+             "IRNDCELL1Q": cell.format(_para_xml("l", 0, 0, 0, ((TEN, 0),), 10))}
+    _patch_txbodies(path, bodies, cells, widths)
+
+
+text_indent_round.patch = _patch_indent_round
+
+
+CASES = [shapes_all, text_sizes, text_align, text_spacing, text_bullets, text_missing_font, shapes_basic, fills_lines, table_basic, group_rotate, anim_basic, anim_auto, charts_basic, pictures, smartart, text_effects, text_layout, table_merge, links, emf_images, anim_advanced, charts_labels, freeform_icons, media_audio, anim_trigger, wmf_images, anim_iterate, picture_transparent, charts_more, shape_effects, equations, anim_path, anim_emphasis, transitions, fills_patterns, text_decoration, anim_entrance, svg_images, charts_markers, hidden_slides, media_background, text_glow_reflection, text_tabs, text_picture_bullets, fills_texture, transition_morph, text_embedded_fonts, text_warp, anim_repeat, charts_sizes, slide_timings, lines_compound, table_diagonal, lines_gradient, fills_radial, fills_rect_gradient, shapes_3d, table_vertical, transitions_more, anim_sound, anim_build, anim_after, anim_text_emphasis, charts_bubble, media_video, charts_options, charts_negative, shapes_bevel, charts_legend, shapes_3d_rotation, smartart_3d, charts_ofpie, charts_3d, anim_group_emphasis, activex_controls, charts_extras, charts_axis_titles, charts_fills, charts_outlines, charts_labels_more, group_scale, group_flip, charts_3d_line, charts_legend_pos, charts_crowded_labels, charts_label_skip, charts_bar_long_names, charts_multilevel, picture_recolor, text_symbols, text_numbering, lines_arrows, table_styles, shapes_styles, charts_styles, placeholders_inherit, text_bold_light, ole_objects, text_hanging_punct, speaker_notes, pictures_tiff, placeholders_picture, pictures_exif, text_picture_fill, pictures_mislabeled, emf_alphablend, placeholders_orphan, picture_fill_rect, slide_number_fields, table_builtin_styles, smartart_matrix, text_layout_unit, colors_gamma, text_latin_cjk_font, text_default_style, text_missing_font_jp, text_ea_line_break, text_ambiguous_punct, text_charset_slides, table_rowspan_tall, text_autofit_round, shapes_3d_contour, emf_clip_modes, placeholders_picture_geom, emf_gradient_fill, text_theme_font_lang, text_anchor_linespacing, table_linespacing, table_fontalgn, text_theme_font_latin, text_margin_right, text_charset_gap, slide_size_repair, fills_shape_gradient, text_shadow_runs, picture_3d_shadow, charts_axis_ea_vert, fills_tile_resample, text_shadow_dist, text_shadow_size, text_shadow_scale, text_shadow_blur, text_glow_scale, text_reflection_dist, shapes_bg_fill, text_control_chars, placeholders_no_index, text_ambiguous_missing_ea, text_missing_panose, emf_bitmap_src, fills_group, fills_rot_with_shape, fills_rot_cut, charts_pct_stacked, picture_bg_fill, charts_legend_manual, charts_long_cats, charts_cat_vertical, charts_cat_rot_len, charts_cat_rot_short, charts_cat_rot_threshold, charts_pie_label_sep, text_slash_break, smartart_colors, text_fontref_ph, text_hanging_unset, table_default_bold, text_missing_cjk_name, text_fakebold_width, text_br_empty_line, text_ea_lang, slide_number_bare_field, text_neg_indent, text_mix_wrap_lines, text_theme_ea_altlang, charts_inner_titles, charts_line_dash, charts_rich_title, text_ea_slot_symbols, charts_date_extra_vals, shape_shadow_nofill_text, text_fontalgn, charts_legend_overflow, group_effects, charts_point_labels, picture_bevel_border, text_outline_fakebold, text_just_hang, text_just_spaces, charts_axis_ea_vert_latin, charts_title_moved, charts_dtable_fonts, charts_pie_manual_labels, charts_axis_title_moved, charts_pie_bestfit, charts_dtable_wrap, charts_axis_min_offset, text_bullet_pos_indent, text_spcpts_round, charts_na_values, lines_dash_caps, text_anchor_ctr, custgeom_no_wh, text_link_kinds, fills_blip_no_mode, text_buchar_multi, text_font_substitutes, charts_empty_series_name, charts_cat_custom_rot, text_ea_latin_cjk, placeholders_footer_base, table_no_style_other, lines_thin_dash, text_super_spc, text_pua_nosym, text_vert_insets, table_fontalgn_tall, charts_dlbl_numfmt, charts_user_shapes, charts_dlbl_clamp, charts_axis_no_sppr, charts_axis_style_defaults, text_cr_paragraph, charts_pie_label_pos, text_autonum_symbol_font, text_kern_zero, charts_legend_truncate, table_latin_rows, text_latin_break, charts_legend_bottom_wrap, charts_dtable_manual, fonts_showcase, table_anchor_ctr, text_noto_weights, equations_rot_flip, text_anchor_ctr_indent, text_indent_round]
 
 
 def main():
