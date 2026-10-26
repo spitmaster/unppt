@@ -2,7 +2,8 @@
  * 艺术字文字变形（a:bodyPr/a:prstTxWarp）：把文字换成字形轮廓，再按变形预设弯曲，输出成 path。
  *
  * 按 PowerPoint 实测的规律（包络类：路径两条一组，上边界 + 下边界）：
- *   - 整段文字按字形墨迹的外框拉伸，填满文字区域（不留内边距）；
+ *   - 整段文字按字形墨迹的外框拉伸，填满文字区域（不留内边距）；空段落的行没有墨迹，按段落标记字体的上下伸算进外框
+ *     （上边不超过行框上沿），段末的空段落让文字只占上面一部分；
  *   - 横向所有行一起算（短行不会单独拉宽），纵向在所属的那组包络里铺满；
  *   - 有多组包络（4、6 条路径）时，行按顺序尽量平均地分到各组，除不尽时前面的组多一行（4 行 3 组是 2、1、1）；
  *     行少的组按满组的高度比例缩放，在包络里垂直居中；
@@ -160,9 +161,9 @@ type Mapper = (g: Glyph, x: number, y: number) => Pt;
 
 /**
  * 包络类：横向按所有字的墨迹外框、沿上下边界按长度比例对应；纵向满组铺满包络，
- * 行少的组按满组的高度缩放、居中。
+ * 行少的组按满组的高度缩放、居中。纵向范围还要算上空段落的行（empty，见 warpText）。
  */
-function envelopeMapper(glyphs: Glyph[], flat: Pt[][][], tracks: Track[], counts: number[]): Mapper | undefined {
+function envelopeMapper(glyphs: Glyph[], flat: Pt[][][], tracks: Track[], counts: number[], empty: { group: number; y0: number; y1: number }[]): Mapper | undefined {
   const groups = counts.length;
   const fullCount = Math.max(...counts);
   let X0 = Infinity, X1 = -Infinity;
@@ -173,6 +174,7 @@ function envelopeMapper(glyphs: Glyph[], flat: Pt[][][], tracks: Track[], counts
       Y0[g.group] = Math.min(Y0[g.group], y); Y1[g.group] = Math.max(Y1[g.group], y);
     }
   });
+  for (const e of empty) { Y0[e.group] = Math.min(Y0[e.group], e.y0); Y1[e.group] = Math.max(Y1[e.group], e.y1); }
   if (!(X1 > X0)) return undefined;
   let full = 0;
   for (let g = 0; g < groups; g++) if (counts[g] === fullCount && Y1[g] > Y0[g]) full = Math.max(full, Y1[g] - Y0[g]);
@@ -271,7 +273,10 @@ export async function warpText(warp: XEl, layouts: ParagraphLayout[], placed: Pl
   }
   if (!glyphs.length) return undefined;
   const flat = glyphs.map((g) => g.contours.map((c) => flatten(c, Math.max(0.5, g.style.size / 40))));
-  const map = follow ? followMapper(placed, layouts, tracks, groupOf, drop) : envelopeMapper(glyphs, flat, tracks, counts);
+  // 没有字的行（空段落）：按段落标记的字体算 基线 − 上伸 ~ 基线 + 下伸，上边不超过行框上沿（实测 text-warp-empty-para）
+  const empty = placed.flatMap((p, li) => (p.line.atoms.some((a) => !a.space && !a.tab && a.text.trim()) ? []
+    : [{ group: groupOf[li], y0: Math.max(p.top, p.baseline - p.line.ascent), y1: p.baseline + p.line.descent }]));
+  const map = follow ? followMapper(placed, layouts, tracks, groupOf, drop) : envelopeMapper(glyphs, flat, tracks, counts, empty);
   if (!map) return undefined;
 
   // 按段落、样式合并成 path

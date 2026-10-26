@@ -7870,7 +7870,63 @@ def _patch_dash_phase(path):
 lines_dash_phase.patch = _patch_dash_phase
 
 
-CASES = [shapes_all, text_sizes, text_align, text_spacing, text_bullets, text_missing_font, shapes_basic, fills_lines, table_basic, group_rotate, anim_basic, anim_auto, charts_basic, pictures, smartart, text_effects, text_layout, table_merge, links, emf_images, anim_advanced, charts_labels, freeform_icons, media_audio, anim_trigger, wmf_images, anim_iterate, picture_transparent, charts_more, shape_effects, equations, anim_path, anim_emphasis, transitions, fills_patterns, text_decoration, anim_entrance, svg_images, charts_markers, hidden_slides, media_background, text_glow_reflection, text_tabs, text_picture_bullets, fills_texture, transition_morph, text_embedded_fonts, text_warp, anim_repeat, charts_sizes, slide_timings, lines_compound, table_diagonal, lines_gradient, fills_radial, fills_rect_gradient, shapes_3d, table_vertical, transitions_more, anim_sound, anim_build, anim_after, anim_text_emphasis, charts_bubble, media_video, charts_options, charts_negative, shapes_bevel, charts_legend, shapes_3d_rotation, smartart_3d, charts_ofpie, charts_3d, anim_group_emphasis, activex_controls, charts_extras, charts_axis_titles, charts_fills, charts_outlines, charts_labels_more, group_scale, group_flip, charts_3d_line, charts_legend_pos, charts_crowded_labels, charts_label_skip, charts_bar_long_names, charts_multilevel, picture_recolor, text_symbols, text_numbering, lines_arrows, table_styles, shapes_styles, charts_styles, placeholders_inherit, text_bold_light, ole_objects, text_hanging_punct, speaker_notes, pictures_tiff, placeholders_picture, pictures_exif, text_picture_fill, pictures_mislabeled, emf_alphablend, placeholders_orphan, picture_fill_rect, slide_number_fields, table_builtin_styles, smartart_matrix, text_layout_unit, colors_gamma, text_latin_cjk_font, text_default_style, text_missing_font_jp, text_ea_line_break, text_ambiguous_punct, text_charset_slides, table_rowspan_tall, text_autofit_round, shapes_3d_contour, emf_clip_modes, placeholders_picture_geom, emf_gradient_fill, text_theme_font_lang, text_anchor_linespacing, table_linespacing, table_fontalgn, text_theme_font_latin, text_margin_right, text_charset_gap, slide_size_repair, fills_shape_gradient, text_shadow_runs, picture_3d_shadow, charts_axis_ea_vert, fills_tile_resample, text_shadow_dist, text_shadow_size, text_shadow_scale, text_shadow_blur, text_glow_scale, text_reflection_dist, shapes_bg_fill, text_control_chars, placeholders_no_index, text_ambiguous_missing_ea, text_missing_panose, emf_bitmap_src, fills_group, fills_rot_with_shape, fills_rot_cut, charts_pct_stacked, picture_bg_fill, charts_legend_manual, charts_long_cats, charts_cat_vertical, charts_cat_rot_len, charts_cat_rot_short, charts_cat_rot_threshold, charts_pie_label_sep, text_slash_break, smartart_colors, text_fontref_ph, text_hanging_unset, table_default_bold, text_missing_cjk_name, text_fakebold_width, text_br_empty_line, text_ea_lang, slide_number_bare_field, text_neg_indent, text_mix_wrap_lines, text_theme_ea_altlang, charts_inner_titles, charts_line_dash, charts_rich_title, text_ea_slot_symbols, charts_date_extra_vals, shape_shadow_nofill_text, text_fontalgn, charts_legend_overflow, group_effects, charts_point_labels, picture_bevel_border, text_outline_fakebold, text_just_hang, text_just_spaces, charts_axis_ea_vert_latin, charts_title_moved, charts_dtable_fonts, charts_pie_manual_labels, charts_axis_title_moved, charts_pie_bestfit, charts_dtable_wrap, charts_axis_min_offset, text_bullet_pos_indent, text_spcpts_round, charts_na_values, lines_dash_caps, text_anchor_ctr, custgeom_no_wh, text_link_kinds, fills_blip_no_mode, text_buchar_multi, text_font_substitutes, charts_empty_series_name, charts_cat_custom_rot, text_ea_latin_cjk, placeholders_footer_base, table_no_style_other, lines_thin_dash, text_super_spc, text_pua_nosym, text_vert_insets, table_fontalgn_tall, charts_dlbl_numfmt, charts_user_shapes, charts_dlbl_clamp, charts_axis_no_sppr, charts_axis_style_defaults, text_cr_paragraph, charts_pie_label_pos, text_autonum_symbol_font, text_kern_zero, charts_legend_truncate, table_latin_rows, text_latin_break, charts_legend_bottom_wrap, charts_dtable_manual, fonts_showcase, table_anchor_ctr, text_noto_weights, equations_rot_flip, text_anchor_ctr_indent, text_indent_round, text_dash_ealnbrk, text_latin_break_hang, text_fakebold_gradfill, charts_pie_bestfit_fit, text_bullet_align, text_bullet_fonts, text_bullet_bold, text_lnspc_reduced, lines_dash_phase]
+def _warp_para(text, sz, spc, end_sz=None):
+    rpr = f'lang="zh-CN" altLang="en-US" b="1"'
+    font = '<a:solidFill><a:srgbClr val="1F4E79"/></a:solidFill><a:latin typeface="Microsoft YaHei"/><a:ea typeface="Microsoft YaHei"/>'
+    run = f'<a:r><a:rPr {rpr} sz="{sz}">{font}</a:rPr><a:t>{text}</a:t></a:r>' if text else ""
+    return f'<a:p><a:pPr algn="ctr"><a:lnSpc><a:spcPct val="{spc}"/></a:lnSpc></a:pPr>{run}<a:endParaRPr {rpr} sz="{end_sz or sz}">{font}</a:endParaRPr></a:p>'
+
+
+# 艺术字 textPlain 的段落：(文字, 字号, 行距, 段末字号)；文字是空串的是空段落
+WARP_EMPTY = [
+    [("ABC 文字", 3200, 150000, None), ("第二行 Text", 2800, 150000, 3200)],
+    [("ABC 文字", 3200, 150000, None), ("第二行 Text", 2800, 150000, 3200), ("", 0, 150000, 1800)],
+    [("ABC 文字", 3200, 150000, None), ("第二行 Text", 2800, 150000, 3200), ("", 0, 150000, 4000)],
+    [("ABC 文字", 3200, 100000, None), ("第二行 Text", 2800, 100000, 3200), ("", 0, 100000, 3200)],
+    [("", 0, 100000, 3200), ("ABC 文字", 3200, 100000, None), ("第二行 Text", 2800, 100000, 3200)],
+    [("ABC 文字", 3200, 100000, None), ("", 0, 100000, 3200), ("第二行 Text", 2800, 100000, 3200)],
+]
+
+
+def text_warp_empty_para(app):
+    """艺术字变形 textPlain（包络类）里的空段落占不占高度（保存后改 XML）：两行字；两行字 + 段末空段落（段末字号 18 / 40 磅、
+    150% / 单倍行距）；开头、中间的空段落。文本框 440×150，不自动换行，细灰框标出范围"""
+    p = new_pres(app)
+    s = blank(p)
+    for k in range(len(WARP_EMPTY)):
+        tb = s.Shapes.AddTextbox(1, 20 + (k % 2) * 480, 15 + (k // 2) * 175, 440, 150)
+        tb.TextFrame.AutoSize = 0
+        tb.TextFrame.WordWrap = 0
+        tb.Width, tb.Height = 440, 150
+        tb.TextFrame.TextRange.Text = f"WEMPK{k}Q"
+        tb.Line.Visible = -1
+        tb.Line.ForeColor.RGB = RGB(200, 200, 200)
+        tb.Line.Weight = 0.5
+    return p
+
+
+def _patch_warp_empty(path):
+    import re
+    import zipfile
+    tmp = path.with_suffix(".tmp")
+    with zipfile.ZipFile(path) as zin, zipfile.ZipFile(tmp, "w", zipfile.ZIP_DEFLATED) as zout:
+        for item in zin.infolist():
+            data = zin.read(item.filename)
+            if item.filename == "ppt/slides/slide1.xml":
+                xml = data.decode("utf8")
+                for k, ps in enumerate(WARP_EMPTY):
+                    body = ('<p:txBody><a:bodyPr wrap="none" rtlCol="0"><a:prstTxWarp prst="textPlain"><a:avLst/></a:prstTxWarp>'
+                            '<a:noAutofit/></a:bodyPr><a:lstStyle/>' + "".join(_warp_para(*q) for q in ps) + "</p:txBody>")
+                    xml = re.sub(rf"<p:txBody>(?:(?!</p:txBody>).)*?WEMPK{k}Q.*?</p:txBody>", lambda m, body=body: body, xml, count=1, flags=re.S)
+                data = xml.encode("utf8")
+            zout.writestr(item, data)
+    tmp.replace(path)
+
+
+text_warp_empty_para.patch = _patch_warp_empty
+
+
+CASES = [shapes_all, text_sizes, text_align, text_spacing, text_bullets, text_missing_font, shapes_basic, fills_lines, table_basic, group_rotate, anim_basic, anim_auto, charts_basic, pictures, smartart, text_effects, text_layout, table_merge, links, emf_images, anim_advanced, charts_labels, freeform_icons, media_audio, anim_trigger, wmf_images, anim_iterate, picture_transparent, charts_more, shape_effects, equations, anim_path, anim_emphasis, transitions, fills_patterns, text_decoration, anim_entrance, svg_images, charts_markers, hidden_slides, media_background, text_glow_reflection, text_tabs, text_picture_bullets, fills_texture, transition_morph, text_embedded_fonts, text_warp, anim_repeat, charts_sizes, slide_timings, lines_compound, table_diagonal, lines_gradient, fills_radial, fills_rect_gradient, shapes_3d, table_vertical, transitions_more, anim_sound, anim_build, anim_after, anim_text_emphasis, charts_bubble, media_video, charts_options, charts_negative, shapes_bevel, charts_legend, shapes_3d_rotation, smartart_3d, charts_ofpie, charts_3d, anim_group_emphasis, activex_controls, charts_extras, charts_axis_titles, charts_fills, charts_outlines, charts_labels_more, group_scale, group_flip, charts_3d_line, charts_legend_pos, charts_crowded_labels, charts_label_skip, charts_bar_long_names, charts_multilevel, picture_recolor, text_symbols, text_numbering, lines_arrows, table_styles, shapes_styles, charts_styles, placeholders_inherit, text_bold_light, ole_objects, text_hanging_punct, speaker_notes, pictures_tiff, placeholders_picture, pictures_exif, text_picture_fill, pictures_mislabeled, emf_alphablend, placeholders_orphan, picture_fill_rect, slide_number_fields, table_builtin_styles, smartart_matrix, text_layout_unit, colors_gamma, text_latin_cjk_font, text_default_style, text_missing_font_jp, text_ea_line_break, text_ambiguous_punct, text_charset_slides, table_rowspan_tall, text_autofit_round, shapes_3d_contour, emf_clip_modes, placeholders_picture_geom, emf_gradient_fill, text_theme_font_lang, text_anchor_linespacing, table_linespacing, table_fontalgn, text_theme_font_latin, text_margin_right, text_charset_gap, slide_size_repair, fills_shape_gradient, text_shadow_runs, picture_3d_shadow, charts_axis_ea_vert, fills_tile_resample, text_shadow_dist, text_shadow_size, text_shadow_scale, text_shadow_blur, text_glow_scale, text_reflection_dist, shapes_bg_fill, text_control_chars, placeholders_no_index, text_ambiguous_missing_ea, text_missing_panose, emf_bitmap_src, fills_group, fills_rot_with_shape, fills_rot_cut, charts_pct_stacked, picture_bg_fill, charts_legend_manual, charts_long_cats, charts_cat_vertical, charts_cat_rot_len, charts_cat_rot_short, charts_cat_rot_threshold, charts_pie_label_sep, text_slash_break, smartart_colors, text_fontref_ph, text_hanging_unset, table_default_bold, text_missing_cjk_name, text_fakebold_width, text_br_empty_line, text_ea_lang, slide_number_bare_field, text_neg_indent, text_mix_wrap_lines, text_theme_ea_altlang, charts_inner_titles, charts_line_dash, charts_rich_title, text_ea_slot_symbols, charts_date_extra_vals, shape_shadow_nofill_text, text_fontalgn, charts_legend_overflow, group_effects, charts_point_labels, picture_bevel_border, text_outline_fakebold, text_just_hang, text_just_spaces, charts_axis_ea_vert_latin, charts_title_moved, charts_dtable_fonts, charts_pie_manual_labels, charts_axis_title_moved, charts_pie_bestfit, charts_dtable_wrap, charts_axis_min_offset, text_bullet_pos_indent, text_spcpts_round, charts_na_values, lines_dash_caps, text_anchor_ctr, custgeom_no_wh, text_link_kinds, fills_blip_no_mode, text_buchar_multi, text_font_substitutes, charts_empty_series_name, charts_cat_custom_rot, text_ea_latin_cjk, placeholders_footer_base, table_no_style_other, lines_thin_dash, text_super_spc, text_pua_nosym, text_vert_insets, table_fontalgn_tall, charts_dlbl_numfmt, charts_user_shapes, charts_dlbl_clamp, charts_axis_no_sppr, charts_axis_style_defaults, text_cr_paragraph, charts_pie_label_pos, text_autonum_symbol_font, text_kern_zero, charts_legend_truncate, table_latin_rows, text_latin_break, charts_legend_bottom_wrap, charts_dtable_manual, fonts_showcase, table_anchor_ctr, text_noto_weights, equations_rot_flip, text_anchor_ctr_indent, text_indent_round, text_dash_ealnbrk, text_latin_break_hang, text_fakebold_gradfill, charts_pie_bestfit_fit, text_bullet_align, text_bullet_fonts, text_bullet_bold, text_lnspc_reduced, lines_dash_phase, text_warp_empty_para]
 
 
 def main():
