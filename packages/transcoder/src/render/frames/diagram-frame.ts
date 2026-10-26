@@ -1,5 +1,6 @@
 /**
- * SmartArt：用文件里 PowerPoint 存的绘图缓存（dsp:drawing）画。
+ * SmartArt：用文件里 PowerPoint 存的绘图缓存（dsp:drawing）画。缓存和数据模型对不上（smartart/stale.ts）时：数据模型里
+ * 没有节点的不画（PowerPoint 不看缓存），字对不上的提示。
  * "逐个"动画的目标是绘图里的单个形状（p:graphicEl/a:dgm 的 id 就是形状的 modelId，实测），
  * 所以每个形状单独包一层，动画编号 = 框的编号 + d + modelId（只留 32 位十六进制）
  */
@@ -10,6 +11,8 @@ import type { FrameHandler } from './frame-handler';
 import { cameraLightFilter, cameraTransform, perspectiveProjector } from '../../style/camera';
 import { fillAttrs, findFillEl, parseFill } from '../../style/fill';
 import { parseLine, strokeAttrs } from '../../style/line';
+import { readDiagramData } from '../../smartart/data';
+import { cacheState } from '../../smartart/stale';
 
 export const diagramFrame: FrameHandler = {
   uri: '/diagram',
@@ -42,6 +45,10 @@ export const diagramFrame: FrameHandler = {
     const kids = children(tree).filter((c) => !c.name.endsWith('nvGrpSpPr') && !c.name.endsWith('grpSpPr'));
     // 绘图缓存是空的（样本里见过：PowerPoint 打开时按数据模型重新排版，我们没有 SmartArt 排版引擎），和缺缓存一样提示
     if (!kids.length && (data?.children ?? []).some((c) => c.name === 'dgm:ptLst' && c.children.length > 1)) r.env.pres.warn('SmartArt 绘图缓存是空的');
+    const dd = kids.length && data ? readDiagramData(data) : undefined;
+    const state = data && dd ? cacheState(data, dd, drawing) : 'ok';
+    if (state === 'noNodes') return { svg: '' };
+    if (state === 'staleText') r.env.pres.warn('SmartArt 绘图缓存和数据模型对不上');
     const cam = cameraTransform(scene3d, box.w, box.h, r.env.pres.width);
     const light = cameraLightFilter(scene3d, r.doc);
     // 透视的场景：每个形状自己按场景相机投影（render/projection.ts），这里不再整体变换

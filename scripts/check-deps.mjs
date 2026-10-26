@@ -13,7 +13,7 @@ const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 
 /**
  * 每个模块（目录）允许依赖的模块。key 是相对 packages/ 的目录；值里没列的都不允许。
- * 转码器从低到高：io → common → model → geometry / font → style → effects → text → media → chart → render → anim → 入口
+ * 转码器从低到高：io → common → model → geometry / font → style → effects → text → media → chart / smartart → render → anim → 入口
  */
 const T = 'transcoder/src/';
 const RULES = {
@@ -29,7 +29,8 @@ const RULES = {
   [`${T}text`]: [`${T}io`, `${T}common`, `${T}model`, `${T}geometry`, `${T}font`, `${T}style`, `${T}effects`],
   [`${T}media`]: [`${T}io`, `${T}common`, `${T}model`],
   [`${T}chart`]: [`${T}io`, `${T}common`, `${T}model`, `${T}font`, `${T}style`],
-  [`${T}render`]: [`${T}io`, `${T}common`, `${T}model`, `${T}geometry`, `${T}font`, `${T}style`, `${T}effects`, `${T}text`, `${T}media`, `${T}chart`],
+  [`${T}smartart`]: [`${T}io`, `${T}common`, `${T}model`],
+  [`${T}render`]: [`${T}io`, `${T}common`, `${T}model`, `${T}geometry`, `${T}font`, `${T}style`, `${T}effects`, `${T}text`, `${T}media`, `${T}chart`, `${T}smartart`],
   [`${T}anim`]: [`${T}io`, `${T}common`, `${T}model`, 'format/src'],
   [`${T}output`]: [`${T}io`, `${T}common`, `${T}media`, 'format/src'],
   [`${T}preview`]: [`${T}io`, `${T}common`, `${T}media`, `${T}font`],
