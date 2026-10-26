@@ -17,6 +17,8 @@
 - 修 0.3.0 引入的排版回退（全量课件逐页比对发现）：悬挂缩进的段落缩进取整多出 1/8 磅，刚好放得下的行多折一行；表格单元格水平居中
   没算段落右缩进；关掉中文首尾字符控制（`eaLnBrk="0"`）时破折号前不断行；允许西文单词中间换行时 `1:3` 这类冒号不悬挂。
   现在缩进只取整到 1/20 磅，断行按"行首起点 + 行宽 + 右缩进"取整到 1/8 磅后和框宽比（PowerPoint 实测）。
+- 没有粗体字形的字体（宋体、楷体、黑体等）标粗体时，渐变、图片填充的文字人工加粗多出来的笔画以前是纯色（第一个色标或黑色），
+  现在和填充一样；半透明文字人工加粗后整个字形按同一个透明度显示，笔画边缘不再多一圈深色。
 
 **English**
 
@@ -38,6 +40,9 @@
   line-break control off (`eaLnBrk="0"`) the text could not break before an em dash; with `latinLnBrk="1"` a colon as in `1:3` did not hang.
   Indents are now rounded to 1/20 pt only, and a line fits when (line start + width + right indent), rounded up to 1/8 pt, fits the box
   (measured in PowerPoint).
+- Bold text in fonts without a bold face (SimSun, KaiTi, SimHei, ...) drew its synthetic-bold strokes in a solid color (the first gradient
+  stop, or black for picture fills); the strokes now use the same gradient or picture. Semi-transparent synthetic-bold text has one uniform
+  transparency, with no darker rim.
 
 ## 0.3.0（2026-10-23，已撤回 / withdrawn）
 
