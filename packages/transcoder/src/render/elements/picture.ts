@@ -10,7 +10,7 @@ import { buildGeometry, parseGeomXml, presetGeometry } from '../../geometry/geom
 import { esc, n2 } from '../../common/svg';
 import { attr, child, children, numAttr, path, type XEl } from '../../io/xml';
 import { flipTransform, nvProps, pc, placeBox, readXfrm, withUid } from '../box';
-import { snapBox } from '../pixel-snap';
+import { slidePixels, snapBox } from '../pixel-snap';
 import { cameraLightTransfer, cameraTransform, hasCamera } from '../../style/camera';
 import { faceLightTransfer, has3d, lightFilter } from '../../style/lighting';
 import { baseProjection, projectedBounds } from '../projection';
@@ -53,7 +53,11 @@ export async function renderPicture(r: RenderContext, el: XEl, ctx: SlideContext
   // 图片自己写的填充（spPr 里的纯色、渐变……）：垫在图片下面，图片透明的地方露出来（样本：半透明的深色 PNG 下面垫深灰色，
   // PowerPoint 画出来接近黑色，不垫是浅灰）
   const under = parseFill(findFillEl(spPr), ctx.colors, ctx.part);
-  if (under && under.kind !== 'none') parts.push(`<path d="${outlineD}"${await fillAttrs(under, r.doc, box.w, box.h, 'norm', r.images, box, custEl ? undefined : prst)}/>`);
+  if (under && under.kind !== 'none') {
+    // 图案填充从幻灯片原点平铺（组合里按所在坐标到幻灯片的换算）
+    const at = { ...box, slide: slidePixels(ctx.toSlide, r.env.pres.displayScale) };
+    parts.push(`<path d="${outlineD}"${await fillAttrs(under, r.doc, box.w, box.h, 'norm', r.images, at, custEl ? undefined : prst)}/>`);
+  }
   if (fill && fill.kind === 'image') {
     const { href, filter: fid } = await blipImage(r.images, ctx.part, fill.rid, fill.effects, r.doc);
     poster = href;

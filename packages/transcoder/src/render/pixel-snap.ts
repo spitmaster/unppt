@@ -30,6 +30,16 @@ export function snapBox(box: Box, m: SlideMapping | null | undefined, strokeW: n
 }
 
 /**
+ * 当前坐标到幻灯片像素（96 DPI，不含顶层的显示比例 rootScale）的换算，图案填充按它从幻灯片原点平铺；
+ * 在转动、翻转的组合里不知道，返回 undefined
+ */
+export function slidePixels(m: SlideMapping | null | undefined, rootScale: number): SlideMapping | undefined {
+  if (m === null) return undefined;
+  if (m === undefined) return { x: 0, y: 0, sx: 1, sy: 1 };
+  return { x: m.x / rootScale, y: m.y / rootScale, sx: m.sx / rootScale, sy: m.sy / rootScale };
+}
+
+/**
  * 文字基线对齐用：y（当前坐标）在对齐像素里的位置和比例。只在当前坐标系除了顶层的显示比例没有别的缩放时给
  * （组合缩放过的不对齐，实测规则只在不缩放时成立）
  */

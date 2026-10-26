@@ -7,7 +7,7 @@ import { esc, n2 } from '../common/svg';
 import { attr, child, children, findAll, numAttr, type XEl } from '../io/xml';
 import { EMU_PER_PX, type Theme } from '../model/model';
 import { blipFilter, parseBlipEffects, type BlipEffects } from './blip';
-import { patternFill } from './pattern';
+import { patternFill, type PatternOrigin } from './pattern';
 import { gradientStops } from './gradient-stops';
 
 /**
@@ -255,8 +255,8 @@ function rectGradient(fill: Extract<Fill, { kind: 'grad' }>, doc: SvgDoc, w: num
   return `url(#${pid})`;
 }
 
-/** 元素在所在坐标里的外框：位置、大小，转角（度）和翻转（shape.ts 按 平移 → 绕中心转 → 翻转 摆放） */
-interface Placement { x: number; y: number; w?: number; h?: number; rot?: number; flipH?: boolean; flipV?: boolean }
+/** 元素在所在坐标里的外框：位置、大小，转角（度）和翻转（shape.ts 按 平移 → 绕中心转 → 翻转 摆放）；slide 见 PatternOrigin */
+interface Placement extends PatternOrigin { w?: number; h?: number; rot?: number; flipH?: boolean; flipV?: boolean }
 
 /**
  * 生成 fill 属性。w/h 是形状尺寸（像素），用于渐变方向和图片填充；

@@ -21,7 +21,7 @@ import { attr, child, children, numAttr, path, SNAPSHOT, type XEl } from '../../
 import { boxTransform, flipTransform, pc, placeBox, readXfrm, withUid } from '../box';
 import type { RenderContext } from '../context';
 import { projectedBounds, projectedPath, shapeProjection } from '../projection';
-import { pixelRow, snapBox } from '../pixel-snap';
+import { pixelRow, slidePixels, snapBox } from '../pixel-snap';
 import { backgroundFill } from './bg-fill';
 import { snapshotArea } from './snapshot';
 
@@ -133,9 +133,11 @@ export async function renderShape(r: RenderContext, el: XEl, ctx: SlideContext, 
     const t = turnedBounds(def, gb.w, gb.h, av, gb.rot, gb.flipH, gb.flipV);
     if (t) fill = { ...fill, area: { x: gb.x + t.x, y: gb.y + t.y, w: t.w, h: t.h } };
   }
+  // 图案填充从幻灯片原点平铺：组合里按所在坐标到幻灯片的换算（转动的组合里不知道，按所在坐标）
+  const fillAt = { ...gb, slide: slidePixels(ctx.toSlide, r.env.pres.displayScale) };
   for (const [i, p] of paths.entries()) {
     if (!p.d) continue;
-    const fa = p.fill !== 'none' ? await fillAttrs(fill, r.doc, gb.w, gb.h, p.fill, r.images, gb, cust ? undefined : attr(prst, 'prst') ?? 'rect') : ' fill="none"';
+    const fa = p.fill !== 'none' ? await fillAttrs(fill, r.doc, gb.w, gb.h, p.fill, r.images, fillAt, cust ? undefined : attr(prst, 'prst') ?? 'rect') : ' fill="none"';
     // 虚线：闭合的路径从闭合线段的起点开始排短划（dash-phase.ts）
     const dp = p.stroke && line?.dash ? dashFromClose(p.d) : { d: p.d, closed: false };
     const sa = p.stroke ? strokeAttrs(line, r.doc, p.fill, gb, dp.closed) : ' stroke="none"';

@@ -1,0 +1,217 @@
+{
+ "version": 8,
+ "level": "full",
+ "slideWidthPt": 960.0,
+ "slideHeightPt": 540.0,
+ "imageWidth": 1280,
+ "imageHeight": 720,
+ "slides": [
+  {
+   "index": 0,
+   "hidden": false,
+   "shapes": [
+    {
+     "id": 2,
+     "name": "Rectangle 1",
+     "type": 1,
+     "x": 20.3,
+     "y": 20.45,
+     "w": 101.3,
+     "h": 67.7,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1
+    },
+    {
+     "id": 3,
+     "name": "Rectangle 2",
+     "type": 1,
+     "x": 135.9,
+     "y": 20.45,
+     "w": 101.3,
+     "h": 67.7,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1
+    },
+    {
+     "id": 4,
+     "name": "Rectangle 3",
+     "type": 1,
+     "x": 251.5,
+     "y": 20.45,
+     "w": 101.3,
+     "h": 67.7,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1
+    },
+    {
+     "id": 5,
+     "name": "Rectangle 4",
+     "type": 1,
+     "x": 367.1,
+     "y": 20.45,
+     "w": 101.3,
+     "h": 67.7,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1
+    },
+    {
+     "id": 7,
+     "name": "Picture 6",
+     "type": 13,
+     "x": 500.2,
+     "y": 20.7,
+     "w": 150.0,
+     "h": 90.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1
+    },
+    {
+     "id": 14,
+     "name": "Group 13",
+     "type": 6,
+     "x": 30.55,
+     "y": 250.35,
+     "w": 459.827,
+     "h": 55.053,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "children": [
+      {
+       "id": 8,
+       "name": "Rectangle 7",
+       "type": 1,
+       "x": 30.55,
+       "y": 250.35,
+       "w": 73.949,
+       "h": 41.297,
+       "rot": 0.0,
+       "visible": true,
+       "autoShapeType": 1
+      },
+      {
+       "id": 9,
+       "name": "Rectangle 8",
+       "type": 1,
+       "x": 114.938,
+       "y": 250.35,
+       "w": 73.949,
+       "h": 41.297,
+       "rot": 0.0,
+       "visible": true,
+       "autoShapeType": 1
+      },
+      {
+       "id": 10,
+       "name": "Rectangle 9",
+       "type": 1,
+       "x": 199.326,
+       "y": 250.35,
+       "w": 73.949,
+       "h": 41.297,
+       "rot": 0.0,
+       "visible": true,
+       "autoShapeType": 1
+      },
+      {
+       "id": 11,
+       "name": "Rectangle 10",
+       "type": 1,
+       "x": 283.714,
+       "y": 250.35,
+       "w": 73.949,
+       "h": 41.297,
+       "rot": 0.0,
+       "visible": true,
+       "autoShapeType": 1
+      },
+      {
+       "id": 13,
+       "name": "Picture 12",
+       "type": 13,
+       "x": 380.877,
+       "y": 250.503,
+       "w": 109.5,
+       "h": 54.9,
+       "rot": 0.0,
+       "visible": true,
+       "autoShapeType": 1
+      }
+     ]
+    },
+    {
+     "id": 19,
+     "name": "Group 18",
+     "type": 6,
+     "x": 25.15,
+     "y": 400.65,
+     "w": 448.1,
+     "h": 67.7,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "children": [
+      {
+       "id": 15,
+       "name": "Rectangle 14",
+       "type": 1,
+       "x": 25.15,
+       "y": 400.65,
+       "w": 101.3,
+       "h": 67.7,
+       "rot": 0.0,
+       "visible": true,
+       "autoShapeType": 1
+      },
+      {
+       "id": 16,
+       "name": "Rectangle 15",
+       "type": 1,
+       "x": 140.75,
+       "y": 400.65,
+       "w": 101.3,
+       "h": 67.7,
+       "rot": 0.0,
+       "visible": true,
+       "autoShapeType": 1
+      },
+      {
+       "id": 17,
+       "name": "Rectangle 16",
+       "type": 1,
+       "x": 256.35,
+       "y": 400.65,
+       "w": 101.3,
+       "h": 67.7,
+       "rot": 0.0,
+       "visible": true,
+       "autoShapeType": 1
+      },
+      {
+       "id": 18,
+       "name": "Rectangle 17",
+       "type": 1,
+       "x": 371.95,
+       "y": 400.65,
+       "w": 101.3,
+       "h": 67.7,
+       "rot": 0.0,
+       "visible": true,
+       "autoShapeType": 1
+      }
+     ]
+    }
+   ],
+   "effects": [],
+   "triggerHidden": [],
+   "steps": 0,
+   "keptSlideshow": false
+  }
+ ],
+ "ok": true
+}
