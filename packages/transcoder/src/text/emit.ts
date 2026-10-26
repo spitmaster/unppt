@@ -169,7 +169,12 @@ export function emitParagraphs(
         if (b.image) {
           // 实测：图片底边在基线下约 0.075 倍边长
           pParts.push(`<image data-bu="1" href="${esc(b.image)}" x="${n2(bx)}" y="${n2(baseline - b.width * 0.925)}" width="${n2(b.width)}" height="${n2(b.width)}" preserveAspectRatio="xMidYMid meet"/>`);
-        } else pParts.push(textEl(b.text, bx, baseline, b.style, b.family, true, bAlias, env));
+        } else {
+          // 粗体段落的编号和正文一样：字体没有粗体字形时人工加粗（见下面的 thin；实测 text-bullet-bold：宋体粗体段落的 ①、1. 墨迹比
+          // 不加粗多一半）。buChar 符号不加粗，bullets.ts 里已经去掉了 bold
+          const thin = b.style.bold && b.face && !b.face.bold;
+          pParts.push(textEl(b.text, bx, baseline, thin ? { ...b.style, bold: false, fakeBold: true } : b.style, b.family, true, bAlias, env));
+        }
       }
       // 按样式、字体分段输出（两端对齐时在每个间隙处分段）
       const atoms = line.atoms;

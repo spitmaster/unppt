@@ -116,7 +116,10 @@ export async function makeBullet(
     // 符号字体没装时按它自己写的字符集找替代字体（没写或西文字符集用 Calibri，GB2312 用雅黑），和正文的字符集无关
     // （实测 text-bullet-fonts："•" 缺字体、雅黑和 Times New Roman 正文都是 Calibri 的 0.5em，标了 GB2312 的都是雅黑的宽度）
     const script = buFont && buFace === font ? scriptOf(buFont, font, env) : undefined;
-    style = { ...baseStyle, ...colorStyle, latin: buFace, ea: buFace, ...(buFont && buFace === font ? { latinScript: script, eaScript: script } : {}) };
+    // 符号不跟着正文加粗（编号跟着加粗，见上面；实测 text-bullet-bold：72 磅粗体段落的 Arial •、雅黑 •、宋体 ■、Arial W、Wingdings Ø / n
+    // 墨迹和宽度与不加粗时完全一样，编号 "8." 雅黑粗体宽 65 磅、常规 59.625 磅）。空格当符号的没量过，照旧跟着正文
+    const bold = buFace === font ? false : baseStyle.bold;
+    style = { ...baseStyle, ...colorStyle, latin: buFace, ea: buFace, bold, ...(buFont && buFace === font ? { latinScript: script, eaScript: script } : {}) };
   }
   // 图片符号：实测边长约 0.70 倍字号 × 符号大小；取不到图片时退回圆点
   if (bu?.name === 'a:buBlip' && env.images && env.part) {
