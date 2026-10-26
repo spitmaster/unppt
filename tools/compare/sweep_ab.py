@@ -133,7 +133,8 @@ def report(args) -> None:
                 r = json.loads(line)
                 if base in r["variants"]:
                     old[r["h"]] = r["variants"][base]
-        rows = [{**r, "variants": {**r["variants"], base: old[r["h"]]}} for r in rows if r["h"] in old]
+        rows = [{**r, "variants": {**r["variants"], "(base)": old[r["h"]]}} for r in rows if r["h"] in old]
+        base = "(base)"  # 两边版本名相同（例如都叫 new）时也不会互相覆盖
     fails = {name: [r["h"] for r in rows if not r["variants"].get(name, {}).get("ok")] for name in (base, new)}
     pairs = []
     for r in rows:
