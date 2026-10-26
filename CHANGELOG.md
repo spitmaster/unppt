@@ -19,6 +19,10 @@
   现在缩进只取整到 1/20 磅，断行按"行首起点 + 行宽 + 右缩进"取整到 1/8 磅后和框宽比（PowerPoint 实测）。
 - 没有粗体字形的字体（宋体、楷体、黑体等）标粗体时，渐变、图片填充的文字人工加粗多出来的笔画以前是纯色（第一个色标或黑色），
   现在和填充一样；半透明文字人工加粗后整个字形按同一个透明度显示，笔画边缘不再多一圈深色。
+- 饼图"最佳位置"的数据标签：放不进扇区的折窄放里面或放到饼外（以前全挤在扇区里叠在一起）；标签宽度上限为图表宽的 1/5，
+  折行不再把"）"放到行首，行高按标签字体。
+- 项目符号：居中、右对齐段落的符号和文字保持悬挂缩进的距离（以前紧贴文字）；自动编号按正文字体画、粗体段落的编号跟着加粗；
+  没装的项目符号字体按它自己的字符集替代。
 
 **English**
 
@@ -43,6 +47,11 @@
 - Bold text in fonts without a bold face (SimSun, KaiTi, SimHei, ...) drew its synthetic-bold strokes in a solid color (the first gradient
   stop, or black for picture fills); the strokes now use the same gradient or picture. Semi-transparent synthetic-bold text has one uniform
   transparency, with no darker rim.
+- Pie chart "Best Fit" data labels that do not fit in their slice are wrapped narrower or placed outside the pie (they used to overlap
+  inside); label width is limited to 1/5 of the chart width, wrapping no longer starts a line with a closing bracket, and line height
+  follows the label font.
+- Bullets: centered and right-aligned paragraphs keep the hanging-indent gap between bullet and text (they used to touch); auto-numbers
+  use the body font and follow bold paragraphs; a bullet font that is not installed is substituted according to its own charset.
 
 ## 0.3.0（2026-10-23，已撤回 / withdrawn）
 
