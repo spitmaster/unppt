@@ -273,24 +273,35 @@ function justAdds(atoms: Atom[], lastInk: number, room: number): number[] {
  */
 export function groupFilters(parts: string[]): string[] {
   const out: string[] = [];
-  let run: string[] = [];
+  let run: { part: string; bare: string }[] = [];
   let id = '';
   const flush = () => {
-    if (run.length > 1) out.push(`<g filter="url(#${id})">${run.map((t) => t.replace(FILTERED, '$1$3')).join('')}</g>`);
-    else out.push(...run);
+    if (run.length > 1) out.push(`<g filter="url(#${id})">${run.map((r) => r.bare).join('')}</g>`);
+    else out.push(...run.map((r) => r.part));
     run = [];
   };
   for (const part of parts) {
-    const fid = FILTERED.exec(part)?.[2];
-    if (!fid || fid !== id) flush();
-    if (fid) { run.push(part); id = fid; } else { out.push(part); id = ''; }
+    const f = filtered(part);
+    if (!f || f.id !== id) flush();
+    if (f) { run.push({ part, bare: f.bare }); id = f.id; } else { out.push(part); id = ''; }
   }
   flush();
   return out;
 }
 
-/** textEl 输出的带滤镜的 <text>：滤镜是开始标签里最后一个属性 */
+/**
+ * textEl 输出的带滤镜的文字：滤镜是 <text> 开始标签里最后一个属性，或者整段套在 <g filter> 里（半透明的人工加粗套了透明度组、
+ * 轮廓加人工加粗分两层；段里只有 textEl 输出以 <g filter 开头的内容，结尾的 </g> 就是它的）。返回滤镜编号和去掉滤镜的内容
+ */
+function filtered(part: string): { id: string; bare: string } | undefined {
+  const t = FILTERED.exec(part);
+  if (t) return { id: t[2], bare: part.replace(FILTERED, '$1$3') };
+  const g = WRAPPED.exec(part);
+  return g ? { id: g[1], bare: g[2] } : undefined;
+}
+
 const FILTERED = /^(<text [^>]*?) filter="url\(#([^)"]+)\)"( xml:space="preserve">)/;
+const WRAPPED = /^<g filter="url\(#([^)"]+)\)">([\s\S]*)<\/g>$/;
 
 /**
  * 能不能逐字定位（每个字给一个 x）：一个字一个位置只对不需要字形组合的文字成立——基本平面里、
