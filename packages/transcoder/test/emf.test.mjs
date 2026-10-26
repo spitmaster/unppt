@@ -82,3 +82,44 @@ test('三角形渐变：三个顶点几乎同色时不细分（1 块），颜色
   assert.equal(paths(emfToSvg(emfTriangle([[100, 100, 100], [102, 101, 100], [100, 103, 100]]))), 1);
   assert.ok(paths(emfToSvg(emfTriangle([[255, 0, 0], [0, 255, 0], [0, 0, 255]]))) > 50);
 });
+
+/** 拼一个 EMF：一条 STRETCHDIBITS 把 2×1 的 24 位位图（左红右蓝）画到 (0,0)，源框宽 sw、目标宽 dw；mask 时再加一条 SRCAND 的 BITBLT */
+function emfDib(sw, dw, mask = false) {
+  const recs = [];
+  const rec = (type, body) => { const b = new Uint8Array(8 + body.length); const v = new DataView(b.buffer); v.setUint32(0, type, true); v.setUint32(4, b.length, true); b.set(body, 8); recs.push(b); };
+  const h = new Uint8Array(80), hv = new DataView(h.buffer);
+  hv.setInt32(8, 9, true); hv.setInt32(12, 9, true); hv.setInt32(24, 265, true); hv.setInt32(28, 265, true);
+  hv.setUint32(32, 0x464d4520, true); hv.setInt32(64, 1000, true); hv.setInt32(68, 1000, true); hv.setInt32(72, 265, true); hv.setInt32(76, 265, true);
+  rec(1, h);
+  // STRETCHDIBITS：Bounds(16) xDest yDest xSrc ySrc cxSrc cySrc offBmi cbBmi offBits cbBits iUsage dwRop cxDest cyDest，再跟 BITMAPINFOHEADER 和像素
+  const b = new Uint8Array(72 + 40 + 8), bv = new DataView(b.buffer);
+  [0, 0, 0, 0, sw, 1].forEach((x, k) => bv.setInt32(16 + k * 4, x, true));
+  [8 + 72, 40, 8 + 72 + 40, 8].forEach((x, k) => bv.setUint32(40 + k * 4, x, true));
+  bv.setUint32(60, 0xcc0020, true); bv.setInt32(64, dw, true); bv.setInt32(68, 1, true);
+  bv.setUint32(72, 40, true); bv.setInt32(76, 2, true); bv.setInt32(80, 1, true); bv.setUint16(84, 1, true); bv.setUint16(86, 24, true);
+  b.set([0, 0, 255, 255, 0, 0, 0, 0], 112);
+  rec(81, b);
+  if (mask) {
+    // 没有源位图的 BITBLT：Bounds(16) xDest yDest cxDest cyDest dwRop …（只为让文件里出现 SRCAND）
+    const m = new Uint8Array(92), mv = new DataView(m.buffer);
+    mv.setInt32(24, 1, true); mv.setInt32(28, 1, true); mv.setUint32(32, 0x008800c6, true);
+    rec(76, m);
+  }
+  rec(14, new Uint8Array(12));
+  const out = new Uint8Array(recs.reduce((a, x) => a + x.length, 0));
+  let o = 0; for (const x of recs) { out.set(x, o); o += x.length; }
+  return out;
+}
+
+test('STRETCHDIBITS 源框比位图宽：按比例对到目标框（不拉满），位图左移、上移半个像素，露出的部分用补边的小图（PowerPoint 的画法）', () => {
+  const svg = emfToSvg(emfDib(3, 3));
+  assert.match(svg, /<svg x="0" y="0" width="3" height="1" viewBox="0 0 3 1" preserveAspectRatio="none"><g transform="translate\(-0.5 -0.5\)">/);
+  // 右边补 2 列（含往里多带的 2 列）、下边补 1 行，最后是位图本身
+  assert.match(svg, /<image href="data:image\/bmp;base64,[^"]+" x="0" y="0" width="4" height="2" preserveAspectRatio="none"\/><image href="data:image\/bmp;base64,[^"]+" x="0" y="0" width="2" height="2" preserveAspectRatio="none"\/><image href="data:image\/bmp;base64,[^"]+" width="2" height="1" preserveAspectRatio="none"\/>/);
+});
+
+test('文件里有 SRCAND 一类光栅操作时：源框超出位图的部分不算，取到的部分拉满目标框', () => {
+  const svg = emfToSvg(emfDib(3, 3, true));
+  assert.match(svg, /<image href="data:image\/bmp;base64,[^"]+" x="0" y="0" width="3" height="1" preserveAspectRatio="none"\/>/);
+  assert.doesNotMatch(svg, /translate\(-0.5/);
+});

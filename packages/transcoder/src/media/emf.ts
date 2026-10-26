@@ -4,6 +4,7 @@
  */
 import { EmfDefs, groupClips } from './emf-defs';
 import { bitmapSource, ROP_KEY } from './dib-blit';
+import { edgePads } from './dib-pad';
 import { svgImage, type ImageDecoder } from './image-decoder';
 import { keyBmp } from './bmp';
 
@@ -44,6 +45,8 @@ const BAD_XML = /[\u0000-\u0008\u000b\u000c\u000e-\u001f\ufffe\uffff]/g;
 const BAD_CHAR = new RegExp(BAD_XML.source);
 const escXml = (s: string) => s.replace(BAD_XML, '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
+const bmpUri = (b: Uint8Array) => `data:image/bmp;base64,${base64(b)}`;
+
 function base64(bytes: Uint8Array): string {
   let s = '';
   for (let i = 0; i < bytes.length; i += 0x8000) s += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000) as unknown as number[]);
@@ -51,11 +54,11 @@ function base64(bytes: Uint8Array): string {
 }
 
 /**
- * DIB（BITMAPINFO + 像素）-> BMP 文件的 data URI，浏览器能直接显示。
+ * DIB（BITMAPINFO + 像素）-> BMP 文件（bmpUri 转成 data URI，浏览器能直接显示）。
  * alpha：ALPHABLEND 的逐像素透明度（AC_SRC_ALPHA，32 位、预乘）——普通 BMP 头浏览器会忽略透明度，
  * 换成带透明通道掩码的 BITMAPV4HEADER，像素还原成不预乘的；key：这个颜色的像素变透明（按光栅操作，见 dib-blit.ts）
  */
-function dibToBmp(d: DataView, offBmi: number, cbBmi: number, offBits: number, cbBits: number, alpha = false, key?: number): string | undefined {
+function dibBytes(d: DataView, offBmi: number, cbBmi: number, offBits: number, cbBits: number, alpha = false, key?: number): Uint8Array | undefined {
   if (!cbBmi || !cbBits) return undefined;
   // 32 位、普通格式（BI_RGB），或者标准 RGB 掩码的位域格式（BI_BITFIELDS）：像素都是 BGRA
   const comp = cbBmi >= 40 ? d.getUint32(offBmi + 16, true) : -1;
@@ -71,10 +74,10 @@ function dibToBmp(d: DataView, offBmi: number, cbBmi: number, offBits: number, c
   v.setUint32(10, 14 + cbBmi, true);
   out.set(new Uint8Array(d.buffer, d.byteOffset + offBmi, cbBmi), 14);
   out.set(new Uint8Array(d.buffer, d.byteOffset + offBits, cbBits), 14 + cbBmi);
-  return `data:image/bmp;base64,${base64(key === undefined ? out : keyBmp(out, key) ?? out)}`;
+  return key === undefined ? out : keyBmp(out, key) ?? out;
 }
 
-function alphaBmp(d: DataView, offBmi: number, offBits: number, cbBits: number): string {
+function alphaBmp(d: DataView, offBmi: number, offBits: number, cbBits: number): Uint8Array {
   const w = d.getInt32(offBmi + 4, true), h = d.getInt32(offBmi + 8, true);
   const n = Math.min(cbBits, Math.abs(w * h) * 4);
   const px = new Uint8Array(d.buffer, d.byteOffset + offBits, n).slice();
@@ -91,7 +94,7 @@ function alphaBmp(d: DataView, offBmi: number, offBits: number, cbBits: number):
   v.setUint32(54, 0x00ff0000, true); v.setUint32(58, 0x0000ff00, true); v.setUint32(62, 0x000000ff, true); v.setUint32(66, 0xff000000, true);
   v.setUint32(70, 0x73524742, true);                                                                       // 'sRGB'
   out.set(px, 14 + 108);
-  return `data:image/bmp;base64,${base64(out)}`;
+  return out;
 }
 
 /** 解析失败（文件损坏、被截断）时返回 undefined，不抛异常 */
@@ -174,12 +177,15 @@ function emfToSvgUnsafe(bytes: Uint8Array): string | undefined {
   };
   const hairline = (pen: Pen) => ` stroke="${pen.color}" stroke-width="1" vector-effect="non-scaling-stroke" stroke-linecap="${pen.cap}" stroke-linejoin="${pen.join}"${pen.dash ? ` stroke-dasharray="${pen.dash}"` : ''}`;
 
-  // 有没有 EMF+ 记录（GDI 注释记录 70，标识 "EMF+"）
-  let plus = false;
+  // 有没有 EMF+ 记录（GDI 注释记录 70，标识 "EMF+"）；位图记录有没有用掩码一类光栅操作（SRCAND 等，见 dib-blit.ts）：
+  // 有的话 PowerPoint 换一种画法，STRETCHDIBITS 的源框超出位图时取到的部分拉满目标框（实测 emf-bitmap-src 第 5 处和 GDI 探针，见 SPEC）
+  let plus = false, masks = false;
   for (let q = 0; q + 16 <= bytes.length;) {
-    const size = u32(q + 4);
-    if (size < 8) break;
-    if (u32(q) === 70 && u32(q + 12) === 0x2b464d45) { plus = true; break; }
+    const type = u32(q), size = u32(q + 4);
+    if (size < 8 || q + size > bytes.length) break;
+    if (type === 70 && u32(q + 12) === 0x2b464d45) plus = true;
+    else if ((type === 76 || type === 77) && size >= 40 && ROP_KEY.has(u32(q + 40))) masks = true;
+    else if (type === 81 && size >= 72 && ROP_KEY.has(u32(q + 68))) masks = true;
     q += size;
   }
   let p = 0;
@@ -481,11 +487,14 @@ function emfToSvgUnsafe(bytes: Uint8Array): string | undefined {
         // ALPHABLEND 的混合方式：第 3 个字节是整体透明度，第 4 个字节 AC_SRC_ALPHA（1）表示用位图自带的逐像素透明度
         const alpha = type === 114 ? d.getUint8(r + 34) / 255 : 1;
         const rop = type === 81 ? u32(r + 60) : type === 114 ? 0 : u32(r + 32);
-        const href = cbBmi ? dibToBmp(d, p + offBmi, cbBmi, p + offBits, cbBits, type === 114 && d.getUint8(r + 35) === 1, ROP_KEY.get(rop)) : undefined;
+        const bmp = cbBmi ? dibBytes(d, p + offBmi, cbBmi, p + offBits, cbBits, type === 114 && d.getUint8(r + 35) === 1, ROP_KEY.get(rop)) : undefined;
+        const href = bmp && bmpUri(bmp);
         // 目标框经过坐标换算后左右或上下颠倒（世界变换翻转、目标宽高为负）时 GDI 把位图镜像着画（样本：世界变换上下翻转、
         // 位图本身倒着存，PowerPoint 显示是正的）
         const flip = { h: bx < ax, v: by < ay };
-        if (href) emit(defsOf.bitmap(href, X, Y, W, H, `${alpha < 1 ? ` opacity="${f2(alpha)}"` : ''}${clipAttr()}`, cbBmi ? bitmapSource(d, p + offBmi, type === 81, sx, sy, sw, sh) : undefined, flip));
+        const src = cbBmi ? bitmapSource(d, p + offBmi, type === 81, sx, sy, sw, sh, type === 81 && !masks) : undefined;
+        if (bmp && src?.shift) src.pads = edgePads(bmp, src).map((q) => ({ href: bmpUri(q.bmp), x: q.x, y: q.y, w: q.w, h: q.h }));
+        if (href) emit(defsOf.bitmap(href, X, Y, W, H, `${alpha < 1 ? ` opacity="${f2(alpha)}"` : ''}${clipAttr()}`, src, flip));
         else if (type === 76 && !st.brush.none) {
           // 没有源位图的 BitBlt：用当前画刷填充（常见于背景）
           if (rop === 0x00f00021 || rop === 0x00000042 || rop === 0x00ff0062) {
