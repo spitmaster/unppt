@@ -1,0 +1,1901 @@
+{
+ "version": 8,
+ "level": "full",
+ "slideWidthPt": 960.0,
+ "slideHeightPt": 540.0,
+ "imageWidth": 1280,
+ "imageHeight": 720,
+ "slides": [
+  {
+   "index": 0,
+   "hidden": false,
+   "shapes": [
+    {
+     "id": 2,
+     "name": "TextBox 1",
+     "type": 17,
+     "x": 10.0,
+     "y": 8.0,
+     "w": 14.546,
+     "h": 29.081,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 14,
+       "text": "细体加粗文字测试 Light",
+       "x": 10.0,
+       "y": 8.0,
+       "w": 105.255,
+       "h": 12.0
+      }
+     ]
+    },
+    {
+     "id": 3,
+     "name": "TextBox 2",
+     "type": 17,
+     "x": 485.0,
+     "y": 8.0,
+     "w": 14.546,
+     "h": 29.081,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 14,
+       "text": "细体加粗文字测试 Light",
+       "x": 485.0,
+       "y": 8.0,
+       "w": 105.255,
+       "h": 12.0
+      }
+     ]
+    },
+    {
+     "id": 4,
+     "name": "TextBox 3",
+     "type": 17,
+     "x": 10.0,
+     "y": 26.0,
+     "w": 14.546,
+     "h": 29.081,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 14,
+       "text": "细体加粗文字测试 Light",
+       "x": 10.0,
+       "y": 26.0,
+       "w": 126.13,
+       "h": 14.4
+      }
+     ]
+    },
+    {
+     "id": 5,
+     "name": "TextBox 4",
+     "type": 17,
+     "x": 485.0,
+     "y": 26.0,
+     "w": 14.546,
+     "h": 29.081,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 14,
+       "text": "细体加粗文字测试 Light",
+       "x": 485.0,
+       "y": 26.0,
+       "w": 126.255,
+       "h": 14.4
+      }
+     ]
+    },
+    {
+     "id": 6,
+     "name": "TextBox 5",
+     "type": 17,
+     "x": 10.0,
+     "y": 46.8,
+     "w": 14.546,
+     "h": 29.081,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 14,
+       "text": "细体加粗文字测试 Light",
+       "x": 10.0,
+       "y": 46.8,
+       "w": 147.255,
+       "h": 16.8
+      }
+     ]
+    },
+    {
+     "id": 7,
+     "name": "TextBox 6",
+     "type": 17,
+     "x": 485.0,
+     "y": 46.8,
+     "w": 14.546,
+     "h": 29.081,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 14,
+       "text": "细体加粗文字测试 Light",
+       "x": 485.0,
+       "y": 46.8,
+       "w": 147.255,
+       "h": 16.8
+      }
+     ]
+    },
+    {
+     "id": 8,
+     "name": "TextBox 7",
+     "type": 17,
+     "x": 10.0,
+     "y": 70.4,
+     "w": 14.546,
+     "h": 29.081,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 14,
+       "text": "细体加粗文字测试 Light",
+       "x": 10.0,
+       "y": 70.4,
+       "w": 168.13,
+       "h": 19.2
+      }
+     ]
+    },
+    {
+     "id": 9,
+     "name": "TextBox 8",
+     "type": 17,
+     "x": 485.0,
+     "y": 70.4,
+     "w": 14.546,
+     "h": 29.081,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 14,
+       "text": "细体加粗文字测试 Light",
+       "x": 485.0,
+       "y": 70.4,
+       "w": 168.255,
+       "h": 19.2
+      }
+     ]
+    },
+    {
+     "id": 10,
+     "name": "TextBox 9",
+     "type": 17,
+     "x": 10.0,
+     "y": 96.8,
+     "w": 14.546,
+     "h": 29.081,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 14,
+       "text": "细体加粗文字测试 Light",
+       "x": 10.0,
+       "y": 96.8,
+       "w": 199.88,
+       "h": 22.8
+      }
+     ]
+    },
+    {
+     "id": 11,
+     "name": "TextBox 10",
+     "type": 17,
+     "x": 485.0,
+     "y": 96.8,
+     "w": 14.546,
+     "h": 29.081,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 14,
+       "text": "细体加粗文字测试 Light",
+       "x": 485.0,
+       "y": 96.8,
+       "w": 199.88,
+       "h": 22.8
+      }
+     ]
+    },
+    {
+     "id": 12,
+     "name": "TextBox 11",
+     "type": 17,
+     "x": 10.0,
+     "y": 127.4,
+     "w": 14.546,
+     "h": 29.081,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 14,
+       "text": "细体加粗文字测试 Light",
+       "x": 10.0,
+       "y": 127.4,
+       "w": 252.505,
+       "h": 28.8
+      }
+     ]
+    },
+    {
+     "id": 13,
+     "name": "TextBox 12",
+     "type": 17,
+     "x": 485.0,
+     "y": 127.4,
+     "w": 14.546,
+     "h": 29.081,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 14,
+       "text": "细体加粗文字测试 Light",
+       "x": 485.0,
+       "y": 127.4,
+       "w": 252.505,
+       "h": 28.8
+      }
+     ]
+    },
+    {
+     "id": 14,
+     "name": "TextBox 13",
+     "type": 17,
+     "x": 10.0,
+     "y": 165.0,
+     "w": 14.546,
+     "h": 29.081,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 14,
+       "text": "细体加粗文字测试 Light",
+       "x": 10.0,
+       "y": 165.0,
+       "w": 336.63,
+       "h": 38.4
+      }
+     ]
+    },
+    {
+     "id": 15,
+     "name": "TextBox 14",
+     "type": 17,
+     "x": 485.0,
+     "y": 165.0,
+     "w": 14.546,
+     "h": 29.081,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 14,
+       "text": "细体加粗文字测试 Light",
+       "x": 485.0,
+       "y": 165.0,
+       "w": 336.63,
+       "h": 38.4
+      }
+     ]
+    },
+    {
+     "id": 16,
+     "name": "TextBox 15",
+     "type": 17,
+     "x": 10.0,
+     "y": 213.8,
+     "w": 14.546,
+     "h": 29.081,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 14,
+       "text": "细体加粗文字测试 Light",
+       "x": 10.0,
+       "y": 213.8,
+       "w": 504.755,
+       "h": 57.6
+      }
+     ]
+    },
+    {
+     "id": 17,
+     "name": "TextBox 16",
+     "type": 17,
+     "x": 485.0,
+     "y": 213.8,
+     "w": 14.546,
+     "h": 29.081,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 14,
+       "text": "细体加粗文字测试 Light",
+       "x": 485.0,
+       "y": 213.8,
+       "w": 504.88,
+       "h": 57.6
+      }
+     ]
+    }
+   ],
+   "effects": [],
+   "triggerHidden": [],
+   "steps": 0,
+   "keptSlideshow": false
+  },
+  {
+   "index": 1,
+   "hidden": false,
+   "shapes": [
+    {
+     "id": 2,
+     "name": "TextBox 1",
+     "type": 17,
+     "x": 10.0,
+     "y": 8.0,
+     "w": 14.546,
+     "h": 29.081,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 14,
+       "text": "细体加粗文字测试 Light",
+       "x": 10.0,
+       "y": 8.0,
+       "w": 103.38,
+       "h": 12.0
+      }
+     ]
+    },
+    {
+     "id": 3,
+     "name": "TextBox 2",
+     "type": 17,
+     "x": 485.0,
+     "y": 8.0,
+     "w": 14.546,
+     "h": 29.081,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 14,
+       "text": "细体加粗文字测试 Light",
+       "x": 485.0,
+       "y": 8.0,
+       "w": 103.38,
+       "h": 12.0
+      }
+     ]
+    },
+    {
+     "id": 4,
+     "name": "TextBox 3",
+     "type": 17,
+     "x": 10.0,
+     "y": 26.0,
+     "w": 14.546,
+     "h": 29.081,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 14,
+       "text": "细体加粗文字测试 Light",
+       "x": 10.0,
+       "y": 26.0,
+       "w": 124.005,
+       "h": 14.4
+      }
+     ]
+    },
+    {
+     "id": 5,
+     "name": "TextBox 4",
+     "type": 17,
+     "x": 485.0,
+     "y": 26.0,
+     "w": 14.546,
+     "h": 29.081,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 14,
+       "text": "细体加粗文字测试 Light",
+       "x": 485.0,
+       "y": 26.0,
+       "w": 124.005,
+       "h": 14.4
+      }
+     ]
+    },
+    {
+     "id": 6,
+     "name": "TextBox 5",
+     "type": 17,
+     "x": 10.0,
+     "y": 46.8,
+     "w": 14.546,
+     "h": 29.081,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 14,
+       "text": "细体加粗文字测试 Light",
+       "x": 10.0,
+       "y": 46.8,
+       "w": 144.63,
+       "h": 16.8
+      }
+     ]
+    },
+    {
+     "id": 7,
+     "name": "TextBox 6",
+     "type": 17,
+     "x": 485.0,
+     "y": 46.8,
+     "w": 14.546,
+     "h": 29.081,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 14,
+       "text": "细体加粗文字测试 Light",
+       "x": 485.0,
+       "y": 46.8,
+       "w": 144.63,
+       "h": 16.8
+      }
+     ]
+    },
+    {
+     "id": 8,
+     "name": "TextBox 7",
+     "type": 17,
+     "x": 10.0,
+     "y": 70.4,
+     "w": 14.546,
+     "h": 29.081,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 14,
+       "text": "细体加粗文字测试 Light",
+       "x": 10.0,
+       "y": 70.4,
+       "w": 165.38,
+       "h": 19.2
+      }
+     ]
+    },
+    {
+     "id": 9,
+     "name": "TextBox 8",
+     "type": 17,
+     "x": 485.0,
+     "y": 70.4,
+     "w": 14.546,
+     "h": 29.081,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 14,
+       "text": "细体加粗文字测试 Light",
+       "x": 485.0,
+       "y": 70.4,
+       "w": 165.38,
+       "h": 19.2
+      }
+     ]
+    },
+    {
+     "id": 10,
+     "name": "TextBox 9",
+     "type": 17,
+     "x": 10.0,
+     "y": 96.8,
+     "w": 14.546,
+     "h": 29.081,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 14,
+       "text": "细体加粗文字测试 Light",
+       "x": 10.0,
+       "y": 96.8,
+       "w": 196.255,
+       "h": 22.8
+      }
+     ]
+    },
+    {
+     "id": 11,
+     "name": "TextBox 10",
+     "type": 17,
+     "x": 485.0,
+     "y": 96.8,
+     "w": 14.546,
+     "h": 29.081,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 14,
+       "text": "细体加粗文字测试 Light",
+       "x": 485.0,
+       "y": 96.8,
+       "w": 196.255,
+       "h": 22.8
+      }
+     ]
+    },
+    {
+     "id": 12,
+     "name": "TextBox 11",
+     "type": 17,
+     "x": 10.0,
+     "y": 127.4,
+     "w": 14.546,
+     "h": 29.081,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 14,
+       "text": "细体加粗文字测试 Light",
+       "x": 10.0,
+       "y": 127.4,
+       "w": 248.005,
+       "h": 28.8
+      }
+     ]
+    },
+    {
+     "id": 13,
+     "name": "TextBox 12",
+     "type": 17,
+     "x": 485.0,
+     "y": 127.4,
+     "w": 14.546,
+     "h": 29.081,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 14,
+       "text": "细体加粗文字测试 Light",
+       "x": 485.0,
+       "y": 127.4,
+       "w": 248.005,
+       "h": 28.8
+      }
+     ]
+    },
+    {
+     "id": 14,
+     "name": "TextBox 13",
+     "type": 17,
+     "x": 10.0,
+     "y": 165.0,
+     "w": 14.546,
+     "h": 29.081,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 14,
+       "text": "细体加粗文字测试 Light",
+       "x": 10.0,
+       "y": 165.0,
+       "w": 330.505,
+       "h": 38.4
+      }
+     ]
+    },
+    {
+     "id": 15,
+     "name": "TextBox 14",
+     "type": 17,
+     "x": 485.0,
+     "y": 165.0,
+     "w": 14.546,
+     "h": 29.081,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 14,
+       "text": "细体加粗文字测试 Light",
+       "x": 485.0,
+       "y": 165.0,
+       "w": 330.63,
+       "h": 38.4
+      }
+     ]
+    },
+    {
+     "id": 16,
+     "name": "TextBox 15",
+     "type": 17,
+     "x": 10.0,
+     "y": 213.8,
+     "w": 14.546,
+     "h": 29.081,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 14,
+       "text": "细体加粗文字测试 Light",
+       "x": 10.0,
+       "y": 213.8,
+       "w": 495.88,
+       "h": 57.6
+      }
+     ]
+    },
+    {
+     "id": 17,
+     "name": "TextBox 16",
+     "type": 17,
+     "x": 485.0,
+     "y": 213.8,
+     "w": 14.546,
+     "h": 29.081,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 14,
+       "text": "细体加粗文字测试 Light",
+       "x": 485.0,
+       "y": 213.8,
+       "w": 495.88,
+       "h": 57.6
+      }
+     ]
+    }
+   ],
+   "effects": [],
+   "triggerHidden": [],
+   "steps": 0,
+   "keptSlideshow": false
+  },
+  {
+   "index": 2,
+   "hidden": false,
+   "shapes": [
+    {
+     "id": 2,
+     "name": "TextBox 1",
+     "type": 17,
+     "x": 10.0,
+     "y": 8.0,
+     "w": 14.546,
+     "h": 29.081,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 14,
+       "text": "细体加粗文字测试 Light",
+       "x": 10.0,
+       "y": 8.0,
+       "w": 110.005,
+       "h": 12.0
+      }
+     ]
+    },
+    {
+     "id": 3,
+     "name": "TextBox 2",
+     "type": 17,
+     "x": 485.0,
+     "y": 8.0,
+     "w": 14.546,
+     "h": 29.081,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 14,
+       "text": "细体加粗文字测试 Light",
+       "x": 485.0,
+       "y": 8.0,
+       "w": 110.005,
+       "h": 12.0
+      }
+     ]
+    },
+    {
+     "id": 4,
+     "name": "TextBox 3",
+     "type": 17,
+     "x": 10.0,
+     "y": 26.0,
+     "w": 14.546,
+     "h": 29.081,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 14,
+       "text": "细体加粗文字测试 Light",
+       "x": 10.0,
+       "y": 26.0,
+       "w": 132.005,
+       "h": 14.4
+      }
+     ]
+    },
+    {
+     "id": 5,
+     "name": "TextBox 4",
+     "type": 17,
+     "x": 485.0,
+     "y": 26.0,
+     "w": 14.546,
+     "h": 29.081,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 14,
+       "text": "细体加粗文字测试 Light",
+       "x": 485.0,
+       "y": 26.0,
+       "w": 132.005,
+       "h": 14.4
+      }
+     ]
+    },
+    {
+     "id": 6,
+     "name": "TextBox 5",
+     "type": 17,
+     "x": 10.0,
+     "y": 46.8,
+     "w": 14.546,
+     "h": 29.081,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 14,
+       "text": "细体加粗文字测试 Light",
+       "x": 10.0,
+       "y": 46.8,
+       "w": 154.005,
+       "h": 16.8
+      }
+     ]
+    },
+    {
+     "id": 7,
+     "name": "TextBox 6",
+     "type": 17,
+     "x": 485.0,
+     "y": 46.8,
+     "w": 14.546,
+     "h": 29.081,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 14,
+       "text": "细体加粗文字测试 Light",
+       "x": 485.0,
+       "y": 46.8,
+       "w": 154.005,
+       "h": 16.8
+      }
+     ]
+    },
+    {
+     "id": 8,
+     "name": "TextBox 7",
+     "type": 17,
+     "x": 10.0,
+     "y": 70.4,
+     "w": 14.546,
+     "h": 29.081,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 14,
+       "text": "细体加粗文字测试 Light",
+       "x": 10.0,
+       "y": 70.4,
+       "w": 176.005,
+       "h": 19.2
+      }
+     ]
+    },
+    {
+     "id": 9,
+     "name": "TextBox 8",
+     "type": 17,
+     "x": 485.0,
+     "y": 70.4,
+     "w": 14.546,
+     "h": 29.081,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 14,
+       "text": "细体加粗文字测试 Light",
+       "x": 485.0,
+       "y": 70.4,
+       "w": 177.755,
+       "h": 19.2
+      }
+     ]
+    },
+    {
+     "id": 10,
+     "name": "TextBox 9",
+     "type": 17,
+     "x": 10.0,
+     "y": 96.8,
+     "w": 14.546,
+     "h": 29.081,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 14,
+       "text": "细体加粗文字测试 Light",
+       "x": 10.0,
+       "y": 96.8,
+       "w": 209.005,
+       "h": 22.8
+      }
+     ]
+    },
+    {
+     "id": 11,
+     "name": "TextBox 10",
+     "type": 17,
+     "x": 485.0,
+     "y": 96.8,
+     "w": 14.546,
+     "h": 29.081,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 14,
+       "text": "细体加粗文字测试 Light",
+       "x": 485.0,
+       "y": 96.8,
+       "w": 210.755,
+       "h": 22.8
+      }
+     ]
+    },
+    {
+     "id": 12,
+     "name": "TextBox 11",
+     "type": 17,
+     "x": 10.0,
+     "y": 127.4,
+     "w": 14.546,
+     "h": 29.081,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 14,
+       "text": "细体加粗文字测试 Light",
+       "x": 10.0,
+       "y": 127.4,
+       "w": 264.005,
+       "h": 28.8
+      }
+     ]
+    },
+    {
+     "id": 13,
+     "name": "TextBox 12",
+     "type": 17,
+     "x": 485.0,
+     "y": 127.4,
+     "w": 14.546,
+     "h": 29.081,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 14,
+       "text": "细体加粗文字测试 Light",
+       "x": 485.0,
+       "y": 127.4,
+       "w": 265.755,
+       "h": 28.8
+      }
+     ]
+    },
+    {
+     "id": 14,
+     "name": "TextBox 13",
+     "type": 17,
+     "x": 10.0,
+     "y": 165.0,
+     "w": 14.546,
+     "h": 29.081,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 14,
+       "text": "细体加粗文字测试 Light",
+       "x": 10.0,
+       "y": 165.0,
+       "w": 352.005,
+       "h": 38.4
+      }
+     ]
+    },
+    {
+     "id": 15,
+     "name": "TextBox 14",
+     "type": 17,
+     "x": 485.0,
+     "y": 165.0,
+     "w": 14.546,
+     "h": 29.081,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 14,
+       "text": "细体加粗文字测试 Light",
+       "x": 485.0,
+       "y": 165.0,
+       "w": 353.755,
+       "h": 38.4
+      }
+     ]
+    },
+    {
+     "id": 16,
+     "name": "TextBox 15",
+     "type": 17,
+     "x": 10.0,
+     "y": 213.8,
+     "w": 14.546,
+     "h": 29.081,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 14,
+       "text": "细体加粗文字测试 Light",
+       "x": 10.0,
+       "y": 213.8,
+       "w": 528.005,
+       "h": 57.6
+      }
+     ]
+    },
+    {
+     "id": 17,
+     "name": "TextBox 16",
+     "type": 17,
+     "x": 485.0,
+     "y": 213.8,
+     "w": 14.546,
+     "h": 29.081,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 14,
+       "text": "细体加粗文字测试 Light",
+       "x": 485.0,
+       "y": 213.8,
+       "w": 531.505,
+       "h": 57.6
+      }
+     ]
+    }
+   ],
+   "effects": [],
+   "triggerHidden": [],
+   "steps": 0,
+   "keptSlideshow": false
+  },
+  {
+   "index": 3,
+   "hidden": false,
+   "shapes": [
+    {
+     "id": 2,
+     "name": "TextBox 1",
+     "type": 17,
+     "x": 10.0,
+     "y": 8.0,
+     "w": 14.546,
+     "h": 29.081,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 14,
+       "text": "细体加粗文字测试 Light",
+       "x": 10.0,
+       "y": 8.0,
+       "w": 110.005,
+       "h": 12.0
+      }
+     ]
+    },
+    {
+     "id": 3,
+     "name": "TextBox 2",
+     "type": 17,
+     "x": 485.0,
+     "y": 8.0,
+     "w": 14.546,
+     "h": 29.081,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 14,
+       "text": "细体加粗文字测试 Light",
+       "x": 485.0,
+       "y": 8.0,
+       "w": 110.005,
+       "h": 12.0
+      }
+     ]
+    },
+    {
+     "id": 4,
+     "name": "TextBox 3",
+     "type": 17,
+     "x": 10.0,
+     "y": 26.0,
+     "w": 14.546,
+     "h": 29.081,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 14,
+       "text": "细体加粗文字测试 Light",
+       "x": 10.0,
+       "y": 26.0,
+       "w": 132.005,
+       "h": 14.4
+      }
+     ]
+    },
+    {
+     "id": 5,
+     "name": "TextBox 4",
+     "type": 17,
+     "x": 485.0,
+     "y": 26.0,
+     "w": 14.546,
+     "h": 29.081,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 14,
+       "text": "细体加粗文字测试 Light",
+       "x": 485.0,
+       "y": 26.0,
+       "w": 132.005,
+       "h": 14.4
+      }
+     ]
+    },
+    {
+     "id": 6,
+     "name": "TextBox 5",
+     "type": 17,
+     "x": 10.0,
+     "y": 46.8,
+     "w": 14.546,
+     "h": 29.081,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 14,
+       "text": "细体加粗文字测试 Light",
+       "x": 10.0,
+       "y": 46.8,
+       "w": 154.005,
+       "h": 16.8
+      }
+     ]
+    },
+    {
+     "id": 7,
+     "name": "TextBox 6",
+     "type": 17,
+     "x": 485.0,
+     "y": 46.8,
+     "w": 14.546,
+     "h": 29.081,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 14,
+       "text": "细体加粗文字测试 Light",
+       "x": 485.0,
+       "y": 46.8,
+       "w": 154.005,
+       "h": 16.8
+      }
+     ]
+    },
+    {
+     "id": 8,
+     "name": "TextBox 7",
+     "type": 17,
+     "x": 10.0,
+     "y": 70.4,
+     "w": 14.546,
+     "h": 29.081,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 14,
+       "text": "细体加粗文字测试 Light",
+       "x": 10.0,
+       "y": 70.4,
+       "w": 176.005,
+       "h": 19.2
+      }
+     ]
+    },
+    {
+     "id": 9,
+     "name": "TextBox 8",
+     "type": 17,
+     "x": 485.0,
+     "y": 70.4,
+     "w": 14.546,
+     "h": 29.081,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 14,
+       "text": "细体加粗文字测试 Light",
+       "x": 485.0,
+       "y": 70.4,
+       "w": 177.755,
+       "h": 19.2
+      }
+     ]
+    },
+    {
+     "id": 10,
+     "name": "TextBox 9",
+     "type": 17,
+     "x": 10.0,
+     "y": 96.8,
+     "w": 14.546,
+     "h": 29.081,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 14,
+       "text": "细体加粗文字测试 Light",
+       "x": 10.0,
+       "y": 96.8,
+       "w": 209.005,
+       "h": 22.8
+      }
+     ]
+    },
+    {
+     "id": 11,
+     "name": "TextBox 10",
+     "type": 17,
+     "x": 485.0,
+     "y": 96.8,
+     "w": 14.546,
+     "h": 29.081,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 14,
+       "text": "细体加粗文字测试 Light",
+       "x": 485.0,
+       "y": 96.8,
+       "w": 210.755,
+       "h": 22.8
+      }
+     ]
+    },
+    {
+     "id": 12,
+     "name": "TextBox 11",
+     "type": 17,
+     "x": 10.0,
+     "y": 127.4,
+     "w": 14.546,
+     "h": 29.081,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 14,
+       "text": "细体加粗文字测试 Light",
+       "x": 10.0,
+       "y": 127.4,
+       "w": 264.005,
+       "h": 28.8
+      }
+     ]
+    },
+    {
+     "id": 13,
+     "name": "TextBox 12",
+     "type": 17,
+     "x": 485.0,
+     "y": 127.4,
+     "w": 14.546,
+     "h": 29.081,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 14,
+       "text": "细体加粗文字测试 Light",
+       "x": 485.0,
+       "y": 127.4,
+       "w": 265.755,
+       "h": 28.8
+      }
+     ]
+    },
+    {
+     "id": 14,
+     "name": "TextBox 13",
+     "type": 17,
+     "x": 10.0,
+     "y": 165.0,
+     "w": 14.546,
+     "h": 29.081,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 14,
+       "text": "细体加粗文字测试 Light",
+       "x": 10.0,
+       "y": 165.0,
+       "w": 352.005,
+       "h": 38.4
+      }
+     ]
+    },
+    {
+     "id": 15,
+     "name": "TextBox 14",
+     "type": 17,
+     "x": 485.0,
+     "y": 165.0,
+     "w": 14.546,
+     "h": 29.081,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 14,
+       "text": "细体加粗文字测试 Light",
+       "x": 485.0,
+       "y": 165.0,
+       "w": 353.755,
+       "h": 38.4
+      }
+     ]
+    },
+    {
+     "id": 16,
+     "name": "TextBox 15",
+     "type": 17,
+     "x": 10.0,
+     "y": 213.8,
+     "w": 14.546,
+     "h": 29.081,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 14,
+       "text": "细体加粗文字测试 Light",
+       "x": 10.0,
+       "y": 213.8,
+       "w": 528.005,
+       "h": 57.6
+      }
+     ]
+    },
+    {
+     "id": 17,
+     "name": "TextBox 16",
+     "type": 17,
+     "x": 485.0,
+     "y": 213.8,
+     "w": 14.546,
+     "h": 29.081,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 14,
+       "text": "细体加粗文字测试 Light",
+       "x": 485.0,
+       "y": 213.8,
+       "w": 531.505,
+       "h": 57.6
+      }
+     ]
+    }
+   ],
+   "effects": [],
+   "triggerHidden": [],
+   "steps": 0,
+   "keptSlideshow": false
+  },
+  {
+   "index": 4,
+   "hidden": false,
+   "shapes": [
+    {
+     "id": 2,
+     "name": "TextBox 1",
+     "type": 17,
+     "x": 10.0,
+     "y": 8.0,
+     "w": 14.546,
+     "h": 29.081,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 14,
+       "text": "细体加粗文字测试 Light",
+       "x": 10.0,
+       "y": 8.0,
+       "w": 107.005,
+       "h": 12.0
+      }
+     ]
+    },
+    {
+     "id": 3,
+     "name": "TextBox 2",
+     "type": 17,
+     "x": 485.0,
+     "y": 8.0,
+     "w": 14.546,
+     "h": 29.081,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 14,
+       "text": "细体加粗文字测试 Light",
+       "x": 485.0,
+       "y": 8.0,
+       "w": 108.755,
+       "h": 12.0
+      }
+     ]
+    },
+    {
+     "id": 4,
+     "name": "TextBox 3",
+     "type": 17,
+     "x": 10.0,
+     "y": 26.0,
+     "w": 14.546,
+     "h": 29.081,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 14,
+       "text": "细体加粗文字测试 Light",
+       "x": 10.0,
+       "y": 26.0,
+       "w": 128.38,
+       "h": 14.4
+      }
+     ]
+    },
+    {
+     "id": 5,
+     "name": "TextBox 4",
+     "type": 17,
+     "x": 485.0,
+     "y": 26.0,
+     "w": 14.546,
+     "h": 29.081,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 14,
+       "text": "细体加粗文字测试 Light",
+       "x": 485.0,
+       "y": 26.0,
+       "w": 130.505,
+       "h": 14.4
+      }
+     ]
+    },
+    {
+     "id": 6,
+     "name": "TextBox 5",
+     "type": 17,
+     "x": 10.0,
+     "y": 46.8,
+     "w": 14.546,
+     "h": 29.081,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 14,
+       "text": "细体加粗文字测试 Light",
+       "x": 10.0,
+       "y": 46.8,
+       "w": 149.88,
+       "h": 16.8
+      }
+     ]
+    },
+    {
+     "id": 7,
+     "name": "TextBox 6",
+     "type": 17,
+     "x": 485.0,
+     "y": 46.8,
+     "w": 14.546,
+     "h": 29.081,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 14,
+       "text": "细体加粗文字测试 Light",
+       "x": 485.0,
+       "y": 46.8,
+       "w": 151.88,
+       "h": 16.8
+      }
+     ]
+    },
+    {
+     "id": 8,
+     "name": "TextBox 7",
+     "type": 17,
+     "x": 10.0,
+     "y": 70.4,
+     "w": 14.546,
+     "h": 29.081,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 14,
+       "text": "细体加粗文字测试 Light",
+       "x": 10.0,
+       "y": 70.4,
+       "w": 171.38,
+       "h": 19.2
+      }
+     ]
+    },
+    {
+     "id": 9,
+     "name": "TextBox 8",
+     "type": 17,
+     "x": 485.0,
+     "y": 70.4,
+     "w": 14.546,
+     "h": 29.081,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 14,
+       "text": "细体加粗文字测试 Light",
+       "x": 485.0,
+       "y": 70.4,
+       "w": 173.88,
+       "h": 19.2
+      }
+     ]
+    },
+    {
+     "id": 10,
+     "name": "TextBox 9",
+     "type": 17,
+     "x": 10.0,
+     "y": 96.8,
+     "w": 14.546,
+     "h": 29.081,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 14,
+       "text": "细体加粗文字测试 Light",
+       "x": 10.0,
+       "y": 96.8,
+       "w": 203.38,
+       "h": 22.8
+      }
+     ]
+    },
+    {
+     "id": 11,
+     "name": "TextBox 10",
+     "type": 17,
+     "x": 485.0,
+     "y": 96.8,
+     "w": 14.546,
+     "h": 29.081,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 14,
+       "text": "细体加粗文字测试 Light",
+       "x": 485.0,
+       "y": 96.8,
+       "w": 206.38,
+       "h": 22.8
+      }
+     ]
+    },
+    {
+     "id": 12,
+     "name": "TextBox 11",
+     "type": 17,
+     "x": 10.0,
+     "y": 127.4,
+     "w": 14.546,
+     "h": 29.081,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 14,
+       "text": "细体加粗文字测试 Light",
+       "x": 10.0,
+       "y": 127.4,
+       "w": 257.005,
+       "h": 28.8
+      }
+     ]
+    },
+    {
+     "id": 13,
+     "name": "TextBox 12",
+     "type": 17,
+     "x": 485.0,
+     "y": 127.4,
+     "w": 14.546,
+     "h": 29.081,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 14,
+       "text": "细体加粗文字测试 Light",
+       "x": 485.0,
+       "y": 127.4,
+       "w": 260.88,
+       "h": 28.8
+      }
+     ]
+    },
+    {
+     "id": 14,
+     "name": "TextBox 13",
+     "type": 17,
+     "x": 10.0,
+     "y": 165.0,
+     "w": 14.546,
+     "h": 29.081,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 14,
+       "text": "细体加粗文字测试 Light",
+       "x": 10.0,
+       "y": 165.0,
+       "w": 342.505,
+       "h": 38.4
+      }
+     ]
+    },
+    {
+     "id": 15,
+     "name": "TextBox 14",
+     "type": 17,
+     "x": 485.0,
+     "y": 165.0,
+     "w": 14.546,
+     "h": 29.081,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 14,
+       "text": "细体加粗文字测试 Light",
+       "x": 485.0,
+       "y": 165.0,
+       "w": 347.63,
+       "h": 38.4
+      }
+     ]
+    },
+    {
+     "id": 16,
+     "name": "TextBox 15",
+     "type": 17,
+     "x": 10.0,
+     "y": 213.8,
+     "w": 14.546,
+     "h": 29.081,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 14,
+       "text": "细体加粗文字测试 Light",
+       "x": 10.0,
+       "y": 213.8,
+       "w": 513.755,
+       "h": 57.6
+      }
+     ]
+    },
+    {
+     "id": 17,
+     "name": "TextBox 16",
+     "type": 17,
+     "x": 485.0,
+     "y": 213.8,
+     "w": 14.546,
+     "h": 29.081,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1,
+     "lines": [
+      {
+       "start": 0,
+       "len": 14,
+       "text": "细体加粗文字测试 Light",
+       "x": 485.0,
+       "y": 213.8,
+       "w": 521.505,
+       "h": 57.6
+      }
+     ]
+    }
+   ],
+   "effects": [],
+   "triggerHidden": [],
+   "steps": 0,
+   "keptSlideshow": false
+  }
+ ],
+ "ok": true
+}

@@ -19,6 +19,14 @@ function fontList(primary: string, alias?: string): string {
 }
 
 /**
+ * 人工加粗的描边宽度：字号的 1/56，但在对齐像素（显示像素）里不少于 32/56 像素——显示出来不到 32 像素的字加粗量不再变细
+ * （实测 text-bold-light：24 磅按加粗前后笔画浓度的增量对齐；text-fakebold-sizes：4 种没有粗体字形的字体 × 10~32 磅，
+ * PowerPoint 按 960、1280、2560 宽导出，加粗多出的墨迹在字高 32 个输出像素以上和字号成正比，以下每个字号一样多）。
+ * pixelScale 是当前坐标到对齐像素的比例（不知道时按 1）
+ */
+const fakeBoldStroke = (size: number, pixelScale = 1) => Math.max(size, 32 / pixelScale) / 56;
+
+/**
  * x 是起点，或者每个字的位置（逐字定位：字按排版时算的位置落下，不用浏览器自己的字宽，字距、字间距都已经算在位置里）
  */
 export function textEl(txt: string, x: number | number[], y: number | number[], s: RunStyle, family: string, bullet = false, alias?: string, env?: TextEnv, anchor?: string): string {
@@ -42,15 +50,16 @@ export function textEl(txt: string, x: number | number[], y: number | number[], 
   if (!kernOn(s)) css2.push('font-kerning:none');
   if (css2.length) a += ` style="${css2.join(';')}"`;
   const outline = s.outline ? ` stroke="${css(s.outline.color)}" stroke-width="${n2(s.outline.width)}"${s.outline.color.a < 0.999 ? ` stroke-opacity="${n2(s.outline.color.a)}"` : ''}` : '';
-  // 人工加粗：描边宽度是字号的 1/56（实测 text-bold-light：按加粗前后笔画浓度的增量对齐）；描边和填充用同一种颜料——
+  // 人工加粗：描边宽度见 fakeBoldStroke；描边和填充用同一种颜料——
   // 渐变、图片填充的文字加粗多出来的笔画也是渐变、图片的颜色（实测 text-fakebold-gradfill：宋体、楷体左右 / 上下渐变、四色竖条图片）
-  const bold = s.fakeBold ? ` stroke="${paint}" stroke-width="${n2(s.size / 56)}" stroke-linejoin="round"${alpha < 0.999 ? ` stroke-opacity="${n2(alpha)}"` : ''}` : '';
+  const boldW = fakeBoldStroke(s.size, env?.pixelScale);
+  const bold = s.fakeBold ? ` stroke="${paint}" stroke-width="${n2(boldW)}" stroke-linejoin="round"${alpha < 0.999 ? ` stroke-opacity="${n2(alpha)}"` : ''}` : '';
   const fid = env ? textFilter(s, env) : '';
   const t = esc(txt);
   // 既有轮廓又要人工加粗：轮廓以加粗后的字形边缘为中心（实测 text-outline-fakebold：宋体、楷体粗体加白轮廓，字的颜色基本完整、
   // 白边在外面）。一个 text 只有一种描边，分两层近似：下层轮廓色描边宽 = 加粗宽 + 线宽（外沿对），上层字色描边宽 = 加粗宽 − 线宽（内沿对）
   if (outline && bold && s.outline) {
-    const b = s.size / 56, w = s.outline.width;
+    const b = boldW, w = s.outline.width;
     const under = outline.replace(/stroke-width="[^"]*"/, `stroke-width="${n2(b + w)}" stroke-linejoin="round"`);
     const top = b - w > 0.05 ? bold.replace(/stroke-width="[^"]*"/, `stroke-width="${n2(b - w)}"`) : '';
     // 线宽比加粗宽大时轮廓的内沿压进字里：再盖一层只有轮廓的
