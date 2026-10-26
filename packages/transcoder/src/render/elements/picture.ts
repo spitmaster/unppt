@@ -2,6 +2,7 @@
 import type { SlideContext } from '../../model/model';
 import { blipImage, fillAttrs, findFillEl, imagePlacement, parseFill, styleRef } from '../../style/fill';
 import { parseLine, strokeAttrs } from '../../style/line';
+import { dashFromClose } from '../../style/dash-phase';
 import { effectFilter } from '../../effects/effect-filter';
 import { bevelLayer } from '../../effects/bevel';
 import { reflection } from '../../effects/reflection';
@@ -118,7 +119,9 @@ export async function renderPicture(r: RenderContext, el: XEl, ctx: SlideContext
     // 实测：平面图片的边框整个画在图片外侧（按线宽外扩半个线宽再描边），不压住图片
     const lw = line.width;
     const d = buildGeometry(gdef, box.w + lw, box.h + lw, av).paths.map((p) => p.d).join('');
-    parts.push(`<path d="${d}" transform="translate(${n2(-lw / 2)} ${n2(-lw / 2)})" fill="none"${strokeAttrs(line, r.doc, 'norm')}/>`);
+    // 虚线从闭合线段的起点开始排（dash-phase.ts）
+    const dp = line.dash ? dashFromClose(d) : { d, closed: false };
+    parts.push(`<path d="${dp.d}" transform="translate(${n2(-lw / 2)} ${n2(-lw / 2)})" fill="none"${strokeAttrs(line, r.doc, 'norm', undefined, dp.closed)}/>`);
   }
   if (!parts.length && !mediaParts.length) return '';
   let visual = parts.join('');

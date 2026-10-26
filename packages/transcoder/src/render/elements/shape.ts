@@ -2,6 +2,7 @@
 import type { SlideContext } from '../../model/model';
 import { bgStyle, fillAttrs, findFillEl, parseFill, styleRef, type Fill } from '../../style/fill';
 import { compoundMask, parseLine, strokeAttrs } from '../../style/line';
+import { dashFromClose } from '../../style/dash-phase';
 import { arrowheads } from '../../style/arrowheads';
 import { faceLighting, has3d, litFill } from '../../style/lighting';
 import { cameraLightFilter, cameraTransform, extrusionOffset, extrusionScreenOffset, extrusionSides, hasCamera } from '../../style/camera';
@@ -135,7 +136,9 @@ export async function renderShape(r: RenderContext, el: XEl, ctx: SlideContext, 
   for (const [i, p] of paths.entries()) {
     if (!p.d) continue;
     const fa = p.fill !== 'none' ? await fillAttrs(fill, r.doc, gb.w, gb.h, p.fill, r.images, gb, cust ? undefined : attr(prst, 'prst') ?? 'rect') : ' fill="none"';
-    const sa = p.stroke ? strokeAttrs(line, r.doc, p.fill, gb) : ' stroke="none"';
+    // 虚线：闭合的路径从闭合线段的起点开始排短划（dash-phase.ts）
+    const dp = p.stroke && line?.dash ? dashFromClose(p.d) : { d: p.d, closed: false };
+    const sa = p.stroke ? strokeAttrs(line, r.doc, p.fill, gb, dp.closed) : ' stroke="none"';
     if (fa === ' fill="none"' && sa === ' stroke="none"') continue;
     const evenodd = p.d.split('M').length > 2 ? ' fill-rule="evenodd"' : '';
     // 线条两端的箭头：直接画成图形，线在箭头处截短（arrowheads.ts）
@@ -149,11 +152,11 @@ export async function renderShape(r: RenderContext, el: XEl, ctx: SlideContext, 
       continue;
     }
     // 复合线型（双线等）：描边单独画，用遮罩挖出线间空隙
-    const cm = p.stroke && line ? compoundMask(line, p.d, r.doc, gb) : '';
+    const cm = p.stroke && line ? compoundMask(line, dp.d, r.doc, gb) : '';
     if (cm) {
       if (fa !== ' fill="none"') geomParts.push(`<path d="${p.d}"${fa} stroke="none"${evenodd}/>`);
-      geomParts.push(`<path d="${p.d}" fill="none"${sa}${cm}/>`);
-    } else geomParts.push(`<path d="${p.d}"${fa}${sa}${evenodd}/>`);
+      geomParts.push(`<path d="${dp.d}" fill="none"${sa}${cm}/>`);
+    } else geomParts.push(`<path d="${dp.d}"${fa}${sa}${evenodd}/>`);
   }
   // 三维轮廓（contour.ts）：投影的三维形状还没做
   if (!sp) geomParts.push(contour(sp3d, colors, paths.filter((p) => p.d && p.fill !== 'none').map((p) => p.d).join(''), line?.width ?? 0, gb.w, gb.h, r.doc));

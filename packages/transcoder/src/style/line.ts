@@ -101,17 +101,25 @@ export function compoundMask(line: Line, d: string, doc: SvgDoc, box: { w: numbe
   return ` mask="url(#${id})"`;
 }
 
-/** 描边属性；box 是形状尺寸，给了才能画渐变线（不给时用渐变的第一个颜色） */
-export function strokeAttrs(line: Line | undefined, doc: SvgDoc, mode: string, box?: { w: number; h: number }): string {
+/**
+ * 描边属性；box 是形状尺寸，给了才能画渐变线（不给时用渐变的第一个颜色）。
+ * closed：路径闭合（起点已经按 dash-phase.ts 挪到闭合线段的起点），线端的相位和不闭合的不同
+ */
+export function strokeAttrs(line: Line | undefined, doc: SvgDoc, mode: string, box?: { w: number; h: number }, closed = false): string {
   if (!line) return ' stroke="none"';
   const c = adjustForPathMode(line.color ?? { r: 0, g: 0, b: 0, a: 1 }, mode === 'norm' ? '' : '');
   const grad = box && line.fill?.kind === 'grad' ? line.fill : undefined;
   let s = ` stroke="${grad ? gradientPaint(grad, doc, box!.w, box!.h, 'norm') : css(c)}" stroke-width="${n2(line.width)}"`;
   if (!grad && c.a < 0.999) s += ` stroke-opacity="${n2(c.a)}"`;
   if (line.dash) {
-    // 圆头：PowerPoint 的短划长度包含圆头，SVG 的圆头画在短划外面——短划减一个线宽、间隔加一个线宽（否则间隔被填满，样本）
-    const v = line.cap === 'round' ? line.dash.split(' ').map(Number).map((x, i) => (i % 2 === 0 ? Math.max(0.01, x - line.width) : x + line.width)).map(n2).join(' ') : line.dash;
+    // 圆头、方头：PowerPoint 的短划长度包含线端，SVG 的线端画在短划外面——短划减一个线宽、间隔加一个线宽（否则间隔被填满，样本）。
+    // 相位（实测 lines-dash-caps、line-dash-phase）：方头的短划正好落在 [起点, 起点 + 长度]（往后挪半个线宽）；圆头不闭合时
+    // 是 [起点 − 半个线宽, 起点 + 长度 − 半个线宽]（不挪），闭合时是 [起点 + 半个线宽, 起点 + 长度 + 半个线宽]（挪一个线宽）
+    const capped = line.cap === 'round' || line.cap === 'square';
+    const v = capped ? line.dash.split(' ').map(Number).map((x, i) => (i % 2 === 0 ? Math.max(0.01, x - line.width) : x + line.width)).map(n2).join(' ') : line.dash;
     s += ` stroke-dasharray="${v}"`;
+    const shift = line.cap === 'square' ? line.width / 2 : line.cap === 'round' && closed ? line.width : 0;
+    if (shift) s += ` stroke-dashoffset="${n2(-shift)}"`;
   }
   if (line.cap !== 'butt') s += ` stroke-linecap="${line.cap}"`;
   if (line.join !== 'miter') s += ` stroke-linejoin="${line.join}"`;
