@@ -1,6 +1,7 @@
 /** 图表：读取关系指向的图表部件 */
 import { attr, child, findAll, type XEl } from '../../io/xml';
 import { renderChart, type ChartEnv } from '../../chart/chart';
+import { resolveChartFonts } from '../../chart/theme-fonts';
 import type { TextWidth } from '../../chart/layout';
 import { fallbackAdvance, isWide, type FontMetrics } from '../../font/font';
 import type { FontLibrary } from '../../font/library';
@@ -53,6 +54,8 @@ export const chartFrame: FrameHandler = {
     const ov = await pkg.relByType(rel!.target, 'themeOverride');
     const theme = ov ? overrideTheme(ctx.theme, await r.env.pres.theme(ov.target)) : ctx.theme;
     const colors = ov ? { ...ctx.colors, scheme: theme.colors } : ctx.colors;
+    // 文字里的主题字体（+mj-ea 等）先换成字体名：量宽度、画字都按它
+    resolveChartFonts(xml, theme);
     const measure = await chartMeasure(r.env.fonts, theme, xml);
     const drawn = renderChart(xml, box.w, box.h, { colors, theme, part: rel!.target, warn: (m) => r.env.pres.warn(m), measure, defs: { id: (k) => r.doc.id(k), add: (x) => r.doc.addDef(x) }, doc: r.doc, origin: chartOrigin(ctx.toSlide, box) });
     // 图表文字的字体换成嵌入产物的子集（不用观看者电脑上的字体）

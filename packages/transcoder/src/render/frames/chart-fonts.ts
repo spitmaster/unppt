@@ -50,6 +50,10 @@ export async function embedChartFonts(svg: string, fonts: FontLibrary, embed: Fo
       embed.use(face, cp);
       if (!used.includes(face)) used.push(face);
     }
+    // 别名按字体的先后（图表写的字体在前、替代字体在后）排，不按第一次用到的顺序：子集是整页共用的，
+    // 排在前面的子集可能有别的图表用过的字（charts-font-theme-refs：标题"汉字 + 数字"，雅黑子集在前，数字没用 Times New Roman）
+    const order = [...own, ...subs];
+    used.sort((a, b) => order.indexOf(a) - order.indexOf(b));
     const aliases = used.map((f) => embed?.alias(f)).filter((a): a is string => !!a);
     if (!aliases.length) continue;
     const list = [...aliases.map((a) => `'${a}'`), ...names.map((n) => `'${n.replace(/'/g, '')}'`), 'sans-serif'].join(',');

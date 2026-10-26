@@ -3,7 +3,8 @@ import { colorIn } from '../model/color';
 import { BLIP_PART } from '../model/model';
 import { attr, child, numAttr, type XEl } from '../io/xml';
 import { makeAtoms, type Measurer } from './measure';
-import { GROUP, resolveTypeface, scriptOf } from './style';
+import { resolveTypeface } from '../model/theme-fonts';
+import { GROUP, scriptOf } from './style';
 import type { Atom, Bullet, RunStyle, TextEnv } from './types';
 
 const roman = (x: number) => {

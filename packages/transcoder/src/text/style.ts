@@ -1,7 +1,8 @@
-/** 文字属性：样式链合并（列表样式 -> 段落 -> 文字）、主题字体解析、文字样式 */
+/** 文字属性：样式链合并（列表样式 -> 段落 -> 文字）、文字样式（主题字体的解析在 model/theme-fonts.ts） */
 import { colorIn, type Rgba } from '../model/color';
-import { EMU_PER_PX, type Theme } from '../model/model';
+import { EMU_PER_PX } from '../model/model';
 import { linkAttr } from '../common/links';
+import { resolveTypeface } from '../model/theme-fonts';
 import { attr, child, numAttr, type XEl } from '../io/xml';
 import type { RunStyle, StyleChain, TextEnv } from './types';
 
@@ -41,35 +42,6 @@ export function merge(list: (XEl | undefined)[]): XEl {
 export function levelPPr(chain: StyleChain, lvl: number): XEl[] {
   const name = `a:lvl${lvl + 1}pPr`;
   return chain.map((s) => child(s, name)).filter((x): x is XEl => !!x);
-}
-
-/** 文字语言 -> 主题字体里的脚本（a:font script） */
-function scriptOfLang(lang: string | undefined): string | undefined {
-  const l = (lang ?? '').toLowerCase();
-  if (l.startsWith('zh')) return /^zh-(tw|hk|mo)/.test(l) ? 'Hant' : 'Hans';
-  return l.startsWith('ja') ? 'Jpan' : l.startsWith('ko') ? 'Hang' : undefined;
-}
-
-/**
- * 主题字体（+mn-lt、+mj-ea 等）-> 字体名。lang 是文字语言：实测主题的东亚字体为空时，PowerPoint 按语言选主题里对应脚本的字体
- * （zh-CN 用 Hans、ja-JP 用 Jpan、zh-TW 用 Hant、ko-KR 用 Hang），lang 不是中日韩时看 altLang（实测 text-theme-ea-altlang：
- * en-US + altLang zh-CN 用 Hans）；都不是时不用主题字体——返回空串（runStyle 改用西文字体）
- */
-export function resolveTypeface(tf: string | undefined, theme: Theme, lang?: string, altLang?: string): string | undefined {
-  if (!tf) return undefined;
-  const ea = (own: string, scripts: Record<string, string>) => {
-    if (own) return own;
-    const s = scriptOfLang(lang) ?? scriptOfLang(altLang);
-    return (s && scripts[s]) || '';
-  };
-  switch (tf) {
-    case '+mn-lt': return theme.minorLatin;
-    case '+mj-lt': return theme.majorLatin;
-    case '+mn-ea': return ea(theme.minorEaOwn, theme.minorScripts);
-    case '+mj-ea': return ea(theme.majorEaOwn, theme.majorScripts);
-    case '+mn-cs': case '+mj-cs': return theme.minorLatin;
-  }
-  return tf;
 }
 
 function textOutline(ln: XEl | undefined, env: TextEnv): RunStyle['outline'] {
