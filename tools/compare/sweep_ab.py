@@ -72,6 +72,14 @@ def deck(task: tuple) -> dict:
         v["ms"] = int((time.time() - t0) * 1000)
         scores = {}
         if v["ok"]:
+            # 产物大小（字节）：合计和各部分（fonts 字体子集、media 图片音视频、pages 每页数据、pic 整页图、thum 缩略图、其它）
+            sizes: dict = {}
+            for f in (d / "out").rglob("*"):
+                if f.is_file():
+                    rel = f.relative_to(d / "out").parts
+                    k = rel[0] if len(rel) > 1 and rel[0] in ("fonts", "media", "pages", "pic", "thum") else "other"
+                    sizes[k] = sizes.get(k, 0) + f.stat().st_size
+            v["bytes"] = sizes
             for s in ref.get("slides", []):
                 n = s["index"] + 1
                 pic = d / "out" / "pic" / f"{n}.jpg"

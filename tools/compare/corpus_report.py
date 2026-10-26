@@ -315,6 +315,23 @@ def main() -> None:
         w(f"| {'每页（毫秒）' if zh else 'Per slide (ms)'} | {statistics.median(per_page_ms):.0f} | {pct(per_page_ms, 0.9):.0f} | {pct(per_page_ms, 0.99):.0f} | {max(per_page_ms):.0f} |")
         w("")
 
+        # 产物大小（比对时记录了的才有）
+        sz = [rows[h]["variants"][a.new].get("bytes") for h in hashes if rows[h]["variants"].get(a.new, {}).get("bytes")]
+        if sz:
+            parts = ["fonts", "media", "pages", "pic", "thum", "other"]
+            names_sz = {"zh": {"fonts": "字体子集", "media": "图片、音视频", "pages": "每页数据", "pic": "整页图", "thum": "缩略图", "other": "其它（入口 HTML 等）"},
+                        "en": {"fonts": "font subsets", "media": "images, audio, video", "pages": "per-slide data", "pic": "page images", "thum": "thumbnails", "other": "other (entry HTML etc.)"}}[lang]
+            w("## 产物大小\n" if zh else "## Output size\n")
+            w(("命令行默认的按需加载形式；观看时只下载看到的那几页（和预加载的下一页），整页图、缩略图是给列表、分享预览用的，播放时不下载。\n") if zh else
+              ("Default on-demand form; viewers download only the slides they see (plus the next one preloaded); page images and thumbnails are for lists and previews and are not downloaded during playback.\n"))
+            w(("| 部分 | 每份中位数（KB） | 90%（KB） | 占全部 |" if zh else "| Part | Median per deck (KB) | p90 (KB) | Share of total |") + "\n|---|---|---|---|")
+            total = sum(sum(x.values()) for x in sz)
+            for k in parts:
+                xs = [x.get(k, 0) for x in sz]
+                w(f"| {names_sz[k]} | {statistics.median(xs) / 1024:.0f} | {pct(xs, 0.9) / 1024:.0f} | {sum(xs) / total:.1%} |")
+            tot = [sum(x.values()) for x in sz]
+            w(f"| {'合计' if zh else 'Total'} | {statistics.median(tot) / 1024:.0f} | {pct(tot, 0.9) / 1024:.0f} | 100% |\n")
+
         # 合成用例
         if tc_all:
             w("## 合成测试用例\n" if zh else "## Synthetic test cases\n")
