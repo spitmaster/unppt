@@ -49,3 +49,20 @@ test('半透明纯色人工加粗：颜色不透明、透明度放在外面的�
   assert.match(plain, /^<text /);
   assert.equal(attr(plain, 'fill-opacity'), '0.5');
 });
+
+const gradA = (a1, a2) => parseXml(`<a:gradFill ${A}><a:gsLst><a:gs pos="0"><a:srgbClr val="DC0000"><a:alpha val="${a1}"/></a:srgbClr></a:gs><a:gs pos="100000"><a:srgbClr val="0028DC"><a:alpha val="${a2}"/></a:srgbClr></a:gs></a:gsLst><a:lin ang="0"/></a:gradFill>`);
+
+test('各色标透明度一样的半透明渐变人工加粗：色标不透明、透明度放在外面的组上；不加粗的、透明度不一样的照旧写在色标上', () => {
+  const e = env();
+  const out = textEl('渐变', 0, 60, style({ grad: gradA(50000, 50000) }), 'SimSun', false, undefined, e);
+  assert.match(out, /^<g opacity="0.5"><text /);
+  assert.equal(attr(out, 'stroke'), attr(out, 'fill'));
+  assert.equal(attr(out, 'stroke-opacity'), undefined);
+  assert.doesNotMatch(e.doc.defsXml(), /stop-opacity/);
+  for (const [extra, a1, a2] of [[{ fakeBold: false }, 50000, 50000], [{}, 50000, 100000]]) {
+    const e2 = env();
+    const o2 = textEl('渐变', 0, 60, style({ grad: gradA(a1, a2), ...extra }), 'SimSun', false, undefined, e2);
+    assert.match(o2, /^<text /);
+    assert.match(e2.doc.defsXml(), /stop-opacity="0.5"/);
+  }
+});

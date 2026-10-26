@@ -24,9 +24,10 @@ function fontList(primary: string, alias?: string): string {
 export function textEl(txt: string, x: number | number[], y: number | number[], s: RunStyle, family: string, bullet = false, alias?: string, env?: TextEnv, anchor?: string): string {
   const xa = typeof x === 'number' ? n2(x) : x.map(n2).join(' ');
   const ya = typeof y === 'number' ? n2(y) : y.map(n2).join(' ');
-  const { paint, opacity } = textPaint(s, env);
-  // 半透明的人工加粗：PowerPoint 把加粗后的整个字形按同一个透明度画（实测 text-fakebold-gradfill 第 2 页：50% 透明的红色宋体加粗，
-  // 字里颜色均匀）。填充、描边各自半透明时，描边压进字里的那半圈画了两遍、颜色更深，所以颜色写成不透明、透明度放到外面套的组上
+  // 半透明的人工加粗：PowerPoint 把加粗后的整个字形按同一个透明度画（实测 text-fakebold-gradfill 第 2 页：50% 透明的红色、
+  // 红到蓝渐变宋体加粗，字里颜色均匀）。填充、描边各自半透明时，描边压进字里的那半圈画了两遍、颜色更深，所以颜色写成不透明、
+  // 透明度放到外面套的组上；渐变各色标的透明度不一样时提不出来，照旧
+  const { paint, opacity } = textPaint(s, env, !!s.fakeBold && !s.outline);
   const whole = !!s.fakeBold && !s.outline && opacity < 0.999;
   const alpha = whole ? 1 : opacity;
   let a = `${bullet ? 'data-bu="1" ' : ''}x="${xa}" y="${ya}" font-family="${esc(fontList(family, alias))}" font-size="${n2(s.size)}" fill="${paint}"`;
@@ -69,12 +70,13 @@ export function textEl(txt: string, x: number | number[], y: number | number[], 
 
 /**
  * 文字的填充颜料：图片填充 > 渐变 > 纯色，返回 fill 的值（颜色或 url(#编号)）和整体不透明度（渐变、图片的透明度在色标、图片里，这里是 1）。
+ * uniform：各色标透明度都一样的渐变把这个透明度提出来（色标写成不透明，透明度作为整体不透明度返回）。
  * 渐变、图片每调用一次生成一个定义，同一段文字只调用一次、填充和人工加粗的描边共用
  */
-export function textPaint(s: RunStyle, env?: TextEnv): { paint: string; opacity: number } {
-  const grad = env?.doc && s.grad ? textGradient(s.grad, env) : '';
+export function textPaint(s: RunStyle, env?: TextEnv, uniform = false): { paint: string; opacity: number } {
+  const grad = env?.doc && s.grad ? textGradient(s.grad, env, uniform) : undefined;
   const pic = env && s.blip ? textPicture(s.blip, env) : '';
-  return pic || grad ? { paint: pic || grad, opacity: 1 } : { paint: css(s.color), opacity: s.color.a };
+  return pic ? { paint: pic, opacity: 1 } : grad ?? { paint: css(s.color), opacity: s.color.a };
 }
 
 /** 渐变、图片填充的文字铺在哪个范围：有行框时按行（横向是这一行文字的宽度、竖向是行高），艺术字变形时铺满整个文本框 */
@@ -100,9 +102,9 @@ function textPicture(blip: XEl, env: TextEnv): string {
 /**
  * 渐变文字的填充（userSpaceOnUse），返回 url(#编号)。实测（硬边渐变量色标的位置，Arial / 雅黑 / 等线 20~80 磅，竖向、横向）：
  * 每一行各自铺一遍渐变（两行文字各自从头开始），范围正好是这一行的外框——横向是这一行文字的宽度、竖向是行高，
- * 和文本框多高无关；艺术字变形（没有行框）时铺满整个文本框
+ * 和文本框多高无关；艺术字变形（没有行框）时铺满整个文本框。uniform 见 textPaint
  */
-function textGradient(grad: XEl, env: TextEnv): string {
+function textGradient(grad: XEl, env: TextEnv, uniform: boolean): { paint: string; opacity: number } {
   const doc = env.doc!;
   const id = doc.id('tg');
   const ang = ((numAttr(child(grad, 'a:lin'), 'ang') ?? 0) / 60000) * Math.PI / 180;
@@ -111,11 +113,14 @@ function textGradient(grad: XEl, env: TextEnv): string {
     ? { cx: lb.x + lb.w / 2, cy: lb.y + lb.h / 2, w: lb.w, h: lb.h }
     : { cx: (env.gradBox?.w ?? 1) / 2, cy: (env.gradBox?.h ?? 1) / 2, w: env.gradBox?.w ?? 1, h: env.gradBox?.h ?? 1 };
   const dx = (Math.cos(ang) / 2) * box.w, dy = (Math.sin(ang) / 2) * box.h;
-  const stops = gradientStops(children(child(grad, 'a:gsLst'), 'a:gs').map((g) => ({
+  const gs = children(child(grad, 'a:gsLst'), 'a:gs').map((g) => ({
     pos: (numAttr(g, 'pos') ?? 0) / 100000, color: colorIn(g, env.colors) ?? { r: 0, g: 0, b: 0, a: 1 },
-  })), env.lit3d);
+  }));
+  const a = gs[0]?.color.a ?? 1;
+  const lift = uniform && a < 0.999 && gs.every((g) => Math.abs(g.color.a - a) < 1e-3);
+  const stops = gradientStops(lift ? gs.map((g) => ({ ...g, color: { ...g.color, a: 1 } })) : gs, env.lit3d);
   doc.addDef(`<linearGradient id="${id}" gradientUnits="userSpaceOnUse" x1="${n2(box.cx - dx)}" y1="${n2(box.cy - dy)}" x2="${n2(box.cx + dx)}" y2="${n2(box.cy + dy)}">${stops}</linearGradient>`);
-  return `url(#${id})`;
+  return { paint: `url(#${id})`, opacity: lift ? a : 1 };
 }
 
 /**
