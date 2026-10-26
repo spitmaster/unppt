@@ -22,10 +22,14 @@ export function niceScale(min: number, max: number, fixedMin?: number, fixedMax?
   let hi0 = fixedMax ?? max;
   if (hi0 === lo0) hi0 = lo0 + 1;
   const pad = (near ? max - min : hi0 - lo0) * margin;
-  const span = (fixedMax ?? (hi0 + pad)) - lo0;
+  // 有负数时最小值也先留 (最大 − 最小) × 5% 的余量再往下取整到单位；全是负数（最大值是 0）时最大值就是 0、不留余量
+  // （COM 读自动刻度：−300~800 → −400~1000、−1~1 → −1.5~1.5、−5~−50 → −60~0、−120~40 → −140~60、−95~5 → −100~20）
+  const neg = fixedMin === undefined && lo0 < 0 && !near;
+  const loP = neg ? lo0 - pad : lo0, hiP = neg && hi0 <= 0 ? hi0 : hi0 + pad;
+  const span = (fixedMax ?? hiP) - loP;
   const ends = (unit: number) => ({
-    lo: fixedMin === undefined && (lo0 < 0 || near) ? Math.floor(Math.round((lo0 / unit) * 1e9) / 1e9) * unit : lo0,
-    hi: fixedMax === undefined ? Math.ceil(Math.round(((hi0 + pad) / unit) * 1e9) / 1e9) * unit : hi0,
+    lo: fixedMin === undefined && (lo0 < 0 || near) ? Math.floor(Math.round((loP / unit) * 1e9) / 1e9) * unit : lo0,
+    hi: fixedMax === undefined ? Math.ceil(Math.round((hiP / unit) * 1e9) / 1e9) * unit : hi0,
   });
   if (fixedUnit) return { ...ends(fixedUnit), unit: fixedUnit };
   const mag = Math.pow(10, Math.floor(Math.log10(span)));
