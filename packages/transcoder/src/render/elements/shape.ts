@@ -14,7 +14,7 @@ import { effectFilter } from '../../effects/effect-filter';
 import { outerShadow } from '../../effects/outer-shadow';
 import { reflection } from '../../effects/reflection';
 import { buildGeometry, parseGeomXml, presetGeometry } from '../../geometry/geometry';
-import { turnedBounds } from '../../geometry/turned-bounds';
+import { outlineExtent, turnedBounds } from '../../geometry/turned-bounds';
 import { colorIn, css, type ColorContext } from '../../model/color';
 import { renderText, type TextEnv } from '../../text/text';
 import { attr, child, children, numAttr, path, SNAPSHOT, type XEl } from '../../io/xml';
@@ -115,7 +115,9 @@ export async function renderShape(r: RenderContext, el: XEl, ctx: SlideContext, 
   // 效果：形状自己写的 > 版式 > 主题样式（effectRef）
   const effRef = styleRef(child(style, 'a:effectRef'), ctx.theme.effectStyles, colors);
   const effect = child(spPr, 'a:effectLst') ?? child(lSpPr, 'a:effectLst') ?? child(effRef.el, 'a:effectLst');
-  const filter = effectFilter(effect, effect === child(effRef.el, 'a:effectLst') ? effRef.ctx : colors, r.doc, gb.w, gb.h, undefined, [has3d(sp3d) ? bevelLayer(sp3d) : undefined], sp && projectedBounds(sp.map, box.w, box.h));
+  // 滤镜区域：透视投影后的外框；轮廓伸到框外（标注的尾巴）时按框和轮廓合起来的范围
+  const filterAt = sp ? projectedBounds(sp.map, box.w, box.h) : effect || has3d(sp3d) ? outlineExtent(def, gb.w, gb.h, av, box.flipH, box.flipV) : undefined;
+  const filter = effectFilter(effect, effect === child(effRef.el, 'a:effectLst') ? effRef.ctx : colors, r.doc, gb.w, gb.h, undefined, [has3d(sp3d) ? bevelLayer(sp3d) : undefined], filterAt);
   // 用幻灯片背景填充（useBgFill）：按轮廓裁出整页背景垫在下面，形状本身不填充（透视、三维旋转的不管）
   const bgUse = attr(el, 'useBgFill');
   const bgLayer = (bgUse === '1' || bgUse === 'true') && r.bgSvg && !sp && !hasCamera(scene3d)

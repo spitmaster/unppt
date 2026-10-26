@@ -1,0 +1,93 @@
+{
+ "version": 8,
+ "level": "full",
+ "slideWidthPt": 960.0,
+ "slideHeightPt": 540.0,
+ "imageWidth": 1280,
+ "imageHeight": 720,
+ "slides": [
+  {
+   "index": 0,
+   "hidden": false,
+   "shapes": [
+    {
+     "id": 2,
+     "name": "Rectangular Callout 1",
+     "type": 1,
+     "x": 40.0,
+     "y": 40.0,
+     "w": 160.0,
+     "h": 70.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 105
+    },
+    {
+     "id": 3,
+     "name": "Rounded Rectangular Callout 2",
+     "type": 1,
+     "x": 280.0,
+     "y": 40.0,
+     "w": 160.0,
+     "h": 70.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 106
+    },
+    {
+     "id": 4,
+     "name": "Oval Callout 3",
+     "type": 1,
+     "x": 540.0,
+     "y": 40.0,
+     "w": 160.0,
+     "h": 70.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 107
+    },
+    {
+     "id": 5,
+     "name": "Rectangular Callout 4",
+     "type": 1,
+     "x": 760.0,
+     "y": 300.0,
+     "w": 150.0,
+     "h": 70.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 105
+    },
+    {
+     "id": 6,
+     "name": "Rounded Rectangular Callout 5",
+     "type": 1,
+     "x": 40.0,
+     "y": 330.0,
+     "w": 160.0,
+     "h": 70.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 106
+    },
+    {
+     "id": 7,
+     "name": "Rectangular Callout 6",
+     "type": 1,
+     "x": 520.0,
+     "y": 330.0,
+     "w": 140.0,
+     "h": 60.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 105
+    }
+   ],
+   "effects": [],
+   "triggerHidden": [],
+   "steps": 0,
+   "keptSlideshow": false
+  }
+ ],
+ "ok": true
+}

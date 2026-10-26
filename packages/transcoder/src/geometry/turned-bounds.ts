@@ -42,7 +42,8 @@ class BoundsSink implements PathSink {
   close() {}
 }
 
-export function turnedBounds(def: GeomDef, w: number, h: number, av: Map<string, string>, rot: number, flipH?: boolean, flipV?: boolean): Bounds | undefined {
+/** all：只描边不填充的路径（线形标注的引线等）也算 */
+export function turnedBounds(def: GeomDef, w: number, h: number, av: Map<string, string>, rot: number, flipH?: boolean, flipV?: boolean, all = false): Bounds | undefined {
   const a = (rot * Math.PI) / 180, c = Math.cos(a), s = Math.sin(a), cx = w / 2, cy = h / 2;
   const sinks: BoundsSink[] = [];
   walkGeometry(def, w, h, av, (i) => {
@@ -50,11 +51,22 @@ export function turnedBounds(def: GeomDef, w: number, h: number, av: Map<string,
       const dx = (flipH ? w - x : x) - cx, dy = (flipV ? h - y : y) - cy;
       return [cx + dx * c - dy * s, cy + dx * s + dy * c];
     });
-    if (def.paths[i].fill !== 'none') sinks.push(sink);
+    if (all || def.paths[i].fill !== 'none') sinks.push(sink);
     return sink;
   });
   const minX = Math.min(...sinks.map((k) => k.minX)), maxX = Math.max(...sinks.map((k) => k.maxX));
   const minY = Math.min(...sinks.map((k) => k.minY)), maxY = Math.max(...sinks.map((k) => k.maxY));
   if (!(maxX > minX && maxY > minY)) return undefined;
   return { x: minX, y: minY, w: maxX - minX, h: maxY - minY };
+}
+
+/**
+ * 轮廓伸到形状框外时，框和轮廓合起来的范围（形状坐标，已按翻转）；没伸出去时 undefined。效果滤镜按它定区域
+ * （标注的尾巴被调整点拉到框外很远时，按框算的滤镜区域会把尾巴裁掉）
+ */
+export function outlineExtent(def: GeomDef, w: number, h: number, av: Map<string, string>, flipH?: boolean, flipV?: boolean): Bounds | undefined {
+  const b = turnedBounds(def, w, h, av, 0, flipH, flipV, true);
+  if (!b || (b.x >= -0.5 && b.y >= -0.5 && b.x + b.w <= w + 0.5 && b.y + b.h <= h + 0.5)) return undefined;
+  const x0 = Math.min(0, b.x), y0 = Math.min(0, b.y), x1 = Math.max(w, b.x + b.w), y1 = Math.max(h, b.y + b.h);
+  return { x: x0, y: y0, w: x1 - x0, h: y1 - y0 };
 }
