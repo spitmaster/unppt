@@ -86,19 +86,6 @@ const SONG_SUBS = ['SimSun', '宋体', 'NSimSun', '新宋体', 'Songti SC', 'Not
 const ALIAS: Record<string, string> = {
   helvetica: 'Arial', 'helvetica neue': 'Arial', helv: 'Arial', times: 'Times New Roman', 'tms rmn': 'Times New Roman', courier: 'Courier New',
 };
-/**
- * 和默认字体包里的开源字体是同一套字形的字体：思源黑体 / Source Han Sans 就是 Noto Sans CJK，思源宋体就是 Noto Serif CJK
- * （字宽一样）。作者装了、我们没有时直接按开源字体排版和显示，不算替代；名字里写了粗细的，Bold / Heavy 用粗体，
- * Light / ExtraLight 先找细体（字体包里有 Noto Sans SC Light），没有再用常规体
- */
-function sameDesign(family: string): { name: string; bold?: boolean; light?: boolean } | undefined {
-  const m = /^(source han sans|思源黑体|source han serif|思源宋体|noto sans cjk|noto serif cjk)(?:[ -]?(?:cn|sc|简体|简))?(?:[ -](extralight|light|normal|regular|medium|semibold|bold|heavy|black))?$/i.exec(family.trim());
-  if (!m) return undefined;
-  const serif = /serif|宋/i.test(m[1]);
-  const w = m[2]?.toLowerCase();
-  return { name: serif ? 'Noto Serif SC' : 'Noto Sans SC', ...(w === 'bold' || w === 'heavy' || w === 'black' || w === 'semibold' ? { bold: true } : {}),
-    ...(w === 'light' || w === 'extralight' ? { light: true } : {}) };
-}
 /** 不走宋体的嵌入字体：样本里嵌入的 PingFang SC（CFF）PowerPoint 用雅黑画（像一般缺字体），大概 Office 自带苹果字体的替代表 */
 const MAPPED = /^pingfang/i;
 /**
@@ -133,15 +120,10 @@ export async function makeAtoms(text: string, style: RunStyle, m: Measurer): Pro
     return [undefined, ''];
   };
   const pick = async (family: string, subs: string[]): Promise<[Measured | undefined, string]> => {
-    const same = sameDesign(family);
-    const mm = await m.metrics(family, style.bold, style.italic, !!same);
+    // 思源黑体 / Source Han 等没嵌入、字体包里也没有同名字体的，和没装它的 PowerPoint 一样按缺字体替代（用户 2026-10-26：
+    // 所有观看者看到的一致最重要，按大多数电脑上的 PowerPoint 显示；SPEC D3 ⑩）
+    const mm = await m.metrics(family, style.bold, style.italic);
     if (mm) return [mm, family];
-    if (same) {
-      const lm = same.light && !style.bold ? await m.metrics(`${same.name} Light`, false, style.italic, true) : undefined;
-      if (lm) return [lm, family];
-      const sm = await m.metrics(same.name, same.bold ?? style.bold, style.italic, true);
-      if (sm) return [sm, family];
-    }
     const alias = ALIAS[family.toLowerCase()];
     const am = alias ? await m.metrics(alias, style.bold, style.italic) : undefined;
     if (am) return [am, alias!];

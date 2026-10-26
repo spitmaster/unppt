@@ -8,7 +8,7 @@
 
 - 表格单元格的"水平居中"（`anchorCtr`）：和文本框一样，整块文字在单元格里居中、各段的对齐在块里。以前（0.2.x 起）没处理，
   单元格写"左对齐 + 水平居中"的表格（常见于模板）整列文字靠左。
-- 字体名写"思源黑体 CN Light / ExtraLight"（Source Han Sans Light）的文字用字体包里的思源黑体细体（Noto Sans SC Light），以前按常规体显示。
+- **思源黑体 / 思源宋体等没嵌入的字体改回按缺字体替代**（和没装思源的 PowerPoint 一样按雅黑等排版，所有观看者看到的一致；0.3.0 曾按同一套字形的 Noto Sans/Serif SC 显示，和大多数电脑上的 PowerPoint 不一样）。想保留思源的样子请把字体嵌入课件。
 - 用本机字体（`--system-fonts`）时，思源黑体 / 思源宋体 / Noto Sans SC / Noto Serif SC 的文字整页画成细线、粗体只是人工加粗：
   Windows 上这两个字体是可变字体（默认实例是 Thin / ExtraLight），以前直接按默认实例用。现在常规取 Regular 实例、粗体取 Bold 实例
   （和 PowerPoint 一致，实测），有同名固定字重的字体时直接用它；嵌入的字体子集不再带可变数据。
@@ -31,7 +31,7 @@
 - Table cells honour "center horizontally" (`anchorCtr`) like text boxes: the block of text is centered in the cell, each paragraph keeps its own
   alignment inside the block. Before (since 0.2.x) it was ignored, so tables whose cells say "left aligned + centered" (common in templates) showed
   their text flush left.
-- Text in "Source Han Sans CN Light / ExtraLight" (思源黑体 CN Light) uses the pack's Noto Sans SC Light; before it was shown in the regular weight.
+- **Source Han Sans/Serif (思源黑体/宋体) and similar fonts that are not embedded are substituted again like any missing font** (laid out with Microsoft YaHei etc., as PowerPoint does on a machine without them; every viewer sees the same). 0.3.0 showed them with the same-design Noto Sans/Serif SC, which differs from PowerPoint on most machines. Embed the font to keep its look.
 - With `--system-fonts`, text in Source Han Sans/Serif, Noto Sans SC or Noto Serif SC was drawn as hairlines and bold was only faked: the
   Windows copies are variable fonts with a Thin/ExtraLight default instance. Variable fonts now use the Regular instance for normal text and
   the Bold instance for bold, as PowerPoint does (measured); a static face of the same family is preferred, and embedded subsets no longer
