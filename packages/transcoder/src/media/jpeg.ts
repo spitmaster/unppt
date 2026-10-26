@@ -1,8 +1,12 @@
 /**
  * JPEG 解码（自研、零依赖）：基线和渐进式（哈夫曼编码）、任意采样比例、重启标记；灰度、YCbCr、Adobe 的 RGB / CMYK / YCCK。
- * 只给"设置透明色"在原图上抠用，所以追求简单正确：反变换用浮点；色度 2×1、2×2、1×2 采样按三角滤波平滑放大（和 libjpeg 一样），其它比例按块复制。
+ * 给"设置透明色"在原图上抠、整页图换掉 resvg 画不了的 CMYK 图片用，所以追求简单正确：反变换用浮点；色度 2×1、2×2、1×2 采样按三角滤波
+ * 平滑放大（和 libjpeg 一样），其它比例按块复制。CMYK / YCCK 和 PowerPoint 一样按嵌入的 ICC 配置文件换成 sRGB，没嵌入时按 PowerPoint
+ * 的默认换算（icc.ts、cmyk-default.ts）。
  * 不支持的（算术编码、无损、12 位）返回 undefined。
  */
+import { defaultCmyk } from './cmyk-default';
+import { iccCmyk, type CmykConvert } from './icc';
 
 export interface RgbImage { width: number; height: number; data: Uint8Array }
 
@@ -135,6 +139,8 @@ function decode(b: Uint8Array, minSize?: number): RgbImage | undefined {
   const dcT: Huffman[] = [], acT: Huffman[] = [];
   let comps: Component[] = [];
   let width = 0, height = 0, progressive = false, restartInterval = 0, adobe = -1;
+  /** APP2 里分段存的 ICC 配置文件：序号 -> 这一段 */
+  const icc = new Map<number, Uint8Array>();
   let mcusPerLine = 0, mcusPerCol = 0, maxH = 1, maxV = 1;
   let eobrun = 0;
   // bs：每个块在输出里占几个像素（8 全尺寸，4、2 是 1/2、1/4，1 是 1/8）；按 1/8 解码时每块只存 DC（stride 1），否则存 64 个系数
@@ -203,6 +209,9 @@ function decode(b: Uint8Array, minSize?: number): RgbImage | undefined {
     } else if (m === 0xee) {
       // Adobe APP14：颜色变换（0 = RGB / CMYK，1 = YCbCr，2 = YCCK）
       if (len >= 12 && String.fromCharCode(...b.subarray(seg, seg + 5)) === 'Adobe') adobe = b[seg + 11];
+    } else if (m === 0xe2) {
+      // APP2 "ICC_PROFILE\0" + 序号 + 总段数 + 数据
+      if (len > 16 && String.fromCharCode(...b.subarray(seg, seg + 12)) === 'ICC_PROFILE\0') icc.set(b[seg + 12], b.subarray(seg + 14, end));
     } else if (m === 0xda) {
       if (!comps.length) return undefined;
       const ns = b[seg];
@@ -255,7 +264,8 @@ function decode(b: Uint8Array, minSize?: number): RgbImage | undefined {
     pos = end;
   }
   if (!comps.length) return undefined;
-  return toRgb(comps, qt, Math.ceil((width * bs) / 8), Math.ceil((height * bs) / 8), maxH, maxV, adobe, bs);
+  const cmyk = comps.length === 4 ? cmykConvert(icc) : undefined;
+  return toRgb(comps, qt, Math.ceil((width * bs) / 8), Math.ceil((height * bs) / 8), maxH, maxV, adobe, bs, cmyk);
 }
 
 type BlockFn = (c: Component, off: number) => void;
@@ -440,7 +450,20 @@ function plane(c: Component, q: Int32Array, bs: number): Uint8Array {
 }
 
 /** bs：每个块在输出里占几个像素（8 是全尺寸，4、2 是 1/2、1/4 解码，1 是 1/8 解码） */
-function toRgb(comps: Component[], qt: Int32Array[], width: number, height: number, maxH: number, maxV: number, adobe: number, bs: number): RgbImage | undefined {
+/** 四分量 JPEG 的换算：嵌入的 ICC 配置文件认得就用它，否则用 PowerPoint 没嵌入时的默认换算 */
+function cmykConvert(parts: Map<number, Uint8Array>): CmykConvert {
+  if (parts.size) {
+    const seqs = [...parts.keys()].sort((x, y) => x - y);
+    const all = new Uint8Array(seqs.reduce((n, k) => n + parts.get(k)!.length, 0));
+    let o = 0;
+    for (const k of seqs) { all.set(parts.get(k)!, o); o += parts.get(k)!.length; }
+    const conv = iccCmyk(all);
+    if (conv) return conv;
+  }
+  return defaultCmyk();
+}
+
+function toRgb(comps: Component[], qt: Int32Array[], width: number, height: number, maxH: number, maxV: number, adobe: number, bs: number, cmyk?: CmykConvert): RgbImage | undefined {
   const planes = comps.map((c) => {
     const q = qt[c.tq];
     return q ? (bs === 1 ? dcPlane(c, q) : plane(c, q, bs)) : undefined;
@@ -459,18 +482,21 @@ function toRgb(comps: Component[], qt: Int32Array[], width: number, height: numb
     for (let x = 0; x < width; x++) {
       const o = (y * width + x) * 3;
       let r: number, g: number, bl: number;
+      if (n === 4) {
+        // 四分量：Adobe 的 CMYK 取反存储（255 = 没有油墨）；YCCK 的前三个分量是 255 − 取反存储的 C、M、Y 当成 RGB 算出的 YCbCr
+        // （libjpeg 的 ycck_cmyk_convert：存储的 C = 255 − R），所以油墨量就是算出来的 R、G、B。没有 Adobe 标记的也按取反存储（和浏览器一样）
+        let C = sample(0, x, y), M = sample(1, x, y), Y = sample(2, x, y);
+        if (adobe === 2) [C, M, Y] = ycc(C, M, Y);
+        else { C = 255 - C; M = 255 - M; Y = 255 - Y; }
+        cmyk!(C, M, Y, 255 - sample(3, x, y), data, o);
+        continue;
+      }
       if (n === 1) {
         r = g = bl = sample(0, x, y);
-      } else if (n === 3) {
+      } else {
         const a = sample(0, x, y), b2 = sample(1, x, y), c2 = sample(2, x, y);
         // Adobe 标记写 0 表示分量本身就是 RGB
         [r, g, bl] = adobe === 0 ? [a, b2, c2] : ycc(a, b2, c2);
-      } else {
-        // 四分量：Adobe 的 CMYK（取反存储）或 YCCK
-        let C = sample(0, x, y), M = sample(1, x, y), Y = sample(2, x, y);
-        const K = sample(3, x, y);
-        if (adobe === 2) [C, M, Y] = ycc(C, M, Y);
-        r = Math.round((C * K) / 255); g = Math.round((M * K) / 255); bl = Math.round((Y * K) / 255);
       }
       data[o] = r; data[o + 1] = g; data[o + 2] = bl;
     }

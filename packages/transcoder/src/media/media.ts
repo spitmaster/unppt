@@ -10,6 +10,7 @@ import { sniffImage } from './sniff';
 import type { ImageDecoder } from './image-decoder';
 import { imageInfo, type ImageInfo } from './image-info';
 import { colorKey } from './color-key';
+import { cmykJpegToSrgb } from './cmyk-jpeg';
 import type { Rgba } from '../model/color';
 
 export type WriteData = Uint8Array | string | AsyncIterable<Uint8Array>;
@@ -199,6 +200,15 @@ export class MediaStore {
     const mime = MIME[ext] ?? 'application/octet-stream';
     // JPEG：去掉 EXIF 方向标记（PowerPoint 按原始像素画，浏览器默认会按标记再转一次，见 exif-orientation.ts）
     const jpeg = ext === 'jpg' || ext === 'jpeg' || ext === 'jpe' || ext === 'jfif';
+    // CMYK / YCCK 的 JPEG：浏览器换算颜色和 PowerPoint 不一样，按 PowerPoint 的规则换成 sRGB 存一份（cmyk-jpeg.ts）。
+    // 整页图再读时给原图（出图时自己换算：大图按 1/4、1/8 解码比从换好的图缩更准，也不用一直留着换好的图，见 preview/huge-images.ts）
+    const srgb = jpeg ? await cmykJpegToSrgb(raw) : undefined;
+    if (srgb) {
+      if (srgb.data.length <= this.inlineLimit) return this.asset(`data:${srgb.mime};base64,${base64(srgb.data)}`);
+      const name = mediaName(target, entry.crc, srgb.mime.slice(6).replace('jpeg', 'jpg'), '-srgb');
+      await this.file(name, srgb.data, reread);
+      return name;
+    }
     const bytes = (jpeg ? clearOrientation(raw) : undefined) ?? raw;
     // 同一张图片只存一份（母版上的 logo、背景每页都会用到）
     if (bytes.length <= this.inlineLimit) return this.asset(`data:${mime};base64,${base64(bytes)}`);

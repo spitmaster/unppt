@@ -1,0 +1,67 @@
+{
+ "version": 8,
+ "level": "full",
+ "slideWidthPt": 960.0,
+ "slideHeightPt": 540.0,
+ "imageWidth": 1280,
+ "imageHeight": 720,
+ "slides": [
+  {
+   "index": 0,
+   "hidden": false,
+   "shapes": [
+    {
+     "id": 3,
+     "name": "Picture 2",
+     "type": 13,
+     "x": 60.0,
+     "y": 60.0,
+     "w": 400.0,
+     "h": 250.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1
+    },
+    {
+     "id": 5,
+     "name": "Picture 4",
+     "type": 13,
+     "x": 520.0,
+     "y": 220.0,
+     "w": 360.0,
+     "h": 270.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1
+    }
+   ],
+   "effects": [],
+   "triggerHidden": [],
+   "steps": 0,
+   "keptSlideshow": false
+  },
+  {
+   "index": 1,
+   "hidden": false,
+   "shapes": [
+    {
+     "id": 2,
+     "name": "Title 1",
+     "type": 14,
+     "x": 66.0,
+     "y": 28.75,
+     "w": 828.0,
+     "h": 104.375,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 138
+    }
+   ],
+   "effects": [],
+   "triggerHidden": [],
+   "steps": 0,
+   "keptSlideshow": false
+  }
+ ],
+ "ok": true
+}

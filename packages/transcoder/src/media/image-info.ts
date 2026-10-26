@@ -9,6 +9,8 @@ export interface ImageInfo {
   /** 分辨率；文件里没写时为 undefined（PowerPoint 按 96 处理） */
   dpiX?: number;
   dpiY?: number;
+  /** JPEG 的颜色分量数（1 灰度、3 YCbCr / RGB、4 CMYK / YCCK） */
+  components?: number;
 }
 
 const be16 = (b: Uint8Array, o: number) => (b[o] << 8) | b[o + 1];
@@ -47,7 +49,7 @@ function jpeg(b: Uint8Array): ImageInfo | undefined {
     }
     // SOF0~SOF15（不含 DHT=C4、JPG=C8、DAC=CC）
     if (m >= 0xc0 && m <= 0xcf && m !== 0xc4 && m !== 0xc8 && m !== 0xcc) {
-      return { width: be16(b, p + 7), height: be16(b, p + 5), dpiX, dpiY };
+      return { width: be16(b, p + 7), height: be16(b, p + 5), dpiX, dpiY, components: b[p + 9] };
     }
     p += 2 + len;
   }

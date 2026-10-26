@@ -17,7 +17,12 @@ const DIR = new URL('./images/', import.meta.url);
 /** 平均误差和最大误差；有色度下采样的图在右边、下边缘个别像素差得多（libjpeg 在实际宽度处截断，这里按补齐的块） */
 const CASES = [
   ['baseline-444', 1.2, 6], ['progressive-444', 1.2, 6], ['gray', 1.2, 6],
-  ['baseline-420', 0.3, 30], ['baseline-422', 0.3, 30], ['progressive', 0.3, 30], ['restart', 0.3, 30], ['cmyk', 0.3, 4],
+  ['baseline-420', 0.3, 30], ['baseline-422', 0.3, 30], ['progressive', 0.3, 30], ['restart', 0.3, 30],
+  // 四分量：.rgb 是 lcms 按配置文件换算的结果（cmyk、ycck 没嵌入配置文件，按 PowerPoint 的默认 RSWOP.icm 感知意图；
+  // ycck-icc 嵌入了 tools/make-case/cmyk_jpeg.py 编的小配置文件，按相对比色——lcms 对这个编出来的配置文件的感知意图另做黑点调整）。
+  // 色域边上（线性值是负的、截到 0）个别像素差十几级：lcms 把整个换算先算成格子再插值，截断处被插值抹平了。
+  // 没嵌入的用的是 PowerPoint 实测的表（cmyk-default.ts），和 lcms 按 RSWOP 算的平均差 0.7 级
+  ['cmyk', 1.5, 20], ['ycck', 1.5, 20], ['ycck-icc', 0.6, 20],
 ];
 
 for (const [name, meanMax, maxMax] of CASES) {
@@ -110,7 +115,8 @@ for (const [name] of CASES) {
       sum += Math.abs(s / 64 - small.data[(by * small.width + bx) * 3 + c]);
       n++;
     }
-    const limit = /42[02]|^progressive$|restart/.test(name) ? 14 : 4;
+    // 四分量：每块先对分量求平均再按配置文件换成 RGB（非线性），和先换再平均差得多一些
+    const limit = /42[02]|^progressive$|restart/.test(name) ? 14 : /cmyk|ycck/.test(name) ? 8 : 4;
     assert.ok(sum / n <= limit, `平均误差 ${(sum / n).toFixed(2)}`);
   });
 }

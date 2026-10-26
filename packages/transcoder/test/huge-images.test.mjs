@@ -49,6 +49,47 @@ test('按 1/2、1/4 解码等于全尺寸解出来再按格子取平均', () => 
   }
 });
 
+/** RGB 的 8 位 PNG（不隔行）解成像素 */
+function decodePng(png) {
+  const { inflateSync } = process.getBuiltinModule('node:zlib');
+  let o = 8, w = 0, h = 0;
+  const idat = [];
+  while (o < png.length) {
+    const len = Buffer.from(png.buffer, png.byteOffset + o, 4).readUInt32BE();
+    const type = String.fromCharCode(...png.subarray(o + 4, o + 8));
+    const d = Buffer.from(png.buffer, png.byteOffset + o + 8, len);
+    if (type === 'IHDR') { w = d.readUInt32BE(0); h = d.readUInt32BE(4); assert.equal(d[9], 2); }
+    if (type === 'IDAT') idat.push(d);
+    o += 12 + len;
+  }
+  const raw = inflateSync(Buffer.concat(idat)), stride = w * 3, px = new Uint8Array(stride * h);
+  const paeth = (a, b, c) => { const p = a + b - c, pa = Math.abs(p - a), pb = Math.abs(p - b), pc = Math.abs(p - c); return pa <= pb && pa <= pc ? a : pb <= pc ? b : c; };
+  for (let y = 0; y < h; y++) {
+    const f = raw[y * (stride + 1)];
+    for (let i = 0; i < stride; i++) {
+      const a = i >= 3 ? px[y * stride + i - 3] : 0, b = y ? px[(y - 1) * stride + i] : 0, c = y && i >= 3 ? px[(y - 1) * stride + i - 3] : 0;
+      px[y * stride + i] = (raw[y * (stride + 1) + 1 + i] + [0, a, b, (a + b) >> 1, paeth(a, b, c)][f]) & 0xff;
+    }
+  }
+  return { width: w, height: h, data: px };
+}
+
+test('四分量（Adobe CMYK、YCCK）JPEG 不管大小都换成 RGB 的图片（resvg 解不了），颜色和原图一致', async () => {
+  const { readFile } = await import('node:fs/promises');
+  for (const name of ['cmyk', 'ycck']) {
+    const src = new Uint8Array(await readFile(new URL(`./images/${name}.jpg`, import.meta.url)));
+    const ref = new Uint8Array(await readFile(new URL(`./images/${name}.rgb`, import.meta.url)));
+    const out = await shrinkHugeImage(src);
+    assert.ok(out, name);
+    // 这么小的图 JPEG 编码器放不下，编成 PNG
+    const img = out[0] === 0x89 ? decodePng(out) : decodeJpeg(out);
+    assert.equal(img.width, 52);
+    let sum = 0;
+    for (let i = 0; i < ref.length; i++) sum += Math.abs(img.data[i] - ref[i]);
+    assert.ok(sum / ref.length < 3, `${name}：平均误差 ${(sum / ref.length).toFixed(2)}`);
+  }
+});
+
 test('包一层图片来源：同一张图只缩一次，其它图片原样返回', async () => {
   let reads = 0;
   const files = { 'media/big.jpg': jpg, 'media/a.png': png };
