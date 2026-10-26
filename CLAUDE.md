@@ -85,6 +85,7 @@ npm test                                              # 单元测试
 .venv/Scripts/python tools/compare/run.py --set all         # 样本比对（只看数字）
 .venv/Scripts/python tools/compare/offsets.py 编号          # 逐行位置偏差（数字）
 .venv/Scripts/python tools/compare/sweep_ab.py run 目录 --cli old=旧cli.js,--system-fonts --cli new=packages/transcoder/dist/cli.js,--system-fonts  # 全量课件逐页 A/B（发版前）
+.venv/Scripts/python tools/compare/corpus_report.py --results 目录 --base-dir 上一版目录 --version x.y.z  # 生成测试报告 docs/zh|en/test-report.md（只有汇总数字）
 .venv/Scripts/python tools/check-player.py [firefox]        # 播放器端到端测试
 .venv/Scripts/python tools/check-paged.py                   # 按需加载形式和单文件逐页、逐步对照
 .venv/Scripts/python tools/check-live.py                    # 直播课：演绎模式、观看模式和同步
