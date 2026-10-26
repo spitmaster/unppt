@@ -14,6 +14,9 @@
   （和 PowerPoint 一致，实测），有同名固定字重的字体时直接用它；嵌入的字体子集不再带可变数据。
 - 默认字体包里的思源宋体粗体以前用不上（粗体的思源宋体只能人工加粗），现在用真正的粗体。
 - 转动或翻转的公式（Office 数学公式）方向画错：例如转 270° 的 ¬ 画成上下颠倒、翻转的公式被镜像；带边框的公式框不再重影。
+- 修 0.3.0 引入的排版回退（全量课件逐页比对发现）：悬挂缩进的段落缩进取整多出 1/8 磅，刚好放得下的行多折一行；表格单元格水平居中
+  没算段落右缩进；关掉中文首尾字符控制（`eaLnBrk="0"`）时破折号前不断行；允许西文单词中间换行时 `1:3` 这类冒号不悬挂。
+  现在缩进只取整到 1/20 磅，断行按"行首起点 + 行宽 + 右缩进"取整到 1/8 磅后和框宽比（PowerPoint 实测）。
 
 **English**
 
@@ -30,6 +33,11 @@
 - The bold Noto Serif SC face in the default font pack was never loaded (bold serif CJK text got fake bold); it is used now.
 - Rotated or flipped Office math equations were drawn in the wrong orientation (e.g. a ¬ rotated 270° came out upside down, flipped
   equations were mirrored); bordered equation boxes no longer show a doubled border.
+- Fixed layout regressions introduced in 0.3.0 (found by the full per-page comparison): hanging-indent paragraphs were indented 1/8 pt too
+  far, so lines that just fit wrapped one character early; centered table cells ignored the paragraph right indent; with East Asian
+  line-break control off (`eaLnBrk="0"`) the text could not break before an em dash; with `latinLnBrk="1"` a colon as in `1:3` did not hang.
+  Indents are now rounded to 1/20 pt only, and a line fits when (line start + width + right indent), rounded up to 1/8 pt, fits the box
+  (measured in PowerPoint).
 
 ## 0.3.0（2026-10-23，已撤回 / withdrawn）
 
