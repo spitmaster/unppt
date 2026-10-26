@@ -6,7 +6,8 @@
 例：--cli new=packages/transcoder/dist/cli.js,--system-fonts --cli old=<0.2.6 的 dist/cli.js>,--system-fonts
 
 - 只记数字（样本用哈希），产物转完就删，不占磁盘；结果是 <结果目录>/results.jsonl，一份课件一行，中断后再跑会跳过已有的
-- 所有进程用最低优先级（Windows 上是"空闲"），不和用户的程序抢 CPU（转码每份只用一个出图线程）
+- 所有进程默认用最低优先级（Windows 上是"空闲"），不和用户的程序抢 CPU（转码每份只用一个出图线程）；机器被别的普通优先级任务占满、
+  比对几乎不动时用 --priority below
 - 修了代码再比时只需转新版：run 只给 --cli new=...，report 用 --base-dir 指向上一次的结果目录取旧版的分数
 - 和 run.py 的区别：run.py 用浏览器截播放器的图、存图出报告，适合看细节；这里比整页图、不存图，适合几千份课件找"哪一类变差了"
 样本安全：结果只在 .cache/ 下（gitignore），不出本机。
@@ -32,16 +33,24 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from common import REF, ROOT, read_json  # noqa: E402
 from run import _gray, ssim  # noqa: E402
 
-IDLE = 0x40  # IDLE_PRIORITY_CLASS
+PRIORITY = {"idle": 0x40, "below": 0x4000}  # Windows 进程优先级：空闲 / 低于正常
+PRIO = PRIORITY["idle"]
 TIMEOUT = 20 * 60
 
 
 def low_priority() -> None:
     if os.name == "nt":
         import ctypes
-        ctypes.windll.kernel32.SetPriorityClass(ctypes.windll.kernel32.GetCurrentProcess(), IDLE)
+        ctypes.windll.kernel32.SetPriorityClass(ctypes.windll.kernel32.GetCurrentProcess(), PRIO)
     else:
-        os.nice(19)
+        os.nice(19 if PRIO == PRIORITY["idle"] else 10)
+
+
+def worker_init(prio: int) -> None:
+    """进程池里的子进程：用和主进程一样的优先级"""
+    global PRIO
+    PRIO = prio
+    low_priority()
 
 
 def source(h: str, index: dict) -> Path:
@@ -51,7 +60,9 @@ def source(h: str, index: dict) -> Path:
 
 def deck(task: tuple) -> dict:
     """一份课件：每个版本转一遍、逐页和参考图比"""
-    h, src, clis, work = task
+    h, src, clis, work, prio = task
+    global PRIO
+    PRIO = prio
     ref = read_json(REF / h / "ref.json", {}) or {}
     out = {"h": h, "slides": len(ref.get("slides", [])), "variants": {}}
     refs: dict[int, np.ndarray] = {}
@@ -62,7 +73,7 @@ def deck(task: tuple) -> dict:
         try:
             r = subprocess.run(["node", cli, str(src), "-o", str(d / "out"), "-q", "--jobs", "1", *args],
                                capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=TIMEOUT,
-                               creationflags=IDLE if os.name == "nt" else 0)
+                               creationflags=PRIO if os.name == "nt" else 0)
             v["ok"] = r.returncode == 0
             if not v["ok"]:
                 v["err"] = (r.stderr or r.stdout)[-300:]
@@ -97,6 +108,8 @@ def deck(task: tuple) -> dict:
 
 
 def run(args) -> None:
+    global PRIO
+    PRIO = PRIORITY[args.priority]
     low_priority()
     res_dir = Path(args.dir)
     res_dir.mkdir(parents=True, exist_ok=True)
@@ -123,8 +136,8 @@ def run(args) -> None:
     work.mkdir(parents=True, exist_ok=True)
     print(f"课件 {len(hashes)} 份，已有 {len(hashes) - len(todo)}，这次 {len(todo)}；版本 {', '.join(clis)}；{args.workers} 个进程", flush=True)
     t0 = time.time()
-    with Pool(args.workers, initializer=low_priority) as pool, results.open("a", encoding="utf-8") as f:
-        for k, r in enumerate(pool.imap_unordered(deck, [(h, source(h, index), clis, str(work)) for h in todo]), 1):
+    with Pool(args.workers, initializer=worker_init, initargs=(PRIO,)) as pool, results.open("a", encoding="utf-8") as f:
+        for k, r in enumerate(pool.imap_unordered(deck, [(h, source(h, index), clis, str(work), PRIO) for h in todo]), 1):
             f.write(json.dumps(r, ensure_ascii=False) + "\n")
             f.flush()
             if k % 50 == 0 or k == len(todo):
@@ -182,6 +195,7 @@ def main() -> None:
     ap.add_argument("--workers", type=int, default=max(1, (os.cpu_count() or 2) // 2))
     ap.add_argument("--only", default=None)
     ap.add_argument("--limit", type=int, default=0)
+    ap.add_argument("--priority", default="idle", choices=list(PRIORITY), help="idle：空闲（默认，不和别的程序抢）；below：低于正常（机器被别的普通优先级任务占满时用）")
     ap.add_argument("--work", default=None, help="临时产物放哪（默认系统临时目录；转完就删）")
     ap.add_argument("--base", default="old")
     ap.add_argument("--new", default="new")
