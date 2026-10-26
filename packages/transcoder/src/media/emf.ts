@@ -5,12 +5,14 @@
 import { EmfDefs, groupClips } from './emf-defs';
 import { bitmapSource, ROP_KEY } from './dib-blit';
 import { edgePads } from './dib-pad';
+import { bmpAverage, monoColor, monoShare } from './pattern-brush';
 import { svgImage, type ImageDecoder } from './image-decoder';
 import { keyBmp } from './bmp';
 
 /** cosmetic：GDI 的"装饰笔"（宽 0 / 1 的 CREATEPEN、不带 PS_GEOMETRIC 的 EXTCREATEPEN），不管怎么缩放都画 1 个设备像素 */
 interface Pen { color: string; width: number; none: boolean; cap: string; join: string; dash?: string; cosmetic?: boolean }
-interface Brush { color: string; none: boolean }
+/** mono：单色图案画刷里 1 占的比例（颜色画的时候按文字色、背景色定，见 pattern-brush.ts） */
+interface Brush { color: string; none: boolean; mono?: number }
 interface Font { height: number; weight: number; italic: boolean; underline: boolean; strike: boolean; face: string; escapement: number }
 
 interface State {
@@ -19,7 +21,7 @@ interface State {
   vpOrg: [number, number]; vpExt: [number, number];
   mapMode: number;
   pen: Pen; brush: Brush; font?: Font;
-  textColor: string; bkMode: number; textAlign: number; polyFill: number;
+  textColor: string; bkColor: string; bkMode: number; textAlign: number; polyFill: number;
   cur: [number, number];
   clip?: string;                                           // 当前裁剪的 clipPath id
 }
@@ -138,7 +140,7 @@ function emfToSvgUnsafe(bytes: Uint8Array): string | undefined {
   const objects = new Map<number, Pen | Brush | Font>();
   let st: State = {
     xf: [1, 0, 0, 1, 0, 0], winOrg: [0, 0], winExt: [1, 1], vpOrg: [0, 0], vpExt: [1, 1], mapMode: 1,
-    pen: STOCK[7] as Pen, brush: STOCK[0] as Brush, textColor: '#000000', bkMode: 2, textAlign: 0, polyFill: 1, cur: [0, 0],
+    pen: STOCK[7] as Pen, brush: STOCK[0] as Brush, textColor: '#000000', bkColor: '#ffffff', bkMode: 2, textAlign: 0, polyFill: 1, cur: [0, 0],
   };
   const stack: State[] = [];
   let path: string[] | undefined;
@@ -163,7 +165,8 @@ function emfToSvgUnsafe(bytes: Uint8Array): string | undefined {
     if (p.none) return ' stroke="none"';
     return ` stroke="${p.color}" stroke-width="${f2(Math.max(tlen(p.width), 0.5))}" stroke-linecap="${p.cap}" stroke-linejoin="${p.join}"${p.dash ? ` stroke-dasharray="${p.dash}"` : ''}`;
   };
-  const fillAttr = () => (st.brush.none ? ' fill="none"' : ` fill="${st.brush.color}"${st.polyFill === 1 ? ' fill-rule="evenodd"' : ''}`);
+  const brushColor = () => (st.brush.mono === undefined ? st.brush.color : monoColor(st.textColor, st.bkColor, st.brush.mono));
+  const fillAttr = () => (st.brush.none ? ' fill="none"' : ` fill="${brushColor()}"${st.polyFill === 1 ? ' fill-rule="evenodd"' : ''}`);
   const clipAttr = () => (st.clip ? ` clip-path="url(#${st.clip})"` : '');
   const emit = (el: string) => out.push(el);
   const shape = (d: string, fill: boolean, stroke: boolean) => {
@@ -204,6 +207,7 @@ function emfToSvgUnsafe(bytes: Uint8Array): string | undefined {
       case 19: st.polyFill = u32(r); break;
       case 22: st.textAlign = u32(r); break;
       case 24: st.textColor = colorRef(u32(r)); break;
+      case 25: st.bkColor = colorRef(u32(r)); break;
       case 27: st.cur = [i32(r), i32(r + 4)]; if (path) path.push(`M${pts([st.cur])[0]}`); break;
       case 33: stack.push({ ...st, xf: [...st.xf] as State['xf'] }); break;
       case 34: {
@@ -262,7 +266,19 @@ function emfToSvgUnsafe(bytes: Uint8Array): string | undefined {
         objects.set(u32(r), { color: colorRef(u32(r + 8)), none: style === 1 });
         break;
       }
-      case 94: case 93: objects.set(u32(r), { color: '#808080', none: false }); break; // 图案画刷：用灰色近似
+      case 93: case 94: { // CREATEMONOBRUSH / CREATEDIBPATTERNBRUSHPT：图案画刷用平均色（见 pattern-brush.ts），解不开时灰色
+        const usage = u32(r + 4), offBmi = p + u32(r + 8), cbBmi = u32(r + 12), offBits = p + u32(r + 16), cbBits = u32(r + 20);
+        const bpp = cbBmi >= 16 ? d.getUint16(offBmi + 14, true) : 0;
+        let brush: Brush = { color: '#808080', none: false };
+        if (bpp === 1 && (type === 93 || usage === 2)) {
+          brush = { color: '#808080', none: false, mono: monoShare(bytes.subarray(offBits, offBits + cbBits), i32(offBmi + 4), Math.abs(i32(offBmi + 8))) };
+        } else if (usage === 0) {
+          const bmp = dibBytes(d, offBmi, cbBmi, offBits, cbBits);
+          brush = { color: (bmp && bmpAverage(bmp)) ?? '#808080', none: false };
+        }
+        objects.set(u32(r), brush);
+        break;
+      }
       case 40: objects.delete(u32(r)); break;
       case 82: { // EXTCREATEFONTINDIRECTW
         const lf = r + 4;
@@ -498,7 +514,7 @@ function emfToSvgUnsafe(bytes: Uint8Array): string | undefined {
         else if (type === 76 && !st.brush.none) {
           // 没有源位图的 BitBlt：用当前画刷填充（常见于背景）
           if (rop === 0x00f00021 || rop === 0x00000042 || rop === 0x00ff0062) {
-            const color = rop === 0x00000042 ? '#000000' : rop === 0x00ff0062 ? '#ffffff' : st.brush.color;
+            const color = rop === 0x00000042 ? '#000000' : rop === 0x00ff0062 ? '#ffffff' : brushColor();
             emit(`<rect x="${f2(X)}" y="${f2(Y)}" width="${f2(W)}" height="${f2(H)}" fill="${color}"${clipAttr()}/>`);
           }
         }

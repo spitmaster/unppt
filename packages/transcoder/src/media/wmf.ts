@@ -5,10 +5,12 @@
 import { groupClips } from './emf-defs';
 import { bitmapSource, partSvg, ROP_KEY } from './dib-blit';
 import { keyBmp } from './bmp';
+import { bmpAverage, monoColor, monoShare } from './pattern-brush';
 import { svgImage, type ImageDecoder } from './image-decoder';
 
 interface Pen { color: string; width: number; none: boolean }
-interface Brush { color: string; none: boolean }
+/** mono：单色图案画刷里 1 占的比例（颜色画的时候按文字色、背景色定，见 pattern-brush.ts） */
+interface Brush { color: string; none: boolean; mono?: number }
 interface Font { height: number; weight: number; italic: boolean; underline: boolean; strike: boolean; face: string; charset: number; escapement: number }
 type Obj = { kind: 'pen'; v: Pen } | { kind: 'brush'; v: Brush } | { kind: 'font'; v: Font } | { kind: 'other' };
 
@@ -44,6 +46,12 @@ function base64(bytes: Uint8Array): string {
 
 /** DIB -> BMP 的 data URI；key：这个颜色的像素变透明（按光栅操作，见 dib-blit.ts） */
 function dibToBmp(dib: Uint8Array, key?: number): string | undefined {
+  const out = dibBytes(dib);
+  return out && `data:image/bmp;base64,${base64(key === undefined ? out : keyBmp(out, key) ?? out)}`;
+}
+
+/** DIB -> BMP 文件的字节（补上 14 字节的文件头） */
+function dibBytes(dib: Uint8Array): Uint8Array | undefined {
   if (dib.length < 40) return undefined;
   const v = new DataView(dib.buffer, dib.byteOffset, dib.byteLength);
   const hsize = v.getUint32(0, true);
@@ -57,7 +65,7 @@ function dibToBmp(dib: Uint8Array, key?: number): string | undefined {
   ov.setUint32(2, out.length, true);
   ov.setUint32(10, 14 + hsize + palette, true);
   out.set(dib, 14);
-  return `data:image/bmp;base64,${base64(key === undefined ? out : keyBmp(out, key) ?? out)}`;
+  return out;
 }
 
 /** 解析失败（文件损坏、被截断）时返回 undefined，不抛异常 */
@@ -97,8 +105,8 @@ function wmfToSvgUnsafe(bytes: Uint8Array): string | undefined {
     const i = objects.findIndex((x) => !x);
     if (i >= 0) objects[i] = o; else objects.push(o);
   };
-  interface St { pen: Pen; brush: Brush; font?: Font; textColor: string; textAlign: number; polyFill: number; cur: [number, number]; winOrg: [number, number]; winExt?: [number, number]; clip?: string }
-  let st: St = { pen: { color: '#000000', width: 1, none: false }, brush: { color: '#ffffff', none: false }, textColor: '#000000', textAlign: 0, polyFill: 1, cur: [0, 0], winOrg: [vb[0], vb[1]] };
+  interface St { pen: Pen; brush: Brush; font?: Font; textColor: string; bkColor: string; textAlign: number; polyFill: number; cur: [number, number]; winOrg: [number, number]; winExt?: [number, number]; clip?: string }
+  let st: St = { pen: { color: '#000000', width: 1, none: false }, brush: { color: '#ffffff', none: false }, textColor: '#000000', bkColor: '#ffffff', textAlign: 0, polyFill: 1, cur: [0, 0], winOrg: [vb[0], vb[1]] };
   const stack: St[] = [];
   const out: string[] = [];
   const defs: string[] = [];
@@ -108,7 +116,8 @@ function wmfToSvgUnsafe(bytes: Uint8Array): string | undefined {
   const stroke = () => (st.pen.none ? ' stroke="none"' : ` stroke="${st.pen.color}" stroke-width="${f2(Math.max(st.pen.width, 1))}" stroke-linejoin="round" stroke-linecap="round"`);
   // 宽 0 / 1 的笔（装饰笔）在显示出来的图上至少 1 像素：再叠一条不随缩放变细的 1 像素线（同 emf.ts）
   const hairline = (el: string) => (!st.pen.none && st.pen.width <= 1 ? el.replace(/ fill="[^"]*"/, ' fill="none"').replace(/ stroke-width="[^"]*"/, ' stroke-width="1" vector-effect="non-scaling-stroke"') : '');
-  const fill = () => (st.brush.none ? ' fill="none"' : ` fill="${st.brush.color}"${st.polyFill === 1 ? ' fill-rule="evenodd"' : ''}`);
+  const brushColor = () => (st.brush.mono === undefined ? st.brush.color : monoColor(st.textColor, st.bkColor, st.brush.mono));
+  const fill = () => (st.brush.none ? ' fill="none"' : ` fill="${brushColor()}"${st.polyFill === 1 ? ' fill-rule="evenodd"' : ''}`);
   const clip = () => (st.clip ? ` clip-path="url(#${st.clip})"` : '');
   const shape = (dd: string, filled: boolean) => {
     const el = `<path d="${dd}"${filled ? fill() : ' fill="none"'}${stroke()}${clip()}/>`;
@@ -126,6 +135,7 @@ function wmfToSvgUnsafe(bytes: Uint8Array): string | undefined {
         case 0x020c: st.winExt = [i16(r + 2), i16(r)]; break;          // SETWINDOWEXT
         case 0x0106: st.polyFill = u16(r); break;
         case 0x0209: st.textColor = colorRef(u32(r)); break;
+        case 0x0201: st.bkColor = colorRef(u32(r)); break;
         case 0x012e: st.textAlign = u16(r); break;
         case 0x001e: stack.push({ ...st }); break;                      // SAVEDC
         case 0x0127: {                                                  // RESTOREDC
@@ -144,7 +154,30 @@ function wmfToSvgUnsafe(bytes: Uint8Array): string | undefined {
           addObj({ kind: 'font', v: { height: i16(r), escapement: i16(r + 4), weight: i16(r + 8), italic: !!bytes[r + 10], underline: !!bytes[r + 11], strike: !!bytes[r + 12], charset, face } });
           break;
         }
-        case 0x00f7: case 0x06ff: case 0x0142: case 0x01f9: case 0x0322: addObj({ kind: 'other' }); break; // 调色板、区域、图案画刷等
+        case 0x0142: {                                                  // DIBCREATEPATTERNBRUSH：用平均色（见 pattern-brush.ts）
+          const style = u16(r), usage = u16(r + 2), dib = bytes.subarray(r + 4, p + size);
+          const bpp = dib.length >= 16 ? u16(r + 4 + 14) : 0;
+          let v: Brush = { color: '#808080', none: false };
+          if (style === 3 || usage === 2) {
+            // BS_PATTERN（老式位图）、不带颜色表的单色图案：按文字色、背景色
+            if (bpp === 1 && dib.length >= 40) {
+              const w = d.getInt32(r + 8, true), h = Math.abs(d.getInt32(r + 12, true));
+              const pal = usage === 0 ? (u32(r + 4 + 32) || 2) * 4 : 0;
+              v = { color: '#808080', none: false, mono: monoShare(dib.subarray(u32(r + 4) + pal), w, h) };
+            }
+          } else if (usage === 0) {
+            const bmp = dibBytes(dib);
+            v = { color: (bmp && bmpAverage(bmp)) ?? '#808080', none: false };
+          }
+          addObj({ kind: 'brush', v });
+          break;
+        }
+        case 0x01f9: {                                                  // CREATEPATTERNBRUSH（老式位图）：单色的按文字色、背景色
+          const w = i16(r + 2), h = i16(r + 4), wb = i16(r + 6), bits = bytes[r + 9];
+          addObj({ kind: 'brush', v: bits === 1 && w > 0 && h > 0 ? { color: '#808080', none: false, mono: monoShare(bytes.subarray(r + 32, r + 32 + wb * h), w, h, wb) } : { color: '#808080', none: false } });
+          break;
+        }
+        case 0x00f7: case 0x06ff: case 0x0322: addObj({ kind: 'other' }); break; // 调色板、区域等
         case 0x012d: {                                                  // SELECTOBJECT
           const o = objects[u16(r)];
           if (o?.kind === 'pen') st.pen = o.v;
