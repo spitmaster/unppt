@@ -6,6 +6,7 @@ import { breakLines, trimmedWidth } from './linebreak';
 import { layoutTabs, tabStops } from './tabs';
 import { makeAtoms, type Measurer } from './measure';
 import { kernOn, levelPPr, merge, runStyle } from './style';
+import { fontLine, mergeLines } from './font-line';
 import type { Atom, Line, ParagraphLayout, RunStyle, StyleChain, TextEnv } from './types';
 
 /** 排一个文本框里所有段落时共用的东西 */
@@ -57,7 +58,8 @@ export async function layoutParagraph(p: XEl, pi: number, ctx: ParagraphContext)
       firstStyle ??= style;
       // 上伸、下伸只在这个换行单独成一行（空行）时用
       const m = (await measurer.metrics(style.latin, style.bold, style.italic, true) ?? await measurer.metrics(style.ea, style.bold, style.italic, true))?.metrics;
-      atoms.push({ text: '\n', cp: 10, width: 0, style, family: style.latin, ascent: (m?.ascent ?? 0.92) * style.size, descent: (m?.descent ?? 0.24) * style.size, strikeY: 0, space: false, wide: false, tab: false });
+      atoms.push({ text: '\n', cp: 10, width: 0, style, family: style.latin, ascent: (m?.ascent ?? 0.92) * style.size, descent: (m?.descent ?? 0.24) * style.size, strikeY: 0, space: false, wide: false, tab: false,
+        ...(env.fontLines ? { fl: fontLine(m, style.size) } : {}) });
     }
   }
   const endStyle = runStyle(merge([defRPr, child(p, 'a:endParaRPr')]), env, fontScale);
@@ -66,6 +68,8 @@ export async function layoutParagraph(p: XEl, pi: number, ctx: ParagraphContext)
     ?? await measurer.metrics(baseStyle.ea, baseStyle.bold, baseStyle.italic, true))?.metrics;
   const emptyAsc = (baseM?.ascent ?? 0.92) * endStyle.size;
   const emptyDesc = (baseM?.descent ?? 0.24) * endStyle.size;
+  // SmartArt 文字：没有字的行按段末的字体行框
+  const emptyFl = env.fontLines ? fontLine(baseM, endStyle.size) : undefined;
 
   // 制表符：跳到下一个默认制表位
   const defTab = (numAttr(pPr, 'defTabSz') ?? 914400) / EMU_PER_PX;
@@ -124,9 +128,10 @@ export async function layoutParagraph(p: XEl, pi: number, ctx: ParagraphContext)
       descent: vis.length ? Math.max(...vis.map((a) => (own ? a.ownDescent ?? a.descent : a.descent))) : br ? br.descent : emptyDesc,
       x0: i === 0 ? firstX : marL,
       avail: i === 0 ? availFirst : availRest,
+      ...(env.fontLines ? { fl: (vis.length ? mergeLines(vis.flatMap((a) => (a.fl ? [a.fl] : []))) : br?.fl) ?? emptyFl } : {}),
     };
   });
-  if (!lines.length) lines.push({ atoms: [], width: 0, size: endStyle.size, ascent: emptyAsc, descent: emptyDesc, x0: marL, avail: availRest });
+  if (!lines.length) lines.push({ atoms: [], width: 0, size: endStyle.size, ascent: emptyAsc, descent: emptyDesc, x0: marL, avail: availRest, ...(emptyFl ? { fl: emptyFl } : {}) });
 
   const spc = (el: XEl | undefined) => {
     const pct = child(el, 'a:spcPct');
@@ -141,8 +146,9 @@ export async function layoutParagraph(p: XEl, pi: number, ctx: ParagraphContext)
   const toPx = (s: { pct?: number; pts?: number } | undefined, ref: number) =>
     !s ? 0 : s.pts !== undefined ? s.pts * 96 / 72 : (s.pct ?? 0) * ref;
   // 段前段后的百分比按单倍行高 1.2 × 字号算，和字体的上下伸无关（实测：雅黑、正黑、宋体、Arial、Calibri、等线、Times 28 磅
-  // 段前 20%/50%/100% 都是 6.72/16.8/33.6 磅）
-  const refH = lines[0].size * 1.2;
+  // 段前 20%/50%/100% 都是 6.72/16.8/33.6 磅）；SmartArt 文字按字体行框的单倍行高（font-line.ts）
+  const fl0 = lines[0].fl;
+  const refH = fl0 ? fl0.b + fl0.d : lines[0].size * 1.2;
   return {
     lines,
     // 实测：自动缩小（lnSpcReduction）只减行距，不减段前段后

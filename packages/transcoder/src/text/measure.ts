@@ -2,6 +2,7 @@
 import { fallbackAdvance, isWide, type FontFace, type FontMetrics } from '../font/font';
 import { SYMBOL_FONT } from '../font/check';
 import { kernOn } from './style';
+import { fontLine } from './font-line';
 import type { Atom, FontEmbedder, RunStyle, TextEnv } from './types';
 
 export interface Measured { metrics: FontMetrics; face: FontFace; }
@@ -14,6 +15,8 @@ export interface Measurer {
   unusable?(family: string): boolean;
   embed?: FontEmbedder;
   fontUse?: TextEnv['fontUse'];
+  /** SmartArt 文字：每个字带上字体行框（Atom.fl） */
+  fontLines?: boolean;
 }
 
 export function makeMeasurer(env: TextEnv): Measurer {
@@ -22,6 +25,7 @@ export function makeMeasurer(env: TextEnv): Measurer {
   return {
     embed: env.embed,
     fontUse: env.fontUse,
+    fontLines: env.fontLines,
     unusable: (family) => unusable.has(family.toLowerCase()),
     widths: async (family, bold, italic) => env.fonts.widths(family, bold, italic),
     metrics(family, bold, italic, quiet) {
@@ -251,6 +255,7 @@ export async function makeAtoms(text: string, style: RunStyle, m: Measurer): Pro
       ascent: asc * size,
       descent: desc * size,
       ...(mix ? { ownAscent: ownAsc * size, ownDescent: ownDesc * size } : {}),
+      ...(m.fontLines ? { fl: fontLine(used, size) } : {}),
       strikeY: (used?.strikeTop !== undefined && used.strikeSize !== undefined ? used.strikeTop - used.strikeSize / 2 : 0.25) * size,
       space: ch === ' ' || ch === '　', wide, tab: ch === '\t',
       ...shiftOf(shift, size),

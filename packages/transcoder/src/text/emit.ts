@@ -6,6 +6,7 @@ import { child, type XEl } from '../io/xml';
 import { decorate } from './decorations';
 import { textEl } from './svg-text';
 import { hangable } from './linebreak';
+import { fontLineBaseline } from './font-line';
 import type { Atom, Line, ParagraphLayout, TextEnv } from './types';
 
 /** 竖排正立的字往基线方向挪的距离（× 字号，实测 text-vert-insets） */
@@ -41,8 +42,9 @@ export function placeLines(
   const { tIns, bIns, lIns, numCol, spcCol, anchor, wrap, linesLeftToRight } = b;
   const blockShift = b.anchorCtr && numCol === 1 ? centerShift(layouts, contentW) : 0;
   // 计算总高度
+  // SmartArt 文字的单倍行高按字体行框（font-line.ts）
   const lineHeight = (l: Line, s: ParagraphLayout['lineSpc']) =>
-    s.pts !== undefined ? s.pts * 96 / 72 : l.size * 1.2 * (s.pct ?? 1);
+    s.pts !== undefined ? s.pts * 96 / 72 : (l.fl ? l.fl.b + l.fl.d : l.size * 1.2) * (s.pct ?? 1);
   let total = 0;
   layouts.forEach((pl, i) => {
     if (i > 0) total += pl.spcBef;
@@ -59,7 +61,9 @@ export function placeLines(
   // 固定行距的不减，样本：9 磅字 18 磅固定行距的表格行高按不减的对）
   const trim = last && !full && lastLh > lastBox + 0.01 ? lastLh * (1 - TALL_BASELINE) - lastBox * last.descent / (last.ascent + last.descent || 1)
     + (lastP.fontAlgn === 'b' && lastP.lineSpc.pts === undefined ? last.descent / 2 : 0) : 0;
-  const availH = outer.h - tIns - bIns, shown = total - Math.max(0, trim);
+  // SmartArt 文字：文字块的底在最后一行基线下方单倍行框的下半截处（行距更小时也是，会比行框低；实测居中、底端对齐）
+  const flTrim = last?.fl ? lastLh - fontLineBaseline(last.fl, lastLh) - last.fl.d : undefined;
+  const availH = outer.h - tIns - bIns, shown = total - (flTrim ?? Math.max(0, trim));
   if (out) out.height = shown + tIns + bIns;
   let y = tIns + (numCol > 1 ? 0 : anchor === 'ctr' ? (availH - shown) / 2 : anchor === 'b' ? availH - shown : 0);
   let col = 0;
@@ -85,6 +89,8 @@ export function placeLines(
         else if (pl.fontAlgn === 't') baseline = y + lh - box + line.ascent;
         else if (pl.fontAlgn === 'b' && lh > box + 0.01) baseline -= line.descent / 2;
       }
+      // SmartArt 文字：基线按字体行框放（font-line.ts）
+      if (line.fl) baseline = y + fontLineBaseline(line.fl, lh);
       // 列从左往右排的竖排：把行的位置翻过来（行内基线位置不变）
       if (linesLeftToRight) baseline = outer.h - y - lh + (baseline - y);
       // 横排文字的基线对齐整像素（TextEnv.pixelTop）：只对 20 磅以下的行（更大的字 PowerPoint 纵向按 1/4 像素抗锯齿，实测）

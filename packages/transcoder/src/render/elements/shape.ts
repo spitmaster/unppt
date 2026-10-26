@@ -171,6 +171,7 @@ export async function renderShape(r: RenderContext, el: XEl, ctx: SlideContext, 
     fontRefColor: colorIn(fontRef, colors), fontRef, fontCharsets: ctx.fontCharsets, uid, embed: r.env.embed, doc: r.doc,
     rels: await r.env.pres.pkg.rels(ctx.part),
     images: r.images, part: ctx.part, slideNumber: ctx.slideNumber, fontUse: r.env.fontUse,
+    ...(ctx.diagram ? { fontLines: true } : {}),
     // 外框对齐了整像素（没转动）、所在坐标系没缩放时，文字基线也对齐整像素
     ...(snap && !box.flipV ? pixelRow(ctx.toSlide, box.y, r.env.pres.displayScale) : undefined),
   };

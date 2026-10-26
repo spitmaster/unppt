@@ -21,6 +21,10 @@ export interface PackFaceInfo {
   ascent: number;
   descent: number;
   lineGap: number;
+  /** GDI 的外部行距（字体单位，FontMetrics.extLeading）；0 不写 */
+  extLead?: number;
+  /** OS/2 代码页标了中日韩（FontMetrics.eastAsian） */
+  ea?: boolean;
   strikeTop?: number;
   strikeSize?: number;
   xHeight?: number;
@@ -186,6 +190,7 @@ function build(info: PackFaceInfo, d: PackFaceData, sm: FontMetrics, shownMid: n
   const self: FontMetrics = {
     unitsPerEm: u,
     ascent: info.ascent / u, descent: info.descent / u, lineGap: info.lineGap / u,
+    extLeading: (info.extLead ?? 0) / u, eastAsian: !!info.ea,
     strikeTop: info.strikeTop === undefined ? undefined : info.strikeTop / u,
     strikeSize: info.strikeSize === undefined ? undefined : info.strikeSize / u,
     xHeight: info.xHeight === undefined ? undefined : info.xHeight / u,

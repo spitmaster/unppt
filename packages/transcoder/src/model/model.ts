@@ -292,6 +292,8 @@ export interface SlideContext {
   ownSlide: boolean;
   /** 所在的三维场景（SmartArt 三维样式整张图共用的相机，w、h 是场景的大小）：拉伸的侧面按它的视角画 */
   scene?: { scene3d: XEl; w: number; h: number };
+  /** 正在画 SmartArt 的绘图：文字的行高按字体的度量算（text/font-line.ts） */
+  diagram?: boolean;
   /**
    * 当前坐标系到对齐像素（显示像素，见 DISPLAY_WIDTH）的换算（像素 x = x + sx × 当前 x）：标准尺寸的幻灯片顶层不写
    * （就是幻灯片坐标）；在转动、翻转的组合里是 null（换算不是简单的平移缩放）。形状、图片、图表、文字按它对齐整像素

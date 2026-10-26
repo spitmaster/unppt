@@ -94,6 +94,7 @@ for (const d of dirs) {
       index.push({
         id, families: f.families, display: f.displayFamily, bold: f.bold, italic: f.italic, weight: f.weight,
         upem, ascent: r2(m.ascent), descent: r2(m.descent), lineGap: r2(m.lineGap),
+        ...(r2(m.extLeading) ? { extLead: r2(m.extLeading) } : {}), ...(m.eastAsian ? { ea: true } : {}),
         strikeTop: r2(m.strikeTop), strikeSize: r2(m.strikeSize), xHeight: r2(m.xHeight), generic: m.generic,
         cjk: cjk > 1000, ...(cjkMid !== undefined ? { cjkMid } : {}), file: basename(path),
       });

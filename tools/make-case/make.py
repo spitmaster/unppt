@@ -5610,6 +5610,61 @@ def smartart_matrix(app):
     return p
 
 
+def _smartart_layout(app, suffix):
+    return next(app.SmartArtLayouts(i) for i in range(1, app.SmartArtLayouts.Count + 1) if app.SmartArtLayouts(i).Id.endswith(suffix))
+
+
+def smartart_line_pitch(app):
+    """SmartArt 里多段文字的行距：行高按字体的度量算（中日韩字体 1.3 倍上下伸，其它字体上下伸 + 外部行距），不是普通文字的 1.2 倍字号。
+    第 1 页：基本列表，雅黑 / 黑体 / 等线 / Arial 各一个，每个节点三段（默认 90% 行距、35% 段后）；
+    第 2 页：120% 行距、无段后的雅黑和 Arial，Calibri + 雅黑混排（一段只有西文），垂直项目符号列表（子项多段）"""
+    p = new_pres(app, window=True)
+    basic = _smartart_layout(app, "layout/default")
+    cn = ["第一段文字", "第二段文字内容", "第三段"]
+    en = ["First line", "Second line here", "Third"]
+
+    def diagram(s, lay, x, y, w, h, texts, latin, ea, size=None, ls=None, sa=None):
+        sm = s.Shapes.AddSmartArt(lay, x, y, w, h)
+        nodes = sm.SmartArt.AllNodes
+        while nodes.Count > len(texts):
+            nodes(nodes.Count).Delete()
+        for k, t in enumerate(texts, 1):
+            tr = nodes(k).TextFrame2.TextRange
+            tr.Text = "\r".join(t) if isinstance(t, list) else t
+            tr.Font.Name = latin
+            tr.Font.NameFarEast = ea
+            if size:
+                tr.Font.Size = size
+            if ls is not None:
+                pf = tr.ParagraphFormat
+                pf.LineRuleWithin = -1
+                pf.SpaceWithin = ls
+                pf.LineRuleAfter = -1
+                pf.SpaceAfter = sa or 0
+        return sm
+
+    s = blank(p)
+    for k, (font, text) in enumerate([("Microsoft YaHei", cn), ("SimHei", cn), ("DengXian", cn), ("Arial", en)]):
+        diagram(s, basic, 20 + (k % 2) * 470, 20 + (k // 2) * 260, 450, 240, [text, text[::-1]], font, font, size=16)
+    s = blank(p)
+    diagram(s, basic, 20, 20, 450, 240, [cn, cn[::-1]], "Microsoft YaHei", "Microsoft YaHei", size=16, ls=1.2, sa=0)
+    diagram(s, basic, 490, 20, 450, 240, [en, en[::-1]], "Arial", "Arial", size=16, ls=1.2, sa=0)
+    diagram(s, basic, 20, 280, 450, 240, [["混排 Mixed 文字", "Latin only line", "第三段 3"], ["Text 文字", "第二段"]], "Calibri", "Microsoft YaHei", size=16)
+    sm = s.Shapes.AddSmartArt(_smartart_layout(app, "layout/vList2"), 490, 280, 450, 240)
+    nodes = sm.SmartArt.AllNodes
+    while nodes.Count > 1:
+        nodes(nodes.Count).Delete()
+    nodes(1).TextFrame2.TextRange.Text = "标题项目"
+    nodes(1).AddNode(2).Demote()  # 后面加一个同级节点（msoSmartArtNodeAfter），再降级成子项
+    nodes = sm.SmartArt.AllNodes
+    child = sm.SmartArt.Nodes(1).Nodes(1)
+    child.TextFrame2.TextRange.Text = "\r".join(["子项第一条说明文字", "子项第二条", "子项第三条较长的说明文字"])
+    for k in range(1, nodes.Count + 1):
+        nodes(k).TextFrame2.TextRange.Font.Name = "Microsoft YaHei"
+        nodes(k).TextFrame2.TextRange.Font.NameFarEast = "Microsoft YaHei"
+    return p
+
+
 def text_layout_unit(app):
     """排版单位 1/8 磅：第 1 页不换行的长西文行（每个字宽取整后的累积位移在行尾最明显）；
     第 2 页断行边界：文本框（内边距 0）、表格单元格的宽度正好等于或略大于文字宽度"""
@@ -7763,7 +7818,7 @@ def _bullet_bold_bodies():
 text_bullet_bold.patch = lambda path: _patch_marked(path, _bullet_bold_bodies())
 
 
-CASES = [shapes_all, text_sizes, text_align, text_spacing, text_bullets, text_missing_font, shapes_basic, fills_lines, table_basic, group_rotate, anim_basic, anim_auto, charts_basic, pictures, smartart, text_effects, text_layout, table_merge, links, emf_images, anim_advanced, charts_labels, freeform_icons, media_audio, anim_trigger, wmf_images, anim_iterate, picture_transparent, charts_more, shape_effects, equations, anim_path, anim_emphasis, transitions, fills_patterns, text_decoration, anim_entrance, svg_images, charts_markers, hidden_slides, media_background, text_glow_reflection, text_tabs, text_picture_bullets, fills_texture, transition_morph, text_embedded_fonts, text_warp, anim_repeat, charts_sizes, slide_timings, lines_compound, table_diagonal, lines_gradient, fills_radial, fills_rect_gradient, shapes_3d, table_vertical, transitions_more, anim_sound, anim_build, anim_after, anim_text_emphasis, charts_bubble, media_video, charts_options, charts_negative, shapes_bevel, charts_legend, shapes_3d_rotation, smartart_3d, charts_ofpie, charts_3d, anim_group_emphasis, activex_controls, charts_extras, charts_axis_titles, charts_fills, charts_outlines, charts_labels_more, group_scale, group_flip, charts_3d_line, charts_legend_pos, charts_crowded_labels, charts_label_skip, charts_bar_long_names, charts_multilevel, picture_recolor, text_symbols, text_numbering, lines_arrows, table_styles, shapes_styles, charts_styles, placeholders_inherit, text_bold_light, ole_objects, text_hanging_punct, speaker_notes, pictures_tiff, placeholders_picture, pictures_exif, text_picture_fill, pictures_mislabeled, emf_alphablend, placeholders_orphan, picture_fill_rect, slide_number_fields, table_builtin_styles, smartart_matrix, text_layout_unit, colors_gamma, text_latin_cjk_font, text_default_style, text_missing_font_jp, text_ea_line_break, text_ambiguous_punct, text_charset_slides, table_rowspan_tall, text_autofit_round, shapes_3d_contour, emf_clip_modes, placeholders_picture_geom, emf_gradient_fill, text_theme_font_lang, text_anchor_linespacing, table_linespacing, table_fontalgn, text_theme_font_latin, text_margin_right, text_charset_gap, slide_size_repair, fills_shape_gradient, text_shadow_runs, picture_3d_shadow, charts_axis_ea_vert, fills_tile_resample, text_shadow_dist, text_shadow_size, text_shadow_scale, text_shadow_blur, text_glow_scale, text_reflection_dist, shapes_bg_fill, text_control_chars, placeholders_no_index, text_ambiguous_missing_ea, text_missing_panose, emf_bitmap_src, fills_group, fills_rot_with_shape, fills_rot_cut, charts_pct_stacked, picture_bg_fill, charts_legend_manual, charts_long_cats, charts_cat_vertical, charts_cat_rot_len, charts_cat_rot_short, charts_cat_rot_threshold, charts_pie_label_sep, text_slash_break, smartart_colors, text_fontref_ph, text_hanging_unset, table_default_bold, text_missing_cjk_name, text_fakebold_width, text_br_empty_line, text_ea_lang, slide_number_bare_field, text_neg_indent, text_mix_wrap_lines, text_theme_ea_altlang, charts_inner_titles, charts_line_dash, charts_rich_title, text_ea_slot_symbols, charts_date_extra_vals, shape_shadow_nofill_text, text_fontalgn, charts_legend_overflow, group_effects, charts_point_labels, picture_bevel_border, text_outline_fakebold, text_just_hang, text_just_spaces, charts_axis_ea_vert_latin, charts_title_moved, charts_dtable_fonts, charts_pie_manual_labels, charts_axis_title_moved, charts_pie_bestfit, charts_dtable_wrap, charts_axis_min_offset, text_bullet_pos_indent, text_spcpts_round, charts_na_values, lines_dash_caps, text_anchor_ctr, custgeom_no_wh, text_link_kinds, fills_blip_no_mode, text_buchar_multi, text_font_substitutes, charts_empty_series_name, charts_cat_custom_rot, text_ea_latin_cjk, placeholders_footer_base, table_no_style_other, lines_thin_dash, text_super_spc, text_pua_nosym, text_vert_insets, table_fontalgn_tall, charts_dlbl_numfmt, charts_user_shapes, charts_dlbl_clamp, charts_axis_no_sppr, charts_axis_style_defaults, text_cr_paragraph, charts_pie_label_pos, text_autonum_symbol_font, text_kern_zero, charts_legend_truncate, table_latin_rows, text_latin_break, charts_legend_bottom_wrap, charts_dtable_manual, fonts_showcase, table_anchor_ctr, text_noto_weights, equations_rot_flip, text_anchor_ctr_indent, text_indent_round, text_dash_ealnbrk, text_latin_break_hang, text_fakebold_gradfill, charts_pie_bestfit_fit, text_bullet_align, text_bullet_fonts, text_bullet_bold]
+CASES = [shapes_all, text_sizes, text_align, text_spacing, text_bullets, text_missing_font, shapes_basic, fills_lines, table_basic, group_rotate, anim_basic, anim_auto, charts_basic, pictures, smartart, text_effects, text_layout, table_merge, links, emf_images, anim_advanced, charts_labels, freeform_icons, media_audio, anim_trigger, wmf_images, anim_iterate, picture_transparent, charts_more, shape_effects, equations, anim_path, anim_emphasis, transitions, fills_patterns, text_decoration, anim_entrance, svg_images, charts_markers, hidden_slides, media_background, text_glow_reflection, text_tabs, text_picture_bullets, fills_texture, transition_morph, text_embedded_fonts, text_warp, anim_repeat, charts_sizes, slide_timings, lines_compound, table_diagonal, lines_gradient, fills_radial, fills_rect_gradient, shapes_3d, table_vertical, transitions_more, anim_sound, anim_build, anim_after, anim_text_emphasis, charts_bubble, media_video, charts_options, charts_negative, shapes_bevel, charts_legend, shapes_3d_rotation, smartart_3d, charts_ofpie, charts_3d, anim_group_emphasis, activex_controls, charts_extras, charts_axis_titles, charts_fills, charts_outlines, charts_labels_more, group_scale, group_flip, charts_3d_line, charts_legend_pos, charts_crowded_labels, charts_label_skip, charts_bar_long_names, charts_multilevel, picture_recolor, text_symbols, text_numbering, lines_arrows, table_styles, shapes_styles, charts_styles, placeholders_inherit, text_bold_light, ole_objects, text_hanging_punct, speaker_notes, pictures_tiff, placeholders_picture, pictures_exif, text_picture_fill, pictures_mislabeled, emf_alphablend, placeholders_orphan, picture_fill_rect, slide_number_fields, table_builtin_styles, smartart_matrix, text_layout_unit, colors_gamma, text_latin_cjk_font, text_default_style, text_missing_font_jp, text_ea_line_break, text_ambiguous_punct, text_charset_slides, table_rowspan_tall, text_autofit_round, shapes_3d_contour, emf_clip_modes, placeholders_picture_geom, emf_gradient_fill, text_theme_font_lang, text_anchor_linespacing, table_linespacing, table_fontalgn, text_theme_font_latin, text_margin_right, text_charset_gap, slide_size_repair, fills_shape_gradient, text_shadow_runs, picture_3d_shadow, charts_axis_ea_vert, fills_tile_resample, text_shadow_dist, text_shadow_size, text_shadow_scale, text_shadow_blur, text_glow_scale, text_reflection_dist, shapes_bg_fill, text_control_chars, placeholders_no_index, text_ambiguous_missing_ea, text_missing_panose, emf_bitmap_src, fills_group, fills_rot_with_shape, fills_rot_cut, charts_pct_stacked, picture_bg_fill, charts_legend_manual, charts_long_cats, charts_cat_vertical, charts_cat_rot_len, charts_cat_rot_short, charts_cat_rot_threshold, charts_pie_label_sep, text_slash_break, smartart_colors, text_fontref_ph, text_hanging_unset, table_default_bold, text_missing_cjk_name, text_fakebold_width, text_br_empty_line, text_ea_lang, slide_number_bare_field, text_neg_indent, text_mix_wrap_lines, text_theme_ea_altlang, charts_inner_titles, charts_line_dash, charts_rich_title, text_ea_slot_symbols, charts_date_extra_vals, shape_shadow_nofill_text, text_fontalgn, charts_legend_overflow, group_effects, charts_point_labels, picture_bevel_border, text_outline_fakebold, text_just_hang, text_just_spaces, charts_axis_ea_vert_latin, charts_title_moved, charts_dtable_fonts, charts_pie_manual_labels, charts_axis_title_moved, charts_pie_bestfit, charts_dtable_wrap, charts_axis_min_offset, text_bullet_pos_indent, text_spcpts_round, charts_na_values, lines_dash_caps, text_anchor_ctr, custgeom_no_wh, text_link_kinds, fills_blip_no_mode, text_buchar_multi, text_font_substitutes, charts_empty_series_name, charts_cat_custom_rot, text_ea_latin_cjk, placeholders_footer_base, table_no_style_other, lines_thin_dash, text_super_spc, text_pua_nosym, text_vert_insets, table_fontalgn_tall, charts_dlbl_numfmt, charts_user_shapes, charts_dlbl_clamp, charts_axis_no_sppr, charts_axis_style_defaults, text_cr_paragraph, charts_pie_label_pos, text_autonum_symbol_font, text_kern_zero, charts_legend_truncate, table_latin_rows, text_latin_break, charts_legend_bottom_wrap, charts_dtable_manual, fonts_showcase, table_anchor_ctr, text_noto_weights, equations_rot_flip, text_anchor_ctr_indent, text_indent_round, text_dash_ealnbrk, text_latin_break_hang, text_fakebold_gradfill, charts_pie_bestfit_fit, text_bullet_align, text_bullet_fonts, text_bullet_bold, smartart_line_pitch]
 
 
 def main():

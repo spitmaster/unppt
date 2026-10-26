@@ -39,6 +39,13 @@ export interface FontMetrics {
   descent: number;  // 正数，单位 em
   /** hhea 表的行间距（em）：不参与行高，只用来判断混排时要不要和另一种字体比上下伸（见 text/measure.ts） */
   lineGap: number;
+  /**
+   * GDI 的外部行距（em）：hhea 的行间距减去 win 上下伸比 hhea 上下伸多出的部分，不小于 0（Arial 0.033、Times 0.042、Calibri 0）。
+   * 只有 SmartArt 文字的行高用（text/font-line.ts）；没有时按 0
+   */
+  extLeading?: number;
+  /** OS/2 的代码页标了中日韩（932 / 936 / 949 / 950 / 1361）：SmartArt 文字的行高按 1.3 倍上下伸（text/font-line.ts） */
+  eastAsian?: boolean;
   /** 返回字符宽度（单位 em）；字体里没有这个字时返回 undefined */
   advance(codePoint: number): number | undefined;
   /** 删除线：线的上沿离基线的高度和线粗（单位 em，来自 OS/2 表） */
@@ -157,12 +164,16 @@ async function loadMetrics(src: RandomAccessSource, tables: Map<string, TableRec
   const upem = be16(head, 18);
   const hhea = await get('hhea');
   const numHMetrics = be16(hhea, 34);
-  let ascent = bes16(hhea, 4) / upem, descent = -bes16(hhea, 6) / upem, lineGap = bes16(hhea, 8) / upem;
+  const hAscent = bes16(hhea, 4) / upem, hDescent = -bes16(hhea, 6) / upem, lineGap = bes16(hhea, 8) / upem;
+  let ascent = hAscent, descent = hDescent;
   if (os2b && os2b.length >= 78) {
     // Windows 上 PowerPoint 用 usWinAscent / usWinDescent（行间距仍取 hhea 的）
     ascent = be16(os2b, 74) / upem;
     descent = be16(os2b, 76) / upem;
   }
+  const extLeading = Math.max(0, lineGap - (ascent + descent - hAscent - hDescent));
+  // ulCodePageRange1 的第 17~21 位：日文 932、简体中文 936、韩文 949、繁体中文 950、韩文 Johab 1361
+  const eastAsian = !!os2b && os2b.length >= 86 && be16(os2b, 0) >= 1 && (be32(os2b, 78) & (0x1f << 17)) !== 0;
   const hmtx = await get('hmtx');
   const cmap = await get('cmap');
   const lookup = buildCmap(cmap);
@@ -180,7 +191,7 @@ async function loadMetrics(src: RandomAccessSource, tables: Map<string, TableRec
     return new GlyphOutlines(src, glyfRec, locaRec, bes16(head, 50) === 1, upem, be16(maxp, 4));
   })();
   return {
-    unitsPerEm: upem, ascent, descent, lineGap,
+    unitsPerEm: upem, ascent, descent, lineGap, extLeading, eastAsian,
     strikeTop: os2b && os2b.length >= 30 ? bes16(os2b, 28) / upem : undefined,
     strikeSize: os2b && os2b.length >= 30 ? bes16(os2b, 26) / upem : undefined,
     xHeight: os2b && os2b.length >= 88 && be16(os2b, 0) >= 2 ? bes16(os2b, 86) / upem : undefined,

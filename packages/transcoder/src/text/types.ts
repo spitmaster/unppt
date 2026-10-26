@@ -8,6 +8,7 @@ import type { SvgDoc } from '../common/svg';
 import type { Rel } from '../io/package';
 import type { XEl } from '../io/xml';
 import type { ImageResolver } from '../style/fill';
+import type { FontLine } from './font-line';
 
 export interface TextEnv {
   colors: ColorContext;
@@ -50,6 +51,8 @@ export interface TextEnv {
   pixelScale?: number;
   /** renderText 按 pixelTop 算好的基线对齐函数（文字框内的坐标） */
   snapY?: (y: number) => number;
+  /** SmartArt 里的文字：行高、段前段后按字体的度量算（text/font-line.ts），不是 1.2 × 字号 */
+  fontLines?: boolean;
 }
 
 /** 字体嵌入：记录每个字体用到的字；嵌入产物的字体返回它在产物里的别名，不嵌入的返回 undefined */
@@ -128,6 +131,8 @@ export interface Atom {
   tab: boolean;
   /** 默认字体包：开源字体的字在原字体格子里要挪多少（像素，dy 往上为正），只影响画字，不影响排版（font/pack.ts） */
   shift?: { dx: number; dy: number };
+  /** SmartArt 文字（TextEnv.fontLines）：这个字的字体行框 */
+  fl?: FontLine;
 }
 
 /** 排好的一行 */
@@ -139,6 +144,8 @@ export interface Line {
   descent: number;
   x0: number;     // 文字起点（相对文本框内容区左边）
   avail: number;
+  /** SmartArt 文字（TextEnv.fontLines）：这一行的字体行框，行高、基线按它算（emit.ts） */
+  fl?: FontLine;
 }
 
 export interface TextBox {
