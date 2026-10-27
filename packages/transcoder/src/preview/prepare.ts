@@ -2,8 +2,8 @@
  * 出图的"准备"一半（在主线程，要用字体库和媒体）：页面 SVG 先剔除被整页不透明图片盖住的元素（occlusion.ts），
  * 重复出现的背景拆成背景层（layers.ts），透视投影的图片换成单独画的位图（mesh-warp.ts），
  * 展开嵌套的 SVG 图片（inline-svg.ts；同一页里重复很多次的单独画成位图），
- * 字体名换成这一页实际用到的字体文件里的英文名（resvg 不认浏览器的字体回退）、发光的外扩拆成两遍（morphology.ts）——
- * 得到交给 paint.ts 画的 PaintJob。
+ * 字体名换成这一页实际用到的字体文件里的英文名（resvg 不认浏览器的字体回退）、发光的外扩拆成两遍（morphology.ts）、
+ * 预设图案填充改成抗锯齿画（pattern-smooth.ts）——得到交给 paint.ts 画的 PaintJob。
  * 绘制要的字体、图片、背景层按编号从这里取（PaintResources）；超大图片先缩小（huge-images.ts）。
  */
 import type { FontFace } from '../font/font';
@@ -11,6 +11,7 @@ import { SYMBOL_FONT } from '../font/check';
 import { HUGE_PIXELS, withHugeImagesShrunk } from './huge-images';
 import { splitTemplate } from './layers';
 import { splitMorphology } from './morphology';
+import { smoothPatterns } from './pattern-smooth';
 import { cullOccluded } from './occlusion';
 import { inlineSvgImages } from './inline-svg';
 import { warpMeshes, type MeshWarp } from './mesh-warp';
@@ -90,7 +91,7 @@ export class Preparer {
     const used = new Set<FontFace>();
     // 透视投影的图片先换成单独画的位图（内容在它自己的准备里处理）；先拆发光的外扩再展开嵌套的 SVG 图片：
     // 图片里的 feMorphology 有自己的缩放，不按页面的缩放改
-    const flat = warpMeshes(svg, pageScale(svg), (content, width, warp) => this.raster(`mesh@${width}@${warp.dst.join(',')}@${content}`, content, width, warp));
+    const flat = warpMeshes(smoothPatterns(svg), pageScale(svg), (content, width, warp) => this.raster(`mesh@${width}@${warp.dst.join(',')}@${content}`, content, width, warp));
     const out = await rewriteFonts(await inlineSvgImages(splitMorphology(flat), this.image, (key, svg, width) => this.raster(key, svg, width)), this.fonts, used);
     const faces = [...used];
     // resvg 缺字时按加载顺序找第一个有这个字的字体（不看字重），写的字体找不到时用默认字体：符号字体（Wingdings 兼容字体）排在最后、
