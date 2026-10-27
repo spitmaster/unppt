@@ -1,0 +1,14 @@
+{
+ "count": 1,
+ "picw": 960,
+ "pich": 540,
+ "thumw": 216,
+ "thumh": 122,
+ "slides": [
+  {
+   "index": 1,
+   "thum": "thum/1.jpg",
+   "pic": "pic/1.jpg"
+  }
+ ]
+}

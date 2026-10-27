@@ -1,0 +1,158 @@
+[
+ {
+  "name": "shapes-all",
+  "title": {
+   "zh": "各种形状",
+   "en": "Shapes"
+  },
+  "desc": {
+   "zh": "187 种预设形状、填充、线条",
+   "en": "Preset shapes, fills and lines"
+  },
+  "slides": 8
+ },
+ {
+  "name": "fonts-showcase",
+  "title": {
+   "zh": "字体",
+   "en": "Fonts"
+  },
+  "desc": {
+   "zh": "字体打包进产物，所有观看者看到的一样",
+   "en": "Fonts are embedded, every viewer sees the same"
+  },
+  "slides": 3
+ },
+ {
+  "name": "charts-basic",
+  "title": {
+   "zh": "图表",
+   "en": "Charts"
+  },
+  "desc": {
+   "zh": "柱形、折线、饼图……按 PowerPoint 的规则排坐标轴和标签",
+   "en": "Bar, line, pie… axes and labels laid out like PowerPoint"
+  },
+  "slides": 4
+ },
+ {
+  "name": "charts-more",
+  "title": {
+   "zh": "更多图表",
+   "en": "More charts"
+  },
+  "desc": {
+   "zh": "面积、雷达、散点、组合图",
+   "en": "Area, radar, scatter, combo"
+  },
+  "slides": 3
+ },
+ {
+  "name": "charts-3d",
+  "title": {
+   "zh": "三维图表",
+   "en": "3-D charts"
+  },
+  "desc": {
+   "zh": "三维柱形、饼图",
+   "en": "3-D bar and pie"
+  },
+  "slides": 3
+ },
+ {
+  "name": "smartart",
+  "title": {
+   "zh": "SmartArt",
+   "en": "SmartArt"
+  },
+  "desc": {
+   "zh": "流程、层次、循环",
+   "en": "Process, hierarchy, cycle"
+  },
+  "slides": 4
+ },
+ {
+  "name": "table-styles",
+  "title": {
+   "zh": "表格",
+   "en": "Tables"
+  },
+  "desc": {
+   "zh": "内置表格样式、合并单元格",
+   "en": "Built-in table styles, merged cells"
+  },
+  "slides": 3
+ },
+ {
+  "name": "text-warp",
+  "title": {
+   "zh": "艺术字",
+   "en": "WordArt"
+  },
+  "desc": {
+   "zh": "40 种文字变形",
+   "en": "40 text warps"
+  },
+  "slides": 2
+ },
+ {
+  "name": "equations",
+  "title": {
+   "zh": "公式",
+   "en": "Equations"
+  },
+  "desc": {
+   "zh": "Office 数学公式",
+   "en": "Office math"
+  },
+  "slides": 1
+ },
+ {
+  "name": "shapes-3d",
+  "title": {
+   "zh": "三维形状",
+   "en": "3-D shapes"
+  },
+  "desc": {
+   "zh": "棱台、三维旋转、光照",
+   "en": "Bevels, 3-D rotation, lighting"
+  },
+  "slides": 2
+ },
+ {
+  "name": "transitions",
+  "title": {
+   "zh": "页面切换",
+   "en": "Transitions"
+  },
+  "desc": {
+   "zh": "淡出、推进、擦除、形状……",
+   "en": "Fade, push, wipe, shape…"
+  },
+  "slides": 13
+ },
+ {
+  "name": "anim-basic",
+  "title": {
+   "zh": "动画",
+   "en": "Animations"
+  },
+  "desc": {
+   "zh": "进入、强调、退出，按点击分步",
+   "en": "Entrance, emphasis, exit, click by click"
+  },
+  "slides": 1
+ },
+ {
+  "name": "anim-path",
+  "title": {
+   "zh": "路径动画",
+   "en": "Motion paths"
+  },
+  "desc": {
+   "zh": "沿路径移动",
+   "en": "Motion along a path"
+  },
+  "slides": 1
+ }
+]

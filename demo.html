@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="zh-CN" data-lang="zh">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>unppt 演示 — 和 PowerPoint 对照 | PPTX to HTML demo</title>
+<meta name="description" content="unppt 演示：同一份演示文稿，左边是 Microsoft PowerPoint 导出的图片，右边是 unppt 在浏览器里播放的效果。">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <a class="logo" href="./">un<b>ppt</b></a>
+    <nav>
+      <a href="./#demos"><span lang="zh">全部演示</span><span lang="en">All demos</span></a>
+      <a href="https://github.com/spitmaster/unppt">GitHub</a>
+      <button class="lang" type="button"><span lang="zh">English</span><span lang="en">中文</span></button>
+    </nav>
+  </header>
+  <h2 id="title"></h2>
+  <div class="pair">
+    <div class="pane"><div class="cap">Microsoft PowerPoint <span lang="zh">（导出的图片，这一页的最终状态）</span><span lang="en">(exported image, final state of the slide)</span></div>
+      <div class="view"><img id="ref" alt="PowerPoint"></div></div>
+    <div class="pane"><div class="cap">unppt <span lang="zh">（在浏览器里播放，可以点击翻页、播放动画）</span><span lang="en">(playing in your browser; click to advance)</span></div>
+      <div class="view"><iframe id="player" allow="autoplay; fullscreen" title="unppt player"></iframe></div></div>
+  </div>
+  <div class="controls">
+    <button id="prev" type="button">◀ <span lang="zh">上一步</span><span lang="en">Back</span></button>
+    <button id="next" type="button"><span lang="zh">下一步</span><span lang="en">Next</span> ▶</button>
+    <span id="state"></span>
+    <span class="note"><span lang="zh">键盘 ← → 也可以翻页。</span><span lang="en">Arrow keys work too.</span></span>
+  </div>
+  <p style="color:var(--muted);font-size:14px"><span lang="zh">播放器就是这一页右边的 iframe：转码出来的产物原样放在这里，</span><span lang="en">The player is the iframe on the right: the converted output as-is, </span><a id="raw" target="_blank"><span lang="zh">单独打开</span><span lang="en">open it alone</span></a>.</p>
+  <footer>unppt · Apache-2.0 · <a href="https://github.com/spitmaster/unppt">GitHub</a></footer>
+</div>
+<script type="module">
+  import { getLang } from './i18n.js';
+  import { UnpptFrame } from './host.js';
+  const $ = (id) => document.getElementById(id);
+  const name = new URLSearchParams(location.search).get('d');
+  const demos = await fetch('demos.json').then((r) => r.json());
+  const d = demos.find((x) => x.name === name) || demos[0];
+  const title = () => { $('title').textContent = d.title[getLang()]; document.title = `unppt — ${d.title[getLang()]}`; };
+  title();
+  document.addEventListener('langchange', title);
+  const base = `demos/${d.name}/index.html`;
+  $('raw').href = base;
+  $('player').src = base + '?ui=0';
+  const ref = (i) => { $('ref').src = `demos/${d.name}/ref/slide-${String(i + 1).padStart(3, '0')}.png`; };
+  ref(0);
+  const deck = new UnpptFrame($('player'));
+  deck.on('change', (s) => {
+    ref(s.slide);
+    $('state').textContent = getLang() === 'zh' ? `第 ${s.slide + 1}/${s.slideCount} 页，第 ${s.step}/${s.stepCount} 步` : `Slide ${s.slide + 1}/${s.slideCount}, step ${s.step}/${s.stepCount}`;
+  });
+  $('prev').onclick = () => deck.prev();
+  $('next').onclick = () => deck.next();
+  addEventListener('keydown', (e) => { if (e.key === 'ArrowRight') deck.next(); else if (e.key === 'ArrowLeft') deck.prev(); });
+</script>
+</body>
+</html>

@@ -1,0 +1,19 @@
+{
+ "count": 2,
+ "picw": 960,
+ "pich": 540,
+ "thumw": 216,
+ "thumh": 122,
+ "slides": [
+  {
+   "index": 1,
+   "thum": "thum/1.jpg",
+   "pic": "pic/1.jpg"
+  },
+  {
+   "index": 2,
+   "thum": "thum/2.jpg",
+   "pic": "pic/2.jpg"
+  }
+ ]
+}

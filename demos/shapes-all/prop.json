@@ -1,0 +1,49 @@
+{
+ "count": 8,
+ "picw": 960,
+ "pich": 540,
+ "thumw": 216,
+ "thumh": 122,
+ "slides": [
+  {
+   "index": 1,
+   "thum": "thum/1.jpg",
+   "pic": "pic/1.jpg"
+  },
+  {
+   "index": 2,
+   "thum": "thum/2.jpg",
+   "pic": "pic/2.jpg"
+  },
+  {
+   "index": 3,
+   "thum": "thum/3.jpg",
+   "pic": "pic/3.jpg"
+  },
+  {
+   "index": 4,
+   "thum": "thum/4.jpg",
+   "pic": "pic/4.jpg"
+  },
+  {
+   "index": 5,
+   "thum": "thum/5.jpg",
+   "pic": "pic/5.jpg"
+  },
+  {
+   "index": 6,
+   "thum": "thum/6.jpg",
+   "pic": "pic/6.jpg"
+  },
+  {
+   "index": 7,
+   "thum": "thum/7.jpg",
+   "pic": "pic/7.jpg"
+  },
+  {
+   "index": 8,
+   "thum": "thum/8.jpg",
+   "pic": "pic/8.jpg"
+  }
+ ]
+}
