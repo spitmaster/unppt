@@ -2,7 +2,7 @@
 
 # How Transcoding Works: Turning a .pptx into a Web Page
 
-This document walks through the code: from the moment you type `unppt deck.pptx` until `deck.html`, `prop.json`, `pic/` and `thum/` appear on disk. For each step it explains what happens and which file the code lives in.
+This document walks through the code: from the moment you type `unppt deck.pptx` until `index.html`, `prop.json`, `pic/` and `thum/` appear in a new folder next to the deck, named after it. For each step it explains what happens and which file the code lives in.
 
 After reading it you should be able to answer:
 
@@ -211,7 +211,7 @@ The CLI only does the file-system work. The conversion itself is done by `conver
 ```mermaid
 flowchart TD
   A["unppt input.pptx options"] --> B{"parse args"}
-  B --> C["decide output path<br/>single: same name .html<br/>paged/pages: same-name folder/index.html<br/>data: same name .json"]
+  B --> C["decide output path<br/>no -o: a same-name folder next to the pptx<br/>entry index.html (deck.json for data)"]
   B --> D["--fonts / --system-fonts<br/>recursively list .ttf .otf .ttc<br/>loadFontPack() reads the default font pack"]
   B --> E["read dist/resvg.wasm<br/>(skipped with --no-images)"]
   E --> F["--jobs auto: autoWorkers()<br/>threads from CPU count and free memory"]
@@ -356,7 +356,7 @@ flowchart LR
 - slide XML is read with `pkg.xml(ref.part, false)`, **not cached**, and thrown away after rendering;
 - audio and video are streamed straight from the zip to the output file.
 
-`io/xml.ts` also has an important function, `expandAlternate`. New PowerPoint features are often written as `mc:AlternateContent` ("new versions use Choice, old versions use Fallback"). unppt picks a Choice it supports; if the Choice contains something it cannot draw (Office math, ink), it uses the picture PowerPoint stored in the Fallback.
+`io/xml.ts` also has an important function, `expandAlternate`. New PowerPoint features are often written as `mc:AlternateContent` ("new versions use Choice, old versions use Fallback"). unppt picks a Choice it supports; if the Choice contains something it cannot draw (Office math, ink), it uses the picture PowerPoint stored in the Fallback. That picture is a snapshot of how the equation finally looks on the slide (already rotated and flipped), so when the shape is rotated or flipped the picture is laid upright into the bounding box instead of being turned again (`render/elements/snapshot.ts`).
 
 ---
 
@@ -584,8 +584,8 @@ An unknown uri produces an "unsupported graphic" warning.
 
 | Content | Files | How |
 |---|---|---|
-| Table | `render/frames/table-frame.ts`, `render/table.ts`, `render/table-style.ts`, `render/builtin-table-styles.ts` | Column widths come from `a:tblGrid`; row height is the larger of "set row height" and "actual text height"; the table style (header row, banded rows...) is applied first, then each cell's own fill and borders override it |
-| Chart | `render/frames/chart-frame.ts` then `chart/` | see section 9 |
+| Table | `render/frames/table-frame.ts`, `render/table.ts`, `render/table-style.ts`, `render/builtin-table-styles.ts` | Column widths come from `a:tblGrid`; row height is the larger of "set row height" and "actual text height"; the table style (header row, banded rows...) is applied first, then each cell's own fill and borders override it; a cell's "center horizontally" (`anchorCtr`) works like a text box's, see 8.4 |
+| Chart | `render/frames/chart-frame.ts` then `chart/`, `render/frames/chart-fonts.ts` | see section 9 |
 | SmartArt | `render/frames/diagram-frame.ts` | **No layout of its own**: it draws the "drawing cache" PowerPoint saved in the file (`dsp:drawing`, a ready-made set of shapes). Each shape gets its own `data-uid` wrapper so "one by one" animations can find it. A missing or empty cache produces a warning |
 | OLE object | `render/frames/ole-frame.ts` | shows the preview picture PowerPoint stored (drawn as a picture) |
 
@@ -634,6 +634,7 @@ flowchart LR
   - marked with a Japanese charset: `Yu Gothic`;
   - some old names have aliases: `Helvetica` to `Arial`, `Times` to `Times New Roman`, `Courier` to `Courier New`.
 - With the default font pack, the metrics of these substitutes (Calibri, Microsoft YaHei, Yu Gothic) are in the pack, so line breaks after substitution also match PowerPoint.
+- **Source Han Sans / Serif (思源黑体 / 思源宋体) that are not embedded (and not given with `--fonts` / `--system-fonts`) are substituted by the same rules** (since 0.3.1; names such as Noto Sans CJK, with CN or weight suffixes, are treated the same): most computers do not have them installed, and that is how PowerPoint shows them there, so laying them out this way makes every viewer see the same thing ([SPEC D3 ⑩](../../SPEC.md#2-已确认的决策), Chinese). To keep the Source Han look, the author should embed the font. A deck that names Noto Sans SC / Noto Serif SC directly still uses the pack's font of that name.
 - Missing font names are collected in `missingFonts` and end up in `report.missingFonts`; which font each character used is also recorded through `fontUse` in the font check (`FontCheckLog` in `font/check.ts`), which becomes `ConvertResult.fontCheck`.
 
 ### 8.2 Line breaking (linebreak.ts)
@@ -641,19 +642,21 @@ flowchart LR
 One character off in a line break shifts every line after it, so every line-breaking rule is measured in PowerPoint first and then implemented (how it is measured: [Fidelity 2.5](fidelity.md#25-the-line-wrapping-test-toolswraptest)); each rule and its evidence is recorded in [SPEC section 7](../../SPEC.md#7-实测得到的-powerpoint-规则用-make-case-用例校准) (Chinese). The main groups:
 
 - a line may break after spaces and tabs, and between CJK characters; a word too long for the line is broken in the middle;
-- **punctuation rules (kinsoku)**: full stops, commas, closing brackets etc. may not start a line; opening brackets and opening quotes may not end a line (the `NO_START` and `NO_END` sets), also across a space; when "Use East Asian rules for first and last character" (`eaLnBrk`) is off, these rules are skipped;
+- **punctuation rules (kinsoku)**: full stops, commas, closing brackets etc. may not start a line; opening brackets and opening quotes may not end a line (the `NO_START` and `NO_END` sets in `common/kinsoku.ts`, also used for wrapping chart labels), also across a space; when "Use East Asian rules for first and last character" (`eaLnBrk`) is off, these rules are skipped;
 - **hanging punctuation**: a full stop or comma that does not fit at the end of a line hangs outside the box, except ASCII punctuation inside URLs and decimals, and when the punctuation right after it does not fit either;
-- **symbols**: a dash stays with the character before it, ellipses do not hang, curly quotes stay with adjacent letters and digits, no-break spaces never break, circled digits behave like CJK characters, and ★ ± × § ° behave like Latin characters;
-- **widths**: kerning between two characters only counts inside one line, so the pair at the end of a line takes no width; a tab whose stop lies beyond the line width moves to the next line together with the text after it.
+- **symbols**: a dash stays with the character before it (in Chinese text it may break when "Use East Asian rules for first and last character" is off), ellipses do not hang, curly quotes stay with adjacent letters and digits, no-break spaces never break, circled digits behave like CJK characters, and ★ ± × § ° behave like Latin characters;
+- **widths**: kerning between two characters only counts inside one line, so the pair at the end of a line takes no width; a tab whose stop lies beyond the line width moves to the next line together with the text after it;
+- **rounding**: paragraph indents are rounded to 1/20 pt; a line fits when "line start + line width + right indent", rounded up to 1/8 pt, does not exceed the box width (measured).
 
 ### 8.3 Bullets and numbering (bullets.ts)
 
-Supports character bullets (`a:buChar`), picture bullets (`a:buBlip`) and auto numbering (`a:buAutoNum`: Arabic numerals, Roman numerals, letters...). Numbers count continuously per level within one text box (`BulletNumbering`).
+Supports character bullets (`a:buChar`), picture bullets (`a:buBlip`) and auto numbering (`a:buAutoNum`: Arabic numerals, Roman numerals, letters...). Numbers count continuously per level within one text box (`BulletNumbering`). Some measured rules: auto numbers ignore the font in `a:buFont` and use the body text font, and follow bold paragraphs; character bullets do not follow bold, and a bullet font that is not installed is substituted according to its own charset; in centred and right-aligned paragraphs the bullet keeps the same distance to the text as in a left-aligned one.
 
 ### 8.4 Alignment and spacing (emit.ts)
 
 - vertical anchor: top / middle / bottom (`anchor`);
 - horizontal alignment: left / centre / right / justify / distributed;
+- center horizontally (`anchorCtr`, in text boxes and table cells): lines are first laid out with each paragraph's own alignment and indents, then the span covered by all lines (including their indents) is centred in the box;
 - line spacing, space before and after paragraphs;
 - **baseline pixel snapping**: for font sizes up to 20 pt the baseline y is rounded to a whole pixel (`SNAP_MAX_SIZE`), matching PowerPoint's display.
 
@@ -663,7 +666,7 @@ The body property `a:normAutofit` stores the shrink values PowerPoint computed: 
 
 ### 8.6 Emitting the text
 
-Each line (each run of the same style within a line) becomes one SVG `<text>` with `font-family`, `font-size`, `fill` and the x coordinate of every character. Underline, strikethrough and highlight are **drawn by hand as rectangles / lines** instead of using the browser's `text-decoration` (browsers disagree on its position and thickness). Paragraphs get their own sub-ids so "by paragraph" animations can target them.
+Each line (each run of the same style within a line) becomes one SVG `<text>` with `font-family`, `font-size`, `fill` and the x coordinate of every character. Underline, strikethrough and highlight are **drawn by hand as rectangles / lines** instead of using the browser's `text-decoration` (browsers disagree on its position and thickness). Bold text in a font without a bold face (SimSun, KaiTi, ...) is **made bold synthetically** by stroking the glyphs; the stroke uses the same colour, gradient or picture as the fill, and semi-transparent text gets one transparency for the whole glyph (`svg-text.ts`). Paragraphs get their own sub-ids so "by paragraph" animations can target them.
 
 ---
 
@@ -683,7 +686,9 @@ flowchart TD
   type -->|"category layout"| cat["cat-chart.ts category axis<br/>column, bar, line, area, stock<br/>can be combined (column + line)"]
   type -->|"standalone layout"| sa["fills the plot area alone<br/>pie, doughnut, pie-of-pie, radar, scatter, bubble"]
   cat --> extras["axes axis.ts, number formats format.ts,<br/>data labels point-labels.ts, trendlines trendline.ts,<br/>error bars error-bars.ts, data table data-table.ts"]
+  sa --> pl["pie data labels pie-labels.ts<br/>wrapping label-wrap.ts, fits in the slice? sector-fit.ts"]
   cf --> us["shapes drawn on the chart c:userShapes<br/>render/frames/chart-user-shapes.ts"]
+  rc --> fnt["after drawing: embedChartFonts<br/>render/frames/chart-fonts.ts<br/>text switched to embedded font subsets"]
 ```
 
 The chart type is an extension point (`chart/chart-type.ts`, where `layout` is either `standalone` or `category`), registered in `chart/chart-types.ts`:
@@ -722,7 +727,9 @@ classDiagram
 
 Every part of a chart (data points, whole lines, data labels) has its own id (`chartUid` in `common/uid.ts`), so "by series" and "by category" chart animations can play.
 
-Layout (how far the title is from the top, how wide the legend is...) approximates PowerPoint's default automatic layout using measured rules; the constants are in `chart/layout.ts` and other files, with comments saying "measured" (实测).
+Layout (how far the title is from the top, how wide the legend is...) approximates PowerPoint's default automatic layout using measured rules; the constants are in `chart/layout.ts` and other files, with comments saying "measured" (实测). "Best Fit" pie data labels follow PowerPoint's rules: a label first tries to fit in its slice, and one that does not is wrapped narrower or moved outside the pie; labels are at most 1/5 of the chart width, and wrapping follows the punctuation rules (`pie-labels.ts`, `label-wrap.ts`).
+
+**Fonts of chart text**: chart text also uses only fonts embedded in the output ([SPEC D3 ⑨](../../SPEC.md#2-已确认的决策), Chinese). After the chart is drawn, `chart-fonts.ts` finds a font for each character of each text (the chart's own font -> Microsoft YaHei / Calibri -> the pack's open fonts), records the characters for subsetting and switches `font-family` to the embedded font's alias.
 
 ![Chart comparison: PowerPoint on the left, unppt on the right](../images/compare-charts-basic.png)
 
@@ -780,7 +787,7 @@ flowchart TD
   e["fonts embedded in the pptx<br/>ppt/fonts/*.fntdata (EOT format)"] -->|"lazyEmbeddedFont<br/>decompressed on first use"| lib
   u["specified fonts<br/>options.fonts (--fonts, --system-fonts)"] -->|loadFontFile| lib
   p["default font pack @unppt/fonts<br/>options.fontPack"] -->|"packFaces<br/>layout with the original font's metrics<br/>display with an open-source font"| lib
-  lib["FontLibrary<br/>font/font.ts<br/>same name: embedded > specified > pack"] --> layout["during layout: fonts.find(name, bold, italic)"]
+  lib["FontLibrary<br/>font/library.ts<br/>same name: embedded, specified > pack"] --> layout["during layout: fonts.find(name, bold, italic)"]
   layout --> use["embed.use(face, codePoint)<br/>record the glyphs used per font"]
   layout --> chk["fontUse → FontCheckLog<br/>font/check.ts → fontCheck"]
   use --> sub["subsetFont<br/>font/subset.ts<br/>HarfBuzz hb-subset WASM"]
@@ -792,8 +799,9 @@ Key points:
 - **Font parsing is home-grown** (`font/font.ts`): it reads only the tables layout needs (`name`, `cmap`, `hmtx`/`hhea`, `head`, `OS/2`, `GPOS`/`kern`), lazily. Building the index reads only the table directory and the `name` table; widths are read on first use.
 - **Restoring embedded fonts**: PowerPoint embeds fonts in an EOT wrapper, usually MicroType Express compressed. `font/eot.ts`, `font/lzcomp.ts` and `font/ctf.ts` turn it back into a normal TTF.
 - Embedded fonts that PowerPoint itself refuses (CFF `.otf`, an unsorted table directory) are treated as not embedded, like PowerPoint.
-- **Default font pack** (`font/pack.ts`): each original font (Microsoft YaHei, Calibri, ...) becomes a `FontFace` whose names, bold/italic, widths and line metrics come from the metrics pack (`metrics/`, numbers only, covering 457 Windows / Office font faces) and whose glyphs come from the matching open-source font file (`files/`, mapped by the rules in `map.json`); subsetting and slide images use the open-source font.
-- **Symbol fonts** (pictures in the places of letters): the deck's characters are never changed. Wingdings 1–3 are displayed with code-compatible open fonts in the pack (`compat/`: glyphs taken from Noto Sans Symbols and others and re-encoded at the Wingdings code points, built by `tools/fonts/build-symbol-compat.py`); other symbol fonts (Webdings, Symbol, ...) have no display font in `map.json` and are reported as `symbol-missing` when not embedded, but layout still uses the original font's widths from the metrics pack. Looking up a character in a symbol font (`symbolByte` in `font/cmap.ts`): 0x20–0xFF, the private-use range U+F020–F0FF, and • – — “ ” € from the Windows Western code page are all mapped to a byte before taking the glyph (measured; ™ is the exception).
+- **Variable fonts** (one font file holding every weight from thin to black, e.g. the Noto Sans SC that ships with Windows, whose default is the thinnest, Thin): like PowerPoint, regular text uses the Regular instance and bold text the Bold instance (`font/fvar.ts` picks the weight, `font/instance.ts` fixes it with hb-subset, giving an ordinary font); a static face of the same family and weight is used directly when there is one. Embedded subsets carry no variation data.
+- **Default font pack** (`font/pack.ts`): each original font (Microsoft YaHei, Calibri, ...) becomes a `FontFace` whose names, bold/italic, widths and line metrics come from the metrics pack (`metrics/`, numbers only, covering 457 Windows / Office font faces) and whose glyphs come from the matching open-source font file (`files/`, mapped by the rules in `map.json`); subsetting and slide images use the open-source font. Each glyph is drawn in the original font's cell: centred horizontally, CJK characters aligned on their vertical centre (this only affects drawing, not layout); characters missing from the open font are drawn with another open font from the pack, still with the original font's widths.
+- **Symbol fonts** (pictures in the places of letters): the deck's characters are never changed. Wingdings 1–3 are displayed with code-compatible open fonts in the pack (`compat/`: glyphs taken from Noto Sans Symbols and others and re-encoded at the Wingdings code points, built by `tools/fonts/build-symbol-compat.py`); other symbol fonts (Webdings, Symbol, ...) have no display font in `map.json` and are reported as `symbol-missing` when not embedded, but layout still uses the original font's widths from the metrics pack. Looking up a character in a symbol font (`symbolByte` in `font/cmap.ts`): 0x20–0xFF, the private-use range U+F020–F0FF, and • – — “ ” € from the Windows Western code page are all mapped to a byte before taking the glyph (measured; ™ is the exception). When a symbol font comes from the PPT's embedded fonts or from `--fonts` / `--system-fonts`, it only has a symbol cmap (the table that maps code points to glyphs); before subsetting it is replaced by an ordinary Unicode cmap (`font/symbol-cmap.ts`), otherwise the subset would contain nothing and browsers would reject it.
 - **When fonts are embedded**: since 0.3.0 `embedFonts` defaults to `true` and every used font is embedded (`false` is for debugging; then only the pptx's own embedded fonts are). By default the only fonts embedded are open-source fonts and fonts the author embedded in the PPT; for commercial fonts given with `--fonts` / `--system-fonts`, the caller is responsible for the distribution licence.
 - **Subsetting**: `font/subset.ts` uses HarfBuzz's `hb-subset` (WASM, bundled into the JS at build time) to keep only used glyphs and packs them as WOFF. Each font gets a unique alias `unppt-f{n}`; the SVG `font-family` lists the alias first, then the original name.
 - Subsetting really happens only after all slides are done, when the output form calls `fontFiles()`; by then every used glyph is known.
@@ -846,7 +854,7 @@ sequenceDiagram
 
   C->>S: add(page, svg)
   S->>Pr: job(page, svg)
-  Pr->>Pr: remove covered elements, split background layers, inline SVG images, map font names
+  Pr->>Pr: remove covered elements, split background layers, inline SVG images, pick a font file for each text
   Pr-->>S: PaintJob
   S->>Pa: paint(job, resources)
   Pa->>Pr: ask for fonts, images, background layers (by id)
@@ -856,6 +864,7 @@ sequenceDiagram
   C->>S: flush() wait until every page is written
 ```
 
+- **Fonts in slide images**: resvg does not walk the `font-family` list character by character like a browser does, so `prepare.ts` picks for each text the first font file in the list that can draw all of it (a chart label "1月" written as Calibri, DengXian gets DengXian); private-use characters the chosen font cannot draw become a box.
 - **resvg** is a library that rasterises SVG (written in Rust, compiled to WASM). unppt uses it only for peripheral features like thumbnails; the rendering used for actual playback is home-grown.
 - **Prepare and paint are separate**: preparing (`preview/prepare.ts`) needs the font library and media, so it runs on the main thread; painting (`preview/paint.ts`) is environment-independent and can run on worker threads. The CLI creates a pool with `createRasterPool` from `node-pool.ts` and paints several pages at once; **the result is byte-for-byte identical to single-threaded painting**, and files are still written in page order.
 - The transcoder itself (`index.ts`) never creates threads: the caller passes a pool via `options.rasterPool` (in Node it can be imported from `@unppt/unppt/node`).
@@ -1028,20 +1037,21 @@ All warnings are de-duplicated and counted into `ConvertResult.report.warnings`.
 | video, audio | `a:videoFile`, `a:audioFile` | `render/elements/picture.ts`, `media/media.ts` |
 | groups | `p:grpSp` | `render/elements/group.ts`, `render/group-map.ts` |
 | tables | `a:tbl` | `render/frames/table-frame.ts`, `render/table.ts`, `render/table-style.ts` |
-| charts | `c:chartSpace` | `render/frames/chart-frame.ts`, `chart/` |
+| charts | `c:chartSpace` | `render/frames/chart-frame.ts`, `render/frames/chart-fonts.ts`, `chart/` |
 | SmartArt | `dgm:relIds`, `dsp:drawing` | `render/frames/diagram-frame.ts` |
 | OLE embedded objects | `p:oleObj` | `render/frames/ole-frame.ts` |
 | ActiveX controls | `p:controls` | `render/controls.ts` |
 | body properties, autofit | `a:bodyPr`, `a:normAutofit` | `text/body.ts` |
 | paragraphs, text styles | `a:p`, `a:pPr`, `a:rPr`, `a:lstStyle` | `text/style.ts`, `text/paragraph.ts` |
 | bullets, numbering | `a:buChar`, `a:buAutoNum` | `text/bullets.ts` |
-| line breaking | — | `text/linebreak.ts` |
+| line breaking | — | `text/linebreak.ts`, `common/kinsoku.ts` |
 | WordArt warps | `a:prstTxWarp` | `text/warp.ts` |
 | hyperlinks, action buttons | `a:hlinkClick` | `common/links.ts` |
 | animations | `p:timing` | `anim/anim.ts`, `anim/effect.ts`, `anim/behaviors.ts` |
 | transitions, advance settings | `p:transition` | `anim/transition.ts` |
 | embedded fonts | `p:embeddedFontLst`, `fonts/*.fntdata` | `font/eot.ts`, `font/lzcomp.ts`, `font/ctf.ts` |
-| font parsing, subsetting, default font pack, font check | — | `font/font.ts`, `font/subset.ts`, `font/pack.ts`, `font/check.ts` |
+| equations (Office math), ink | Fallback of `mc:AlternateContent` | `io/xml.ts`, `render/elements/snapshot.ts` |
+| font parsing, font library, variable fonts, subsetting, default font pack, font check | — | `font/font.ts`, `font/library.ts`, `font/fvar.ts`, `font/instance.ts`, `font/subset.ts`, `font/symbol-cmap.ts`, `font/pack.ts`, `font/check.ts` |
 | EMF / WMF / TIFF images | — | `media/emf.ts`, `media/wmf.ts`, `media/tiff.ts` |
 | slide images, thumbnails | — | `preview/`, `node-pool.ts`, `raster-worker.ts` |
 | output files | — | `output/` (`single.ts`, `paged.ts`, `data.ts`, `prop.ts`) |
@@ -1050,13 +1060,12 @@ All warnings are de-duplicated and counted into `ConvertResult.report.warnings`.
 
 ## 17. Known gaps
 
-Current version: 0.1.0. On the synthetic test cases (228 decks / 504 slides), 92.3% of slides pass (SSIM ≥ 0.95, mean 0.984). On a random batch of 100 real-world decks / 3527 slides there were 0 conversion failures and 78.8% of slides pass (about 95% at SSIM ≥ 0.90, mean 0.967). SSIM (structural similarity) is a number from 0 to 1 that measures how alike two images look; 1 means identical. Most failing slides differ only in details (text a few pixels off, one chart label).
+Current version: 0.3.1. On the synthetic test cases (255 decks / 543 slides), 93.0% of slides pass (SSIM ≥ 0.95, mean 0.984). On all 5212 real-world decks / 168662 slides on the dev machine there were 0 conversion failures and 70.4% of slides pass (93.5% at SSIM ≥ 0.90, mean 0.956); full numbers in the [test report](test-report.md). SSIM (structural similarity) is a number from 0 to 1 that measures how alike two images look; 1 means identical (how it is computed: [Fidelity](fidelity.md#ssim)). Most failing slides differ only in details (text a few pixels off, one chart label).
 
 Known gaps:
 
 - time scaling on chart date axes (min, max, month/year intervals);
 - `wordArtVert` vertical text;
-- variable fonts;
 - EMF+ records inside EMF images (only the GDI part is drawn);
 - some SmartArt that needs re-layout (unppt only draws the drawing cache; it has no SmartArt layout engine);
 - 3D bevels under 180-degree rotation;

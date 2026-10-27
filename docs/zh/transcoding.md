@@ -2,7 +2,7 @@
 
 # 转码原理：一个 .pptx 是怎么变成网页的
 
-这篇文档顺着代码讲一遍：从你在命令行敲下 `unppt 课件.pptx` 开始，到磁盘上出现 `课件.html`、`prop.json`、`pic/`、`thum/` 为止，中间每一步做了什么、代码在哪个文件里。
+这篇文档顺着代码讲一遍：从你在命令行敲下 `unppt 课件.pptx` 开始，到课件旁边的同名文件夹里出现 `index.html`、`prop.json`、`pic/`、`thum/` 为止，中间每一步做了什么、代码在哪个文件里。
 
 读完你应该能回答：
 
@@ -211,7 +211,7 @@ sequenceDiagram
 ```mermaid
 flowchart TD
   A["unppt 输入.pptx 选项"] --> B{"解析参数"}
-  B --> C["确定输出路径<br/>single: 同名 .html<br/>paged/pages: 同名目录/index.html<br/>data: 同名 .json"]
+  B --> C["确定输出路径<br/>不写 -o：pptx 旁边的同名文件夹<br/>入口 index.html（data 形式是 deck.json）"]
   B --> D["--fonts / --system-fonts<br/>递归列出 .ttf .otf .ttc<br/>loadFontPack() 读默认字体包"]
   B --> E["读 dist/resvg.wasm<br/>（--no-images 时不读）"]
   E --> F["--jobs auto：autoWorkers()<br/>按 CPU 和可用内存定线程数"]
@@ -356,7 +356,7 @@ flowchart LR
 - 幻灯片 XML 用 `pkg.xml(ref.part, false)` 读，**不缓存**，渲染完就丢；
 - 视频音频用数据流从 zip 直接流到输出文件。
 
-`io/xml.ts` 里还有一个重要函数 `expandAlternate`：PowerPoint 新功能常写成 `mc:AlternateContent`（"新版本用 Choice，老版本用 Fallback"）。unppt 选自己支持的 Choice；Choice 里是画不了的内容（Office 数学公式、墨迹）时，改用 Fallback 里 PowerPoint 存好的图片。
+`io/xml.ts` 里还有一个重要函数 `expandAlternate`：PowerPoint 新功能常写成 `mc:AlternateContent`（"新版本用 Choice，老版本用 Fallback"）。unppt 选自己支持的 Choice；Choice 里是画不了的内容（Office 数学公式、墨迹）时，改用 Fallback 里 PowerPoint 存好的图片。这张图是 PowerPoint 按公式在页面上最终的样子截的（已经转好、翻好），所以形状转动、翻转时图片正着铺在外接矩形里，不再跟着转（`render/elements/snapshot.ts`）。
 
 ---
 
@@ -584,8 +584,8 @@ export const FRAME_HANDLERS: readonly FrameHandler[] = [tableFrame, diagramFrame
 
 | 内容 | 文件 | 做法 |
 |---|---|---|
-| 表格 | `render/frames/table-frame.ts`、`render/table.ts`、`render/table-style.ts`、`render/builtin-table-styles.ts` | 列宽来自 `a:tblGrid`；行高取"设定行高"和"文字实际高度"较大的；先叠表格样式（首行、镶边行……），再用单元格自己的填充和边框覆盖 |
-| 图表 | `render/frames/chart-frame.ts` → `chart/` | 见第 9 节 |
+| 表格 | `render/frames/table-frame.ts`、`render/table.ts`、`render/table-style.ts`、`render/builtin-table-styles.ts` | 列宽来自 `a:tblGrid`；行高取"设定行高"和"文字实际高度"较大的；先叠表格样式（首行、镶边行……），再用单元格自己的填充和边框覆盖；单元格的"水平居中"（`anchorCtr`）和文本框一样，见 8.4 |
+| 图表 | `render/frames/chart-frame.ts` → `chart/`，`render/frames/chart-fonts.ts` | 见第 9 节 |
 | SmartArt | `render/frames/diagram-frame.ts` | **不自己排版**，而是画 PowerPoint 存在文件里的"绘图缓存"（`dsp:drawing`，一组现成的形状）。每个形状单独包一层 `data-uid`，"逐个"动画才能找到它。缓存缺失或为空时记警告 |
 | OLE 嵌入对象 | `render/frames/ole-frame.ts` | 显示 PowerPoint 存的预览图（当成一张图片画） |
 
@@ -634,6 +634,7 @@ flowchart LR
   - 标了日文字符集的 → `Yu Gothic`；
   - 一些老名字有别名：`Helvetica` → `Arial`，`Times` → `Times New Roman`，`Courier` → `Courier New`。
 - 有默认字体包时，Calibri、微软雅黑、Yu Gothic 这些替代字体的度量都在包里，所以替代后的换行也和 PowerPoint 一致。
+- **思源黑体、思源宋体没嵌入（也没用 `--fonts` / `--system-fonts` 给出）时也按上面的规则替代**（0.3.1 起；名字写成 Source Han Sans、Noto Sans CJK、带 CN 或粗细后缀的都一样）：大多数电脑没装思源字体，PowerPoint 在这些电脑上就是这样显示的，按它排版能让所有观看者看到的一样（[SPEC D3 ⑩](../../SPEC.md#2-已确认的决策)）。想保留思源的样子，请作者把字体嵌入 PPT。课件里直接写 Noto Sans SC / Noto Serif SC 的，照常用字体包里的同名字体。
 - 缺的字体名记入 `missingFonts`，最后出现在 `report.missingFonts`；每个字用了什么字体还会通过 `fontUse` 记进字体检查（`font/check.ts` 的 `FontCheckLog`），最后成为 `ConvertResult.fontCheck`。
 
 ### 8.2 断行（linebreak.ts）
@@ -641,19 +642,21 @@ flowchart LR
 换行位置差一个字，后面的行就全部错开，所以断行规则都是先在 PowerPoint 里实测、再实现（测法见 [还原度 2.5](fidelity.md#25-自动换行专项测试toolswraptest)），每条规则和依据记在 [SPEC 第 7 节](../../SPEC.md#7-实测得到的-powerpoint-规则用-make-case-用例校准)。主要的几类：
 
 - 空格、制表符后可以断；中日韩文字之间可以断；放不下的长单词在字中间断；
-- **标点禁则**：句号、逗号、右括号等不能放在行首；左括号、左引号等不能放在行尾（`NO_START`、`NO_END` 两个集合）；隔着空格也管；"按中文习惯控制首尾字符"（`eaLnBrk`）关掉时不做禁则；
+- **标点禁则**：句号、逗号、右括号等不能放在行首；左括号、左引号等不能放在行尾（`NO_START`、`NO_END` 两个集合，在 `common/kinsoku.ts`，图表标签折行也用）；隔着空格也管；"按中文习惯控制首尾字符"（`eaLnBrk`）关掉时不做禁则；
 - **标点悬挂**：行尾的句号、逗号放不下时挂在框外；例外是网址、小数里的半角标点，以及后面紧跟的标点也放不下的情况；
-- **符号**：破折号和前一个字不断开，省略号不悬挂，弯引号和紧挨着的字母数字不断开，不间断空格两边不断，带圈数字按汉字算，★ ± × § ° 等按西文算；
-- **宽度**：两个字之间的字距调整只在同一行里算，行尾那一对不占行宽；制表符要跳到的位置超出行宽时，连同后面的字一起换到下一行。
+- **符号**：破折号和前一个字不断开（中文里关掉"按中文习惯控制首尾字符"时可以断），省略号不悬挂，弯引号和紧挨着的字母数字不断开，不间断空格两边不断，带圈数字按汉字算，★ ± × § ° 等按西文算；
+- **宽度**：两个字之间的字距调整只在同一行里算，行尾那一对不占行宽；制表符要跳到的位置超出行宽时，连同后面的字一起换到下一行；
+- **取整**：段落缩进四舍五入到 1/20 磅；一行放不放得下，看"行首起点 + 行宽 + 右缩进"向上取整到 1/8 磅以后有没有超出框宽（实测）。
 
 ### 8.3 项目符号和编号（bullets.ts）
 
-支持字符符号（`a:buChar`）、图片符号（`a:buBlip`）、自动编号（`a:buAutoNum`：阿拉伯数字、罗马数字、字母等），编号在同一文本框里按级别连续计数（`BulletNumbering`）。
+支持字符符号（`a:buChar`）、图片符号（`a:buBlip`）、自动编号（`a:buAutoNum`：阿拉伯数字、罗马数字、字母等），编号在同一文本框里按级别连续计数（`BulletNumbering`）。几条实测规则：自动编号不用 `a:buFont` 写的字体，按正文的字体画，粗体段落的编号跟着加粗；字符符号不跟着加粗，符号字体没装时按它自己写的字符集找替代字体；居中、右对齐的段落，符号和文字之间保持左对齐时的距离。
 
 ### 8.4 对齐和行距（emit.ts）
 
 - 垂直对齐：上 / 中 / 下（`anchor`）；
 - 水平对齐：左 / 中 / 右 / 两端对齐 / 分散对齐；
+- 水平居中（`anchorCtr`，文本框和表格单元格都有）：各行先按各段自己的对齐和缩进排好，所有行（连同各自的左右缩进）合起来的范围在框里居中；
 - 行距、段前段后间距；
 - **基线对齐整像素**：字号不超过 20 磅时，基线 y 取整到整像素（`SNAP_MAX_SIZE`），和 PowerPoint 的显示一致。
 
@@ -663,7 +666,7 @@ flowchart LR
 
 ### 8.6 文字的输出
 
-每一行（同一行里每段相同样式的文字）输出一个 SVG `<text>`，带 `font-family`、`font-size`、`fill` 和每个字的 x 坐标。下划线、删除线、高亮都 **自己画成矩形/线条**，不用浏览器的 `text-decoration`（各浏览器画出来的位置和粗细不一样）。段落有动画时，段落会带自己的子编号，供"按段落"动画使用。
+每一行（同一行里每段相同样式的文字）输出一个 SVG `<text>`，带 `font-family`、`font-size`、`fill` 和每个字的 x 坐标。下划线、删除线、高亮都 **自己画成矩形/线条**，不用浏览器的 `text-decoration`（各浏览器画出来的位置和粗细不一样）。字体没有粗体字形（宋体、楷体等）却标了粗体时**人工加粗**：给字多描一圈边，描边和填充用同样的颜色、渐变或图片，半透明的文字整个字形按同一个透明度画（`svg-text.ts`）。段落有动画时，段落会带自己的子编号，供"按段落"动画使用。
 
 ---
 
@@ -683,7 +686,9 @@ flowchart TD
   type -->|"category 布局"| cat["cat-chart.ts 分类轴<br/>柱形、条形、折线、面积、股价<br/>可以组合（柱 + 折线）"]
   type -->|"standalone 布局"| sa["自己占满绘图区<br/>饼、圆环、复合饼、雷达、散点、气泡"]
   cat --> extras["坐标轴 axis.ts、数字格式 format.ts、<br/>数据标签 point-labels.ts、趋势线 trendline.ts、<br/>误差线 error-bars.ts、数据表 data-table.ts"]
+  sa --> pl["饼图数据标签 pie-labels.ts<br/>折行 label-wrap.ts、放不放得进扇区 sector-fit.ts"]
   cf --> us["图表上画的形状 c:userShapes<br/>render/frames/chart-user-shapes.ts"]
+  rc --> fnt["图表画好后：embedChartFonts<br/>render/frames/chart-fonts.ts<br/>文字换成嵌入产物的字体子集"]
 ```
 
 图表类型是一个扩展点（`chart/chart-type.ts`，`layout` 取 `standalone` 或 `category`），注册表在 `chart/chart-types.ts`：
@@ -722,7 +727,9 @@ classDiagram
 
 图表的每一部分（数据点、整条线、数据标签）都有自己的编号（`common/uid.ts` 的 `chartUid`），所以"按系列""按类别"的图表动画也能播放。
 
-布局（标题离上边多远、图例占多宽……）按 PowerPoint 默认自动布局实测的规律近似实现，常数在 `chart/layout.ts` 等文件里，注释写着"实测"。
+布局（标题离上边多远、图例占多宽……）按 PowerPoint 默认自动布局实测的规律近似实现，常数在 `chart/layout.ts` 等文件里，注释写着"实测"。饼图"最佳位置"的数据标签按 PowerPoint 的规则先试着放进扇区，放不下的折窄或放到饼外；标签最宽是图表宽的 1/5，折行遵守标点禁则（`pie-labels.ts`、`label-wrap.ts`）。
+
+**图表文字的字体**：图表里的文字同样只用嵌入产物的字体（[SPEC D3 ⑨](../../SPEC.md#2-已确认的决策)）。图表画好后，`chart-fonts.ts` 给每段文字逐字找字体（图表写的字体 → 雅黑 / Calibri → 字体包里的开源字体），把用到的字记进子集，`font-family` 换成嵌入字体的别名。
 
 ![图表对照：左边 PowerPoint，右边 unppt](../images/compare-charts-basic.png)
 
@@ -780,7 +787,7 @@ flowchart TD
   e["pptx 里嵌入的字体<br/>ppt/fonts/*.fntdata（EOT 格式）"] -->|"lazyEmbeddedFont<br/>用到才解压"| lib
   u["指定的字体<br/>options.fonts（--fonts、--system-fonts）"] -->|loadFontFile| lib
   p["默认字体包 @unppt/fonts<br/>options.fontPack"] -->|"packFaces<br/>排版用原字体的度量<br/>显示用开源字体"| lib
-  lib["FontLibrary<br/>font/font.ts<br/>同名时：嵌入 > 指定 > 字体包"] --> layout["排版时 fonts.find(名字, 粗, 斜)"]
+  lib["FontLibrary<br/>font/library.ts<br/>同名时：嵌入、指定 > 字体包"] --> layout["排版时 fonts.find(名字, 粗, 斜)"]
   layout --> use["embed.use(字体, 码点)<br/>记录每个字体用到的字"]
   layout --> chk["fontUse → FontCheckLog<br/>font/check.ts → fontCheck"]
   use --> sub["subsetFont<br/>font/subset.ts<br/>HarfBuzz hb-subset WASM"]
@@ -792,8 +799,9 @@ flowchart TD
 - **字体解析是自研的**（`font/font.ts`）：只读排版需要的表（`name`、`cmap`、`hmtx`/`hhea`、`head`、`OS/2`、`GPOS`/`kern`），而且懒加载——建索引时只读表目录和 `name` 表，真正用到才读字宽。
 - **嵌入字体还原**：PowerPoint 嵌入的字体是 EOT 外壳，里面一般经过 MicroType Express 压缩。`font/eot.ts` → `font/lzcomp.ts` → `font/ctf.ts` 把它还原成普通 TTF。
 - PowerPoint 自己不认的嵌入字体（CFF 格式的 `.otf`、表目录没排序的字体）和 PowerPoint 一样当作没有嵌入。
-- **默认字体包**（`font/pack.ts`）：每个原字体（微软雅黑、Calibri……）变成一个 `FontFace`：名字、粗斜体、字宽和行高来自度量包（`metrics/`，只有数字，覆盖 457 个 Windows / Office 字体），字形来自对应的开源字体文件（`files/`，按 `map.json` 的规则对照），子集化和出图都用开源字体。
-- **符号字体**（字母的位置上放的是图形）：课件里的字符不改。Wingdings 1~3 的显示字体是字体包里编码兼容的开源字体（`compat/`，字形取自 Noto Sans Symbols 等，按 Wingdings 的编码重新排放，生成脚本 `tools/fonts/build-symbol-compat.py`）；其它符号字体（Webdings、Symbol 等）在 `map.json` 里没有显示字体，没嵌入时记为 `symbol-missing`，但排版仍按度量包里原字体的字宽。符号字体里查字（`font/cmap.ts` 的 `symbolByte`）：0x20~0xFF、私用区 U+F020~F0FF、以及 Windows 西文代码页里的 • – — “ ” € 都换成字节再取字形（实测，™ 除外）。
+- **可变字体**（一个字体文件里含有从细到粗的各种字重，例如 Windows 自带的 Noto Sans SC，文件里默认的是最细的 Thin）：和 PowerPoint 一样，常规的字用 Regular 实例、粗体用 Bold 实例（`font/fvar.ts` 定字重，`font/instance.ts` 用 hb-subset 把字重固定下来，得到一个普通字体），有同名的固定字重字体时直接用它。嵌入产物的子集不带可变数据。
+- **默认字体包**（`font/pack.ts`）：每个原字体（微软雅黑、Calibri……）变成一个 `FontFace`：名字、粗斜体、字宽和行高来自度量包（`metrics/`，只有数字，覆盖 457 个 Windows / Office 字体），字形来自对应的开源字体文件（`files/`，按 `map.json` 的规则对照），子集化和出图都用开源字体。显示时每个字放在原字体的格子里：横向居中，汉字按竖直中心对齐（只影响画字，不影响排版）；开源字体缺字时换字体包里别的开源字体画，字宽仍按原字体。
+- **符号字体**（字母的位置上放的是图形）：课件里的字符不改。Wingdings 1~3 的显示字体是字体包里编码兼容的开源字体（`compat/`，字形取自 Noto Sans Symbols 等，按 Wingdings 的编码重新排放，生成脚本 `tools/fonts/build-symbol-compat.py`）；其它符号字体（Webdings、Symbol 等）在 `map.json` 里没有显示字体，没嵌入时记为 `symbol-missing`，但排版仍按度量包里原字体的字宽。符号字体里查字（`font/cmap.ts` 的 `symbolByte`）：0x20~0xFF、私用区 U+F020~F0FF、以及 Windows 西文代码页里的 • – — “ ” € 都换成字节再取字形（实测，™ 除外）。符号字体用的是 PPT 嵌入的或 `--fonts` / `--system-fonts` 给的字体时，这类字体只有符号专用的 cmap（码点到字形的对照表），子集化前先换成普通的 Unicode cmap（`font/symbol-cmap.ts`），否则子集里什么字都没有、浏览器拒绝加载。
 - **什么时候嵌入**：0.3.0 起 `embedFonts` 默认 `true`，所有用到的字体都嵌入（`false` 只用于调试，这时只嵌入 pptx 自带的嵌入字体）。默认情况下嵌入的只有开源字体和作者自己嵌入 PPT 的字体；用 `--fonts` / `--system-fonts` 指定的商业字体，分发授权由调用方负责。
 - **子集化**：`font/subset.ts` 用 HarfBuzz 的 `hb-subset`（WASM，构建时直接打进 JS）只保留用到的字，打包成 WOFF。每个字体一个唯一别名 `unppt-f{n}`，SVG 里的 `font-family` 先写别名、再写原名。
 - 所有页处理完之后，产物形式调用 `fontFiles()` 才真正做子集化，这时已经知道全部用到的字了。
@@ -846,7 +854,7 @@ sequenceDiagram
 
   C->>S: add(页码, svg)
   S->>Pr: job(页码, svg)
-  Pr->>Pr: 剔除被盖住的元素、拆背景层、展开 SVG 图片、换字体名
+  Pr->>Pr: 剔除被盖住的元素、拆背景层、展开 SVG 图片、给每段文字选字体文件
   Pr-->>S: PaintJob
   S->>Pa: paint(job, resources)
   Pa->>Pr: 要字体、图片、背景层（按编号）
@@ -856,6 +864,7 @@ sequenceDiagram
   C->>S: flush() 等所有页写完
 ```
 
+- **出图的字体**：resvg 不像浏览器那样按 `font-family` 列表逐字找字体，所以 `prepare.ts` 给每段文字选列表里第一个能画全这段文字的字体文件（例如图表标签"1月"写的是 Calibri、等线，选等线）；选定的字体画不了的私用区字画成方框。
 - **resvg** 是一个把 SVG 画成位图的库（Rust 写的，编译成 WASM），unppt 只把它用在缩略图这类周边功能上，正式播放的渲染是自研的。
 - **准备和绘制分开**：准备（`preview/prepare.ts`）要用字体库和媒体，只能在主线程；绘制（`preview/paint.ts`）和环境无关，可以放到工作线程。命令行通过 `node-pool.ts` 的 `createRasterPool` 建线程池，多页同时画；**结果和单线程画的逐字节一致**，写出仍按页码顺序。
 - 转码器本身（`index.ts`）不创建线程：线程池由调用方通过 `options.rasterPool` 传入（在 Node 里可以从 `@unppt/unppt/node` 导入）。
@@ -1028,20 +1037,21 @@ unppt 的原则是"尽量出结果"：
 | 视频、音频 | `a:videoFile`、`a:audioFile` | `render/elements/picture.ts`、`media/media.ts` |
 | 组合 | `p:grpSp` | `render/elements/group.ts`、`render/group-map.ts` |
 | 表格 | `a:tbl` | `render/frames/table-frame.ts`、`render/table.ts`、`render/table-style.ts` |
-| 图表 | `c:chartSpace` | `render/frames/chart-frame.ts`、`chart/` |
+| 图表 | `c:chartSpace` | `render/frames/chart-frame.ts`、`render/frames/chart-fonts.ts`、`chart/` |
 | SmartArt | `dgm:relIds`、`dsp:drawing` | `render/frames/diagram-frame.ts` |
 | 嵌入对象 OLE | `p:oleObj` | `render/frames/ole-frame.ts` |
 | ActiveX 控件 | `p:controls` | `render/controls.ts` |
 | 文本框属性、自动调整 | `a:bodyPr`、`a:normAutofit` | `text/body.ts` |
 | 段落、文字样式 | `a:p`、`a:pPr`、`a:rPr`、`a:lstStyle` | `text/style.ts`、`text/paragraph.ts` |
 | 项目符号、编号 | `a:buChar`、`a:buAutoNum` | `text/bullets.ts` |
-| 换行 | — | `text/linebreak.ts` |
+| 换行 | — | `text/linebreak.ts`、`common/kinsoku.ts` |
 | 艺术字变形 | `a:prstTxWarp` | `text/warp.ts` |
 | 超链接、动作按钮 | `a:hlinkClick` | `common/links.ts` |
 | 动画 | `p:timing` | `anim/anim.ts`、`anim/effect.ts`、`anim/behaviors.ts` |
 | 页面切换、换片方式 | `p:transition` | `anim/transition.ts` |
 | 嵌入字体 | `p:embeddedFontLst`、`fonts/*.fntdata` | `font/eot.ts`、`font/lzcomp.ts`、`font/ctf.ts` |
-| 字体解析、子集化、默认字体包、字体检查 | — | `font/font.ts`、`font/subset.ts`、`font/pack.ts`、`font/check.ts` |
+| 公式（Office 数学）、墨迹 | `mc:AlternateContent` 的 Fallback | `io/xml.ts`、`render/elements/snapshot.ts` |
+| 字体解析、字体库、可变字体、子集化、默认字体包、字体检查 | — | `font/font.ts`、`font/library.ts`、`font/fvar.ts`、`font/instance.ts`、`font/subset.ts`、`font/symbol-cmap.ts`、`font/pack.ts`、`font/check.ts` |
 | EMF / WMF / TIFF 图片 | — | `media/emf.ts`、`media/wmf.ts`、`media/tiff.ts` |
 | 整页图、缩略图 | — | `preview/`、`node-pool.ts`、`raster-worker.ts` |
 | 产物文件 | — | `output/`（`single.ts`、`paged.ts`、`data.ts`、`prop.ts`） |
@@ -1050,13 +1060,12 @@ unppt 的原则是"尽量出结果"：
 
 ## 17. 还没做好的地方
 
-当前版本 0.1.0。合成测试用例 228 份 / 504 页，92.3% 的页通过（SSIM ≥ 0.95，平均 0.984）；随机抽 100 份真实课件 / 3527 页，0 份转换失败，78.8% 的页通过（约 95% 的页 SSIM ≥ 0.90，平均 0.967）。SSIM（结构相似度）是一个 0~1 的数，衡量两张图看起来有多像，1 是完全一样。没通过的页大多只是细节差异（文字位置差几个像素、某个图表标签）。
+当前版本 0.3.1。合成测试用例 255 份 / 543 页，93.0% 的页通过（SSIM ≥ 0.95，平均 0.984）；本机全部真实课件 5212 份 / 168662 页，0 份转换失败，70.4% 的页通过（93.5% 的页 SSIM ≥ 0.90，平均 0.956），完整数字见[测试报告](test-report.md)。SSIM（结构相似度）是一个 0~1 的数，衡量两张图看起来有多像，1 是完全一样（怎么算的见[还原度](fidelity.md#ssim)）。没通过的页大多只是细节差异（文字位置差几个像素、某个图表标签）。
 
 已知的差距：
 
 - 图表日期坐标轴的时间刻度（最小值、最大值、按月/年的间隔）；
 - `wordArtVert` 竖排文字；
-- 可变字体（variable fonts）；
 - EMF 图片里的 EMF+ 记录（目前只画 GDI 部分）；
 - 部分需要重新排版的 SmartArt（unppt 只画绘图缓存，没有 SmartArt 排版引擎）；
 - 旋转 180 度时的三维棱台；
