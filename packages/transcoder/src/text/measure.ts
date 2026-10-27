@@ -205,7 +205,7 @@ export async function makeAtoms(text: string, style: RunStyle, m: Measurer): Pro
     // 画这个字用的字体：一般就是排版用的；默认字体包的开源字体没有这个字时换一个（见 drawFallback）
     let drawFace = adv !== undefined ? usedM?.face : undefined;
     let drawFamily = family;
-    let shift = adv !== undefined ? used?.displayShift?.(cp) : undefined;
+    let shift = adv !== undefined ? await used?.displayShift?.(cp) : undefined;
     // 符号字体不换别的字体画（画出来是字母，不是作者要的符号；字体检查会列出这些字）
     if (drawFace && used?.shown && cp > 0x20 && !used.shown(cp) && SYMBOL_FONT.test(family)) {
       drawFace = undefined;

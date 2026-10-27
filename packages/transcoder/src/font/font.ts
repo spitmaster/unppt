@@ -54,7 +54,7 @@ export interface FontMetrics {
    * 默认字体包里的字体（排版按原字体、字形用开源字体，font/pack.ts）：开源字体的字在原字体的格子里怎么摆（单位 em）——
    * dx 横向居中到原字体的字宽里，dy 汉字的竖直中心对齐原字体的（y 向上为正，要往下挪是负数）；字母不竖直挪动，站在基线上
    */
-  displayShift?(codePoint: number): { dx: number; dy: number } | undefined;
+  displayShift?(codePoint: number): { dx: number; dy: number } | undefined | Promise<{ dx: number; dy: number } | undefined>;
   /** 默认字体包里的字体：显示用的开源字体有没有这个字（没有时换字体包里别的开源字体画，见 text/measure.ts） */
   shown?(codePoint: number): boolean;
   /** 字形轮廓（单位 em，y 向上；TrueType 和 CFF 都支持）；字体里没有这个字时为 undefined */

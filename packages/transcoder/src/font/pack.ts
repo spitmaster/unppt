@@ -198,7 +198,16 @@ function build(info: PackFaceInfo, d: PackFaceData, sm: FontMetrics, shownMid: n
     displayShift(cp) {
       const w = self.advance(cp), sw = sm.advance(cp);
       if (w === undefined || sw === undefined) return undefined;
-      const dx = (w - sw) / 2, dy = isWide(cp) ? midShift : 0;
+      const dy = isWide(cp) ? midShift : 0;
+      // 两种字体的字宽差得多（中文引号：雅黑 Light 的 “ 只有 0.36 字宽，思源黑体是全角、笔画偏在格子一侧）时按笔画居中：
+      // 按字宽居中会把笔画挪出格子（实测 PowerPoint：雅黑 Light 中文里 “ 占 0.36 字宽，笔画在自己的格子里）
+      if (Math.abs(w - sw) >= 0.2) {
+        return sm.outline(cp).then((cs) => {
+          const xs = (cs ?? []).flat().map((p) => p.x);
+          return { dx: xs.length ? w / 2 - (Math.min(...xs) + Math.max(...xs)) / 2 : (w - sw) / 2, dy };
+        }, () => ({ dx: (w - sw) / 2, dy }));
+      }
+      const dx = (w - sw) / 2;
       return Math.abs(dx) < 1e-4 && Math.abs(dy) < 1e-4 ? undefined : { dx, dy };
     },
   };
