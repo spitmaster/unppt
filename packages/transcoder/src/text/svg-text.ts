@@ -13,9 +13,12 @@ import { child, children, numAttr, type XEl } from '../io/xml';
 import { kernOn } from './style';
 import type { RunStyle, TextEnv } from './types';
 
-/** 只写测量时实际用的字体：保证浏览器显示的字宽和转码时算的一致 */
+/**
+ * 只写测量时实际用的字体：保证浏览器显示的字宽和转码时算的一致。嵌入了字体时不再写原字体名——子集缺字时浏览器会退到
+ * 观看者电脑上的同名字体，不同观看者看到的不一样（SPEC D3 ①；调研：15 份课件里 13 份有字形由观看者本机字体画）
+ */
 function fontList(primary: string, alias?: string): string {
-  return `${alias ? `'${alias}',` : ''}'${primary.replace(/'/g, '')}',sans-serif`;
+  return alias ? `'${alias}',sans-serif` : `'${primary.replace(/'/g, '')}',sans-serif`;
 }
 
 /**

@@ -225,7 +225,8 @@ export async function makeAtoms(text: string, style: RunStyle, m: Measurer): Pro
       drawFamily = fb ? fb.face.displayFamily : family;
       shift = fb ? { dx: (adv! - fb.metrics.advance(cp)!) / 2, dy: 0 } : undefined;
     }
-    if (drawFace && m.embed && cp > 0x20) m.embed.use(drawFace, cp);
+    // 空格也进子集（字体列表里不再有原字体名，缺空格时浏览器会用观看者电脑上的字体的空格）
+    if (drawFace && m.embed && cp >= 0x20) m.embed.use(drawFace, cp);
     const size = st.baseline ? st.size * 0.67 : st.size;
     const fakeBold = !!st.bold && adv !== undefined && !!usedM && !usedM.face.bold;
     // 符号字体的度量按 0x20~0xFF 记，私用区 U+F0xx 的字（"插入符号"存的码点）对回去查

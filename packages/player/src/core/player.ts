@@ -261,9 +261,18 @@ export class Player {
     const r = this.root.getBoundingClientRect();
     const w = r.width || this.deck.width, h = r.height || this.deck.height;
     const scale = Math.min(w / this.deck.width, h / this.deck.height);
-    const x = (w - this.deck.width * scale) / 2, y = (h - this.deck.height * scale) / 2;
+    // 位移取整到设备像素：落在半个像素上时 Chromium 在舞台边缘抗锯齿出灰缝，不同浏览器整页还会差 1 个设备像素
+    // （调研：Chromium 截图 41% 的视口落在半像素上）。设备像素比变了（拖到另一块屏、浏览器缩放）重新适配
+    const dpr = window.devicePixelRatio || 1;
+    const snap = (v: number) => Math.round(v * dpr) / dpr;
+    const x = snap((w - this.deck.width * scale) / 2), y = snap((h - this.deck.height * scale) / 2);
     this.stage.style.transform = `translate(${x}px,${y}px) scale(${scale})`;
+    if (this.dpr !== dpr && window.matchMedia) {
+      this.dpr = dpr;
+      window.matchMedia(`(resolution: ${dpr}dppx)`).addEventListener?.('change', () => this.fit(), { once: true });
+    }
   }
+  private dpr = 0;
 
   private show(slideIdx: number, step: number, animated: boolean) {
     const token = ++this.navToken;

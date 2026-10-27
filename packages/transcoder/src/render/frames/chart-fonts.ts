@@ -40,7 +40,8 @@ export async function embedChartFonts(svg: string, fonts: FontLibrary, embed: Fo
     const used: FontFace[] = [];
     for (const ch of unesc(m[2])) {
       const cp = ch.codePointAt(0)!;
-      if (cp <= 0x20) continue;
+      // 空格也进子集：标签按 text-anchor 居中 / 右对齐，空格的宽度决定整行的位置（缺了就用观看者电脑上的字体的空格宽度）
+      if (cp < 0x20) continue;
       let face: FontFace | undefined;
       for (const f of [...own, ...subs]) if (f && await draws(f, cp)) { face = f; break; }
       // 图表写的字体找到了就算用上了（它没有的字，例如 Arial 标签里的汉字，和正文一样由东亚字体画，不算替代）
@@ -59,7 +60,8 @@ export async function embedChartFonts(svg: string, fonts: FontLibrary, embed: Fo
     }
     const aliases = used.map((f) => embed?.alias(f)).filter((a): a is string => !!a);
     if (!aliases.length) continue;
-    const list = [...aliases.map((a) => `'${a}'`), ...names.map((n) => `'${n.replace(/'/g, '')}'`), 'sans-serif'].join(',');
+    // 只写嵌入的字体，不写原字体名（同 svg-text.ts fontList：缺字时不退到观看者电脑上的同名字体）
+    const list = [...aliases.map((a) => `'${a}'`), 'sans-serif'].join(',');
     const start = m.index! + 5;
     parts.push(svg.slice(last, start), attrs.replace(/\sfont-family="[^"]*"/, ` font-family="${list}"`));
     last = start + attrs.length;
