@@ -33,7 +33,7 @@
 |---|---|---|
 | `DECK_FORMAT` | `"unppt-deck"` | 写在每份数据的 `format` 字段里，用来认出"这是 unppt 的数据" |
 | `DECK_FORMAT_VERSION` | `1` | 数据格式的版本号，写在 `version` 字段里 |
-| `UNPPT_VERSION` | `"0.3.0"` | 软件版本，写在 `generator` 字段里（`"unppt 0.3.0"`） |
+| `UNPPT_VERSION` | `"0.3.1"` | 软件版本，写在 `generator` 字段里（`"unppt 0.3.1"`） |
 
 规则：
 
@@ -50,8 +50,8 @@
 ```mermaid
 flowchart LR
   pptx["输入.pptx"] --> conv["转码器 convert()"]
-  conv --> single["single（默认）<br/>一个自包含的 HTML"]
-  conv --> paged["paged<br/>入口 HTML + 每页一个数据文件"]
+  conv --> single["single（convert() 的默认）<br/>一个自包含的 HTML"]
+  conv --> paged["paged（命令行的默认）<br/>入口 HTML + 每页一个数据文件"]
   conv --> pages["pages<br/>paged + 每页一个独立 HTML"]
   conv --> data["data<br/>只有 deck.json"]
   conv --> prop["所有形式都有：<br/>prop.json + pic/ + thum/"]
@@ -59,17 +59,17 @@ flowchart LR
 
 | 形式 | 适合 | 主文件 | 播放器 | 小图片 |
 |---|---|---|---|---|
-| `single` | 发给别人双击就能看；页数不多 | `<名字>.html` | 内嵌在 HTML 里 | 小于 2MB（`--inline-limit`）内联进 HTML |
+| `single` | 发给别人双击就能看；页数不多 | `index.html`（或 `-o` 写的 `xxx.html`） | 内嵌在 HTML 里 | 小于 2MB（`--inline-limit`）内联进 HTML |
 | `paged` | 放到网站上、页数多、要快速打开 | `<目录>/index.html` | 内嵌在 index.html | 全部写成 `media/` 下的文件 |
 | `pages` | 同 paged，并且需要"每页一个网址" | `<目录>/index.html` + `page-001.html`… | 内嵌 | 同 paged |
-| `data` | 自己部署播放器、自己加载数据（开发调试用） | `<名字>.json` | 不带 | 全部写成 `media/` 下的文件 |
+| `data` | 自己部署播放器、自己加载数据（开发调试用） | `deck.json` | 不带 | 全部写成 `media/` 下的文件 |
 
 视频、音频在所有形式下都是 `media/` 下的单独文件。
 
 ### 3.1 single
 
 ```text
-课件.html          ← 页面数据、图片、字体、播放器全在里面
+index.html         ← 页面数据、图片、字体、播放器全在里面
 prop.json
 pic/1.jpg …        ← 整页图
 thum/1.jpg …       ← 缩略图
@@ -114,7 +114,7 @@ HTML 内部结构（按出现顺序）：
 
 ```json
 {
-  "format": "unppt-deck", "version": 1, "generator": "unppt 0.3.0",
+  "format": "unppt-deck", "version": 1, "generator": "unppt 0.3.1",
   "width": 1280, "height": 720, "title": "",
   "fonts": [{ "family": "unppt-f0", "source": "Impact", "weight": "normal", "style": "normal",
               "format": "woff", "url": "fonts/unppt-f0.2e92b8da.js" }],
@@ -285,7 +285,7 @@ classDiagram
 |---|---|---|---|
 | `format` | `"unppt-deck"` | 是 | 固定值，认出数据类型 |
 | `version` | 数字 | 是 | 格式版本，目前 `1` |
-| `generator` | 字符串 | 是 | 生成它的软件，如 `"unppt 0.3.0"` |
+| `generator` | 字符串 | 是 | 生成它的软件，如 `"unppt 0.3.1"` |
 | `width` / `height` | 数字 | 是 | 幻灯片宽高，**像素**（96 dpi）。16:9 是 1280 × 720 |
 | `title` | 字符串 | 转码器总会写 | 演示文稿标题（来自 pptx 的文档属性，没有时是空字符串）。注意：它不在 TypeScript 的 `Deck` 类型里，但转码器会输出，播放器也会读 |
 | `slides` | `DeckSlide[]` | 是 | 每页的数据，见第 6 节（paged 形式里没有这个字段，换成 `pages`） |
@@ -441,7 +441,7 @@ npx @unppt/unppt testcases/anim-basic.pptx --data -o out/deck.json
 {
   "format": "unppt-deck",
   "version": 1,
-  "generator": "unppt 0.3.0",
+  "generator": "unppt 0.3.1",
   "width": 1280,
   "height": 720,
   "title": "",

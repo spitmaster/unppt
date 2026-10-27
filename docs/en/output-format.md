@@ -33,7 +33,7 @@ The converter and the player **talk to each other only through this format**. As
 |---|---|---|
 | `DECK_FORMAT` | `"unppt-deck"` | Written to every deck's `format` field, identifying "this is unppt data" |
 | `DECK_FORMAT_VERSION` | `1` | The data format version, written to the `version` field |
-| `UNPPT_VERSION` | `"0.3.0"` | The software version, written to the `generator` field (`"unppt 0.3.0"`) |
+| `UNPPT_VERSION` | `"0.3.1"` | The software version, written to the `generator` field (`"unppt 0.3.1"`) |
 
 Rules:
 
@@ -50,8 +50,8 @@ Choose the form on the command line: `unppt input.pptx --output <form>` (`--data
 ```mermaid
 flowchart LR
   pptx["input.pptx"] --> conv["converter convert()"]
-  conv --> single["single (default)<br/>one self-contained HTML"]
-  conv --> paged["paged<br/>entry HTML + one data file per slide"]
+  conv --> single["single (default of convert())<br/>one self-contained HTML"]
+  conv --> paged["paged (default of the CLI)<br/>entry HTML + one data file per slide"]
   conv --> pages["pages<br/>paged + one standalone HTML per slide"]
   conv --> data["data<br/>deck.json only"]
   conv --> prop["every form also writes:<br/>prop.json + pic/ + thum/"]
@@ -59,17 +59,17 @@ flowchart LR
 
 | Form | Good for | Main file | Player | Small images |
 |---|---|---|---|---|
-| `single` | Sending to someone to double-click; modest slide counts | `<name>.html` | Embedded in the HTML | Under 2 MB (`--inline-limit`) inlined into the HTML |
+| `single` | Sending to someone to double-click; modest slide counts | `index.html` (or the `xxx.html` given with `-o`) | Embedded in the HTML | Under 2 MB (`--inline-limit`) inlined into the HTML |
 | `paged` | Hosting on a website, many slides, fast opening | `<dir>/index.html` | Embedded in index.html | All written as files under `media/` |
 | `pages` | Like paged, plus "one URL per slide" | `<dir>/index.html` + `page-001.html`… | Embedded | Same as paged |
-| `data` | Deploying the player yourself and loading data yourself (development / debugging) | `<name>.json` | Not included | All written as files under `media/` |
+| `data` | Deploying the player yourself and loading data yourself (development / debugging) | `deck.json` | Not included | All written as files under `media/` |
 
 Video and audio are always separate files under `media/`, in every form.
 
 ### 3.1 single
 
 ```text
-deck.html          ← slide data, images, fonts and the player all inside
+index.html         ← slide data, images, fonts and the player all inside
 prop.json
 pic/1.jpg …        ← full-slide images
 thum/1.jpg …       ← thumbnails
@@ -114,7 +114,7 @@ The index (`DeckIndex`) = `Deck` without `slides`, plus `pages`:
 
 ```json
 {
-  "format": "unppt-deck", "version": 1, "generator": "unppt 0.3.0",
+  "format": "unppt-deck", "version": 1, "generator": "unppt 0.3.1",
   "width": 1280, "height": 720, "title": "",
   "fonts": [{ "family": "unppt-f0", "source": "Impact", "weight": "normal", "style": "normal",
               "format": "woff", "url": "fonts/unppt-f0.2e92b8da.js" }],
@@ -285,7 +285,7 @@ classDiagram
 |---|---|---|---|
 | `format` | `"unppt-deck"` | Yes | Fixed value identifying the data |
 | `version` | number | Yes | Format version, currently `1` |
-| `generator` | string | Yes | The software that produced it, e.g. `"unppt 0.3.0"` |
+| `generator` | string | Yes | The software that produced it, e.g. `"unppt 0.3.1"` |
 | `width` / `height` | number | Yes | Slide size in **pixels** (96 dpi). 16:9 is 1280 × 720 |
 | `title` | string | Always written by the converter | Presentation title (from the pptx document properties; empty string if none). Note: it is not in the TypeScript `Deck` type, but the converter writes it and the player reads it |
 | `slides` | `DeckSlide[]` | Yes | Per-slide data, see section 6 (absent in the paged index, replaced by `pages`) |
@@ -441,7 +441,7 @@ Result (`svg` omitted):
 {
   "format": "unppt-deck",
   "version": 1,
-  "generator": "unppt 0.3.0",
+  "generator": "unppt 0.3.1",
   "width": 1280,
   "height": 720,
   "title": "",
