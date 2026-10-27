@@ -8,9 +8,9 @@
 
 - **5212 real-world decks, 168662 slides** converted; **0 conversion failures**.
 - Compared slide by slide with images exported by Microsoft PowerPoint: **mean SSIM 0.9561**, **70.4% of slides at SSIM ≥ 0.95**, 93.5% ≥ 0.90.
-- Against the previous release 0.2.6, slide by slide: 1944 better, 70 worse, 166648 unchanged (|Δ| ≤ 0.005); 0.2.6 mean on the same slides 0.9558.
+- Against the previous release 0.2.6, slide by slide: 1923 better, 43 worse, 166696 unchanged (|Δ| ≤ 0.005); 0.2.6 mean on the same slides 0.9558.
 - Synthetic test cases: 255 files / 543 slides, mean SSIM 0.9838, 93.0% ≥ 0.95.
-- Conversion time (single render thread, run alongside other jobs, so conservative): median 10.6 s per deck, 441 ms per slide.
+- Conversion time (single render thread, run alongside other jobs, so conservative): median 8.2 s per deck, 377 ms per slide.
 
 ## Test corpus
 
@@ -34,12 +34,12 @@ Real-world decks from the owner's courseware library (kept locally, never upload
 
 | SSIM | Slides | Share |
 |---|---|---|
-| < 0.80 | 1475 | 0.9% |
-| 0.80 – 0.85 | 1883 | 1.1% |
-| 0.85 – 0.90 | 7617 | 4.5% |
-| 0.90 – 0.95 | 38920 | 23.1% |
-| 0.95 – 0.98 | 68446 | 40.6% |
-| ≥ 0.98 | 50253 | 29.8% |
+| < 0.80 | 1476 | 0.9% |
+| 0.80 – 0.85 | 1882 | 1.1% |
+| 0.85 – 0.90 | 7621 | 4.5% |
+| 0.90 – 0.95 | 38908 | 23.1% |
+| 0.95 – 0.98 | 68453 | 40.6% |
+| ≥ 0.98 | 50254 | 29.8% |
 
 Percentiles: P5 0.8898，P10 0.9144，P25 0.9444，P50 0.9671，P75 0.9827
 
@@ -50,24 +50,24 @@ A slide can be in several rows. "vs 0.2.6" is the previous release's mean on the
 | Slide content | Slides | Mean SSIM | ≥ 0.95 | ≥ 0.90 | vs 0.2.6 |
 |---|---|---|---|---|---|
 | pictures | 106263 | 0.9566 | 70.3% | 94.3% | 0.9564 |
-| animations | 65040 | 0.9532 | 68.9% | 92.4% | 0.9529 |
-| transitions | 61533 | 0.9579 | 71.6% | 94.9% | 0.9577 |
+| animations | 65040 | 0.9532 | 69.0% | 92.4% | 0.9529 |
+| transitions | 61533 | 0.9579 | 71.6% | 94.8% | 0.9577 |
 | groups | 59397 | 0.9532 | 67.5% | 94.0% | 0.9530 |
 | shadows | 33007 | 0.9529 | 66.9% | 93.1% | 0.9526 |
-| freeform shapes | 32460 | 0.9549 | 69.3% | 94.7% | 0.9546 |
+| freeform shapes | 32460 | 0.9549 | 69.4% | 94.7% | 0.9546 |
 | text autofit | 27293 | 0.9515 | 62.5% | 91.8% | 0.9509 |
 | gradient fills | 17726 | 0.9487 | 65.2% | 93.3% | 0.9485 |
 | tables | 11856 | 0.9329 | 38.2% | 84.2% | 0.9321 |
 | none of these | 9353 | 0.9679 | 84.7% | 96.2% | 0.9675 |
-| 3-D effects | 8585 | 0.9475 | 57.8% | 90.7% | 0.9473 |
+| 3-D effects | 8585 | 0.9475 | 57.9% | 90.7% | 0.9473 |
 | EMF/WMF pictures | 7674 | 0.9429 | 52.0% | 87.3% | 0.9427 |
 | SmartArt | 3627 | 0.9170 | 40.2% | 73.4% | 0.9168 |
-| charts | 3266 | 0.8782 | 10.8% | 43.2% | 0.8775 |
+| charts | 3266 | 0.8782 | 10.9% | 43.1% | 0.8775 |
 | vertical text | 3063 | 0.9503 | 63.1% | 91.8% | 0.9500 |
 | SVG pictures | 2403 | 0.9551 | 67.9% | 94.7% | 0.9547 |
 | OLE objects | 2373 | 0.9407 | 48.9% | 86.6% | 0.9402 |
 | glow | 1164 | 0.9469 | 60.7% | 90.9% | 0.9468 |
-| pattern fills | 1087 | 0.9157 | 36.2% | 68.8% | 0.9150 |
+| pattern fills | 1087 | 0.9156 | 36.2% | 68.7% | 0.9150 |
 | audio/video | 909 | 0.9674 | 84.2% | 96.6% | 0.9671 |
 | WordArt warps | 881 | 0.9624 | 76.0% | 95.6% | 0.9622 |
 | equations | 49 | 0.9173 | 32.7% | 69.4% | 0.9171 |
@@ -91,23 +91,23 @@ Each deck converted once with the CLI (`--jobs 1`: single-threaded page-image re
 
 | Metric | Median | p90 | p99 | Max |
 |---|---|---|---|---|
-| Per deck (s) | 10.6 | 35.8 | 100.6 | 700.7 |
-| Per slide (ms) | 441 | 1631 | 7522 | 56594 |
+| Per deck (s) | 8.2 | 24.7 | 52.7 | 660.4 |
+| Per slide (ms) | 377 | 1011 | 2685 | 44024 |
 
 ## Output size
 
-4137 decks measured. 
+5212 decks measured. 
 Default on-demand form; viewers download only the slides they see (plus the next one preloaded); page images and thumbnails are for lists and previews and are not downloaded during playback.
 
 | Part | Median per deck (KB) | p90 (KB) | Share of total |
 |---|---|---|---|
-| font subsets | 345 | 816 | 2.1% |
-| images, audio, video | 6238 | 34979 | 79.4% |
-| per-slide data | 297 | 1274 | 2.8% |
-| page images | 1785 | 5667 | 14.0% |
-| thumbnails | 182 | 540 | 1.4% |
-| other (entry HTML etc.) | 62 | 73 | 0.3% |
-| Total | 9601 | 41934 | 100% |
+| font subsets | 344 | 818 | 2.1% |
+| images, audio, video | 6234 | 34946 | 78.9% |
+| per-slide data | 298 | 1275 | 2.9% |
+| page images | 1796 | 5741 | 14.3% |
+| thumbnails | 184 | 544 | 1.4% |
+| other (entry HTML etc.) | 63 | 73 | 0.4% |
+| Total | 9641 | 41962 | 100% |
 
 ## Synthetic test cases
 
@@ -115,7 +115,7 @@ Neutral cases built with PowerPoint (`testcases/`, public), each targeting one f
 
 | Category | Slides | Mean SSIM | ≥ 0.95 |
 |---|---|---|---|
-| charts | 114 | 0.9716 | 84.2% |
+| charts | 114 | 0.9715 | 84.2% |
 | text | 107 | 0.9829 | 95.3% |
 | anim | 85 | 0.9939 | 97.6% |
 | transitions | 45 | 0.9986 | 100.0% |
