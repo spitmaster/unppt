@@ -541,7 +541,7 @@ During development unppt compares every slide automatically against images expor
 | Test set | Size | Pass rate (SSIM ≥ 0.95) | Mean SSIM |
 |---|---|---|---|
 | Synthetic test cases | 255 decks / 543 slides | 93.0% | 0.984 |
-| All real-world decks on the dev machine | 5212 decks / 168662 slides, 0 conversion failures | 70.4% (93.5% of slides at SSIM ≥ 0.90) | 0.956 |
+| Real-world decks | 5212 decks / 168662 slides, 0 conversion failures | 70.4% (93.5% of slides at SSIM ≥ 0.90) | 0.956 |
 
 These numbers are measured with `--system-fonts` (the same fonts PowerPoint uses), so they measure whether the layout rules are right. With the default font pack, line breaks and text positions stay the same and only glyph shapes change to the open-source fonts; on the synthetic test cases the mean SSIM is about 0.024 lower per slide, purely from glyph shapes.
 

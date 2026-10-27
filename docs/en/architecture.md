@@ -680,7 +680,7 @@ Where things stand (0.3.1; full numbers in the [test report](test-report.md)):
 | Test set | Size | Pass rate (SSIM >= 0.95) | Mean SSIM |
 |---|---|---|---|
 | Synthetic cases | 255 decks / 543 pages | 93.0% | 0.984 |
-| All real-world decks on the dev machine | 5212 decks / 168662 pages, 0 conversion failures | 70.4% (93.5% of pages at SSIM >= 0.90) | 0.956 |
+| Real-world decks | 5212 decks / 168662 pages, 0 conversion failures | 70.4% (93.5% of pages at SSIM >= 0.90) | 0.956 |
 
 Most failing pages differ only in details (text a few pixels off, one chart label). Known gaps: chart date-axis time scaling (min/max, month/year intervals), `wordArtVert` vertical text, EMF+ records in EMF images, some SmartArt that needs re-layout, 3D bevel under 180-degree rotation, and the truncation threshold of 45-degree category labels.
 

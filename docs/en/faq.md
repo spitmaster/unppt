@@ -249,7 +249,7 @@ These cases still differ visibly from PowerPoint:
 | 3D | 3D bevel under 180-degree rotation |
 | Chart category labels | truncation threshold of 45-degree labels |
 
-Overall fidelity (0.3.1): 93.0% of synthetic test pages and 70.4% of the pages of all 5212 real-world decks on the dev machine reach SSIM ≥ 0.95 (93.5% reach 0.90); most of the rest differ only by a few pixels. Full numbers: [test report](test-report.md); how this is measured: [Fidelity](fidelity.md).
+Overall fidelity (0.3.1): 93.0% of synthetic test pages and 70.4% of the pages of 5212 real-world decks reach SSIM ≥ 0.95 (93.5% reach 0.90); most of the rest differ only by a few pixels. Full numbers: [test report](test-report.md); how this is measured: [Fidelity](fidelity.md).
 
 ---
 

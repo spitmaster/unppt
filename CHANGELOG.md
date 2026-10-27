@@ -166,13 +166,13 @@ Fixes found by comparing three batches of real decks (11k slides) with PowerPoin
 **中文**
 
 - 发布流程自动化：推送版本标签后，GitHub Actions 自动构建、测试、创建 GitHub Release 并附上安装包 `unppt.tgz`，再用 npm 可信发布自动发布到 npm。
-- 可以从 GitHub 下载安装（npm 审核新版本期间、公司内网镜像下载失败时用）：先下载 `https://github.com/spitmaster/unppt/releases/latest/download/unppt.tgz`，再 `npm install -g ./unppt.tgz`。
+- 可以从 GitHub 下载安装（npm 审核新版本期间、连不上 npm 时用）：先下载 `https://github.com/spitmaster/unppt/releases/latest/download/unppt.tgz`，再 `npm install -g ./unppt.tgz`。
 - 功能和 0.2.0 相同（0.2.0 没有发布到 npm）。
 
 **English**
 
 - Automated releases: pushing a version tag makes GitHub Actions build, test, create the GitHub Release with the `unppt.tgz` package attached, and publish to npm via trusted publishing.
-- Install from GitHub (while npm reviews a version, or behind a corporate mirror): download `https://github.com/spitmaster/unppt/releases/latest/download/unppt.tgz`, then `npm install -g ./unppt.tgz`.
+- Install from GitHub (while npm reviews a version, or without access to npm): download `https://github.com/spitmaster/unppt/releases/latest/download/unppt.tgz`, then `npm install -g ./unppt.tgz`.
 - Same features as 0.2.0 (0.2.0 was not published to npm).
 
 ## 0.2.0（2026-10-20）
@@ -181,7 +181,7 @@ Fixes found by comparing three batches of real decks (11k slides) with PowerPoin
 
 - 命令行简化：`unppt 课件.pptx` 直接转码，输出和 pptx 同名的 `.html`，放在 pptx 所在的文件夹；其它功能都用选项加。旧写法 `unppt convert 课件.pptx` 仍然可用。
 - 新增 `unppt -v` / `--version`（版本号）、`unppt -h` / `--help`（用法）。
-- 安装成命令：`npm install -g @unppt/unppt`（公司内网镜像下载失败时加 `--registry https://registry.npmjs.org/`）。
+- 安装成命令：`npm install -g @unppt/unppt`。
 
 **English**
 

@@ -288,7 +288,7 @@ The rules in detail:
 | Test set | Size | Conversion failures | Pass rate (SSIM ≥ 0.95) | Mean SSIM |
 |---|---|---|---|---|
 | Synthetic test cases `testcases/` | 255 decks / 543 pages | 0 | **93.0%** | 0.984 |
-| All real decks on the test machine | 5,212 decks / 168,662 pages | **0** | **70.4%** (93.5% of pages at SSIM ≥ 0.90) | 0.956 |
+| Real-world decks | 5,212 decks / 168,662 pages | **0** | **70.4%** (93.5% of pages at SSIM ≥ 0.90) | 0.956 |
 
 Breakdowns (by content, by the app that saved the deck, conversion speed, output size) are in the [test report](test-report.md).
 

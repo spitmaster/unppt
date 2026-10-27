@@ -1060,7 +1060,7 @@ All warnings are de-duplicated and counted into `ConvertResult.report.warnings`.
 
 ## 17. Known gaps
 
-Current version: 0.3.1. On the synthetic test cases (255 decks / 543 slides), 93.0% of slides pass (SSIM ≥ 0.95, mean 0.984). On all 5212 real-world decks / 168662 slides on the dev machine there were 0 conversion failures and 70.4% of slides pass (93.5% at SSIM ≥ 0.90, mean 0.956); full numbers in the [test report](test-report.md). SSIM (structural similarity) is a number from 0 to 1 that measures how alike two images look; 1 means identical (how it is computed: [Fidelity](fidelity.md#ssim)). Most failing slides differ only in details (text a few pixels off, one chart label).
+Current version: 0.3.1. On the synthetic test cases (255 decks / 543 slides), 93.0% of slides pass (SSIM ≥ 0.95, mean 0.984). On 5212 real-world decks / 168662 slides on the dev machine there were 0 conversion failures and 70.4% of slides pass (93.5% at SSIM ≥ 0.90, mean 0.956); full numbers in the [test report](test-report.md). SSIM (structural similarity) is a number from 0 to 1 that measures how alike two images look; 1 means identical (how it is computed: [Fidelity](fidelity.md#ssim)). Most failing slides differ only in details (text a few pixels off, one chart label).
 
 Known gaps:
 
