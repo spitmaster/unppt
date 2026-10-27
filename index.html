@@ -45,8 +45,8 @@ unppt <span lang="zh">课件.pptx</span><span lang="en">slides.pptx</span>      
     <h2><span lang="zh">用 5000 多份真实课件逐页比对</span><span lang="en">Checked slide by slide on 5,000+ real decks</span></h2>
     <div class="stats" id="stats"></div>
     <p class="t" style="color:var(--muted);font-size:14px;margin-top:10px">
-      <span lang="zh">每一页都和 Microsoft PowerPoint 导出的图片比较（SSIM：1 表示完全一样）。完整的分项统计见</span>
-      <span lang="en">Every slide is compared with the image Microsoft PowerPoint exports (SSIM: 1 means identical). Full breakdown in the</span>
+      <span lang="zh">每一页都和 PowerPoint 自己导出的同一页图片比较，算出相似度（0 到 1，1 表示看起来一模一样）。完整的分项统计见</span>
+      <span lang="en">Every slide is compared with the image PowerPoint itself exports, giving a similarity score (0 to 1, 1 = looks identical). Full breakdown in the</span>
       <a href="https://github.com/spitmaster/unppt/blob/main/docs/zh/test-report.md"><span lang="zh">测试报告</span><span lang="en">test report</span></a>.
     </p>
   </section>
@@ -88,10 +88,10 @@ unppt <span lang="zh">课件.pptx</span><span lang="en">slides.pptx</span>      
   const stats = [
     [fmt(st.decks), '份真实课件、' + fmt(st.slides) + ' 页', 'real decks, ' + fmt(st.slides) + ' slides'],
     [st.fails ?? '0', '份转码失败', 'conversion failures'],
-    [st.ssim, '和 PowerPoint 逐页比的平均 SSIM', 'mean SSIM vs PowerPoint'],
-    [st.p90 + '%', '的页 SSIM ≥ 0.90', 'of slides at SSIM ≥ 0.90'],
-    [st.tcSsim, st.tcFiles + ' 个合成用例的平均 SSIM', 'mean SSIM on ' + st.tcFiles + ' synthetic cases'],
-    [st.sec + ' s', '每份课件转码时间（中位数）', 'median conversion time per deck'],
+    [st.ssim, '和 PowerPoint 的平均相似度（1 = 一模一样）', 'average similarity to PowerPoint (1 = identical)'],
+    [st.p90 + '%', '的页相似度在 0.90 以上', 'of slides score above 0.90'],
+    [st.tcSsim, st.tcFiles + ' 份功能测试课件的平均相似度', 'average on ' + st.tcFiles + ' feature test decks'],
+    [st.sec + ' s', '一半的课件在这个时间内转完', 'half of the decks convert within'],
   ];
   document.getElementById('stats').innerHTML = stats.map(([n, zh, en]) =>
     `<div class="stat"><div class="n">${esc(n)}</div><div class="t"><span lang="zh">${esc(zh)}</span><span lang="en">${esc(en)}</span></div></div>`).join('');
