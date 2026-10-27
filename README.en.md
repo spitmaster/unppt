@@ -118,14 +118,14 @@ Key design decisions (the full picture is in [Architecture](docs/en/architecture
 
 ## Status and accuracy
 
-Current version: **0.3.0**.
+Current version: **0.3.1**. Full breakdown in the [test report](docs/en/test-report.md).
 
 Accuracy is measured with **SSIM** (structural similarity, a number from 0 to 1 where 1 means the two images are identical): each page drawn by unppt is compared with the image PowerPoint exports, and **a page passes when SSIM ≥ 0.95**.
 
 | Test set | Size | Conversion failures | Pass rate (SSIM ≥ 0.95) | Mean SSIM |
 |---|---|---|---|---|
-| Synthetic test cases (`testcases/`) | 242 decks / 524 pages | 0 | 92.7% | 0.984 |
-| Random batch of real-world decks | 99 decks / 2754 pages | 0 | 77.7% (about 93% of pages at SSIM ≥ 0.90) | 0.965 |
+| Synthetic test cases (`testcases/`, browser screenshots of the player) | 255 decks / 543 pages | 0 | 93.0% | 0.984 |
+| All local real-world decks (page images) | 5212 decks / 168662 pages | 0 | 70.4% (93.5% of pages at SSIM ≥ 0.90) | 0.956 |
 
 Most failing pages differ only in details (text a few pixels off, one chart label in a different place) and look the same at a glance. **Line wrapping** is also compared line by line: across 991 real decks, 99.8% of about 40,000 multi-line text boxes and 99.9% of 6,051 multi-line table cells break exactly like PowerPoint. All 5,212 real decks on the test machine (about 169,000 slides) convert with no failures.
 
