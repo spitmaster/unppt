@@ -17,7 +17,6 @@ npm install -g @unppt/unppt
 
 装好后运行 `unppt -v` 查看版本号。会自动带上默认字体包（下载约 67MB），不用另外装字体。
 
-- **公司内网镜像装不上**（报 `EALLOWREMOTE`、`ETARGET`、找不到版本）：指定 npm 官方源 `npm install -g @unppt/unppt --registry https://registry.npmjs.org/`
 - **不能连 npm**：从 [Releases](https://github.com/spitmaster/unppt/releases/latest) 下载 `unppt-fonts.tgz` 和 `unppt.tgz`，运行 `npm install -g ./unppt-fonts.tgz ./unppt.tgz`（完整步骤见 [快速上手第 3 节](docs/zh/getting-started.md#3-安装)）
 
 ## 使用

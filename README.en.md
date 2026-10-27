@@ -17,7 +17,6 @@ npm install -g @unppt/unppt
 
 Run `unppt -v` afterwards to check the version. The default font pack (about 67 MB download) comes with it; no fonts need to be installed separately.
 
-- **Behind a corporate npm mirror** (`EALLOWREMOTE`, `ETARGET`, version not found): use the official registry, `npm install -g @unppt/unppt --registry https://registry.npmjs.org/`
 - **No access to npm**: download `unppt-fonts.tgz` and `unppt.tgz` from [Releases](https://github.com/spitmaster/unppt/releases/latest) and run `npm install -g ./unppt-fonts.tgz ./unppt.tgz` (full steps in [Getting started, section 3](docs/en/getting-started.md#3-install))
 
 ## Usage

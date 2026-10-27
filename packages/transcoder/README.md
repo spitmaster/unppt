@@ -12,7 +12,6 @@ npm install @unppt/unppt             # 在代码里调用
 ```
 
 会自动带上默认字体包 `@unppt/fonts`（开源字体 + 排版用的字体度量，下载约 67MB，装好后约 100MB），不用另外装字体。
-公司内网镜像装不上（`EALLOWREMOTE`、`ETARGET`）时加 `--registry https://registry.npmjs.org/`；
 不能连 npm 时从 GitHub Release 下载 `unppt-fonts.tgz` 和 `unppt.tgz`，`npm install -g ./unppt-fonts.tgz ./unppt.tgz`。
 
 ## 用法

@@ -87,7 +87,7 @@ The first run downloads the package temporarily, so give it a moment.
 
 **Option 4: download from GitHub (bypassing the npm registry)**
 
-While npm is still reviewing a new version, or when a corporate npm mirror fails, download the package file from the GitHub Release (attached automatically to every release; `latest` is always the newest) and install those local files. Two steps, because npm 12 and later refuse to install straight from a URL by default.
+While npm is still reviewing a new version, or when you cannot reach npm, download the package file from the GitHub Release (attached automatically to every release; `latest` is always the newest) and install those local files. Two steps, because npm 12 and later refuse to install straight from a URL by default.
 
 Since 0.3.0 you need **two files**: the default font pack `unppt-fonts.tgz` and the program itself `unppt.tgz`. Install them together (font pack first).
 
