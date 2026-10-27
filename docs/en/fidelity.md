@@ -66,7 +66,7 @@ flowchart LR
   index.html?slide=<slide>&step=<step>&ui=0
   ```
 
-  Why `--system-fonts`: the comparison measures whether the **layout rules** are right, so it converts with the same local fonts PowerPoint uses (since 0.3.0 this option is off by default; the comparison tool turns it on explicitly). Regular users get the fonts embedded in the PPT plus the default font pack by default; see the end of [section 8](#8-where-we-are-today-030).
+  Why `--system-fonts`: the comparison measures whether the **layout rules** are right, so it converts with the same local fonts PowerPoint uses (since 0.3.0 this option is off by default; the comparison tool turns it on explicitly). Regular users get the fonts embedded in the PPT plus the default font pack by default; see the end of [section 8](#8-where-we-are-today-031).
 
   `slide` / `step` jump straight to a slide and step (counting from 0); `ui=0` hides the player's own navigation buttons. If the reference is a "static" image (every object shown, animations ignored), `&static=1` is added so the player also shows every object as is.
 - Chromium draws text with **greyscale anti-aliasing** (launch flag `--disable-lcd-text`): PowerPoint's references are greyscale, while Chrome's default sub-pixel anti-aliasing has coloured fringes. We compare layout, not anti-aliasing style.
@@ -283,19 +283,19 @@ The rules in detail:
 
 ---
 
-## 8. Where we are today (0.3.0)
+## 8. Where we are today (0.3.1)
 
 | Test set | Size | Conversion failures | Pass rate (SSIM ≥ 0.95) | Mean SSIM |
 |---|---|---|---|---|
-| Synthetic test cases `testcases/` | 242 decks / 524 pages | 0 | **92.7%** | 0.984 |
-| Random batch of real-world decks | 99 decks / 2754 pages | **0** | **77.7%** (about 93% of pages at SSIM ≥ 0.90) | 0.965 |
-| All real decks on the test machine (conversion only, no comparison) | 5,212 decks / about 169,000 slides | **0** | — | — |
+| Synthetic test cases `testcases/` | 255 decks / 543 pages | 0 | **93.0%** | 0.984 |
+| All real decks on the test machine | 5,212 decks / 168,662 pages | **0** | **70.4%** (93.5% of pages at SSIM ≥ 0.90) | 0.956 |
+
+Breakdowns (by content, by the app that saved the deck, conversion speed, output size) are in the [test report](test-report.md).
 
 How to read these numbers:
 
 - **0.95 is a strict line.** Most pages below it differ only in details: text a few pixels off, one chart label in a different place. At a glance the page looks the same;
 - the synthetic cases deliberately test hard features (3D, WordArt effects, complex charts), so the failing pages cluster around those hard spots;
-- a few decks in the random batch use Source Han Sans, which is not installed on the machine that exported the references: PowerPoint substituted Microsoft YaHei, while unppt shows the Source Han Sans the author used (SPEC D3 ⑩), so those decks score lower; counting only decks whose fonts are all installed, 0.3.0 and 0.2.6 are on par;
 - these numbers are measured with `--system-fonts` (the same fonts PowerPoint uses). With the default font pack (non-embedded fonts laid out with the original font's metrics and displayed with open-source fonts), **line breaks and text positions stay the same and only glyph shapes differ**: on the synthetic cases the mean SSIM is about 0.024 lower per page, purely from glyph shapes;
 - line wrapping is also compared line by line: across 991 real decks 99.8% of multi-line text boxes break exactly like PowerPoint; see [2.5](#25-the-line-wrapping-test-toolswraptest).
 
@@ -339,7 +339,6 @@ These cases still differ visibly from PowerPoint and will be improved in later v
 |---|---|
 | Chart date axes | time scaling (min / max, month / year intervals) is incomplete |
 | Vertical text | the `wordArtVert` (WordArt vertical) mode |
-| Fonts | variable fonts |
 | Images | EMF+ records inside EMF images |
 | SmartArt | some SmartArt that needs re-layout (the drawing cache stored in the file cannot be used as is) |
 | 3D | 3D bevel under 180-degree rotation |

@@ -109,7 +109,7 @@ npm install -g ./unppt-fonts.tgz ./unppt.tgz
 
 macOS / Linux 提示权限不足（`EACCES` / `permission denied`）时，最后一行改成 `sudo npm install -g ./unppt-fonts.tgz ./unppt.tgz`，按提示输入电脑登录密码。
 
-想装指定版本，把网址里的 `latest/download/` 换成 `download/v0.3.0/` 这样的格式（0.2.x 版本没有字体包，只下载 `unppt.tgz` 一个文件）。装好后运行 `unppt -v` 看版本号。
+想装指定版本，把网址里的 `latest/download/` 换成 `download/v0.3.1/` 这样的格式（0.2.x 版本没有字体包，只下载 `unppt.tgz` 一个文件）。装好后运行 `unppt -v` 看版本号。
 
 > 不带参数运行 `unppt`，会打印版本号和全部选项。
 
@@ -441,6 +441,8 @@ flowchart TD
 
 对照规则写在 `packages/fonts/map.json` 里，按顺序匹配，第一条命中的生效。
 
+**思源黑体、思源宋体例外**（0.3.1 起）：字体包里虽然有思源黑体、思源宋体，但课件里写的"思源黑体""Source Han Sans""思源宋体"等名字，没嵌入时和其它缺的字体一样，按 PowerPoint 的规则找替代字体排版（中文一般是微软雅黑），`unppt check` 里标成 ⚠。原因：大多数电脑没装思源字体，PowerPoint 在这些电脑上就是这样显示的，这样所有观看者看到的一致。想保留思源的样子，请把字体嵌入 PPT。课件里直接写 Noto Sans SC / Noto Serif SC 的，照常用字体包里的同名字体。
+
 ### 7.4 符号字体（Wingdings、Webdings、Symbol 等）
 
 符号字体里，字母的位置放的是图形（例如 Wingdings 的 `l` 是一个实心圆点）。unppt **不会改动你的字符**：
@@ -529,12 +531,12 @@ unppt demo.pptx -o out --system-fonts
 
 ## 8. 效果如何
 
-开发时，unppt 用本机 PowerPoint 导出的图片当“标准答案”，逐页自动比对。比对用 **SSIM**（结构相似度，0 到 1 之间，1 表示两张图完全一样），一页 SSIM ≥ 0.95 算通过。
+开发时，unppt 用本机 PowerPoint 导出的图片当“标准答案”，逐页自动比对。比对用 **SSIM**（结构相似度，0 到 1 之间，1 表示两张图完全一样，怎么算的见[还原度](fidelity.md#ssim)），一页 SSIM ≥ 0.95 算通过。0.3.1 的结果（完整数字见[测试报告](test-report.md)）：
 
 | 测试集 | 规模 | 通过率（SSIM ≥ 0.95） | 平均 SSIM |
 |---|---|---|---|
-| 合成测试用例 | 228 份 / 504 页 | 92.3% | 0.984 |
-| 随机抽取的 100 份真实课件 | 3527 页，0 份转码失败 | 78.8%（约 95% 的页 SSIM ≥ 0.90） | 0.967 |
+| 合成测试用例 | 255 份 / 543 页 | 93.0% | 0.984 |
+| 本机全部真实课件 | 5212 份 / 168662 页，0 份转码失败 | 70.4%（93.5% 的页 SSIM ≥ 0.90） | 0.956 |
 
 上表是用 `--system-fonts`（和 PowerPoint 用同一套字体）转码测出来的，衡量的是排版规则对不对。默认用字体包时换行和文字位置不变，只是字形换成了开源字体，合成用例平均每页 SSIM 约低 0.024，全部来自字形差别。
 
@@ -544,7 +546,7 @@ unppt demo.pptx -o out --system-fonts
 ![表格样式](../images/compare-table-styles.png)
 ![文字效果](../images/compare-text-effects.png)
 
-已知还没做好的地方：图表日期坐标轴的时间刻度（最小/最大值、按月/年间隔）、艺术字竖排（wordArtVert）、可变字体、EMF 图片里的 EMF+ 记录、部分需要重新布局的 SmartArt、旋转 180 度时的三维棱台、45 度分类标签的截断阈值。
+已知还没做好的地方：图表日期坐标轴的时间刻度（最小/最大值、按月/年间隔）、艺术字竖排（wordArtVert）、EMF 图片里的 EMF+ 记录、部分需要重新布局的 SmartArt、旋转 180 度时的三维棱台、45 度分类标签的截断阈值。
 
 ---
 

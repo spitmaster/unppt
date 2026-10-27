@@ -432,6 +432,7 @@ const result = await convert(pptxBytes, { write, fontPack });
 - One `fontPack` can be shared by many `convert()` / `checkFonts()` calls; load it once.
 - Font files in the pack are read only when used: only the open fonts this deck needs; subsetting and page images read those files into memory (9–26 MB each, e.g. LXGW WenKai is 26 MB), so mind memory-constrained environments.
 - Every font used is always embedded as a subset (`embedFonts` defaults to `true`), so playback never uses the viewer's fonts and everyone sees the same thing.
+- When a font you give (`fonts`, or `--system-fonts` on the command line) is a **variable font** (one file holding every weight from thin to black, e.g. the Noto Sans SC that ships with Windows), regular text uses its Regular weight and bold text its Bold weight, as in PowerPoint (since 0.3.1; before, the file's default weight was used, which for the Windows Noto Sans SC is the thinnest, Thin, so text came out as hairlines).
 - For the mapping (Microsoft YaHei → Noto Sans SC, Calibri → Carlito, ...) see [Getting started 7.3](getting-started.md#73-layout-and-display-are-separate-metrics-pack--open-source-fonts).
 
 ### 3.8 `checkFonts(input, options)`: checking fonts only

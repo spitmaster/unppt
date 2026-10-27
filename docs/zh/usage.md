@@ -428,6 +428,7 @@ const result = await convert(pptxBytes, { write, fontPack });
 - 一个 `fontPack` 可以给多次 `convert()` / `checkFonts()` 共用，读一次就行。
 - 字体包里的字体文件用到才读：只读这份课件用到的那几个开源字体；做子集、出整页图时会把用到的字体文件读进内存（单个 9～26MB，例如霞鹜文楷 26MB），内存紧张时注意。
 - 用到的字体总是做成子集嵌入产物（`embedFonts` 默认 `true`），播放时不用观看者电脑上的字体，所有人看到的一样。
+- 指定的字体（`fonts`、命令行的 `--system-fonts`）里有**可变字体**（一个文件里含有从细到粗的各种字重，例如 Windows 自带的 Noto Sans SC）时，和 PowerPoint 一样常规的字用 Regular、粗体用 Bold 的字重（0.3.1 起；以前用文件的默认字重，Windows 自带的 Noto Sans SC 默认是最细的 Thin，文字画成细线）。
 - 字体是怎么对照的（微软雅黑 → 思源黑体、Calibri → Carlito 等）见 [快速上手 7.3](getting-started.md#73-排版和显示分开度量包--开源字体)。
 
 ### 3.8 `checkFonts(input, options)`：只检查字体

@@ -109,7 +109,7 @@ npm install -g ./unppt-fonts.tgz ./unppt.tgz
 
 On macOS / Linux, if you get a permission error (`EACCES` / `permission denied`), change the last line to `sudo npm install -g ./unppt-fonts.tgz ./unppt.tgz` and enter your login password.
 
-For a specific version, replace `latest/download/` with something like `download/v0.3.0/` (0.2.x releases have no font pack; download only `unppt.tgz`). Run `unppt -v` afterwards to check the version.
+For a specific version, replace `latest/download/` with something like `download/v0.3.1/` (0.2.x releases have no font pack; download only `unppt.tgz`). Run `unppt -v` afterwards to check the version.
 
 > Running `unppt` with no arguments prints the version and all options.
 
@@ -442,6 +442,8 @@ Microsoft YaHei, SimSun, Calibri and the like are commercial fonts that cannot b
 
 The mapping rules live in `packages/fonts/map.json`; they are tried in order and the first match wins.
 
+**Source Han Sans / Serif are an exception** (since 0.3.1): the pack does contain Noto Sans SC / Noto Serif SC (the same design), but a deck that names "思源黑体", "Source Han Sans", "思源宋体" and the like, without embedding it, is treated like any other missing font: it is laid out with a substitute by PowerPoint's rules (for Chinese usually Microsoft YaHei), and `unppt check` marks it ⚠. The reason: most computers do not have Source Han installed, and that is how PowerPoint shows these decks there, so every viewer sees the same thing. To keep the Source Han look, embed the font in the PPT. A deck that names Noto Sans SC / Noto Serif SC directly still uses the pack's font of that name.
+
 ### 7.4 Symbol fonts (Wingdings, Webdings, Symbol, ...)
 
 Symbol fonts put pictures where letters normally are (e.g. `l` in Wingdings is a solid dot). unppt **never changes your characters**:
@@ -534,12 +536,12 @@ unppt demo.pptx -o out --system-fonts
 
 ## 8. How good is it
 
-During development unppt compares every slide automatically against images exported by a local PowerPoint (the "answer key"). The comparison uses **SSIM** (structural similarity, from 0 to 1, where 1 means identical images); a slide passes at SSIM ≥ 0.95.
+During development unppt compares every slide automatically against images exported by a local PowerPoint (the "answer key"). The comparison uses **SSIM** (structural similarity, from 0 to 1, where 1 means identical images; how it is computed: [Fidelity](fidelity.md#ssim)); a slide passes at SSIM ≥ 0.95. Results for 0.3.1 (full numbers in the [test report](test-report.md)):
 
 | Test set | Size | Pass rate (SSIM ≥ 0.95) | Mean SSIM |
 |---|---|---|---|
-| Synthetic test cases | 228 decks / 504 slides | 92.3% | 0.984 |
-| Random batch of 100 real-world decks | 3527 slides, 0 conversion failures | 78.8% (about 95% of slides at SSIM ≥ 0.90) | 0.967 |
+| Synthetic test cases | 255 decks / 543 slides | 93.0% | 0.984 |
+| All real-world decks on the dev machine | 5212 decks / 168662 slides, 0 conversion failures | 70.4% (93.5% of slides at SSIM ≥ 0.90) | 0.956 |
 
 These numbers are measured with `--system-fonts` (the same fonts PowerPoint uses), so they measure whether the layout rules are right. With the default font pack, line breaks and text positions stay the same and only glyph shapes change to the open-source fonts; on the synthetic test cases the mean SSIM is about 0.024 lower per slide, purely from glyph shapes.
 
@@ -549,7 +551,7 @@ Most failing slides differ only in details (text a few pixels off, one chart lab
 ![Table styles](../images/compare-table-styles.png)
 ![Text effects](../images/compare-text-effects.png)
 
-Known gaps: time scaling on chart date axes (min/max, month/year intervals), vertical WordArt text (wordArtVert), variable fonts, EMF+ records inside EMF images, some SmartArt that needs re-layout, 3D bevel under a 180-degree rotation, and the truncation threshold of 45-degree category labels.
+Known gaps: time scaling on chart date axes (min/max, month/year intervals), vertical WordArt text (wordArtVert), EMF+ records inside EMF images, some SmartArt that needs re-layout, 3D bevel under a 180-degree rotation, and the truncation threshold of 45-degree category labels.
 
 ---
 

@@ -78,6 +78,8 @@ Like PowerPoint, a substitute font is used for layout and the matching open-sour
 | Times, Tms Rmn | Times New Roman |
 | Courier | Courier New |
 
+**Source Han Sans / Serif** (a deck naming "思源黑体", "Source Han Sans", "思源宋体" and the like) are handled the same way when not embedded (since 0.3.1), even though the pack has the same-design Noto Sans SC / Noto Serif SC: most computers do not have Source Han installed, and PowerPoint shows these decks there with a substitute (usually Microsoft YaHei), so every viewer sees the same thing. To keep the Source Han look, embed the font in the PPT.
+
 Characters that no font has (rare: emoji, rare CJK characters) are left to the browser's own fallback, so they may differ between devices; `unppt check` lists them.
 
 ### Q: Symbols (ticks, arrows, bullets) show as letters. What now?
@@ -126,7 +128,7 @@ The most common causes, most likely first:
 1. **A font was missing at conversion time**: run `unppt check` and look for ⚠ / ✗ fonts. Ask the author to embed the fonts in the PPT, or provide them with `--fonts` (previous section);
 2. **The default font pack is not installed**: if the CLI starts with the hint `没找到默认字体包 @unppt/fonts` ("default font pack not found"), widths of non-embedded fonts can only be estimated. Reinstall `@unppt/unppt`, or when installing from GitHub install `unppt-fonts.tgz` too;
 3. **Different font version**: two versions of the same font can have different widths. The font pack's metrics come from the versions shipped with Windows / Office; if the author's version differs, give the author's font file with `--fonts`;
-4. **A known gap**: for example WordArt vertical text (`wordArtVert`) or variable fonts; see [Known gaps](#known-gaps).
+4. **A known gap**: for example WordArt vertical text (`wordArtVert`); see [Known gaps](#known-gaps).
 
 If none of these apply, please report it as described [below](#how-to-report-a-bad-presentation-safely).
 
@@ -242,13 +244,12 @@ These cases still differ visibly from PowerPoint:
 |---|---|
 | Chart date axes | time scaling (min / max, month / year intervals) is incomplete |
 | Vertical text | WordArt vertical text (`wordArtVert`) |
-| Fonts | variable fonts |
 | Images | EMF+ records inside EMF images |
 | SmartArt | some SmartArt that needs re-layout |
 | 3D | 3D bevel under 180-degree rotation |
 | Chart category labels | truncation threshold of 45-degree labels |
 
-Overall fidelity: 92.3% of synthetic test pages and 78.8% of pages in a random batch of real-world decks reach SSIM ≥ 0.95; most of the rest differ only by a few pixels. How this is measured: see [Fidelity](fidelity.md).
+Overall fidelity (0.3.1): 93.0% of synthetic test pages and 70.4% of the pages of all 5212 real-world decks on the dev machine reach SSIM ≥ 0.95 (93.5% reach 0.90); most of the rest differ only by a few pixels. Full numbers: [test report](test-report.md); how this is measured: [Fidelity](fidelity.md).
 
 ---
 
@@ -302,9 +303,9 @@ Please include in the issue:
 
 ## Versioning
 
-- The current version is **0.3.0**; the npm package is `@unppt/unppt` and needs Node.js 20.12 or later;
+- The current version is **0.3.1**; the npm package is `@unppt/unppt` and needs Node.js 20.12 or later;
 - versions have the form "major.minor.patch". 0.x means early stage: interfaces and options may change between versions, so read the release notes on GitHub before upgrading;
 - every release has a matching tag on GitHub (in the form `v0.1.0`); a version number is published to npm only once;
-- to pin a version: `npm install @unppt/unppt@0.3.0`, or `npx @unppt/unppt@0.3.0 ...`; to see the latest version on npm: `npm view @unppt/unppt version`;
+- to pin a version: `npm install @unppt/unppt@0.3.1`, or `npx @unppt/unppt@0.3.1 ...`; to see the latest version on npm: `npm view @unppt/unppt version`;
 - **the output format has its own version**: `"format": "unppt-deck", "version": 1` in `deck.json`. The number goes up when the format changes, and a player that meets a newer version than it knows reports a clear error (asking for a player upgrade);
 - every output **carries its own player**, so decks you have already converted are not affected by later upgrades; to get the improvements of a new version, simply convert again.
