@@ -7,21 +7,22 @@
 需要 Node.js 20.12 或更高版本。
 
 ```bash
-npm install -g @unppt/unppt          # 命令行
-npm install @unppt/unppt             # 在代码里调用
+npm install -g @unppt/unppt
 ```
 
-会自动带上默认字体包 `@unppt/fonts`（开源字体 + 排版用的字体度量，下载约 67MB，装好后约 100MB），不用另外装字体。
-不能连 npm 时从 GitHub Release 下载 `unppt-fonts.tgz` 和 `unppt.tgz`，`npm install -g ./unppt-fonts.tgz ./unppt.tgz`。
-
-## 用法
+## 使用
 
 ```bash
-unppt 课件.pptx          # 产物放在课件旁边的同名文件夹里，用浏览器打开 课件/index.html 播放
-npx @unppt/unppt 课件.pptx   # 不安装，临时用一次
+unppt 课件.pptx
 ```
 
-特点：转码器是纯函数（字节进、文件出，不读写磁盘、不联网、不依赖外部程序和原生插件，可以放进云函数）；产物自带零依赖的播放器，观看只需要浏览器；
+用浏览器打开生成的 `课件/index.html` 就能播放。
+
+更多用法、参数、嵌入网页、在代码里调用 → [docs/zh/usage.md](https://github.com/spitmaster/unppt/blob/main/docs/zh/usage.md)
+
+## 特点
+
+转码器是纯函数（字节进、文件出，不读写磁盘、不联网、不依赖外部程序和原生插件，可以放进云函数）；产物自带零依赖的播放器，观看只需要浏览器；
 播放时不用观看者电脑上的字体，用到的字做成子集打包进产物，所有观看者看到的一样。
 
 ## 命令行
@@ -30,6 +31,7 @@ npx @unppt/unppt 课件.pptx   # 不安装，临时用一次
 unppt 课件.pptx -o out                          # 默认按需加载：入口 HTML + 每页单独的数据文件
 unppt 课件.pptx -o out/index.html --output single # 一个自包含的 HTML
 unppt check 课件.pptx                             # 只检查字体（嵌入的 / 默认字体包的 / 被替代的 / 缺的），不输出文件
+npx @unppt/unppt 课件.pptx                        # 不安装，临时用一次
 ```
 
 | 选项 | 说明 |
@@ -43,6 +45,10 @@ unppt check 课件.pptx                             # 只检查字体（嵌入�
 | `--stats` | 结束时显示用时和峰值内存 |
 
 ## 在代码里调用
+
+```bash
+npm install @unppt/unppt
+```
 
 ```js
 import { convert } from '@unppt/unppt';
@@ -67,8 +73,8 @@ console.log(result.slides, result.fontCheck, result.report.warnings);
 
 ## 字体
 
-- **产物里的字体只有两个来源**（除非用 `--fonts` / `--system-fonts` 明确指定）：PPT 里嵌入的字体，和默认字体包 `@unppt/fonts` 里的开源字体（SIL OFL 1.1）。
-- **排版按原字体，显示用开源字体**：没嵌入的微软雅黑、宋体、Calibri 等按原字体的度量（只有字宽等数字）排版，换行和文字位置和 PowerPoint 一致；显示用对应的开源字体（微软雅黑 → 思源黑体、Calibri → Carlito ……）。
+- **产物里的字体只有两个来源**（除非用 `--fonts` / `--system-fonts` 明确指定）：PPT 里嵌入的字体，和默认字体包 `@unppt/fonts` 里的开源字体（SIL OFL 1.1）。字体包随 `@unppt/unppt` 自动安装（下载约 67MB，装好后约 100MB），只在转码的电脑上需要。
+- **排版按原字体，显示用开源字体**：没嵌入的微软雅黑、宋体、Calibri 等按原字体的度量（只有字宽等数字）排版，换行和文字位置和 PowerPoint 一致；显示用对应的开源字体（微软雅黑 → 思源黑体、Calibri → Carlito ……）。字体包也不认识的字体（包括没嵌入的思源黑体、思源宋体）和 PowerPoint 一样找替代字体。
 - **符号字体**（Wingdings 等）不改动字符：Wingdings 1~3 没嵌入时用字体包里编码兼容的开源字体显示成符号；其它符号字体没嵌入时转码报告和 `unppt check` 提示作者在 PowerPoint 里"将字体嵌入文件"。
 
 大文件不必整个读进内存，传 `{ size, read(offset, length) }` 这样按位置读取的对象即可。

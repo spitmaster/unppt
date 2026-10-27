@@ -9,15 +9,11 @@ Convert PowerPoint decks (.pptx) into web pages with one command: open in a brow
 
 ## Install
 
-Requires [Node.js](https://nodejs.org/) 20.12 or later (run `node -v` to check).
+Requires [Node.js](https://nodejs.org/) 20.12 or later.
 
 ```bash
 npm install -g @unppt/unppt
 ```
-
-Run `unppt -v` afterwards to check the version. The default font pack (about 67 MB download) comes with it; no fonts need to be installed separately.
-
-- **No access to npm**: download `unppt-fonts.tgz` and `unppt.tgz` from [Releases](https://github.com/spitmaster/unppt/releases/latest) and run `npm install -g ./unppt-fonts.tgz ./unppt.tgz` (full steps in [Getting started, section 3](docs/en/getting-started.md#3-install))
 
 ## Usage
 
@@ -25,18 +21,9 @@ Run `unppt -v` afterwards to check the version. The default font pack (about 67 
 unppt deck.pptx
 ```
 
-The output goes into a new folder next to the deck with the same name (`deck.pptx` → `deck/index.html`); open `index.html` in a browser to play (click, arrow keys, space bar or swipe to move on).
+Open the generated `deck/index.html` in a browser to play it.
 
-Common forms:
-
-```bash
-unppt deck.pptx -o out              # write into the folder out
-unppt deck.pptx --output single     # one self-contained HTML file, handy as an attachment
-unppt check deck.pptx               # only check the fonts, write no files
-npx @unppt/unppt deck.pptx          # run once without installing
-```
-
-Run `unppt` with no arguments for all options, or see [Usage, section 2](docs/en/usage.md#2-cli-reference); to call it from code see "Using it from code" below.
+More usage, options, embedding in web pages, calling it from code → [docs/en/usage.md](docs/en/usage.md)
 
 ## Features
 
@@ -126,13 +113,12 @@ How we measure "looks the same": every slide unppt produces is compared with the
 | Feature test decks (`testcases/`) | 255 decks / 543 pages | 0 | 93.0% | 0.984 |
 | Real-world decks | 5212 decks / 168662 slides | 0 | 70.4% (93.5% above 0.90) | 0.956 |
 
-Most failing pages differ only in details (text a few pixels off, one chart label in a different place) and look the same at a glance. **Line wrapping** is also compared line by line: across 991 real decks, 99.8% of about 40,000 multi-line text boxes and 99.9% of 6,051 multi-line table cells break exactly like PowerPoint. All 5,212 real decks on the test machine (about 169,000 slides) convert with no failures.
+Most failing pages differ only in details (text a few pixels off, one chart label in a different place) and look the same at a glance. **Line wrapping** is also compared line by line: across 991 real decks, 99.8% of about 40,000 multi-line text boxes and 99.9% of 6,051 multi-line table cells break exactly like PowerPoint. All 5,212 real decks (about 169,000 slides) convert with no failures.
 
 **Known gaps**:
 
 - time scaling on chart date axes (min / max, month / year intervals);
 - vertical WordArt text (`wordArtVert`);
-- variable fonts;
 - EMF+ records inside EMF images;
 - some SmartArt that needs re-layout;
 - 3D bevel under 180-degree rotation;
@@ -144,7 +130,7 @@ If a deck does not look right, please open an issue (make sure the file can be s
 
 - **Playback never uses fonts on the viewer's computer**: every character used is packed into the output as a font subset, so Windows, Mac, Android and iPhone viewers see exactly the same thing (e.g. thousands of students in a live class); only characters that no font has are left to the browser, and `unppt check` lists them.
 - **Fonts in the output come from only two sources** (unless you explicitly specify fonts with `--fonts` / `--system-fonts`): fonts the author embedded in the PPT (used as-is), and open-source fonts from the default font pack `@unppt/fonts` (SIL OFL 1.1: Noto Sans SC, Noto Serif SC, LXGW WenKai, Zhuque Fangsong, Carlito, Caladea, Liberation and others). The pack is only needed on the machine that converts; viewers never download it.
-- **Non-embedded fonts**: laid out with the original font's metrics and displayed with the matching open-source font (Microsoft YaHei → Noto Sans SC, Calibri → Carlito, ...), so lines break like PowerPoint and glyph shapes differ slightly; fonts the pack does not know are substituted the way PowerPoint does.
+- **Non-embedded fonts**: laid out with the original font's metrics and displayed with the matching open-source font (Microsoft YaHei → Noto Sans SC, Calibri → Carlito, ...), so lines break like PowerPoint and glyph shapes differ slightly; fonts the pack does not know are substituted the way PowerPoint does (so are Source Han Sans / Serif when not embedded, matching PowerPoint on computers that do not have them).
 - **Symbol fonts**: your characters are never changed. Wingdings 1–3 that are not embedded display as symbols through code-compatible open fonts in the pack; other symbol fonts (Webdings, Symbol, ...) show as letters or boxes when not embedded, and `unppt check` tells the author to "Embed fonts in the file".
 
 Details: [Getting started, section 7](docs/en/getting-started.md#7-fonts-why-they-matter-and-how-they-are-handled-now).
