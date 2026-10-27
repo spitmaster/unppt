@@ -299,7 +299,7 @@ def main() -> None:
 
         # 测试用的课件
         w("## 测试用的课件\n" if zh else "## The decks we test with\n")
-        w((f"真实课件来自课件库，只在本机测试、不外传。另有 {no_ref} 份连 PowerPoint 自己都打不开或导不出图片，没法比较，不计入。\n") if zh else
+        w((f"真实课件来自课件库，只在开发机上测试、不外传。另有 {no_ref} 份连 PowerPoint 自己都打不开或导不出图片，没法比较，不计入。\n") if zh else
           (f"Real-world decks from a courseware library, tested locally and never uploaded. {no_ref} more decks could not be opened or exported "
            "by PowerPoint itself, so there is nothing to compare against; they are not counted.\n"))
         w("| 项目 | 数量 |\n|---|---|" if zh else "| Item | Count |\n|---|---|")
