@@ -16,11 +16,12 @@
   | 一种图表 | `transcoder/src/chart/types/xxx.ts`（`ChartType`） | `chart/chart-types.ts` |
   | 一种进入/退出动画效果 | `player/src/anim/effects/xxx.ts`（`AnimEffect`） | `anim/effects/effects.ts` |
   | 一种页面切换 | `player/src/transitions/xxx.ts`（`TransitionEffect`） | `transitions/transitions.ts` |
+  | 一种产物形式 | `transcoder/src/output/xxx.ts`（`OutputForm`） | `output/forms.ts` |
 
   需要的扩展点还不存在时，先单独提一个"加扩展点"的重构（行为不变），再在上面加功能。
 - **一个文件一个职责**，超过约 300 行就考虑拆。
 - **只依赖下层和窄接口**：分层规则在 `scripts/check-deps.mjs`，`npm test` 会检查，违反就失败；不允许循环依赖。
-- **产品代码零依赖**：`packages/` 下不引入任何第三方运行时依赖。
+- **产品代码不用原生插件和外部程序**：`packages/` 下只能用纯 JS 和 WASM 类库，新类库注明许可证、固定版本（清单见 `packages/transcoder/THIRD-PARTY-NOTICES.md`）；播放器零依赖。
 
 ## 两类改动，两种验收
 
