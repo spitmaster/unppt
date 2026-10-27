@@ -211,6 +211,13 @@ async function rewriteFonts(svg: string, fonts: FontResolver, used: Set<FontFace
     const other = fonts(face.displayFamily, !bold, italic);
     if (other && (await draws(other), !other.unusable)) used.add(other);
     let out = tag.replace(/\sfont-family="[^"]*"/, ` font-family="${fileFamily(face).replace(/"/g, '')}"`);
+    // 居中的基线（图表标签 dominant-baseline="central"）：浏览器按列表里第一个字体的上下伸量定中线，这里换成了别的字体（全是汉字的标签
+    // 换成东亚字体），resvg 会按换上的字体算、往下偏约 0.15 字高；按第一个字体算出字母基线的位置直接写进 y，和播放器一样
+    const size = Number(/\sfont-size="([\d.]+)"/.exec(attrs)?.[1]), y = /\sy="(-?[\d.]+)"/.exec(attrs);
+    if (face !== found[0] && size && y && / dominant-baseline="central"/.test(out)) {
+      const m = await found[0].load().catch(() => undefined);
+      if (m) out = out.replace(/ dominant-baseline="central"/, '').replace(/\sy="-?[\d.]+"/, ` y="${(Number(y[1]) + ((m.ascent - m.descent) / 2) * size).toFixed(2)}"`);
+    }
     // 同一个开源家族里有细体、常规体时按字重挑（微软雅黑 Light -> 思源黑体 Light）
     const w = Math.round(face.weight / 100) * 100;
     if (!bold && !/\sfont-weight=/.test(attrs) && w > 0 && w !== 400) out = out.replace(/>$/, ` font-weight="${w}">`);

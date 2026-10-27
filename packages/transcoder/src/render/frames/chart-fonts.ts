@@ -50,6 +50,13 @@ export async function embedChartFonts(svg: string, fonts: FontLibrary, embed: Fo
       embed.use(face, cp);
       if (!used.includes(face)) used.push(face);
     }
+    // 图表写的（西文）字体总排第一个：dominant-baseline="central" 按第一个字体的上下伸量定中线，全是汉字的标签换成东亚字体排第一
+    // 会整行往下偏约 0.15 字高（全量课件比对，和 0.2.6、PowerPoint 不一致）；标签里一个字也没用到它时嵌入它的空格，让它在场
+    const lead = own[0];
+    if (lead && embed && used[0] !== lead) {
+      if (!used.includes(lead)) embed.use(lead, 0x20);
+      used.splice(0, used.length, lead, ...used.filter((f) => f !== lead));
+    }
     const aliases = used.map((f) => embed?.alias(f)).filter((a): a is string => !!a);
     if (!aliases.length) continue;
     const list = [...aliases.map((a) => `'${a}'`), ...names.map((n) => `'${n.replace(/'/g, '')}'`), 'sans-serif'].join(',');

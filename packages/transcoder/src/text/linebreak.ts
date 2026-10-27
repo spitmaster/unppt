@@ -12,6 +12,7 @@ import { NO_END, NO_START } from '../common/kinsoku';
  */
 const ASCII = /^[!-~]$/;
 const QUOTES = new Set([...'‘’“”']);
+const ALNUM = /[\p{L}\p{N}]/u;
 const latinLike = (cp: number) => eaSlot(cp) && !(cp >= 0x2460 && cp <= 0x24ff);
 export const hangable = (t: string, next?: string, latin = false) => NO_START.has(t) && t !== '%' && t !== '…' && t !== '‥'
   && !(!latin && (t === '.' || t === ',' || t === ':') && next !== undefined && ASCII.test(next));
@@ -30,10 +31,12 @@ function canBreakBetween(a: Atom, b: Atom, kinsoku: boolean, latin: boolean): bo
   // 这是中文的禁则：前后有一个字的语言（lang 或 altLang）是中日韩、按中文习惯控制首尾字符又关掉（eaLnBrk="0"）时不管，按下面的一般规则——
   // 汉字、空格后面能断，西文字母后面照样不断；两边都不是中日韩语言时空格后面也能断，开关都一样（实测 tools/wraptest 框宽扫描，
   // 宋体 20 磅："关注风险|——实验"、"关注练习 |——实验"、"aa |word——"，破折号那段标 en-US 也一样，雅黑 + Calibri 粗体、楷体 24 磅一样；
-  // Arial 20 磅 "word word |—— word"：en-US 开关都这样，en-US + altLang="zh-CN" 只在关掉时这样）
-  if (b.text === '—' && ((a.style.eaBreak || b.style.eaBreak) ? kinsoku : !a.space)) return false;
-  // 弯引号和紧挨着的西文字母数字之间不断（"入选|“2019"、"险”abc"）；按中文习惯控制首尾字符关掉时也一样（实测 tools/wraptest 框宽扫描，eaLnBrk 开 / 关）
-  if (!a.space && !b.space && !a.tab && !b.tab && ((QUOTES.has(a.text) && !b.wide) || (QUOTES.has(b.text) && !a.wide))) return false;
+  // Arial 20 磅 "word word |—— word"：en-US 开关都这样，en-US + altLang="zh-CN" 只在关掉时这样）；
+  // 全角字符后面也能断（"）|——"，全量课件比对：没标语言的段落 PowerPoint 在 ） 后面断，0.2.6 也这样）
+  if (b.text === '—' && ((a.style.eaBreak || b.style.eaBreak) ? kinsoku : !a.space && !a.wide)) return false;
+  // 弯引号和紧挨着的西文字母数字之间不断（"入选|“2019"、"险”abc"）；按中文习惯控制首尾字符关掉时也一样（实测 tools/wraptest 框宽扫描，eaLnBrk 开 / 关）。
+  // 只管字母数字：连字符等标点和引号之间照样能断（"-|“"，全量课件比对：PowerPoint 在 - 后面断）
+  if (!a.space && !b.space && !a.tab && !b.tab && ((QUOTES.has(a.text) && !b.wide && ALNUM.test(b.text)) || (QUOTES.has(b.text) && !a.wide && ALNUM.test(a.text)))) return false;
   if (a.space || a.tab || latin) return true;
   // 用东亚字体排的符号（± × § ° ★ □ 等，见 measure.ts EA_SLOT）断行时按西文算：和前后的字母数字之间、几个连着的之间不断
   // （实测 tools/wraptest："风险|±10V"、"险|10°C"、"关注|★★★|实验"）；带圈数字 ①② 例外，和汉字一样两边都能断（"关注①|②③④"）
