@@ -52,20 +52,39 @@ export function writeChunks(cs: Chunk[]): Uint8Array {
   return out;
 }
 
-/** PNG 的五种行过滤（None、Sub、Up、Average、Paeth）还原 */
+/**
+ * PNG 的五种行过滤（None、Sub、Up、Average、Paeth）还原。每种过滤一个循环、行首 bpp 个字节（左边没有像素）单独算：
+ * 出图时按画的大小缩小 PNG 要逐行还原整张图，逐字节判断过滤类型要慢几倍
+ */
 export function unfilter(f: number, src: Uint8Array, row: Uint8Array, up: Uint8Array | undefined, bpp: number): boolean {
   if (f > 4) return false;
-  for (let i = 0; i < src.length; i++) {
-    const a = i >= bpp ? row[i - bpp] : 0, b = up ? up[i] : 0, c = up && i >= bpp ? up[i - bpp] : 0;
-    let p = 0;
-    if (f === 1) p = a;
-    else if (f === 2) p = b;
-    else if (f === 3) p = (a + b) >> 1;
-    else if (f === 4) {
-      const q = a + b - c, pa = Math.abs(q - a), pb = Math.abs(q - b), pc = Math.abs(q - c);
-      p = pa <= pb && pa <= pc ? a : pb <= pc ? b : c;
+  const n = src.length, m = Math.min(bpp, n);
+  if (f === 0) row.set(src.subarray(0, n));
+  else if (f === 1) {
+    for (let i = 0; i < m; i++) row[i] = src[i];
+    for (let i = m; i < n; i++) row[i] = (src[i] + row[i - bpp]) & 0xff;
+  } else if (!up) {
+    // 第一行：上一行当成全 0（Up 等于 None，Average 只看左边，Paeth 等于 Sub）
+    if (f === 2) row.set(src.subarray(0, n));
+    else if (f === 3) {
+      for (let i = 0; i < m; i++) row[i] = src[i];
+      for (let i = m; i < n; i++) row[i] = (src[i] + (row[i - bpp] >> 1)) & 0xff;
+    } else {
+      for (let i = 0; i < m; i++) row[i] = src[i];
+      for (let i = m; i < n; i++) row[i] = (src[i] + row[i - bpp]) & 0xff;
     }
-    row[i] = (src[i] + p) & 0xff;
+  } else if (f === 2) {
+    for (let i = 0; i < n; i++) row[i] = (src[i] + up[i]) & 0xff;
+  } else if (f === 3) {
+    for (let i = 0; i < m; i++) row[i] = (src[i] + (up[i] >> 1)) & 0xff;
+    for (let i = m; i < n; i++) row[i] = (src[i] + ((row[i - bpp] + up[i]) >> 1)) & 0xff;
+  } else {
+    for (let i = 0; i < m; i++) row[i] = (src[i] + up[i]) & 0xff;
+    for (let i = m; i < n; i++) {
+      const a = row[i - bpp], b = up[i], c = up[i - bpp];
+      const pa = Math.abs(b - c), pb = Math.abs(a - c), pc = Math.abs(a + b - 2 * c);
+      row[i] = (src[i] + (pa <= pb && pa <= pc ? a : pb <= pc ? b : c)) & 0xff;
+    }
   }
   return true;
 }
@@ -133,6 +152,41 @@ export function encodeRgba(px: Uint8Array, w: number, h: number): Promise<Uint8A
 export async function encodePixels(px: Uint8Array, w: number, h: number, channels: 3 | 4): Promise<Uint8Array | undefined> {
   const z = await idatOf(px, w * channels, h, channels);
   if (!z) return undefined;
+  const ihdr = new Uint8Array(13);
+  const dv = new DataView(ihdr.buffer);
+  dv.setUint32(0, w);
+  dv.setUint32(4, h);
+  ihdr[8] = 8;
+  ihdr[9] = channels === 4 ? 6 : 2;
+  return writeChunks([{ type: 'IHDR', data: ihdr }, { type: 'IDAT', data: z }, { type: 'IEND', data: new Uint8Array(0) }]);
+}
+
+/**
+ * 不压缩的 PNG（zlib 的存储块，每行不过滤）：只在出图时交给 resvg 读（preview/fit-images.ts），省掉压缩的时间；文件大小是像素数 × 通道数
+ */
+export function encodeStored(px: Uint8Array, w: number, h: number, channels: 3 | 4): Uint8Array {
+  const stride = w * channels;
+  const raw = new Uint8Array((stride + 1) * h);
+  for (let y = 0; y < h; y++) raw.set(px.subarray(y * stride, (y + 1) * stride), y * (stride + 1) + 1);
+  const BLOCK = 65535, blocks = Math.max(1, Math.ceil(raw.length / BLOCK));
+  const z = new Uint8Array(2 + raw.length + blocks * 5 + 4);
+  z[0] = 0x78; z[1] = 0x01;
+  let o = 2;
+  for (let i = 0; i < blocks; i++) {
+    const len = Math.min(BLOCK, raw.length - i * BLOCK);
+    z[o] = i === blocks - 1 ? 1 : 0;
+    z[o + 1] = len & 0xff; z[o + 2] = len >> 8; z[o + 3] = ~len & 0xff; z[o + 4] = (~len >> 8) & 0xff;
+    z.set(raw.subarray(i * BLOCK, i * BLOCK + len), o + 5);
+    o += 5 + len;
+  }
+  // Adler-32（每 5552 字节取一次模，不会溢出）
+  let a = 1, b = 0;
+  for (let i = 0; i < raw.length;) {
+    const end = Math.min(raw.length, i + 5552);
+    for (; i < end; i++) { a += raw[i]; b += a; }
+    a %= 65521; b %= 65521;
+  }
+  z[o] = b >> 8; z[o + 1] = b & 0xff; z[o + 2] = a >> 8; z[o + 3] = a & 0xff;
   const ihdr = new Uint8Array(13);
   const dv = new DataView(ihdr.buffer);
   dv.setUint32(0, w);

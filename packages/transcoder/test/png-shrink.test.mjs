@@ -8,7 +8,7 @@ async function load(entry) {
   const r = await build({ entryPoints: [entry], bundle: true, write: false, format: 'esm', platform: 'neutral', mainFields: ['module', 'main'], loader: { '.wasm': 'binary' }, plugins: [libjpegTurbo], logLevel: 'silent' });
   return import('data:text/javascript;base64,' + Buffer.from(r.outputFiles[0].text).toString('base64'));
 }
-const { shrinkPng } = await load('packages/transcoder/src/media/png-shrink.ts');
+const { shrinkPng, shrinkPngPixels } = await load('packages/transcoder/src/media/png-shrink.ts');
 const { encodePixels, readChunks, unfilter } = await load('packages/transcoder/src/media/png.ts');
 const { shrinkHugeImage } = await load('packages/transcoder/src/preview/huge-images.ts');
 
@@ -61,4 +61,20 @@ test('长边是整页图长边 4 倍以上的 PNG 出图前缩小，不到的原
   const small = await decode(await shrinkHugeImage(png, 50_000_000, 10));
   assert.deepEqual([small.w, small.h], [10, 5]);
   assert.equal(await shrinkHugeImage(png, 50_000_000, 11), undefined);
+});
+
+test('不缩（倍数 1）：直接展开成 RGBA，和按块平均的写法结果一样（透明度 0 的像素颜色记 0）', async () => {
+  const w = 5, h = 3;
+  const rgba = new Uint8Array(w * h * 4).map((_, i) => (i * 37 + 11) & 255);
+  rgba[3] = 0; // 第一个像素全透明
+  for (const [ch, px] of [[4, rgba], [3, rgba.filter((_, i) => i % 4 !== 3)]]) {
+    const img = await shrinkPngPixels(await encodePixels(px, w, h, ch), 1);
+    assert.equal(img.width, w);
+    assert.equal(img.alpha, ch === 4);
+    for (let i = 0; i < w * h; i++) {
+      const a = ch === 4 ? px[i * 4 + 3] : 255;
+      const want = a ? [px[i * ch], px[i * ch + 1], px[i * ch + 2], a] : [0, 0, 0, 0];
+      assert.deepEqual([...img.data.subarray(i * 4, i * 4 + 4)], want, `${ch} 通道第 ${i} 个像素`);
+    }
+  }
 });

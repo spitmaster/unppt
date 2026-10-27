@@ -1,4 +1,4 @@
-/** libjpeg-turbo 的 WebAssembly 版（@cornerstonejs/codec-libjpeg-turbo-8bit，Emscripten 编出来的）：只用编码部分 */
+/** libjpeg-turbo 的 WebAssembly 版（@cornerstonejs/codec-libjpeg-turbo-8bit，Emscripten 编出来的）：编码（media/jpeg-encode.ts）和解码（media/jpeg-turbo.ts） */
 declare module '@cornerstonejs/codec-libjpeg-turbo-8bit/wasmjs' {
   interface FrameInfo { width: number; height: number; bitsPerSample: number; componentCount: number; isSigned: boolean }
   interface JPEGEncoder {
@@ -13,7 +13,17 @@ declare module '@cornerstonejs/codec-libjpeg-turbo-8bit/wasmjs' {
     getEncodedBuffer(): Uint8ClampedArray;
     delete(): void;
   }
-  interface TurboModule { JPEGEncoder: new () => JPEGEncoder }
+  interface JPEGDecoder {
+    /** 放 JPEG 文件的缓冲区（WASM 内存里，按给的字节数分配） */
+    getEncodedBuffer(length: number): Uint8Array;
+    /** 出错（四分量、数据坏了）时抛出的是 C++ 异常的指针（一个数字） */
+    decode(): void;
+    getFrameInfo(): FrameInfo;
+    /** 解出来的像素（WASM 内存里的视图，每像素 componentCount 字节，要复制出来） */
+    getDecodedBuffer(): Uint8Array;
+    delete(): void;
+  }
+  export interface TurboModule { JPEGEncoder: new () => JPEGEncoder; JPEGDecoder: new () => JPEGDecoder }
   const factory: (options: { wasmBinary: Uint8Array }) => Promise<TurboModule>;
   export default factory;
 }

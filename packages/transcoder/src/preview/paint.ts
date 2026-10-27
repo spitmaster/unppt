@@ -12,6 +12,8 @@ import { dropCrashingFilters, lightingFilters } from './crash-filters';
 import { warpPixels, type MeshWarp } from './mesh-warp';
 import { encodeRgba } from '../media/png';
 import { bmpToPng, isBmp } from '../media/bmp';
+import { drawnSizes, type DrawnSizes, type DrawnUse } from './drawn-size';
+import { fitImage, fitTarget } from './fit-images';
 
 export interface RgbaImage { width: number; height: number; data: Uint8Array }
 
@@ -72,7 +74,11 @@ const JPEG_QUALITY = 85;
 const URI_CACHE = 64_000_000;
 /** 每个线程缓存的 BMP 转出来的 PNG 总字节数上限 */
 const BMP_CACHE = 64_000_000;
+/** 每个线程缓存的按画的大小缩小过的图片（不压缩的 PNG）总字节数上限 */
+const FIT_CACHE = 64_000_000;
 const BMP_URI = 'data:image/bmp;base64,';
+/** 可能要按画的大小缩小的 data URI（fit-images.ts 只缩 PNG、JPEG；别的照旧留给 resvg 自己解） */
+const FIT_URI = /^data:image\/(?:png|jpeg);base64,/;
 
 let ready: Promise<void> | undefined;
 /** 这个线程里 resvg 出错（Rust panic）的次数：每次会漏掉一点 WASM 栈，实测 800 次以内画别的页结果不变、2000 次后内存越界 */
@@ -98,11 +104,16 @@ export async function createPainter(wasm: Uint8Array | WebAssembly.Module): Prom
   /** BMP 图片（页面里的 .bmp、EMF / WMF 里的位图）转成的 PNG：resvg 不认 BMP */
   let bmps = new Map<string, Promise<Uint8Array | undefined>>();
   let bmpsLength = 0;
+  /** 按画的大小缩小过的图片（fit-images.ts）：图片地址@宽x高 -> 不压缩的 PNG */
+  let fits = new Map<string, Promise<Uint8Array | undefined>>();
+  let fitsLength = 0;
 
-  async function dataUri(href: string, res: PaintResources, warnings: string[]): Promise<string | undefined> {
-    const hit = uris.get(href);
+  /** <pattern> 里的图片换成 data URI，按图片地址和这张 SVG 里各处画的大小缓存（缩小后的不一样） */
+  async function dataUri(href: string, res: PaintResources, warnings: string[], uses: DrawnUse[] | undefined): Promise<string | undefined> {
+    const key = uses ? `${href}|${uses.map((u) => `${u.w.toFixed(1)}x${u.h.toFixed(1)}${u.fit}`).join(',')}` : href;
+    const hit = uris.get(key);
     if (hit) return hit;
-    const b = await imageBytes(href, res, warnings);
+    const b = await sizedBytes(href, res, warnings, uses);
     if (!b) return undefined;
     const uri = `data:${mimeOf(b)};base64,${base64(b)}`;
     if (uri.length <= URI_CACHE) {
@@ -111,15 +122,38 @@ export async function createPainter(wasm: Uint8Array | WebAssembly.Module): Prom
         uris.delete(k);
         urisLength -= v.length;
       }
-      uris.set(href, uri);
+      uris.set(key, uri);
       urisLength += uri.length;
     }
     return uri;
   }
 
+  /** 图片字节，画得比原图小很多的先低通缩到画的大小（fit-images.ts；uses 是这张图在这张 SVG 里的各处用法） */
+  async function sizedBytes(href: string, res: PaintResources, warnings: string[], uses: DrawnUse[] | undefined): Promise<Uint8Array | undefined> {
+    const b = await imageBytes(href, res, warnings);
+    const t = b && uses && fitTarget(b, uses);
+    if (!b || !t) return b;
+    const key = `${href}@${t.w}x${t.h}`;
+    let p = fits.get(key);
+    if (!p) {
+      p = fitImage(b, t).catch(() => undefined);
+      void p.then((png) => {
+        fitsLength += png?.length ?? 0;
+        if (fitsLength > FIT_CACHE) { fits = new Map(); fitsLength = 0; }
+      });
+      fits.set(key, p);
+    }
+    return (await p) ?? b;
+  }
+
   /** 页面里图片地址 -> 图片字节（BMP 换成 PNG）；单独画成位图的 SVG 图片在这里画（画一次） */
   function imageBytes(href: string, res: PaintResources, warnings: string[]): Promise<Uint8Array | undefined> {
     if (href.startsWith(BMP_URI)) return bmpPng(href, Promise.resolve(fromBase64(href.slice(BMP_URI.length))));
+    // 要缩小的 data URI（嵌套 SVG 图片里的位图等）
+    if (href.startsWith('data:')) {
+      const i = href.indexOf(';base64,');
+      return Promise.resolve(i > 0 ? fromBase64(href.slice(i + 8)) : undefined);
+    }
     if (!href.startsWith(RASTER_PREFIX)) {
       return res.image(href).then((b) => (b && isBmp(b) ? bmpPng(href, Promise.resolve(b)) : b));
     }
@@ -159,7 +193,7 @@ export async function createPainter(wasm: Uint8Array | WebAssembly.Module): Prom
   /** 画一张 SVG；background 不给时画在透明画布上（像素是预乘透明度的）；take 从画好的图里取要的东西 */
   async function draw<T>(p: PaintSvg, width: number, res: PaintResources, warnings: string[], background: string | undefined,
     take: (img: { width: number; height: number; pixels: Uint8Array; asPng(): Uint8Array }) => T): Promise<T> {
-    const { svg: src, real } = await imageHrefs(p.svg, (h) => dataUri(h, res, warnings));
+    const { svg: src, real } = await imageHrefs(p.svg, drawnSizes(p.svg, width), (h, uses) => dataUri(h, res, warnings, uses));
     const buffers: Uint8Array[] = [];
     for (const id of p.fonts) {
       let b = fonts.get(id);
@@ -174,7 +208,8 @@ export async function createPainter(wasm: Uint8Array | WebAssembly.Module): Prom
     });
     try {
       for (const h of r.imagesToResolve() as string[]) {
-        const b = await imageBytes(real.get(h) ?? h, res, warnings);
+        const e = real.get(h);
+        const b = await sizedBytes(e?.href ?? h, res, warnings, e?.uses);
         if (!b) continue;
         // resvg 只认 PNG、JPEG、GIF：别的格式（BMP、WebP、ICO 等）这一张不画，页面其它内容照画
         try {
@@ -245,6 +280,8 @@ export async function createPainter(wasm: Uint8Array | WebAssembly.Module): Prom
         urisLength = 0;
         bmps = new Map();
         bmpsLength = 0;
+        fits = new Map();
+        fitsLength = 0;
       }
       const warnings: string[] = [], layerWarnings: string[] = [];
       const layer = () => (layerWarnings.length ? { layerWarnings } : {});
@@ -279,23 +316,25 @@ export async function createPainter(wasm: Uint8Array | WebAssembly.Module): Prom
 
 /**
  * 换掉页面里的图片地址：resvg 只把 http(s) 地址报成"待解析图片"，media/…、共享图片编号、BMP 的 data URI（resvg 不认 BMP，
- * 要换成 PNG）换成占位地址（real：占位地址 -> 原地址），再按占位地址把原图交给它；<pattern> 里的图片 resvg 不报
- * （实测：图片填充、背景图都画成空白），直接内联成 data URI。
+ * 要换成 PNG）、可能要缩小的 PNG / JPEG data URI（sizes 里有用法的）每处换成一个占位地址（real：占位地址 -> 原地址和这个元素
+ * 画的大小），再按占位地址把图片交给它；<pattern> 里的图片 resvg 不报（实测：图片填充、背景图都画成空白），直接内联成 data URI。
  * 一遍拼出来：大图（几十 MB 的 data URI）只复制一次
  */
-async function imageHrefs(svg: string, dataUri: (href: string) => Promise<string | undefined>): Promise<{ svg: string; real: Map<string, string> }> {
-  const real = new Map<string, string>();
+async function imageHrefs(svg: string, sizes: DrawnSizes, dataUri: (href: string, uses: DrawnUse[] | undefined) => Promise<string | undefined>):
+  Promise<{ svg: string; real: Map<string, { href: string; uses?: DrawnUse[] }> }> {
+  const real = new Map<string, { href: string; uses?: DrawnUse[] }>();
   const patterns = [...svg.matchAll(/<pattern\b[\s\S]*?<\/pattern>/g)].map((m) => [m.index!, m.index! + m[0].length]);
   const parts: string[] = [];
   let last = 0;
   for (const m of svg.matchAll(/(<image\b[^>]*?\s(?:xlink:)?href=")([^"#][^"]*)"/g)) {
     const href = m[2];
-    if (href.startsWith('data:') && !href.startsWith(BMP_URI)) continue;
+    const uses = sizes.get(m.index!) ?? undefined;
+    if (href.startsWith('data:') && !href.startsWith(BMP_URI) && !(uses && FIT_URI.test(href))) continue;
     const at = m.index! + m[1].length;
-    let to = patterns.some(([s, e]) => m.index! > s && at < e) ? await dataUri(href) : undefined;
+    let to = patterns.some(([s, e]) => m.index! > s && at < e) ? await dataUri(href, uses) : undefined;
     if (!to) {
       to = `https://unppt.local/${real.size}`;
-      real.set(to, href);
+      real.set(to, { href, ...(uses ? { uses } : {}) });
     }
     parts.push(svg.slice(last, at), to);
     last = at + href.length;

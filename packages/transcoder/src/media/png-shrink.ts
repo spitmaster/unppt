@@ -1,5 +1,5 @@
 /**
- * PNG 按整数倍缩小（出图前缩小超大图片用，见 preview/huge-images.ts）：边解压边逐行还原过滤，每 factor×factor 个像素
+ * PNG 按整数倍缩小（出图前缩小超大图片、按画的大小缩小图片用，见 preview/huge-images.ts、preview/fit-images.ts）：边解压边逐行还原过滤，每 factor×factor 个像素
  * 按预乘透明度取平均（透明像素的颜色不渗到旁边），只存一行原图和一行累加值，不在内存里展开整张原图。
  * 支持 8 位、16 位（取高字节）的灰度、真彩色、带透明通道的，和 8 位调色板（含 tRNS）；隔行、1/2/4 位、灰度/真彩色带 tRNS 的返回 undefined。
  * 原图没有透明度的（灰度、真彩色、调色板没有 tRNS）出 RGB，其它出 RGBA（出图前剔除被不透明图片盖住的元素要靠这个判断）。
@@ -9,9 +9,23 @@ import { concat, encodePixels, readChunks, unfilter } from './png';
 
 /** 缩小一张 PNG，返回新的 PNG（8 位）；格式不支持或数据有问题时返回 undefined */
 export async function shrinkPng(bytes: Uint8Array, factor: number): Promise<Uint8Array | undefined> {
+  if (factor < 2) return undefined;
+  const img = await shrinkPngPixels(bytes, factor);
+  if (!img) return undefined;
+  const { width: ow, height: oh, data: out } = img;
+  if (img.alpha) return encodePixels(out, ow, oh, 4);
+  const rgb = new Uint8Array(ow * oh * 3);
+  for (let i = 0, j = 0; j < rgb.length; i += 4, j += 3) { rgb[j] = out[i]; rgb[j + 1] = out[i + 1]; rgb[j + 2] = out[i + 2]; }
+  return encodePixels(rgb, ow, oh, 3);
+}
+
+/** 按整数倍（factor ≥ 1）缩小后的像素：RGBA（不预乘），alpha 表示原图有没有透明度 */
+export interface ShrunkPng { width: number; height: number; data: Uint8Array; alpha: boolean }
+
+export async function shrinkPngPixels(bytes: Uint8Array, factor: number): Promise<ShrunkPng | undefined> {
   const cs = readChunks(bytes);
   const ihdr = cs?.[0];
-  if (!cs || ihdr?.type !== 'IHDR' || ihdr.data.length < 13 || factor < 2) return undefined;
+  if (!cs || ihdr?.type !== 'IHDR' || ihdr.data.length < 13 || factor < 1 || !Number.isInteger(factor)) return undefined;
   const d = ihdr.data;
   const dv = new DataView(d.buffer, d.byteOffset, d.byteLength);
   const w = dv.getUint32(0), h = dv.getUint32(4), depth = d[8], type = d[9], interlace = d[12];
@@ -42,17 +56,50 @@ export async function shrinkPng(bytes: Uint8Array, factor: number): Promise<Uint
   const line = new Uint8Array(stride + 1);
   let filled = 0, y = 0, bad = false;
 
+  /**
+   * 一行加进累加值：每种格式一个循环（逐像素判断格式要慢一倍多）。不透明的不乘透明度：Σ(r·255) / (255·n) 和 Σr / n 是同一个数，
+   * 浮点除法的结果也一样
+   */
+  const opaque = !palette && (channels === 1 || channels === 3);
   const addRow = (row: Uint8Array) => {
-    for (let x = 0, i = 0; x < w; x++, i += bpp) {
-      let r: number, g: number, b: number, a: number;
+    for (let x = 0, i = 0, o = 0, k = 0; x < w; x++, i += bpp) {
       if (palette) {
-        const p = row[i] * 4;
-        r = palette[p]; g = palette[p + 1]; b = palette[p + 2]; a = palette[p + 3];
-      } else if (channels === 1) { r = g = b = row[i]; a = 255; }
-      else if (channels === 2) { r = g = b = row[i]; a = row[i + step]; }
-      else { r = row[i]; g = row[i + step]; b = row[i + 2 * step]; a = channels === 4 ? row[i + 3 * step] : 255; }
-      const o = Math.floor(x / factor) * 4;
-      acc[o] += r * a; acc[o + 1] += g * a; acc[o + 2] += b * a; acc[o + 3] += a;
+        const p = row[i] * 4, a = palette[p + 3];
+        acc[o] += palette[p] * a; acc[o + 1] += palette[p + 1] * a; acc[o + 2] += palette[p + 2] * a; acc[o + 3] += a;
+      } else if (opaque) {
+        if (channels === 1) { const v = row[i]; acc[o] += v; acc[o + 1] += v; acc[o + 2] += v; }
+        else { acc[o] += row[i]; acc[o + 1] += row[i + step]; acc[o + 2] += row[i + 2 * step]; }
+        acc[o + 3] += 1;
+      } else {
+        const a = row[i + (channels - 1) * step];
+        if (channels === 2) { const v = row[i] * a; acc[o] += v; acc[o + 1] += v; acc[o + 2] += v; }
+        else { acc[o] += row[i] * a; acc[o + 1] += row[i + step] * a; acc[o + 2] += row[i + 2 * step] * a; }
+        acc[o + 3] += a;
+      }
+      if (++k === factor) { k = 0; o += 4; }
+    }
+  };
+  /** 不缩（factor 1，按画的大小缩小时整数倍用不上的情况）：一行直接展开成 RGBA，结果和按块平均一样（透明度 0 的像素颜色记 0） */
+  const direct = (row: Uint8Array, oy: number) => {
+    const t0 = oy * w * 4;
+    if (palette) {
+      for (let x = 0, t = t0; x < w; x++, t += 4) {
+        const p = row[x] * 4, a = palette[p + 3];
+        if (a) { out[t] = palette[p]; out[t + 1] = palette[p + 1]; out[t + 2] = palette[p + 2]; }
+        out[t + 3] = a;
+      }
+    } else if (channels >= 3) {
+      for (let x = 0, i = 0, t = t0; x < w; x++, i += bpp, t += 4) {
+        const a = channels === 4 ? row[i + 3 * step] : 255;
+        if (a) { out[t] = row[i]; out[t + 1] = row[i + step]; out[t + 2] = row[i + 2 * step]; }
+        out[t + 3] = a;
+      }
+    } else {
+      for (let x = 0, i = 0, t = t0; x < w; x++, i += bpp, t += 4) {
+        const a = channels === 2 ? row[i + step] : 255;
+        if (a) out[t] = out[t + 1] = out[t + 2] = row[i];
+        out[t + 3] = a;
+      }
     }
   };
   const emit = (oy: number, rows: number) => {
@@ -61,7 +108,7 @@ export async function shrinkPng(bytes: Uint8Array, factor: number): Promise<Uint
       const t = (oy * ow + ox) * 4;
       if (a > 0) {
         out[t] = Math.round(acc[o] / a); out[t + 1] = Math.round(acc[o + 1] / a); out[t + 2] = Math.round(acc[o + 2] / a);
-        out[t + 3] = Math.round(a / n);
+        out[t + 3] = opaque ? 255 : Math.round(a / n);
       }
     }
     acc.fill(0);
@@ -75,9 +122,12 @@ export async function shrinkPng(bytes: Uint8Array, factor: number): Promise<Uint
       if (filled < line.length) break;
       filled = 0;
       if (!unfilter(line[0], line.subarray(1), cur, y > 0 ? prev : undefined, bpp)) { bad = true; return; }
-      addRow(cur);
-      y++;
-      if (y % factor === 0 || y === h) emit(Math.ceil(y / factor) - 1, y % factor || factor);
+      if (factor === 1) direct(cur, y++);
+      else {
+        addRow(cur);
+        y++;
+        if (y % factor === 0 || y === h) emit(Math.ceil(y / factor) - 1, y % factor || factor);
+      }
       [cur, prev] = [prev, cur];
     }
   };
@@ -98,8 +148,5 @@ export async function shrinkPng(bytes: Uint8Array, factor: number): Promise<Uint
     return undefined;
   }
   if (bad || y < h) return undefined;
-  if (channels === 2 || channels === 4 || trns) return encodePixels(out, ow, oh, 4);
-  const rgb = new Uint8Array(ow * oh * 3);
-  for (let i = 0, j = 0; j < rgb.length; i += 4, j += 3) { rgb[j] = out[i]; rgb[j + 1] = out[i + 1]; rgb[j + 2] = out[i + 2]; }
-  return encodePixels(rgb, ow, oh, 3);
+  return { width: ow, height: oh, data: out, alpha: channels === 2 || channels === 4 || !!trns };
 }

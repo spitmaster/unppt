@@ -1,0 +1,197 @@
+{
+ "version": 8,
+ "level": "full",
+ "slideWidthPt": 960.0,
+ "slideHeightPt": 540.0,
+ "imageWidth": 1280,
+ "imageHeight": 720,
+ "slides": [
+  {
+   "index": 0,
+   "hidden": false,
+   "shapes": [
+    {
+     "id": 3,
+     "name": "Picture 2",
+     "type": 13,
+     "x": 15.0,
+     "y": 40.0,
+     "w": 400.0,
+     "h": 200.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1
+    },
+    {
+     "id": 5,
+     "name": "Picture 4",
+     "type": 13,
+     "x": 430.0,
+     "y": 40.0,
+     "w": 300.0,
+     "h": 150.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1
+    },
+    {
+     "id": 7,
+     "name": "Picture 6",
+     "type": 13,
+     "x": 745.0,
+     "y": 40.0,
+     "w": 200.0,
+     "h": 100.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1
+    },
+    {
+     "id": 9,
+     "name": "Picture 8",
+     "type": 13,
+     "x": 15.0,
+     "y": 300.0,
+     "w": 400.0,
+     "h": 200.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1
+    },
+    {
+     "id": 11,
+     "name": "Picture 10",
+     "type": 13,
+     "x": 430.0,
+     "y": 300.0,
+     "w": 300.0,
+     "h": 150.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1
+    },
+    {
+     "id": 13,
+     "name": "Picture 12",
+     "type": 13,
+     "x": 745.0,
+     "y": 300.0,
+     "w": 200.0,
+     "h": 100.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1
+    }
+   ],
+   "effects": [],
+   "triggerHidden": [],
+   "steps": 0,
+   "keptSlideshow": false
+  },
+  {
+   "index": 1,
+   "hidden": false,
+   "shapes": [
+    {
+     "id": 3,
+     "name": "Picture 2",
+     "type": 13,
+     "x": 15.0,
+     "y": 40.0,
+     "w": 400.0,
+     "h": 200.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1
+    },
+    {
+     "id": 5,
+     "name": "Picture 4",
+     "type": 13,
+     "x": 430.0,
+     "y": 40.0,
+     "w": 300.0,
+     "h": 150.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1
+    },
+    {
+     "id": 7,
+     "name": "Picture 6",
+     "type": 13,
+     "x": 745.0,
+     "y": 40.0,
+     "w": 200.0,
+     "h": 100.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1
+    },
+    {
+     "id": 9,
+     "name": "Picture 8",
+     "type": 13,
+     "x": 15.0,
+     "y": 300.0,
+     "w": 400.0,
+     "h": 200.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1
+    },
+    {
+     "id": 11,
+     "name": "Picture 10",
+     "type": 13,
+     "x": 430.0,
+     "y": 300.0,
+     "w": 300.0,
+     "h": 150.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1
+    },
+    {
+     "id": 13,
+     "name": "Picture 12",
+     "type": 13,
+     "x": 745.0,
+     "y": 300.0,
+     "w": 200.0,
+     "h": 100.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1
+    }
+   ],
+   "effects": [],
+   "triggerHidden": [],
+   "steps": 0,
+   "keptSlideshow": false
+  },
+  {
+   "index": 2,
+   "hidden": false,
+   "shapes": [
+    {
+     "id": 3,
+     "name": "Picture 2",
+     "type": 13,
+     "x": 0.0,
+     "y": 0.0,
+     "w": 960.0,
+     "h": 540.0,
+     "rot": 0.0,
+     "visible": true,
+     "autoShapeType": 1
+    }
+   ],
+   "effects": [],
+   "triggerHidden": [],
+   "steps": 0,
+   "keptSlideshow": false
+  }
+ ],
+ "ok": true
+}
