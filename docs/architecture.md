@@ -8,8 +8,8 @@
 ```mermaid
 flowchart LR
   pptx[(.pptx 文件)] --> T
-  fonts[(字体目录<br/>可选)] -.-> T
-  subgraph T["转码器 unppt（纯函数，零依赖，可部署成云函数）"]
+  fonts[(默认字体包 @unppt/fonts<br/>指定的字体文件（可选）)] -.-> T
+  subgraph T["转码器 @unppt/unppt（纯函数，不用原生插件和外部程序，可部署成云函数）"]
     direction TB
     read[读取<br/>zip / XML / OPC 包] --> model[文档模型<br/>主题 / 母版 / 版式继承]
     model --> render[逐页渲染成 SVG]
@@ -31,7 +31,7 @@ flowchart LR
 ```
 
 - **转码器和播放器只通过 `@unppt/format` 里定义的数据格式交流**（`Deck`、`DeckSlide`、`AnimAction`、`SlideTransition`、bridge 协议）。两边可以独立部署、独立升级。
-- 转码器不依赖任何环境：输入是字节（或按需读取的数据源），输出是字节流；字体只是可选输入。
+- 转码器不依赖任何环境：输入是字节（或按需读取的数据源），输出是字节流；字体也是作为输入传进来的（默认字体包 `fontPack`、指定字体 `fonts`），转码器不去系统里找。
 
 ## 2. 转码器内部分层
 
@@ -39,23 +39,23 @@ flowchart LR
 
 ```mermaid
 flowchart TB
-  entry["入口 index.ts / cli.ts<br/>convert：逐页产出页面数据，交给产物形式写出<br/>node.ts（@unppt/unppt/node）= node-pool.ts Node 的并行出图执行器：工作线程池（raster-worker.ts），按 CPU 和内存自动定线程数；只有命令行用，index.ts 不创建线程<br/>+ node-fonts.ts 读默认字体包 @unppt/fonts（packages/fonts：开源字体 files/、度量包 metrics/、对照规则 map.json），变成 convert 的 fontPack"]
-  preview["preview/<br/>整页图、缩略图（prop.json 里的 pic / thum）：slide-images.ts 调度：每页在本线程准备、交给绘制（给了并行出图执行器 RasterPool 时多页同时画），按页码顺序写出<br/>prepare.ts 准备（要字体库和媒体）：剔除遮挡、拆背景层、展开嵌套的 SVG 图片（inline-svg.ts；svg-image.ts 处理序言、DOCTYPE 实体、命名空间前缀；同一页里重复很多次的大 SVG 图片单独画成位图）、字体换成用到的字体文件、发光的外扩拆成两遍（morphology.ts），得到 PaintJob；字体、图片、背景层按编号取<br/>paint.ts 绘制（和运行环境无关，本线程和工作线程共用）：resvg（WASM）光栅化、pattern 里的图片内联（按图缓存 data URI）、叠背景层，整页图存 JPG（media/jpeg-encode.ts：libjpeg-turbo 的 WASM），缩略图从整页图区域平均缩小；resvg 崩溃时 crash-filters.ts 二分找出引起崩溃的那几处滤镜去掉再画（出图线程崩溃多了换新线程）<br/>mesh-warp.ts 透视投影的图片（网格三角形，每个都带一份内容）换成单独画一次的位图、按同样的分段仿射自己贴好（resvg 每个三角形都画满整层）；occlusion.ts 出图前剔除被整页不透明图片盖住的根元素；huge-images.ts 超大图片先缩小（resvg 会整张解码，每个出图线程都多占几百 MB）：超过 5000 万像素或长边是整页图 4 倍以上的 JPEG 按 1/8、1/4 解码，长边是整页图 4 倍以上的 PNG 用 media/png-shrink.ts；layers.ts 重复出现的母版/版式背景只画一次（背景层缓存，svg-root.ts 切顶层元素）"]
+  entry["入口 index.ts / cli.ts<br/>convert：逐页产出页面数据，交给产物形式写出；checkFonts：只排版、返回字体检查（unppt check，文字输出在 cli-check.ts）<br/>node.ts（@unppt/unppt/node）= node-pool.ts Node 的并行出图执行器：工作线程池（raster-worker.ts），按 CPU 和内存自动定线程数；只有命令行用，index.ts 不创建线程<br/>+ node-fonts.ts 读默认字体包 @unppt/fonts（packages/fonts：开源字体 files/、度量包 metrics/、对照规则 map.json），变成 convert 的 fontPack"]
+  preview["preview/<br/>整页图、缩略图（prop.json 里的 pic / thum）：slide-images.ts 调度：每页在本线程准备、交给绘制（给了并行出图执行器 RasterPool 时多页同时画），按页码顺序写出<br/>prepare.ts 准备（要字体库和媒体）：剔除遮挡、拆背景层、展开嵌套的 SVG 图片（inline-svg.ts；svg-image.ts 处理序言、DOCTYPE 实体、命名空间前缀；同一页里重复很多次的大 SVG 图片单独画成位图）、每段文字的字体换成列表里第一个能画全这段文字的字体文件（resvg 不像浏览器那样逐字找替代字体）、发光的外扩拆成两遍（morphology.ts），得到 PaintJob；字体、图片、背景层按编号取<br/>paint.ts 绘制（和运行环境无关，本线程和工作线程共用）：resvg（WASM）光栅化、pattern 里的图片内联（按图缓存 data URI）、叠背景层，整页图存 JPG（media/jpeg-encode.ts：libjpeg-turbo 的 WASM），缩略图从整页图区域平均缩小；resvg 崩溃时 crash-filters.ts 二分找出引起崩溃的那几处滤镜去掉再画（出图线程崩溃多了换新线程）<br/>mesh-warp.ts 透视投影的图片（网格三角形，每个都带一份内容）换成单独画一次的位图、按同样的分段仿射自己贴好（resvg 每个三角形都画满整层）；occlusion.ts 出图前剔除被整页不透明图片盖住的根元素；huge-images.ts 超大图片先缩小（resvg 会整张解码，每个出图线程都多占几百 MB）：超过 5000 万像素或长边是整页图 4 倍以上的 JPEG 按 1/8、1/4 解码，长边是整页图 4 倍以上的 PNG 用 media/png-shrink.ts；layers.ts 重复出现的母版/版式背景只画一次（背景层缓存，svg-root.ts 切顶层元素）"]
   output["output/<br/>← OutputForm 扩展点：single 自包含 HTML、paged 按需加载（目录 + 每页数据文件，pages 再加每页一个 HTML）、data 只出数据（调试）<br/>output.ts 接口和 HTML 公共部分；文件名带内容哈希（common/hash.ts）<br/>prop.ts 所有形式都输出的 prop.json（页数、宽高、每页图片路径、备注、是否隐藏）"]
   anim["anim/<br/>时间线编排 anim.ts、单个效果 effect.ts<br/>进入/退出的行为 behaviors.ts（关键帧、公式、时间变换原样带给播放器）<br/>时间设置和变换 timing-util.ts、动画和切换的声音 sound.ts<br/>音视频放映选项 media-opts.ts、母版和版式上的动画合进幻灯片的时间线 inherited-timing.ts<br/>强调终态 emphasis.ts、运动路径 motion.ts、切换 transition.ts"]
-  render["render/<br/>render.ts 分派、继承；context.ts 渲染能力接口<br/>elements/ 形状、图片、组合（bg-fill.ts 用幻灯片背景填充的形状；snapshot.ts 公式改用 Fallback 图片时，图片正着铺在转动、翻转后的外接矩形里）；table.ts 表格（table-style.ts 表格样式的叠加；builtin-table-styles.ts PowerPoint 导出的内置样式定义、边框、整表背景）；box.ts 位置框<br/>controls.ts ActiveX 控件预览图；projection.ts 透视相机下逐点投影、pixel-snap.ts 形状和图片外框对齐整像素、group-map.ts 组合缩放时子元素换算<br/>frames/ ← FrameHandler 扩展点"]
+  render["render/<br/>render.ts 分派、继承；context.ts 渲染能力接口<br/>elements/ 形状、图片、组合（bg-fill.ts 用幻灯片背景填充的形状；snapshot.ts 公式改用 Fallback 图片时，图片正着铺在转动、翻转后的外接矩形里）；table.ts 表格（table-style.ts 表格样式的叠加；builtin-table-styles.ts PowerPoint 导出的内置样式定义、边框、整表背景）；box.ts 位置框<br/>controls.ts ActiveX 控件预览图；projection.ts 透视相机下逐点投影、pixel-snap.ts 形状和图片外框对齐整像素、group-map.ts 组合缩放时子元素换算<br/>frames/ ← FrameHandler 扩展点（chart-fonts.ts 图表画好后给每个字找字体、记进嵌入的子集，SPEC D3 ⑨）"]
   chart["chart/<br/>图表：chart.ts 标题和编排、legend.ts 图例（legend-wrap.ts 竖排图例的宽度上限和折行）<br/>cat-chart.ts 分类轴图、cat3d.ts 三维簇状/堆积柱形图、cat3d-depth.ts 系列沿深度排的三维柱形图、box3d.ts 立方体和墙网格线、cat3d-persp.ts 透视的三维折线/面积图（camera3d.ts 相机和光照、persp-layout.ts 箱体比例和摆放、solids3d.ts 带子和厚片的面）、sides.ts 坐标轴在哪一侧和刻度线、cat-labels.ts 分类标签放不下时折行或转斜、多级分类的外层标签、pixel-grid.ts 整像素对齐<br/>axis.ts 刻度（对数、逆序、显示单位）、default-lines.ts 坐标轴线和网格线没写线条时的默认线、format.ts 数字格式（date-format.ts 日期时间）、xy.ts 数值×数值坐标<br/>trendline.ts 趋势线、error-bars.ts 误差线、data-table.ts 数据表、axis-title.ts 坐标轴标题、point-labels.ts 数据标签（系列的和单个点的：拖开、自定义文字、删除）、label-wrap.ts 数据标签折行（宽度上限、标点禁则）、pie-labels.ts 饼图数据标签（行高、最佳位置放扇区里还是饼外；sector-fit.ts 标签放不放得进扇区）、area-fill.ts 图表区和绘图区背景<br/>layout.ts 实测间距规律、types/ ← ChartType 扩展点"]
   media["media/<br/>图片、音视频、共享资源<br/>decoders ← ImageDecoder 扩展点（emf、wmf、tiff 用 utif2；emf-defs.ts 让 EMF 里相同的裁剪区域、重复的位图只定义一次）<br/>exif-orientation.ts 去掉 JPEG 的方向标记<br/>sniff.ts 按文件头认图片格式（扩展名可能是错的）<br/>color-key.ts 在原图上抠透明色（png-key.ts、jpeg.ts 自研 JPEG 解码、png.ts 编码）<br/>png-shrink.ts PNG 边解压边按整数倍缩小（出图前缩小超大图片用）<br/>bmp.ts BMP 转 PNG（出图用：resvg 不认 BMP）<br/>dib-blit.ts EMF / WMF 位图记录共用的规则：源框、按光栅操作抠透明"]
-  text["text/<br/>文本框属性 → 拆段（split-breaks.ts：文字里的回车、换行符是分段）→ 逐段排版（测量、断行、项目符号）→ 排位置 placeLines → 输出 SVG<br/>艺术字变形 warp.ts（字形轮廓弯进包络 / 沿路径排）"]
+  text["text/<br/>文本框属性 → 拆段（split-breaks.ts：文字里的回车、换行符是分段）→ 逐段排版（measure.ts 测量和缺字体替代、linebreak.ts 断行、bullets.ts 项目符号）→ 排位置 placeLines（emit.ts，含水平居中 anchorCtr）→ 输出 SVG<br/>缩进、断行的取整规则见 SPEC 第 7 节；艺术字变形 warp.ts（字形轮廓弯进包络 / 沿路径排）"]
   effects["effects/<br/>← ShapeEffect 扩展点（形状、文字共用）、映像、三维轮廓 contour"]
   style["style/<br/>fill 填充、pattern 图案（实测点阵）<br/>line 线条（含复合线型、渐变线）、arrowheads 线端箭头（实测几何，线在箭头处截短）、gradient-stops 渐变色标（实测插值规律）、blip 图片调整<br/>lighting 三维正面提亮、camera 三维旋转投影（灯光常量在 model/light-rig.ts、正面颜色实测表 model/face-light-data.ts）、perspective 图片的网格透视"]
-  font["font/<br/>TrueType 解析、cmap.ts 码点→字形（含符号字体）、字距、字形轮廓 glyf.ts（TrueType）/ cff.ts（CFF，.otf）、子集化 subset.ts（HarfBuzz 的 hb-subset WASM，打进 JS；glyf-flags.ts 清掉浏览器不认的点标志保留位）<br/>嵌入字体还原 eot.ts → lzcomp.ts → ctf.ts，sfnt.ts 读写公共部分<br/>默认字体包 pack.ts：原字体的度量（度量包）+ 开源字体的字形，按 map.json 对照（SPEC D3）；字体库 library.ts 按优先级 rank 挑：PPT 嵌入的、指定的字体压过字体包<br/>可变字体：fvar.ts 读轴、定常规 / 粗体的字重，instance.ts 用 hb-subset 取实例（SPEC 第 7 节）<br/>字体检查 check.ts：排版时记下每个字用了什么字体，汇总成每个字体的结论（unppt check、checkFonts()，输出见 cli-check.ts）"]
+  font["font/<br/>TrueType 解析、cmap.ts 码点→字形（含符号字体；symbol-cmap.ts 子集化前把只有符号 cmap 的嵌入 / 指定符号字体换成 Unicode cmap）、字距、字形轮廓 glyf.ts（TrueType）/ cff.ts（CFF，.otf）、子集化 subset.ts（HarfBuzz 的 hb-subset WASM，打进 JS；glyf-flags.ts 清掉浏览器不认的点标志保留位）<br/>嵌入字体还原 eot.ts → lzcomp.ts → ctf.ts，sfnt.ts 读写公共部分<br/>默认字体包 pack.ts：原字体的度量（度量包）+ 开源字体的字形，按 map.json 对照（SPEC D3）；字体库 library.ts 按优先级 rank 挑：PPT 嵌入的、指定的字体压过字体包<br/>可变字体：fvar.ts 读轴、定常规 / 粗体的字重，instance.ts 用 hb-subset 取实例（SPEC 第 7 节）<br/>字体检查 check.ts：排版时记下每个字用了什么字体，汇总成每个字体的结论（unppt check、checkFonts()，输出见 cli-check.ts）"]
   geometry["geometry/<br/>公式引擎、187 种预设形状、40 种文字变形<br/>路径遍历 walkGeometry（输出 SVG 或按点采样）<br/>转动后轮廓的外接矩形 turned-bounds"]
   model["model/<br/>演示文稿 / 主题 / 母版 / 版式、颜色、notes 演讲者备注<br/>font-charsets 字体名的字符集（缺失字体选替代字体用）"]
   common["common/<br/>SVG 输出工具、超链接、标点禁则（kinsoku.ts，正文换行和图表标签折行共用）"]
   io["io/<br/>数据源、ZIP（zip.js）、XML（saxes）、OPC 包"]
   entry --> anim & render & media & font & output & preview
-  preview --> media
+  preview --> media & font
   output --> media
   render --> chart & media & text & effects & style & geometry
   chart --> style & font
@@ -92,18 +92,6 @@ flowchart TB
   core --> engine & trans & ui & deck
   engine --> effects & behav & target & units & deck
 ```
-
-### 重构前的问题和进度（2026-10-13 评估）
-
-| 位置 | 问题 | 违反的原则 |
-|---|---|---|
-| ~~`player.ts`（约 800 行）~~ | ~~一个类包了所有事~~ → 已拆成 core / anim / transitions / ui / bridge / boot | 单一职责 |
-| ~~播放器切换、动画效果~~ | ~~`switch` 分支~~ → 已改为 `TransitionEffect`、`AnimEffect` 注册表 | 开闭 |
-| ~~`chart.ts`（约 740 行）~~ | ~~巨型函数、if/else~~ → 已拆成读取 / 格式 / 坐标轴 / 绘制工具 / 编排，每种图表一个文件 | 单一职责、开闭 |
-| ~~`text.ts`（约 690 行）~~ | ~~混在一起~~ → 已拆成 body（文本框属性）/ style（样式合并）/ measure（测量、字体替代、字距）/ linebreak（断行禁则）/ bullets（项目符号编号）/ paragraph（单段排版）/ emit（定位输出）/ svg-text | 单一职责 |
-| ~~`render.ts`~~ | ~~分派写死、和 `table.ts` 循环依赖~~ → 已改为 `FrameHandler` 注册表，表格只依赖 `FrameRenderer` 接口 | 开闭、依赖倒置 |
-| ~~`fill.ts`~~ | ~~填充、线条、图片调整、形状效果混在一起~~ → 已拆成 `style/fill.ts`、`style/line.ts`、`style/blip.ts` 和 `effects/` | 单一职责 |
-| ~~`media.ts`~~ | ~~图片格式写死~~ → 已改为 `ImageDecoder` 注册表 | 开闭 |
 
 ## 3. 扩展点
 

@@ -30,7 +30,7 @@ This document is for **people reading unppt's internals for the first time**, es
 | **postMessage** | The browser API for sending messages between windows. The outer page uses it to control the player inside the iframe (next, go to, get state). |
 | **WASM** | WebAssembly, binary code that runs directly in Node and browsers. Libraries written in C/C++/Rust can be compiled to WASM and used from JS. |
 | **Native addon** | An npm package that must be compiled for each operating system (e.g. ships a `.node` file). unppt does **not** use them. |
-| **SSIM** | Structural Similarity, a score from 0 to 1 for how alike two images are (closer to 1 = more alike). unppt compares a PowerPoint screenshot with an unppt screenshot; a page passes at SSIM >= 0.95. |
+| **SSIM** | Structural Similarity, a score from 0 to 1 for how alike two images are (closer to 1 = more alike). unppt compares a PowerPoint screenshot with an unppt screenshot; a page passes at SSIM >= 0.95 (how it is computed: [Fidelity](fidelity.md#ssim)). |
 | **esbuild** | A very fast JS/TS bundler that combines many source files into one JS file. |
 | **monorepo** | One Git repository holding several related packages. |
 
@@ -41,7 +41,7 @@ This document is for **people reading unppt's internals for the first time**, es
 ```mermaid
 flowchart LR
   pptx[(".pptx file")] --> T
-  fonts[("Font files<br/>optional")] -.-> T
+  fonts[("Default font pack @unppt/fonts<br/>your own font files (optional)")] -.-> T
   subgraph T["Transcoder @unppt/unppt<br/>pure function: bytes in, files out"]
     direction TB
     read["Read ZIP / XML"] --> model["Document model<br/>theme, master, layout inheritance"]
@@ -141,7 +141,7 @@ The transcoder source lives in `packages/transcoder/src`, split into folders (mo
 
 ```mermaid
 flowchart TB
-  entry["Entry<br/>index.ts (convert) / cli.ts (command line)<br/>node-pool.ts / raster-worker.ts (Node parallel rasterizing)"]
+  entry["Entry<br/>index.ts (convert, checkFonts) / cli.ts (command line), cli-check.ts<br/>node-pool.ts / raster-worker.ts (Node parallel rasterizing), node-fonts.ts (reads the default font pack)"]
   preview["preview/<br/>slide images and thumbnails (rasterized with resvg)"]
   output["output/<br/>output forms: single / paged / pages / data"]
   anim["anim/<br/>animation timeline, transitions"]
@@ -151,10 +151,10 @@ flowchart TB
   text["text/<br/>text layout"]
   effects["effects/<br/>shadow, glow, soft edge, bevel"]
   style["style/<br/>fill, line, gradient, 3D"]
-  font["font/<br/>font parsing, subsetting"]
+  font["font/<br/>font parsing, font library, default font pack, subsetting"]
   geometry["geometry/<br/>preset shapes, formula engine"]
   model["model/<br/>presentation, theme, master, colors"]
-  common["common/<br/>SVG helpers, hyperlinks, ids"]
+  common["common/<br/>SVG helpers, hyperlinks, ids, line-break punctuation rules"]
   io["io/<br/>data source, ZIP, XML, OPC package"]
   format[("format/<br/>output format")]
 
@@ -181,20 +181,20 @@ Reading bottom-up, what each layer does:
 | Layer (folder) | Responsibility | Allowed dependencies (from `check-deps.mjs`) |
 |---|---|---|
 | `io/` | Turns input into a random-access source (`source.ts`), reads ZIP (`zip.ts`, via zip.js), parses XML (`xml.ts`, via saxes), finds parts and relationships by OPC rules (`package.ts`). | none |
-| `common/` | SVG output helpers (`svg.ts`), hyperlinks (`links.ts`), content hashes (`hash.ts`), animation target ids (`uid.ts`). | io |
+| `common/` | SVG output helpers (`svg.ts`), hyperlinks (`links.ts`), content hashes (`hash.ts`), animation target ids (`uid.ts`), line-break punctuation rules (`kinsoku.ts`: which punctuation may not start or end a line, shared by body text and chart label wrapping). | io |
 | `model/` | Presentation / theme / master / layout inheritance (`model.ts`), colors (`color.ts`), speaker notes (`notes.ts`), font-name charsets (`font-charsets.ts`), 3D lighting constants. | io, common |
 | `geometry/` | Formula engine, preset shape data (`presets-data.ts`), text warp data (`warps-data.ts`), bounding box after rotation. | io, common |
-| `font/` | Reads TrueType (`font.ts`, `cmap.ts`, `glyf.ts`, `kern.ts`), font subsetting (`subset.ts`, HarfBuzz WASM), restores embedded fonts (`eot.ts` -> `lzcomp.ts` -> `ctf.ts`), the default font pack (`pack.ts`), the font check (`check.ts`). | io, common |
+| `font/` | Reads fonts (`font.ts`, `cmap.ts`, `kern.ts`, glyph outlines `glyf.ts` / `cff.ts`), the font library (`library.ts`: finds a font by name and weight; fonts embedded in the PPT or given by the caller win over the default pack), Regular / Bold instances of variable fonts (`fvar.ts`, `instance.ts`), font subsetting (`subset.ts`, HarfBuzz WASM; symbol fonts get a Unicode cmap first, `symbol-cmap.ts`), restores embedded fonts (`eot.ts` -> `lzcomp.ts` -> `ctf.ts`), the default font pack (`pack.ts`), the font check (`check.ts`). | io, common |
 | `style/` | Fill `fill.ts`, patterns `pattern.ts`, lines `line.ts`, arrowheads `arrowheads.ts`, gradients `gradient-stops.ts`, picture adjustments `blip.ts`, 3D `camera.ts` / `lighting.ts`, perspective `perspective.ts`. | io, common, model |
 | `effects/` | Shape effects as SVG filters: `outer-shadow.ts`, `inner-shadow.ts`, `glow.ts`, `soft-edge.ts`, `bevel.ts`, reflection `reflection.ts`, 3D contour `contour.ts`. | io, common, model |
 | `text/` | Text box properties -> per-paragraph layout (measuring, line breaking, bullets) -> positioning -> SVG text; WordArt warp `warp.ts`. | io, common, model, geometry, font, style, effects |
 | `media/` | Image and audio/video resources (`media.ts`), EMF / WMF / TIFF decoding, PNG / JPEG encode/decode, format sniffing by file header (`sniff.ts`). | io, common, model |
-| `chart/` | Charts: title, legend, axes, data labels, trendlines, 3D charts... each chart type lives in `chart/types/`. | io, common, model, font, style |
-| `render/` | The per-slide dispatcher `render.ts` (`renderSlide`): routes elements to shape, picture, group, table; `frames/` handles "frames" such as tables, charts, SmartArt and OLE. | all lower layers except anim / output / preview |
+| `chart/` | Charts: title, legend, axes, data labels (wrapping in `label-wrap.ts`, pie labels inside or outside the slice in `pie-labels.ts`), trendlines, 3D charts... each chart type lives in `chart/types/`. | io, common, model, font, style |
+| `render/` | The per-slide dispatcher `render.ts` (`renderSlide`): routes elements to shape, picture, group, table; `frames/` handles "frames" such as tables, charts, SmartArt and OLE (`chart-fonts.ts`: chart text also uses only fonts embedded in the output). | all lower layers except anim / output / preview |
 | `anim/` | Compiles PowerPoint's animation timeline into `AnimAction`s the player can play (`anim.ts`), maps transition names (`transition.ts`), sounds (`sound.ts`). | io, common, model, format |
 | `output/` | Output forms (`single.ts`, `paged.ts`, `data.ts`) and `prop.json`, written by every form (`prop.ts`). | io, common, media, format |
 | `preview/` | Slide images `pic/` and thumbnails `thum/`: prepare (`prepare.ts`) -> paint with resvg (`paint.ts`) -> save as JPEG. | io, common, media, font |
-| Entry | `convert` in `index.ts` wires all layers together; `cli.ts` is the command line; `node-pool.ts` is the Node rasterizing thread pool. | everything (`*`) |
+| Entry | `convert` in `index.ts` wires all layers together, `checkFonts` only lays out and returns the font check; `cli.ts` is the command line (the text output of `unppt check` is in `cli-check.ts`); `node-pool.ts` is the Node rasterizing thread pool, `node-fonts.ts` reads the default font pack from disk (`loadFontPack`). | everything (`*`) |
 
 > Tip: there is no `anim -> render` arrow. Animation compilation only needs data handed over by the render layer (the timeline XML and the `data-uid` ids in the slide), passed along by `index.ts`, so the two layers stay independent.
 
@@ -216,7 +216,7 @@ sequenceDiagram
   participant W as write callback
 
   U->>CLI: unppt deck.pptx
-  CLI->>CLI: read resvg.wasm, create raster thread pool by CPU and memory
+  CLI->>CLI: loadFontPack() reads the default font pack; read resvg.wasm, create raster thread pool by CPU and memory
   CLI->>C: convert(source, options)
   C->>C: open ZIP, read OPC package, load Presentation (theme, master, layout)
   C->>C: load fonts (embedded fonts, fonts, default font pack fontPack)
@@ -235,7 +235,7 @@ sequenceDiagram
   O->>C: meta() - slide count, size, report
   O->>W: write the tail (metadata + player script)
   C->>W: write prop.json
-  C-->>CLI: ConvertResult (slides, width, height, report)
+  C-->>CLI: ConvertResult (slides, width, height, report, font check)
 ```
 
 Things worth noticing:
@@ -303,6 +303,8 @@ classDiagram
 | `rasterWasm` | The resvg WASM bytes (the CLI reads `dist/resvg.wasm` from the package automatically). |
 | `rasterPool` | Parallel rasterizer, e.g. `createRasterPool` from `@unppt/unppt/node`. |
 | `onProgress` | Optional; called once after each slide. |
+
+To only find out whether the fonts are fine, call `checkFonts(input, { fontPack, fonts })`: it lays out every slide but writes nothing and returns the same data as `ConvertResult.fontCheck` (on the command line: `unppt check`).
 
 ### 6.3 What the output contains
 
@@ -574,7 +576,7 @@ flowchart TB
   def --> cli
   ts["packages/transcoder/src/index.ts"] -->|"esbuild: esm, platform neutral<br/>.wasm bundled into JS via binary loader<br/>libjpeg-turbo plugin"| idx["dist/index.js"]
   cs["packages/transcoder/src/cli.ts"] -->|"esbuild: platform node, node20"| cli["dist/cli.js"]
-  np["node-pool.ts / raster-worker.ts"] -->|"esbuild: platform node"| nj["dist/node.js / dist/raster-worker.js"]
+  np["node.ts (node-pool.ts + node-fonts.ts) / raster-worker.ts"] -->|"esbuild: platform node"| nj["dist/node.js / dist/raster-worker.js"]
   rw["node_modules/@resvg/resvg-wasm/index_bg.wasm"] -->|"copy"| rv["dist/resvg.wasm"]
 ```
 
@@ -593,10 +595,11 @@ In the published `@unppt/unppt` `package.json`:
 | Field | Value |
 |---|---|
 | `exports["."]` | `./dist/index.js` (`convert` etc.) |
-| `exports["./node"]` | `./dist/node.js` (Node-only, e.g. `createRasterPool`) |
+| `exports["./node"]` | `./dist/node.js` (Node-only, e.g. `createRasterPool`, `loadFontPack`) |
 | `exports["./resvg.wasm"]` | `./dist/resvg.wasm` |
 | `bin.unppt` | `dist/cli.js` |
 | `engines.node` | `>=20.12` |
+| `dependencies` | `@unppt/fonts` (default font pack: open font files + metrics pack, used only while converting; the output contains only subsets of the glyphs used) |
 
 ### 9.1 Tests and guards
 
@@ -634,7 +637,7 @@ flowchart LR
 |---|---|---|---|---|
 | @zip.js/zip.js (read-only part) | 2.23.0 | BSD-3-Clause | `io/zip.ts` | Reads the pptx ZIP directory and entries |
 | saxes (depends on xmlchars 2.2.0, MIT) | 6.0.0 | ISC | `io/xml.ts` | XML parsing |
-| harfbuzzjs (its harfbuzz-subset.wasm) | 1.6.3 | MIT | `font/subset.ts` | Font subsetting: keep only the used glyphs to shrink the output |
+| harfbuzzjs (its harfbuzz-subset.wasm) | 1.6.3 | MIT | `font/subset.ts` | Font subsetting: keep only the used glyphs to shrink the output; fixed-weight instances of variable fonts (`font/instance.ts`) |
 | utif2 (depends on pako 1.0.11, MIT AND Zlib) | 4.1.0 | MIT | `media/tiff.ts` | Decodes TIFF images into PNG or JPEG |
 | @cornerstonejs/codec-libjpeg-turbo-8bit (encoder only) | 1.2.8 | libjpeg-turbo: IJG + BSD-3-Clause + Zlib; wrapper: ISC | `media/jpeg-encode.ts` | JPEG encoding of slide images and thumbnails |
 | @resvg/resvg-wasm | 2.7.0-alpha.2 | MPL-2.0 | `preview/paint.ts` | Rasterizes slide SVG into slide images and thumbnails (not used for playback) |
@@ -672,14 +675,14 @@ The player UI:
 
 ![Player](../images/player.png)
 
-Where things stand (0.1.0):
+Where things stand (0.3.1; full numbers in the [test report](test-report.md)):
 
 | Test set | Size | Pass rate (SSIM >= 0.95) | Mean SSIM |
 |---|---|---|---|
-| Synthetic cases | 228 decks / 504 pages | 92.3% | 0.984 |
-| Random real-world decks | 100 decks / 3527 pages, 0 conversion failures | 78.8% (about 95% of pages at SSIM >= 0.90) | 0.967 |
+| Synthetic cases | 255 decks / 543 pages | 93.0% | 0.984 |
+| All real-world decks on the dev machine | 5212 decks / 168662 pages, 0 conversion failures | 70.4% (93.5% of pages at SSIM >= 0.90) | 0.956 |
 
-Most failing pages differ only in details (text a few pixels off, one chart label). Known gaps: chart date-axis time scaling (min/max, month/year intervals), `wordArtVert` vertical text, variable fonts, EMF+ records in EMF images, some SmartArt that needs re-layout, 3D bevel under 180-degree rotation, and the truncation threshold of 45-degree category labels.
+Most failing pages differ only in details (text a few pixels off, one chart label). Known gaps: chart date-axis time scaling (min/max, month/year intervals), `wordArtVert` vertical text, EMF+ records in EMF images, some SmartArt that needs re-layout, 3D bevel under 180-degree rotation, and the truncation threshold of 45-degree category labels.
 
 ---
 

@@ -30,7 +30,7 @@
 | **postMessage** | 浏览器提供的跨窗口发消息的方法。外层页面就是用它控制 iframe 里的播放器（翻页、跳页、查询状态）。 |
 | **WASM** | WebAssembly，一种能在 Node 和浏览器里直接运行的二进制代码。C/C++/Rust 写的库可以编译成 WASM 给 JS 用。 |
 | **原生插件** | 需要按操作系统编译的 npm 包（例如带 `.node` 文件的）。unppt **不用**它们。 |
-| **SSIM** | Structural Similarity，结构相似度，衡量两张图有多像，0~1，越接近 1 越像。unppt 用它比较"PowerPoint 截图"和"unppt 截图"，一页 SSIM ≥ 0.95 算通过。 |
+| **SSIM** | Structural Similarity，结构相似度，衡量两张图有多像，0~1，越接近 1 越像。unppt 用它比较"PowerPoint 截图"和"unppt 截图"，一页 SSIM ≥ 0.95 算通过（怎么算的见[还原度](fidelity.md#ssim)）。 |
 | **esbuild** | 一个非常快的 JS/TS 打包工具，把很多源文件合成一个 JS 文件。 |
 | **monorepo** | 一个 Git 仓库里放好几个相关的包。 |
 
@@ -41,7 +41,7 @@
 ```mermaid
 flowchart LR
   pptx[(".pptx 文件")] --> T
-  fonts[("字体文件<br/>可选")] -.-> T
+  fonts[("默认字体包 @unppt/fonts<br/>指定的字体文件（可选）")] -.-> T
   subgraph T["转码器 @unppt/unppt<br/>纯函数：字节进、文件出"]
     direction TB
     read["读取 ZIP / XML"] --> model["文档模型<br/>主题、母版、版式继承"]
@@ -141,7 +141,7 @@ flowchart LR
 
 ```mermaid
 flowchart TB
-  entry["入口<br/>index.ts（convert）/ cli.ts（命令行）<br/>node-pool.ts / raster-worker.ts（Node 并行出图）"]
+  entry["入口<br/>index.ts（convert、checkFonts）/ cli.ts（命令行）、cli-check.ts<br/>node-pool.ts / raster-worker.ts（Node 并行出图）、node-fonts.ts（读默认字体包）"]
   preview["preview/<br/>整页图、缩略图（用 resvg 光栅化）"]
   output["output/<br/>产物形式：single / paged / pages / data"]
   anim["anim/<br/>动画时间线、切换"]
@@ -151,10 +151,10 @@ flowchart TB
   text["text/<br/>文字排版"]
   effects["effects/<br/>阴影、发光、柔化边缘、棱台"]
   style["style/<br/>填充、线条、渐变、三维"]
-  font["font/<br/>字体解析、子集化"]
+  font["font/<br/>字体解析、字体库、默认字体包、子集化"]
   geometry["geometry/<br/>预设形状、公式引擎"]
   model["model/<br/>演示文稿、主题、母版、颜色"]
-  common["common/<br/>SVG 工具、超链接、编号"]
+  common["common/<br/>SVG 工具、超链接、编号、标点禁则"]
   io["io/<br/>数据源、ZIP、XML、OPC 包"]
   format[("format/<br/>产物格式")]
 
@@ -181,20 +181,20 @@ flowchart TB
 | 层（文件夹） | 负责什么 | 允许依赖（来自 `check-deps.mjs`） |
 |---|---|---|
 | `io/` | 把输入变成"按位置读取"的数据源（`source.ts`）、读 ZIP（`zip.ts`，用 zip.js）、解析 XML（`xml.ts`，用 saxes）、按 OPC 规则找部件和关系（`package.ts`）。 | 无 |
-| `common/` | SVG 输出工具（`svg.ts`）、超链接（`links.ts`）、内容哈希（`hash.ts`）、动画目标编号（`uid.ts`）。 | io |
+| `common/` | SVG 输出工具（`svg.ts`）、超链接（`links.ts`）、内容哈希（`hash.ts`）、动画目标编号（`uid.ts`）、标点禁则（`kinsoku.ts`：哪些标点不能放在行首、行尾，正文换行和图表标签折行共用）。 | io |
 | `model/` | 演示文稿 / 主题 / 母版 / 版式的继承（`model.ts`）、颜色（`color.ts`）、演讲者备注（`notes.ts`）、字体名的字符集（`font-charsets.ts`）、三维灯光常量。 | io、common |
 | `geometry/` | 公式引擎、预设形状数据（`presets-data.ts`）、文字变形数据（`warps-data.ts`）、转动后的外接矩形。 | io、common |
-| `font/` | 读 TrueType（`font.ts`、`cmap.ts`、`glyf.ts`、`kern.ts`）、字体子集化（`subset.ts`，用 HarfBuzz WASM）、还原嵌入字体（`eot.ts` → `lzcomp.ts` → `ctf.ts`）、默认字体包（`pack.ts`）、字体检查（`check.ts`）。 | io、common |
+| `font/` | 读字体（`font.ts`、`cmap.ts`、`kern.ts`，字形轮廓 `glyf.ts` / `cff.ts`）、字体库（`library.ts`：按名字和粗细找字体，PPT 嵌入的、指定的字体压过默认字体包）、可变字体取 Regular / Bold 实例（`fvar.ts`、`instance.ts`）、字体子集化（`subset.ts`，用 HarfBuzz WASM；符号字体先换 cmap，`symbol-cmap.ts`）、还原嵌入字体（`eot.ts` → `lzcomp.ts` → `ctf.ts`）、默认字体包（`pack.ts`）、字体检查（`check.ts`）。 | io、common |
 | `style/` | 填充 `fill.ts`、图案 `pattern.ts`、线条 `line.ts`、箭头 `arrowheads.ts`、渐变 `gradient-stops.ts`、图片调整 `blip.ts`、三维 `camera.ts` / `lighting.ts`、透视 `perspective.ts`。 | io、common、model |
 | `effects/` | 形状效果转 SVG 滤镜：`outer-shadow.ts`、`inner-shadow.ts`、`glow.ts`、`soft-edge.ts`、`bevel.ts`、映像 `reflection.ts`、三维轮廓 `contour.ts`。 | io、common、model |
 | `text/` | 文本框属性 → 逐段排版（测量、断行、项目符号）→ 定位 → 输出 SVG 文字；艺术字变形 `warp.ts`。 | io、common、model、geometry、font、style、effects |
 | `media/` | 图片和音视频资源（`media.ts`）、EMF / WMF / TIFF 解码、PNG / JPEG 编解码、按文件头识别格式（`sniff.ts`）。 | io、common、model |
-| `chart/` | 图表：标题、图例、坐标轴、数据标签、趋势线、三维图表……每种图表类型在 `chart/types/`。 | io、common、model、font、style |
-| `render/` | 每一页的总调度 `render.ts`（`renderSlide`）：按元素类型分派到形状、图片、组合、表格；`frames/` 处理表格、图表、SmartArt、OLE 这类"框"。 | 除了 anim / output / preview 之外的所有下层 |
+| `chart/` | 图表：标题、图例、坐标轴、数据标签（折行 `label-wrap.ts`、饼图标签放扇区里还是饼外 `pie-labels.ts`）、趋势线、三维图表……每种图表类型在 `chart/types/`。 | io、common、model、font、style |
+| `render/` | 每一页的总调度 `render.ts`（`renderSlide`）：按元素类型分派到形状、图片、组合、表格；`frames/` 处理表格、图表、SmartArt、OLE 这类"框"（`chart-fonts.ts`：图表文字同样只用嵌入产物的字体）。 | 除了 anim / output / preview 之外的所有下层 |
 | `anim/` | 把 PowerPoint 的动画时间线编译成播放器能播的 `AnimAction`（`anim.ts`），页面切换的名字对应（`transition.ts`），声音（`sound.ts`）。 | io、common、model、format |
 | `output/` | 产物形式（`single.ts`、`paged.ts`、`data.ts`）和所有形式都输出的 `prop.json`（`prop.ts`）。 | io、common、media、format |
 | `preview/` | 整页图 `pic/` 和缩略图 `thum/`：准备（`prepare.ts`）→ 用 resvg 画（`paint.ts`）→ 存 JPEG。 | io、common、media、font |
-| 入口 | `index.ts` 的 `convert` 把上面各层串起来；`cli.ts` 是命令行；`node-pool.ts` 是 Node 的出图线程池。 | 全部（`*`） |
+| 入口 | `index.ts` 的 `convert` 把上面各层串起来，`checkFonts` 只排版、返回字体检查；`cli.ts` 是命令行（`unppt check` 的文字输出在 `cli-check.ts`）；`node-pool.ts` 是 Node 的出图线程池，`node-fonts.ts` 从磁盘读默认字体包（`loadFontPack`）。 | 全部（`*`） |
 
 > 小提示：图里没有 `anim → render` 的箭头。动画编译只需要 render 层交给它的数据（时间线 XML、页面里的 `data-uid` 编号），这些在入口 `index.ts` 里传过去，所以两层互不依赖。
 
@@ -216,7 +216,7 @@ sequenceDiagram
   participant W as write 回调
 
   U->>CLI: unppt 课件.pptx
-  CLI->>CLI: 读 resvg.wasm，按 CPU 和内存建出图线程池
+  CLI->>CLI: loadFontPack() 读默认字体包；读 resvg.wasm，按 CPU 和内存建出图线程池
   CLI->>C: convert(数据源, 选项)
   C->>C: 打开 ZIP，读 OPC 包，加载 Presentation（主题、母版、版式）
   C->>C: 加载字体（嵌入字体、fonts、默认字体包 fontPack）
@@ -235,7 +235,7 @@ sequenceDiagram
   O->>C: meta()：页数、宽高、报告
   O->>W: 写出结尾（元数据 + 播放器脚本）
   C->>W: 写 prop.json
-  C-->>CLI: ConvertResult（页数、宽高、报告）
+  C-->>CLI: ConvertResult（页数、宽高、报告、字体检查）
 ```
 
 几个值得注意的点：
@@ -303,6 +303,8 @@ classDiagram
 | `rasterWasm` | resvg 的 WASM 字节（命令行自动读取发布包里的 `dist/resvg.wasm`）。 |
 | `rasterPool` | 并行出图执行器，例如 `@unppt/unppt/node` 的 `createRasterPool`。 |
 | `onProgress` | 每处理完一页回调一次。 |
+
+只想知道字体有没有问题时用 `checkFonts(input, { fontPack, fonts })`：照常排版一遍但不写文件，返回值和 `ConvertResult.fontCheck` 一样（命令行是 `unppt check`）。
 
 ### 6.3 产物里有什么
 
@@ -574,7 +576,7 @@ flowchart TB
   def --> cli
   ts["packages/transcoder/src/index.ts"] -->|"esbuild：esm，platform neutral<br/>.wasm 用 binary loader 打进 JS<br/>libjpeg-turbo 插件"| idx["dist/index.js"]
   cs["packages/transcoder/src/cli.ts"] -->|"esbuild：platform node，node20"| cli["dist/cli.js"]
-  np["node-pool.ts / raster-worker.ts"] -->|"esbuild：platform node"| nj["dist/node.js / dist/raster-worker.js"]
+  np["node.ts（node-pool.ts + node-fonts.ts）/ raster-worker.ts"] -->|"esbuild：platform node"| nj["dist/node.js / dist/raster-worker.js"]
   rw["node_modules/@resvg/resvg-wasm/index_bg.wasm"] -->|"复制"| rv["dist/resvg.wasm"]
 ```
 
@@ -593,10 +595,11 @@ flowchart TB
 | 字段 | 值 |
 |---|---|
 | `exports["."]` | `./dist/index.js`（`convert` 等） |
-| `exports["./node"]` | `./dist/node.js`（`createRasterPool` 等 Node 专用） |
+| `exports["./node"]` | `./dist/node.js`（`createRasterPool`、`loadFontPack` 等 Node 专用） |
 | `exports["./resvg.wasm"]` | `./dist/resvg.wasm` |
 | `bin.unppt` | `dist/cli.js` |
 | `engines.node` | `>=20.12` |
+| `dependencies` | `@unppt/fonts`（默认字体包：开源字体文件 + 度量包，只在转码时用；产物里只有用到的字的子集） |
 
 ### 9.1 测试和守门
 
@@ -634,7 +637,7 @@ flowchart LR
 |---|---|---|---|---|
 | @zip.js/zip.js（只用只读部分） | 2.23.0 | BSD-3-Clause | `io/zip.ts` | 读 pptx 的 ZIP 目录和条目 |
 | saxes（依赖 xmlchars 2.2.0，MIT） | 6.0.0 | ISC | `io/xml.ts` | XML 解析 |
-| harfbuzzjs（用其中的 harfbuzz-subset.wasm） | 1.6.3 | MIT | `font/subset.ts` | 字体子集化：只保留用到的字，减小产物体积 |
+| harfbuzzjs（用其中的 harfbuzz-subset.wasm） | 1.6.3 | MIT | `font/subset.ts` | 字体子集化：只保留用到的字，减小产物体积；可变字体取固定字重的实例（`font/instance.ts`） |
 | utif2（依赖 pako 1.0.11，MIT AND Zlib） | 4.1.0 | MIT | `media/tiff.ts` | TIFF 图片解码，转成 PNG 或 JPEG |
 | @cornerstonejs/codec-libjpeg-turbo-8bit（只用编码） | 1.2.8 | libjpeg-turbo：IJG + BSD-3-Clause + Zlib；封装：ISC | `media/jpeg-encode.ts` | 整页图和缩略图的 JPEG 编码 |
 | @resvg/resvg-wasm | 2.7.0-alpha.2 | MPL-2.0 | `preview/paint.ts` | 把页面 SVG 画成整页图和缩略图（不用于正式播放） |
@@ -672,14 +675,14 @@ flowchart LR
 
 ![播放器](../images/player.png)
 
-目前的效果（0.1.0）：
+目前的效果（0.3.1，完整数字见[测试报告](test-report.md)）：
 
 | 测试集 | 规模 | 通过率（SSIM ≥ 0.95） | 平均 SSIM |
 |---|---|---|---|
-| 合成用例 | 228 份 / 504 页 | 92.3% | 0.984 |
-| 随机抽取的真实课件 | 100 份 / 3527 页，0 份转码失败 | 78.8%（约 95% 的页 SSIM ≥ 0.90） | 0.967 |
+| 合成用例 | 255 份 / 543 页 | 93.0% | 0.984 |
+| 本机全部真实课件 | 5212 份 / 168662 页，0 份转码失败 | 70.4%（93.5% 的页 SSIM ≥ 0.90） | 0.956 |
 
-多数没通过的页只差在细节上（文字位置差几个像素、某个图表标签）。已知还没做好的：图表日期轴的时间刻度（最小值/最大值、按月/年的间隔）、`wordArtVert` 竖排文字、可变字体、EMF 图片里的 EMF+ 记录、部分需要重新布局的 SmartArt、180 度旋转下的三维棱台、45 度分类标签的截断阈值。
+多数没通过的页只差在细节上（文字位置差几个像素、某个图表标签）。已知还没做好的：图表日期轴的时间刻度（最小值/最大值、按月/年的间隔）、`wordArtVert` 竖排文字、EMF 图片里的 EMF+ 记录、部分需要重新布局的 SmartArt、180 度旋转下的三维棱台、45 度分类标签的截断阈值。
 
 ---
 
