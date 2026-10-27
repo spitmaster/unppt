@@ -257,7 +257,7 @@ def main() -> None:
             w("## 怎么测的\n")
             w("我们把每份课件用 unppt 转换，再把结果的每一页和 **Microsoft PowerPoint 自己导出的同一页图片**放在一起比较，"
               "得到一个**相似度**：0 到 1 之间，**1 表示两张图看起来一模一样**。（相似度用的是图像处理里常用的 SSIM 方法：比较明暗、"
-              "对比和图形结构，比逐个像素对比更接近人眼的感受。）\n")
+              "对比和图形结构，比逐个像素对比更接近人眼的感受；具体算法和标准定义的链接见 [还原度：相似度是怎么算的](fidelity.md#ssim)。）\n")
             w(f"- **{PASS} 以上**：算\"通过\"，和 PowerPoint 的差别通常只是文字差一两个像素、图片边缘略有不同这类细节；")
             w("- **0.90 ~ 0.95**：整体一致，局部有能看出来的小差别；")
             w("- **0.90 以下**：有明显不同的地方，例如某个图表标签的位置、某种效果没画好。\n")
@@ -280,7 +280,7 @@ def main() -> None:
             w("Every deck is converted with unppt, and each resulting slide is compared with **the image Microsoft PowerPoint itself exports "
               "for the same slide**, giving a **similarity score** between 0 and 1, where **1 means the two images look identical**. "
               "(The score is SSIM, a standard image-comparison method that looks at brightness, contrast and structure — closer to what "
-              "the eye notices than comparing pixel by pixel.)\n")
+              "the eye notices than comparing pixel by pixel; exact method and references: [Fidelity: how the score is computed](fidelity.md#ssim).)\n")
             w(f"- **{PASS} or more**: counts as a pass; differences are usually tiny, such as text a pixel or two off or slightly different picture edges;")
             w("- **0.90 – 0.95**: the same overall, with small visible differences somewhere;")
             w("- **below 0.90**: something clearly differs, such as a chart label's position or an effect not drawn right.\n")

@@ -120,7 +120,7 @@ Key design decisions (the full picture is in [Architecture](docs/en/architecture
 
 Current version: **0.3.1**. Full breakdown in the [test report](docs/en/test-report.md).
 
-How we measure "looks the same": every slide unppt produces is compared with the image PowerPoint itself exports for that slide, giving a **similarity score** (0 to 1, **1 = looks identical**). **A slide passes at 0.95 or more**; the remaining differences are usually details like text a pixel or two off.
+How we measure "looks the same": every slide unppt produces is compared with the image PowerPoint itself exports for that slide, giving a **similarity score** (0 to 1, **1 = looks identical**). **A slide passes at 0.95 or more**; the remaining differences are usually details like text a pixel or two off. The score is SSIM, a standard image-comparison method; see [Fidelity](docs/en/fidelity.md#ssim) for exactly how it is computed.
 
 | Decks tested | Size | Failures | Slides passing (≥ 0.95) | Average similarity |
 |---|---|---|---|---|

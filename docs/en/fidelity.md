@@ -27,7 +27,7 @@ Terms used below:
 | **Screenshot** | The same slide converted by unppt, opened in a browser with the unppt player, and captured as an image |
 | **COM automation** | The Windows interface that lets a program drive Office. Our Python tools use it (through the `pywin32` library) to make PowerPoint open files, export images and create new presentations |
 | **Playwright** | A tool that controls a browser from code. We use it to open the player page and take screenshots |
-| **SSIM** | Structural Similarity. A number between 0 and 1 that measures how alike two images *look*; 1 means identical. It is closer to human perception than comparing pixel colours one by one |
+| **SSIM** | Structural Similarity. A number between 0 and 1 that measures how alike two images *look*; 1 means identical. It is closer to human perception than comparing pixel colours one by one; how it is computed, with references: [below](#ssim) |
 | **Test case** | A .pptx file in `testcases/` whose content is only neutral placeholder text and colour blocks, built to test one feature |
 
 ---
@@ -96,6 +96,30 @@ sequenceDiagram
   end
   Run-->>Dev: report + scores/summary-testcases.json
 ```
+
+<a id="ssim"></a>
+
+#### How the similarity score (SSIM) is computed
+
+SSIM (Structural Similarity) is a standard image-comparison method, introduced by Zhou Wang et al. in 2004 and widely used to rate how close an image looks to a reference. Standard definition:
+
+- [Wikipedia: Structural similarity index measure](https://en.wikipedia.org/wiki/Structural_similarity_index_measure)
+- Original paper: Z. Wang, A. C. Bovik, H. R. Sheikh, E. P. Simoncelli, *Image quality assessment: from error visibility to structural similarity*, IEEE Transactions on Image Processing 13(4), 600–612, 2004 ([doi:10.1109/TIP.2003.819861](https://doi.org/10.1109/TIP.2003.819861))
+
+Intuitively: cut the image into small blocks and compare three things in each — **brightness** (mean luminance), **contrast** (how much the luminance varies) and **structure** (whether patterns, edges and strokes line up) — combine them into a block score and average over all blocks. 1 means identical. This is closer to what the eye notices than comparing pixel by pixel: shift a whole slide by one pixel and people barely see it, while a pixel-by-pixel comparison finds almost every pixel different.
+
+**Our exact computation** (`ssim()` in `tools/compare/run.py`; the full-corpus `sweep_ab.py` uses the same function):
+
+1. The reference is scaled to the size of unppt's image (bilinear) and both are converted to greyscale (0–255);
+2. They are cut into **non-overlapping 8×8 blocks** (a remainder narrower than 8 px at the right/bottom is dropped);
+3. Each block uses the standard formula: SSIM = ((2·μa·μb + C1)·(2·σab + C2)) / ((μa² + μb² + C1)·(σa² + σb² + C2)), where μ is the block's mean luminance, σ² its variance and σab the covariance of the two blocks; C1 = (0.01×255)² and C2 = (0.03×255)² are the paper's standard constants that keep the denominator away from zero;
+4. The block scores are averaged into the slide's score.
+
+**Difference from common implementations**: the paper and most tools (e.g. scikit-image's `structural_similarity`) use a **sliding window** evaluated at every pixel (an 11×11 Gaussian-weighted window in the paper, a 7×7 uniform window by default in scikit-image). We use non-overlapping, uniformly weighted 8×8 blocks, which is much faster (we score 160,000+ slides repeatedly). Trends agree with the standard method, but **the numbers are not directly comparable with SSIM values from other tools**.
+
+**Reading the score** (our experience, not part of the standard): 0.98 or more — practically no visible difference; **0.95 or more counts as a pass**, usually only details like text a pixel or two off; 0.90–0.95 — small visible differences somewhere; below 0.90 — something clearly differs.
+
+**Limitations**: greyscale only (a wrong colour with similar brightness costs little; colour is checked separately); no notion of importance (one wrong number in a chart barely moves the score); very sensitive to dense small text — a reference shifted by half a pixel against itself scores only 0.87–0.94 on such slides. That is why shapes and line breaks are also checked one by one (2.4, 2.5); SSIM is mainly for finding likely problems among many slides quickly and for telling which of two versions is closer to PowerPoint.
 
 ### 2.3 Animations and transitions are compared too
 

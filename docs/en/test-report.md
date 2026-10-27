@@ -6,7 +6,7 @@
 
 ## How we test
 
-Every deck is converted with unppt, and each resulting slide is compared with **the image Microsoft PowerPoint itself exports for the same slide**, giving a **similarity score** between 0 and 1, where **1 means the two images look identical**. (The score is SSIM, a standard image-comparison method that looks at brightness, contrast and structure — closer to what the eye notices than comparing pixel by pixel.)
+Every deck is converted with unppt, and each resulting slide is compared with **the image Microsoft PowerPoint itself exports for the same slide**, giving a **similarity score** between 0 and 1, where **1 means the two images look identical**. (The score is SSIM, a standard image-comparison method that looks at brightness, contrast and structure — closer to what the eye notices than comparing pixel by pixel; exact method and references: [Fidelity: how the score is computed](fidelity.md#ssim).)
 
 - **0.95 or more**: counts as a pass; differences are usually tiny, such as text a pixel or two off or slightly different picture edges;
 - **0.90 – 0.95**: the same overall, with small visible differences somewhere;
