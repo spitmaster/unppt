@@ -147,6 +147,12 @@ function flatten(c: { x: number; y: number; on: boolean }[], step: number): Pt[]
 }
 
 /** 找出文字的变形设置；没有或不变形（textNoShape）时返回 undefined */
+/** 跟随路径类（拱形、圆形、按钮：路径是奇数条）：整段排成一行沿路径走，不按框宽折行（实测：换行开、关排出来一样） */
+export function followsPath(warp: XEl): boolean {
+  const def = warpGeometry(attr(warp, 'prst') ?? '');
+  return !!def && def.paths.length % 2 === 1;
+}
+
 export function warpOf(bodyPrs: (XEl | undefined)[]): XEl | undefined {
   for (let i = bodyPrs.length - 1; i >= 0; i--) {
     const w = child(bodyPrs[i], 'a:prstTxWarp');

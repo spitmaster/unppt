@@ -15,7 +15,7 @@ import { layoutParagraph } from './paragraph';
 import { splitBreaks } from './split-breaks';
 import { fontRefLevels, styleFonts } from './style';
 import type { ParagraphLayout, StyleChain, TextBox, TextEnv } from './types';
-import { warpOf, warpText } from './warp';
+import { followsPath, warpOf, warpText } from './warp';
 
 export type { FontEmbedder, StyleChain, TextBox, TextEnv } from './types';
 
@@ -79,7 +79,9 @@ export async function renderText(
   const fullChain: StyleChain = [chain[0], fontRefStyle, ...chain.slice(1), lstStyle];
 
   const layouts: ParagraphLayout[] = [];
-  const ctx = { fullChain, env, measurer, fontScale, lnReduce, contentW, wrap, numbering: new BulletNumbering() };
+  // 跟随路径的艺术字变形（拱形、圆形……）不按框宽折行，整段沿路径排（实测 PowerPoint：换行开、关一样）
+  const warp0 = vertical ? undefined : warpOf([...bodyPrs, child(txBody, 'a:bodyPr')]);
+  const ctx = { fullChain, env, measurer, fontScale, lnReduce, contentW, wrap: wrap && !(warp0 && followsPath(warp0)), numbering: new BulletNumbering() };
   for (let pi = 0; pi < paras.length; pi++) layouts.push(await layoutParagraph(paras[pi], pi, ctx));
   if (!hasText) { placeLines(layouts, b, outer, contentW, out); return ''; }
   env.blipHrefs = await pictureFills(layouts, env);
