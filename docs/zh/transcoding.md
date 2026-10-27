@@ -808,6 +808,8 @@ flowchart TD
 
 ---
 
+**少数符号单独换显示字体**：默认字体包里，个别符号的开源字体画法和微软字体差太多（雅黑的 `√` 是对勾、思源黑体是根号），按 `font/glyph-overrides.ts` 的表换一个画法接近的开源字体画，字宽和排版不变。表由脚本生成，原因和做法见 [符号的显示字体替代表](research/glyph-overrides.md)。
+
 ## 12. 图片、音视频
 
 `media/media.ts` 的 `MediaStore` 管理所有媒体：

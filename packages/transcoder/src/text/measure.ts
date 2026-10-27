@@ -1,4 +1,5 @@
 /** 测量：按字体文件的真实字宽把文字拆成字符（Atom），缺字体时按 PowerPoint 的规则替代，含字距调整 */
+import { GLYPH_OVERRIDES } from '../font/glyph-overrides';
 import { fallbackAdvance, isWide, type FontFace, type FontMetrics } from '../font/font';
 import { SYMBOL_FONT } from '../font/check';
 import { kernOn } from './style';
@@ -206,6 +207,14 @@ export async function makeAtoms(text: string, style: RunStyle, m: Measurer): Pro
     let drawFace = adv !== undefined ? usedM?.face : undefined;
     let drawFamily = family;
     let shift = adv !== undefined ? await used?.displayShift?.(cp) : undefined;
+    // 默认字体包显示时，画法和原字体差得多的符号换一个开源字体画（雅黑的 √ 是对勾，思源黑体是带横线的根号；字宽、排版不变，
+    // 表由 tools/fonts/glyph_audit.py 生成，见 font/glyph-overrides.ts）
+    const ov = drawFace && used?.shown ? GLYPH_OVERRIDES[family.toLowerCase()]?.[cp] : undefined;
+    if (ov) {
+      const om = await m.metrics(ov, st.bold, st.italic, true);
+      const ow = om?.metrics.advance(cp);
+      if (om && ow !== undefined) { drawFace = om.face; drawFamily = ov; shift = { dx: (adv! - ow) / 2, dy: 0 }; }
+    }
     // 符号字体不换别的字体画（画出来是字母，不是作者要的符号；字体检查会列出这些字）
     if (drawFace && used?.shown && cp > 0x20 && !used.shown(cp) && SYMBOL_FONT.test(family)) {
       drawFace = undefined;
