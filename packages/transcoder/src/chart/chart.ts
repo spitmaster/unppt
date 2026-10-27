@@ -16,6 +16,7 @@ import { pixelGrid } from './pixel-grid';
 import { chartTypeOf } from './chart-types';
 import { gradientRef, label, richStyle, textStyle, textWidth } from './draw';
 import { BOTTOM_PAD, PAD, pieLegendBand, type TextWidth } from './layout';
+import { latinShift, lineShift } from './font-lines';
 import { renderLegend } from './legend';
 import type { ChartContext, PattFill, Plot, Rect, SvgDefs, TextStyle, View3D } from './model';
 import { patternFill } from '../style/pattern';
@@ -127,14 +128,16 @@ export function renderChart(space: XEl | undefined, w: number, h: number, env: C
     const edge = (n: 'x' | 'y') => attr(child(tml, `c:${n}Mode`), 'val') === 'edge' ? numAttr(child(tml, `c:${n}`), 'val') : undefined;
     const tx = edge('x'), ty = edge('y');
     const titleX = tx !== undefined ? tx * w + TITLE_INSET + tw(titleText, tst.size, tst.font) / 2 : w / 2;
-    const titleY = TITLE_Y0 + TITLE_Y * tst.size + (ty !== undefined ? ty * h - TITLE_TOP : 0);
+    // 标题框高随字体、文字变（纯西文的标题比汉字的矮），上边不动，字的中心跟着移一半（font-lines.ts）
+    const tShift = lineShift(tst, titleText || '图表标题', tw, true);
+    const titleY = TITLE_Y0 + TITLE_Y * tst.size + tShift / 2 + (ty !== undefined ? ty * h - TITLE_TOP : 0);
     const titleSvg = titleText ? label(titleText, titleX, titleY, tst) : '';
     if (tx !== undefined || ty !== undefined) lateTitle = titleSvg;
     else out.push(titleSvg);
     // 实测（COM 读绘图区上沿：标题 12~32 磅 × 数值标签 9~20 磅）：带坐标轴的图，标题占 1.3545 × 标题字号，
     // 下面再留 max(12, 0.521 × 竖轴标签字号 + 4) 像素（最上面的标签以网格线为中心要露出半个）；饼图按以前的
     // 1.2 × 字号 + 6（COM 读 18.62 磅标题校准）。图例不分图表类型都按带坐标轴的算（饼图的上方、左右图例以前高 10、5 像素）
-    const band = titleBand(tst.size, plotArea, plots, colors, baseText);
+    const band = titleBand(tst.size, plotArea, plots, colors, baseText, tw) + tShift;
     legendTop = top + band;
     top += type0.hasAxes || flatPie ? band : tst.size * 1.2 + 6;
   }
@@ -178,12 +181,15 @@ export function renderChart(space: XEl | undefined, w: number, h: number, env: C
   return groupBackground(out);
 }
 
-/** 带坐标轴的图标题占的高度（含下面留的空）：竖轴标签字号来自第一根数值轴（条形图、标签删掉时按下限） */
-function titleBand(titleSize: number, plotArea: XEl | undefined, plots: Plot[], colors: ColorContext, baseText: TextStyle): number {
+/**
+ * 带坐标轴的图标题占的高度（含下面留的空）：竖轴标签字号来自第一根数值轴（条形图、标签删掉时按下限）；
+ * 最上面的数值标签露出半个，字体比等线高时跟着多留（font-lines.ts）
+ */
+function titleBand(titleSize: number, plotArea: XEl | undefined, plots: Plot[], colors: ColorContext, baseText: TextStyle, tw: TextWidth): number {
   const valAx = axesOf(plotArea).valAxes[0];
   const vertical = valAx && attr(child(valAx, 'c:delete'), 'val') !== '1' && !plots.some((p) => p.horizontal);
-  const l = vertical ? textStyle(child(valAx, 'c:txPr'), colors, baseText).size : 0;
-  return 1.3545 * titleSize + Math.max(12, 0.521 * l + 4);
+  const vst = vertical ? textStyle(child(valAx, 'c:txPr'), colors, baseText) : undefined;
+  return 1.3545 * titleSize + Math.max(12, vst ? 0.521 * vst.size + 4 + latinShift(vst, tw) / 2 : 0);
 }
 
 /** 三维视图；饼图默认俯角 30°、不转，其它默认俯角 15°、转 20° */

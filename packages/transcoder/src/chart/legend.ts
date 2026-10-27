@@ -3,6 +3,7 @@ import type { ColorContext, Rgba } from '../model/color';
 import { attr, child, children, numAttr, type XEl } from '../io/xml';
 import { chartTypeOf } from './chart-types';
 import { accentColor, label, legendKey, strokeOf, textStyle } from './draw';
+import { legendShift } from './font-lines';
 import { LEGEND_LINE_KEY, legendBand, legendCenter, legendItemGap, legendKeyGap, legendLead, legendPlotGap, legendRow, legendSquare, legendTopBand, legendTopCenter, PAD, type TextWidth } from './layout';
 import type { Plot, Rect, Series, TextStyle } from './model';
 import { dashCap } from './trendline';
@@ -135,11 +136,13 @@ function autoLegend(legend: XEl | undefined, plots: Plot[], area: Rect, w: numbe
       colW = Math.max(...parts) + minGap;
       cols = Math.ceil(n / Math.ceil(n / Math.max(1, Math.floor((avail - lead + minGap) / colW))));
     }
-    const rowH = legendRow(sz), extraH = (Math.ceil(n / Math.max(1, cols)) - 1) * rowH;
+    // 字体比等线高的图例带更高、下边不动（font-lines.ts）
+    const fshift = legendShift(legendText, tw);
+    const rowH = legendRow(sz) + fshift, extraH = (Math.ceil(n / Math.max(1, cols)) - 1) * rowH;
     const total = colW ? lead + cols * colW - minGap : lead + sum + gap * Math.max(0, n - 1);
     const x0 = (w - total) / 2 + lead;
     // 上方图例：中心在 9 磅 + 0.515 倍字号处，下沿（12 磅 + 1.03 倍字号）再往下 11 磅才是绘图区（COM 读 3 种字号，导出图核对）
-    const y0 = legendPos === 'b' ? bottom - legendCenter(sz) - extraH : top + shift - PAD + legendTopCenter(sz);
+    const y0 = legendPos === 'b' ? bottom - legendCenter(sz) - fshift / 2 - extraH : top + shift - PAD + legendTopCenter(sz) + fshift / 2;
     let x = x0;
     entries.forEach((e, i) => {
       const y = y0 + Math.floor(i / cols) * rowH;
@@ -148,8 +151,8 @@ function autoLegend(legend: XEl | undefined, plots: Plot[], area: Rect, w: numbe
       out.push(label(e.name, x + keyW(e) + kGap, y, legendText, 'start'));
       x += parts[i] + gap;
     });
-    if (legendPos === 'b') bottom -= bandOf(legendText.size) + extraH;
-    else top += legendTopBand(sz) + extraH;
+    if (legendPos === 'b') bottom -= bandOf(legendText.size) + fshift + extraH;
+    else top += legendTopBand(sz) + fshift + extraH;
   } else {
     // 竖排图例（左、右）：键和横排一样（有线条项时所有键等宽），每行 legendRow；整体在上下范围里居中，
     // 右侧图例的文字右端对齐图表留白线（左侧的键左端对齐）；键到文字、键到绘图区的距离见 layout.ts（实测）。
@@ -159,7 +162,7 @@ function autoLegend(legend: XEl | undefined, plots: Plot[], area: Rect, w: numbe
     const keyW = anyLine ? LEGEND_LINE_KEY : legendSquare(sz);
     const kGap = legendKeyGap(sz, anyLine);
     const all = entries.map((e) => wrapLegendText(e.name, legendTextCap(w, sz), sz, legendText.font, tw));
-    const row = legendRow(sz), extra = legendWrapLine(sz);
+    const row = legendRow(sz) + legendShift(legendText, tw), extra = legendWrapLine(sz);
     // 图表高度放不下所有项时只画前面放得下的（总高不超过图表高 − 11 磅），按只有这几项居中（实测 charts-legend-truncate）
     const heights = all.map((l) => row + (l.length - 1) * extra);
     let n = all.length;

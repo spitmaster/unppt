@@ -7,6 +7,7 @@ import { cpart, label } from './draw';
 import { errRanges, errSvg } from './error-bars';
 import { extraValues, trendlines } from './extras';
 import { PAD, SIDE_LABEL_PAD, sideGap, valAnchor, topForLabel, valBand, valCenter } from './layout';
+import { catBandShift, latinShift } from './font-lines';
 import { axesOf } from './axis';
 import { readAxisTitle, renderAxisTitles, reserveAxisTitles } from './axis-title';
 import type { AxisInfo, ChartContext, Plot, Rect, Series } from './model';
@@ -51,10 +52,10 @@ export function renderXY(p: Plot, ctx: ChartContext, area0: Rect, marks: XYMarks
     // 留出坐标轴标签的空间（和分类轴图同一套实测规律，见 layout.ts）
     if (!Y.deleted) {
       left = (left === PAD ? SIDE_LABEL_PAD : left) + Math.max(0, ...Y.labels.map((t) => tw(t, Y.style.size, Y.style.font))) + sideGap(Y.style.size);
-      top = Math.max(top, topForLabel(Y.style.size));
+      top = Math.max(top, topForLabel(Y.style.size) + latinShift(Y.style, tw) / 2);
     }
     if (!X.deleted) {
-      bottom -= valBand(X.style.size);
+      bottom -= valBand(X.style.size) + catBandShift(X.style, X.labels, tw);
       right = Math.min(right, area.right - tw(X.labels[X.labels.length - 1] ?? '', X.style.size, X.style.font) / 2);
     }
     return { left, top, right, bottom, pw: Math.max(1, right - left), ph: Math.max(1, bottom - top), X, Y };
@@ -78,7 +79,7 @@ export function renderXY(p: Plot, ctx: ChartContext, area0: Rect, marks: XYMarks
   X.ticks.forEach((t, i) => {
     const x = left + X.pos(t) * pw;
     if (X.grid?.color) out.push(axisLine('v', x, box, X.grid, g));
-    if (!X.deleted) out.push(label(X.labels[i], x, bottom + valCenter(X.style.size), X.style));
+    if (!X.deleted) out.push(label(X.labels[i], x, bottom + valCenter(X.style.size) + catBandShift(X.style, X.labels, tw) / 2, X.style));
   });
   // 坐标轴线：横轴画在纵轴 0 的位置，纵轴画在横轴 0 的位置
   const x0f = X.pos(Math.max(X.lo, Math.min(X.hi, 0))), y0f = Y.pos(Math.max(Y.lo, Math.min(Y.hi, 0)));

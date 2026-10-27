@@ -22,6 +22,7 @@ import { extraValues, trendlines } from './extras';
 import { dataTableSize, headerLines, headerLineStep, readDataTable, renderDataTable } from './data-table';
 import { innerTitleAt, readAxisTitle, renderAxisTitles, reserveAxisTitles, type AxisTitles } from './axis-title';
 import { NO_GRID, type PixelGrid } from './pixel-grid';
+import { catBandShift, latinShift, lineFactor } from './font-lines';
 import { catFitBand, categoryLabel, fitCategoryLabels, outerLevelBands, outerLevels, ROT_MIDCAT_RIGHT, rotFirstCenter, sideLabel, sideLabelMax, sideLevelBands, sideOuterLevels, wrapSideLabel, type CatFit, type LevelBand, capVertical } from './cat-labels';
 
 /** 条形图两侧的分类标签每行要的高度（× 字号）：样本校准（27 个分类、24 磅，每个分类约 20 像素高，PowerPoint 隔一个显示；1.3 时会隔两个） */
@@ -96,10 +97,11 @@ export function renderCategoryChart(plots: Plot[], plotArea: XEl | undefined, ar
   const primRange = rangeOf(shared ? plots : plots.filter((p) => !onSecondary(p)));
   const secRange = shared ? primRange : rangeOf(plots.filter(onSecondary));
   const catDeleted = attr(child(catAx, 'c:delete'), 'val') === '1';
-  // 底部分类标签带的高度、标签中心离轴的距离：带中文的标签和纯数字（日期等）不同（实测）
+  // 底部分类标签带的高度、标签中心离轴的距离：带中文的标签和纯数字（日期等）不同（实测）；字体比等线高的再加（font-lines.ts）
   const cjk = cats.some(hasCjk);
-  const catH = (s: number) => (cjk ? catBand(s) : valBand(s));
-  const catC = (s: number) => (cjk ? catCenter(s) : valCenter(s));
+  const catShift = catBandShift(catStyle, cats, tw), catLf = lineFactor(catStyle, cats, tw);
+  const catH = (s: number) => (cjk ? catBand(s) : valBand(s)) + catShift;
+  const catC = (s: number) => (cjk ? catCenter(s) : valCenter(s)) + catShift / 2;
   // 数据表（柱形、折线、面积图）：表头代替分类标签，表格占绘图区下方和左边一列
   const dt = horizontal ? undefined : readDataTable(plotArea, colors, baseText, env.part);
   const dtSize = dt ? dataTableSize(dt, plots, colors, tw) : undefined;
@@ -136,7 +138,7 @@ export function renderCategoryChart(plots: Plot[], plotArea: XEl | undefined, ar
       if (valLabels) {
         if (sides.val === 'l') left = edgeLeft + unitW + maxW(tickLabels, valStyle) + sideGap(valStyle.size);
         else right = edgeRight - unitW - maxW(tickLabels, valStyle) - sideGap(valStyle.size);
-        top = Math.max(top, topForLabel(valStyle.size));
+        top = Math.max(top, topForLabel(valStyle.size) + latinShift(valStyle, tw) / 2);
       }
       if (sec && !sec.deleted) right = fromRight() - maxW(sec.labels, sec.style) - sideGap(sec.style.size);
       if (dtSize) {
@@ -160,7 +162,7 @@ export function renderCategoryChart(plots: Plot[], plotArea: XEl | undefined, ar
         else right = edgeRight - maxW(sideLines.flat(), catStyle) - sideGap(catStyle.size);
       }
       if (valLabels) {
-        if (sides.val === 'b') bottom -= valBand(valStyle.size);
+        if (sides.val === 'b') bottom -= valBand(valStyle.size) + catBandShift(valStyle, tickLabels, tw);
         else { top += valBandTop(valStyle.size); bottom -= emptyBottomPad(valStyle.size); }
         // 最右边的标签以网格线为中心：在可用区域（图表边 11 磅，或者右侧图例让出之后）里再让出半个标签（COM 读绘图区右沿）
         right = Math.min(right, area.right - tw(tickLabels[tickLabels.length - 1] ?? '', valStyle.size, valStyle.font) / 2);
@@ -184,7 +186,7 @@ export function renderCategoryChart(plots: Plot[], plotArea: XEl | undefined, ar
       // 自定义角度：rot 在 ±90° 以内、不是 0（PowerPoint 写的 −60000000 是"自动"）
       const rot = numAttr(bodyPr, 'rot');
       const deg = rot !== undefined && rot !== 0 && Math.abs(rot) < 5400000 ? rot / 60000 : undefined;
-      catFit = fitCategoryLabels(cats, (right - left) / fitBands, catStyle.size, catTw, numAttr(child(catAx, 'c:tickLblSkip'), 'val'), eaVert, deg);
+      catFit = fitCategoryLabels(cats, (right - left) / fitBands, catStyle.size, catTw, numAttr(child(catAx, 'c:tickLblSkip'), 'val'), eaVert, deg, catLf);
       levelBands = outerLevelBands(catLevels, catStyle.size, (c, sz) => (c ? catBand(sz) : valBand(sz)));
       catFit = capVertical(catFit, cats, catStyle.size, catTw, bottom - top - levelBands.reduce((a, b) => a + b.band, 0));
       if (catFit.kind === 'rot' && cats.length) {
@@ -198,7 +200,7 @@ export function renderCategoryChart(plots: Plot[], plotArea: XEl | undefined, ar
       innerBand = catFitBand(catFit, catH(catStyle.size), cats, catStyle.size, catTw);
       bottom -= innerBand + levelBands.reduce((a, b) => a + b.band, 0);
       // 手动布局的内框：绘图区就是给的框，分类标签按它的宽度排、画在框外，不截断（样本：矮图表的斜标签以前被截成两个字）
-      if (env.inner) catFit = fitCategoryLabels(cats, (area0.right - area0.left) / fitBands, catStyle.size, catTw, numAttr(child(catAx, 'c:tickLblSkip'), 'val'), eaVert, deg);
+      if (env.inner) catFit = fitCategoryLabels(cats, (area0.right - area0.left) / fitBands, catStyle.size, catTw, numAttr(child(catAx, 'c:tickLblSkip'), 'val'), eaVert, deg, catLf);
     }
     // 手动内框：绘图区就是给的框（不给坐标轴标题让位置），标题贴在"内框 + 标签带"外面
     const titleAt = env.inner ? innerTitleAt(area0, area, { left, bottom }) : undefined;
@@ -243,7 +245,7 @@ export function renderCategoryChart(plots: Plot[], plotArea: XEl | undefined, ar
     out.push(gridLine(v, prim.grid, horizontal, box, g));
     if (!valLabels) return;
     if (!horizontal) axisText.push(sides.val === 'l' ? label(tickLabels[i], left - valAnchor(valStyle.size), v, valStyle, 'end') : label(tickLabels[i], right + sideAnchor(valStyle.size), v, valStyle, 'start'));
-    else axisText.push(label(tickLabels[i], v, sides.val === 'b' ? bottom + valCenter(valStyle.size) : top - valCenter(valStyle.size), valStyle));
+    else axisText.push(label(tickLabels[i], v, sides.val === 'b' ? bottom + valCenter(valStyle.size) + catBandShift(valStyle, tickLabels, tw) / 2 : top - valCenter(valStyle.size), valStyle));
   });
   // 显示单位（例如"千"）
   if (unit) {

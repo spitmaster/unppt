@@ -7,6 +7,11 @@
 export type TextWidth = ((s: string, size: number, font?: string) => number) & {
   /** 东亚字体的上伸 + 下伸（em；字体里没有汉字时按雅黑）：数据表的行高用（chart-frame.ts 提供，没有时按等线算） */
   eaEm?: (font?: string) => number | undefined;
+  /**
+   * 字体的竖直度量（em，Windows 的上伸、下伸）和有没有汉字：font-lines.ts 按它调整带子；
+   * font 不给时是图表默认的西文（ea = false）或东亚（ea = true）字体；找不到字体时 undefined（chart-frame.ts 提供）
+   */
+  vm?: (font: string | undefined, ea: boolean) => { ascent: number; descent: number; cjk: boolean } | undefined;
 };
 
 /** 固定按某个字体量宽度（给只传字号的排版函数用） */

@@ -30,6 +30,10 @@ async function chartMeasure(fonts: FontLibrary, theme: Theme, xml: XEl): Promise
     if (!f || f.advance(0x4e00) === undefined) f = yahei;
     return f ? f.ascent + f.descent : undefined;
   };
+  const vm = (font: string | undefined, eaSlot: boolean) => {
+    const f = font ? own.get(font) ?? (font === (theme.minorLatin || 'Calibri') ? latin : font === (theme.minorEa || theme.minorLatin) ? ea : undefined) : eaSlot ? ea : latin;
+    return f ? { ascent: f.ascent, descent: f.descent, cjk: f.advance(0x4e00) !== undefined } : undefined;
+  };
   return Object.assign((s: string, size: number, font?: string) => {
     const f = font ? own.get(font) : undefined;
     let w = 0;
@@ -39,7 +43,7 @@ async function chartMeasure(fonts: FontLibrary, theme: Theme, xml: XEl): Promise
       w += f?.advance(cp) ?? a?.advance(cp) ?? b?.advance(cp) ?? fallbackAdvance(cp);
     }
     return w * size;
-  }, { eaEm });
+  }, { eaEm, vm });
 }
 
 export const chartFrame: FrameHandler = {
