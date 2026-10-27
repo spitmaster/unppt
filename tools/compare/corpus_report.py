@@ -179,6 +179,7 @@ def main() -> None:
     # 逐页汇总
     scores, times, per_page_ms = [], [], []
     by_feat, by_app, by_ratio = defaultdict(list), defaultdict(list), defaultdict(list)
+    by_feat_base = defaultdict(list)  # 同一批页上一版的分数
     deck_pages, app_decks, ratio_decks = [], Counter(), Counter()
     better = worse = same = 0
     bscores, fails = [], 0
@@ -202,6 +203,8 @@ def main() -> None:
             pf = info["pages"][int(n) - 1] if int(n) - 1 < len(info["pages"]) else []
             for f in (pf or ["(plain)"]):
                 by_feat[f].append(x)
+                if n in bs:
+                    by_feat_base[f].append(bs[n])
             by_app[info["app"]].append(x)
             by_ratio[rk].append(x)
             if n in bs:
@@ -291,10 +294,13 @@ def main() -> None:
         w("## 按页面内容分开统计\n" if zh else "## By slide content\n")
         w(("一页可能同时属于多类。" if zh else "A slide can be in several rows. ")
           + (f"\"比 {a.base_label}\" 是同一批页上一版的平均分。\n" if zh and bscores else f"\"vs {a.base_label}\" is the previous release's mean on the same slides.\n" if bscores else "\n"))
-        head = ("| 页面内容 | 页数 | 平均 SSIM | ≥ 0.95 | ≥ 0.90 |" if zh else "| Slide content | Slides | Mean SSIM | ≥ 0.95 | ≥ 0.90 |")
-        w(head + "\n|---|---|---|---|---|")
+        bcol = f" {'比' if zh else 'vs'} {a.base_label} |" if bscores else ""
+        head = ("| 页面内容 | 页数 | 平均 SSIM | ≥ 0.95 | ≥ 0.90 |" if zh else "| Slide content | Slides | Mean SSIM | ≥ 0.95 | ≥ 0.90 |") + bcol
+        w(head + "\n|---|---|---|---|---|" + ("---|" if bscores else ""))
         for f, xs in sorted(by_feat.items(), key=lambda kv: -len(kv[1])):
-            w(f"| {L.get(f, f)} | {len(xs)} | {statistics.fmean(xs):.4f} | {sum(x >= PASS for x in xs) / len(xs):.1%} | {sum(x >= 0.90 for x in xs) / len(xs):.1%} |")
+            bx = by_feat_base.get(f)
+            bcell = f" {statistics.fmean(bx):.4f} |" if bscores and bx else (" — |" if bscores else "")
+            w(f"| {L.get(f, f)} | {len(xs)} | {statistics.fmean(xs):.4f} | {sum(x >= PASS for x in xs) / len(xs):.1%} | {sum(x >= 0.90 for x in xs) / len(xs):.1%} |{bcell}")
         w("")
         w("## 按保存软件、页面比例\n" if zh else "## By authoring app and slide ratio\n")
         w(("| 分组 | 页数 | 平均 SSIM | ≥ 0.95 |" if zh else "| Group | Slides | Mean SSIM | ≥ 0.95 |") + "\n|---|---|---|---|")
@@ -306,10 +312,10 @@ def main() -> None:
 
         # 速度
         w("## 转码速度\n" if zh else "## Conversion speed\n")
-        w(("每份课件用命令行转码一次（`--jobs 1`：整页图单线程渲染；含整页图、缩略图、字体子集），测量时 6 个转码同时进行、进程优先级最低，"
+        w(("每份课件用命令行转码一次（`--jobs 1`：整页图单线程渲染；含整页图、缩略图、字体子集），测量时几个转码同时进行、用低优先级，"
            "所以是偏保守的数字。\n") if zh else
           ("Each deck converted once with the CLI (`--jobs 1`: single-threaded page-image rendering; includes page images, thumbnails, font "
-           "subsets), six conversions at a time at idle priority, so the numbers are conservative.\n"))
+           "subsets), several conversions at a time at low priority, so the numbers are conservative.\n"))
         w(("| 指标 | 中位数 | 90% | 99% | 最大 |" if zh else "| Metric | Median | p90 | p99 | Max |") + "\n|---|---|---|---|---|")
         w(f"| {'每份（秒）' if zh else 'Per deck (s)'} | {statistics.median(times) / 1000:.1f} | {pct(times, 0.9) / 1000:.1f} | {pct(times, 0.99) / 1000:.1f} | {max(times) / 1000:.1f} |")
         w(f"| {'每页（毫秒）' if zh else 'Per slide (ms)'} | {statistics.median(per_page_ms):.0f} | {pct(per_page_ms, 0.9):.0f} | {pct(per_page_ms, 0.99):.0f} | {max(per_page_ms):.0f} |")
@@ -317,11 +323,11 @@ def main() -> None:
 
         # 产物大小（比对时记录了的才有）
         sz = [rows[h]["variants"][a.new].get("bytes") for h in hashes if rows[h]["variants"].get(a.new, {}).get("bytes")]
-        if sz:
+        if len(sz) >= len(hashes) / 2:  # 比对时没记录大小的课件多于一半就不出这一节（免得几份课件的数字被当成全量统计）
             parts = ["fonts", "media", "pages", "pic", "thum", "other"]
             names_sz = {"zh": {"fonts": "字体子集", "media": "图片、音视频", "pages": "每页数据", "pic": "整页图", "thum": "缩略图", "other": "其它（入口 HTML 等）"},
                         "en": {"fonts": "font subsets", "media": "images, audio, video", "pages": "per-slide data", "pic": "page images", "thum": "thumbnails", "other": "other (entry HTML etc.)"}}[lang]
-            w("## 产物大小\n" if zh else "## Output size\n")
+            w(f"## 产物大小\n\n统计了 {len(sz)} 份课件。" if zh else f"## Output size\n\n{len(sz)} decks measured. ")
             w(("命令行默认的按需加载形式；观看时只下载看到的那几页（和预加载的下一页），整页图、缩略图是给列表、分享预览用的，播放时不下载。\n") if zh else
               ("Default on-demand form; viewers download only the slides they see (plus the next one preloaded); page images and thumbnails are for lists and previews and are not downloaded during playback.\n"))
             w(("| 部分 | 每份中位数（KB） | 90%（KB） | 占全部 |" if zh else "| Part | Median per deck (KB) | p90 (KB) | Share of total |") + "\n|---|---|---|---|")
