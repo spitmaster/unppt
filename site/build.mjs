@@ -50,10 +50,10 @@ cpSync(join(root, 'packages', 'player', 'dist', 'host.js'), join(out, 'host.js')
 const report = readFileSync(join(root, 'docs', 'zh', 'test-report.md'), 'utf8');
 const num = (re) => (report.match(re) || [])[1];
 writeFileSync(join(out, 'stats.json'), JSON.stringify({
-  decks: num(/\*\*(\d+) 份真实课件/), slides: num(/、(\d+) 页\*\*/), fails: num(/转码失败 (\d+) 份/),
-  ssim: num(/平均 SSIM ([\d.]+)/), p95: num(/\*\*([\d.]+)% 的页 SSIM ≥ 0\.95/), p90: num(/([\d.]+)% 的页 ≥ 0\.90/),
-  tcFiles: num(/合成测试用例 (\d+) 份/), tcSsim: num(/合成测试用例 \d+ 份 \/ \d+ 页：平均 SSIM ([\d.]+)/),
-  sec: num(/每份中位数 ([\d.]+) 秒/),
+  decks: num(/\*\*(\d+) 份真实课件/), slides: num(/、(\d+) 页全部能转换/), fails: num(/失败 (\d+) 份/),
+  ssim: num(/平均相似度 ([\d.]+)/), p95: num(/\*\*([\d.]+)% 的页达到 0\.95/), p90: num(/([\d.]+)% 的页在 0\.90 以上/),
+  tcFiles: num(/测试课件 (\d+) 份/), tcSsim: num(/测试课件 \d+ 份、\d+ 页：平均相似度 ([\d.]+)/),
+  sec: num(/一半的课件 ([\d.]+) 秒内/),
 }, null, 1));
 writeFileSync(join(out, '.nojekyll'), '');
 console.log('演示站 ->', out);
