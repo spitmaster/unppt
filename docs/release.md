@@ -56,6 +56,7 @@ npm view @unppt/fonts@<版本> dist.fileCount --registry https://registry.npmjs.
    **全量效果比对**（0.3.0 因为漏测表格居中被撤回后加的一步）：本机全部有 PowerPoint 参考图的课件，新版和上一个发布版逐页比，
    `python tools/compare/sweep_ab.py run .cache/sweep-ab-<版本> --cli "old=<上一版 dist/cli.js>,--system-fonts" --cli "new=packages/transcoder/dist/cli.js,--system-fonts"`，
    再 `python tools/compare/sweep_ab.py report .cache/sweep-ab-<版本>`；变差的页逐类查清修好、整体偏低的页按原因看过，才往下走；
+   **收尾一条命令**：`python tools/compare/release_gate.py --results .cache/sweep-ab-<版本> --cli <比对用的 cli.js> --base-dir <上一版目录> --base-label <上一版>`——重测失败 / 卡住的课件、和上一版逐页比（变差的页按模板合并）、生成测试报告，结论写进 `gate.txt`。也可以分开做：
    **测试报告**：`python tools/compare/corpus_report.py --results .cache/sweep-ab-<版本> --new new --base-dir .cache/sweep-ab-<版本> --base old --version <版本>`（同一个目录里两个版本都有时，也可以只给 `--results`，用 `--new`、`--base` 指定版本名），生成 `docs/zh/test-report.md`、`docs/en/test-report.md`，随发版提交；报告里只有汇总数字，没有任何单份课件的信息。
 3. 看包里有什么：在 `packages/transcoder` 里执行 `npm pack --dry-run`，应该只有 `dist/`（`cli.js`、`index.js`、`node.js`、`raster-worker.js`、`resvg.wasm`）、`README.md`、`LICENSE`、`THIRD-PARTY-NOTICES.md`、`package.json`；
 4. 发布：在 `packages/transcoder` 里执行 `npm publish --otp=<验证器里的 6 位数字>`；输出里不能有 `warn publish ... auto-corrected`（npm 会悄悄删掉它认为写错的字段，例如 `bin` 路径写成 `./dist/cli.js` 就会被删，命令行装好后用不了）；
