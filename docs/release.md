@@ -58,9 +58,10 @@ npm view @unppt/fonts@<版本> dist.fileCount --registry https://registry.npmjs.
    再 `python tools/compare/sweep_ab.py report .cache/sweep-ab-<版本>`；变差的页逐类查清修好、整体偏低的页按原因看过，才往下走；
    **收尾一条命令**：`python tools/compare/release_gate.py --results .cache/sweep-ab-<版本> --cli <比对用的 cli.js> --base-dir <上一版目录> --base-label <上一版>`——重测失败 / 卡住的课件、和上一版逐页比（变差的页按模板合并）、生成测试报告，结论写进 `gate.txt`。也可以分开做：
    **测试报告**：`python tools/compare/corpus_report.py --results .cache/sweep-ab-<版本> --new new --base-dir .cache/sweep-ab-<版本> --base old --version <版本>`（同一个目录里两个版本都有时，也可以只给 `--results`，用 `--new`、`--base` 指定版本名），生成 `docs/zh/test-report.md`、`docs/en/test-report.md`，随发版提交；报告里只有汇总数字，没有任何单份课件的信息。
-3. 看包里有什么：在 `packages/transcoder` 里执行 `npm pack --dry-run`，应该只有 `dist/`（`cli.js`、`index.js`、`node.js`、`raster-worker.js`、`resvg.wasm`）、`README.md`、`LICENSE`、`THIRD-PARTY-NOTICES.md`、`package.json`；
-4. 发布：在 `packages/transcoder` 里执行 `npm publish --otp=<验证器里的 6 位数字>`；输出里不能有 `warn publish ... auto-corrected`（npm 会悄悄删掉它认为写错的字段，例如 `bin` 路径写成 `./dist/cli.js` 就会被删，命令行装好后用不了）；
-5. 打标签：`git tag v<版本>`，再 `git push origin v<版本>`。
+3. **审视文档**（每次发版都做）：先跑 `python tools/dev/doc_check.py --since <上一版 tag>`（文档里提到的源码文件还在不在、文档链接有没有失效、上一版以来改过哪些源码目录），再对照改过的目录重看设计文档（`docs/architecture.md`，`docs/zh|en/` 下的 `transcoding.md`、`player.md`、`output-format.md`、`embedding.md`）、README、SPEC 和更新日志：过时的说法改掉，新功能、新规则补上，中英文一致；面向使用者的文档不堆术语（第一次出现时解释，业界通用的给链接）。
+4. 看包里有什么：在 `packages/transcoder` 里执行 `npm pack --dry-run`，应该只有 `dist/`（`cli.js`、`index.js`、`node.js`、`raster-worker.js`、`resvg.wasm`）、`README.md`、`LICENSE`、`THIRD-PARTY-NOTICES.md`、`package.json`；
+5. 发布：在 `packages/transcoder` 里执行 `npm publish --otp=<验证器里的 6 位数字>`；输出里不能有 `warn publish ... auto-corrected`（npm 会悄悄删掉它认为写错的字段，例如 `bin` 路径写成 `./dist/cli.js` 就会被删，命令行装好后用不了）；
+6. 打标签：`git tag v<版本>`，再 `git push origin v<版本>`。
 
 命令在 Windows 的 PowerShell 里同样能用（PowerShell 5.1 不支持 `&&`，上面的命令都是一条一条执行的）。
 
