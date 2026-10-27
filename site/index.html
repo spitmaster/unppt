@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="zh-CN" data-lang="zh">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>unppt — PowerPoint 转网页，和 PowerPoint 一模一样 | PPTX to HTML</title>
+<meta name="description" content="unppt 是开源的 PPT 转 HTML 工具：把 .pptx 转成网页（SVG + JSON），用可嵌入的播放器播放，效果对齐 Microsoft PowerPoint，所有观看者看到的一样。Open-source PPTX to HTML converter and web player that looks exactly like PowerPoint.">
+<meta name="keywords" content="PPT转HTML,PPTX转HTML,PPT转网页,网页播放PPT,在线播放PPT,PowerPoint转HTML,pptx to html,ppt to html,powerpoint to html,pptx converter,pptx viewer,web slides player">
+<meta property="og:title" content="unppt — PowerPoint to web, exactly like PowerPoint">
+<meta property="og:description" content="Open-source PPTX to HTML converter + embeddable player. Every viewer sees the same.">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <a class="logo" href="./">un<b>ppt</b></a>
+    <nav>
+      <a href="#demos"><span lang="zh">演示</span><span lang="en">Demos</span></a>
+      <a class="hide-sm" href="#install"><span lang="zh">安装</span><span lang="en">Install</span></a>
+      <a href="https://github.com/spitmaster/unppt">GitHub</a>
+      <a class="hide-sm" href="https://www.npmjs.com/package/@unppt/unppt">npm</a>
+      <button class="lang" type="button"><span lang="zh">English</span><span lang="en">中文</span></button>
+    </nav>
+  </header>
+
+  <div class="hero">
+    <h1 lang="zh">把 PowerPoint 转成网页，<br>看起来和 PowerPoint 一模一样</h1>
+    <h1 lang="en">Turn PowerPoint into a web page<br>that looks exactly like PowerPoint</h1>
+    <p lang="zh">unppt 把 .pptx 转成静态产物（SVG + JSON + 资源），由一个可以嵌进任何网页、可以被外部控制的播放器播放：形状、图表、SmartArt、表格、动画、切换、音视频都在。字体打包进产物，Windows、Mac、手机上所有观看者看到的完全一样。开源，Apache-2.0。</p>
+    <p lang="en">unppt converts .pptx into static output (SVG + JSON + assets) played by an embeddable, scriptable web player — shapes, charts, SmartArt, tables, animations, transitions, audio and video. Fonts are embedded, so every viewer on Windows, Mac or phones sees exactly the same. Open source, Apache-2.0.</p>
+    <a class="btn primary" href="#demos"><span lang="zh">看演示（和 PowerPoint 对照）</span><span lang="en">See demos (side by side with PowerPoint)</span></a>
+    <a class="btn" href="https://github.com/spitmaster/unppt">GitHub</a>
+    <a class="btn" href="https://github.com/spitmaster/unppt/blob/main/docs/zh/test-report.md"><span lang="zh">测试报告</span><span lang="en">Test report</span></a>
+  </div>
+
+  <section id="install">
+    <h2><span lang="zh">安装和使用</span><span lang="en">Install and use</span></h2>
+    <pre>npm install -g @unppt/unppt
+unppt <span lang="zh">课件.pptx</span><span lang="en">slides.pptx</span>      <span lang="zh"># 输出到旁边的同名文件夹，打开里面的 index.html</span><span lang="en"># writes a folder next to it; open its index.html</span></pre>
+    <p lang="zh">需要 Node.js 20.12 以上。也可以在代码里调用 <code>convert()</code>：字节进、文件出，不读写磁盘、不联网，可以直接放进云函数。</p>
+    <p lang="en">Requires Node.js 20.12+. Or call <code>convert()</code> from code: bytes in, files out, no disk or network access — ready for cloud functions.</p>
+  </section>
+
+  <section>
+    <h2><span lang="zh">用 5000 多份真实课件逐页比对</span><span lang="en">Checked slide by slide on 5,000+ real decks</span></h2>
+    <div class="stats" id="stats"></div>
+    <p class="t" style="color:var(--muted);font-size:14px;margin-top:10px">
+      <span lang="zh">每一页都和 Microsoft PowerPoint 导出的图片比较（SSIM：1 表示完全一样）。完整的分项统计见</span>
+      <span lang="en">Every slide is compared with the image Microsoft PowerPoint exports (SSIM: 1 means identical). Full breakdown in the</span>
+      <a href="https://github.com/spitmaster/unppt/blob/main/docs/zh/test-report.md"><span lang="zh">测试报告</span><span lang="en">test report</span></a>.
+    </p>
+  </section>
+
+  <section>
+    <h2><span lang="zh">特点</span><span lang="en">Features</span></h2>
+    <div class="grid">
+      <div class="feature"><h3 lang="zh">效果对齐 PowerPoint</h3><h3 lang="en">Matches PowerPoint</h3>
+        <p lang="zh">换行、行距、图表坐标轴、项目符号……都按 PowerPoint 实测的规则排，排版和原文件一致。</p><p lang="en">Line breaks, spacing, chart axes, bullets… follow rules measured in PowerPoint, so the layout matches.</p></div>
+      <div class="feature"><h3 lang="zh">所有观看者一致</h3><h3 lang="en">Same for every viewer</h3>
+        <p lang="zh">不用观看者电脑上的字体：用到的字做成字体子集打包进产物，直播课里几千个学生看到的完全一样。</p><p lang="en">Never uses viewers' fonts: glyphs are subset and embedded, so thousands of viewers see identical slides.</p></div>
+      <div class="feature"><h3 lang="zh">动画、切换、音视频</h3><h3 lang="en">Animations, transitions, media</h3>
+        <p lang="zh">进入、强调、退出、路径动画，触发器，自动换片，页面切换效果，音视频。</p><p lang="en">Entrance, emphasis, exit and motion-path animations, triggers, auto-advance, slide transitions, audio and video.</p></div>
+      <div class="feature"><h3 lang="zh">可嵌入、可控制</h3><h3 lang="en">Embeddable and scriptable</h3>
+        <p lang="zh">iframe 跨域嵌入，用 postMessage 控制翻页、接收事件；直播课演绎端 / 观看端同步。</p><p lang="en">Embed via iframe across origins, drive it with postMessage and receive events; presenter / viewer sync for live classes.</p></div>
+      <div class="feature"><h3 lang="zh">转码器是纯函数</h3><h3 lang="en">Pure-function transcoder</h3>
+        <p lang="zh">不依赖 Office、LibreOffice 或任何外部程序，不需要原生插件，可以直接放进云函数；1GB 级文件也能小内存转码。</p><p lang="en">No Office, LibreOffice or other external programs, no native add-ons — runs in cloud functions; handles 1 GB files with little memory.</p></div>
+      <div class="feature"><h3 lang="zh">播放器零依赖</h3><h3 lang="en">Zero-dependency player</h3>
+        <p lang="zh">约 58KB（gzip 后约 21KB），按需加载：入口只有几十 KB，看到哪页才加载哪页。</p><p lang="en">About 58 KB (21 KB gzipped), loads on demand: the entry is tens of KB, each slide loads when shown.</p></div>
+    </div>
+  </section>
+
+  <section id="demos">
+    <h2><span lang="zh">演示：左边 PowerPoint，右边 unppt</span><span lang="en">Demos: PowerPoint on the left, unppt on the right</span></h2>
+    <p style="color:var(--muted)"><span lang="zh">这些演示文稿是用 PowerPoint 做的中性测试用例。点开后可以翻页、播放动画，左边同步显示 PowerPoint 导出的同一页。</span><span lang="en">These decks are neutral test cases made in PowerPoint. Open one to page through and play animations; the left side shows PowerPoint's export of the same slide.</span></p>
+    <div class="grid" id="demo-list"></div>
+  </section>
+
+  <footer>
+    unppt · Apache-2.0 · <a href="https://github.com/spitmaster/unppt">GitHub</a> · <a href="https://www.npmjs.com/package/@unppt/unppt">npm</a>
+    · <a href="https://github.com/spitmaster/unppt/blob/main/README.md"><span lang="zh">文档</span><span lang="en">Docs</span></a>
+  </footer>
+</div>
+<script type="module">
+  import { getLang } from './i18n.js';
+  const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
+  const [demos, st] = await Promise.all([fetch('demos.json').then((r) => r.json()), fetch('stats.json').then((r) => r.json()).catch(() => ({}))]);
+  const fmt = (n) => Number(n || 0).toLocaleString('en-US');
+  const stats = [
+    [fmt(st.decks), '份真实课件、' + fmt(st.slides) + ' 页', 'real decks, ' + fmt(st.slides) + ' slides'],
+    [st.fails ?? '0', '份转码失败', 'conversion failures'],
+    [st.ssim, '和 PowerPoint 逐页比的平均 SSIM', 'mean SSIM vs PowerPoint'],
+    [st.p90 + '%', '的页 SSIM ≥ 0.90', 'of slides at SSIM ≥ 0.90'],
+    [st.tcSsim, st.tcFiles + ' 个合成用例的平均 SSIM', 'mean SSIM on ' + st.tcFiles + ' synthetic cases'],
+    [st.sec + ' s', '每份课件转码时间（中位数）', 'median conversion time per deck'],
+  ];
+  document.getElementById('stats').innerHTML = stats.map(([n, zh, en]) =>
+    `<div class="stat"><div class="n">${esc(n)}</div><div class="t"><span lang="zh">${esc(zh)}</span><span lang="en">${esc(en)}</span></div></div>`).join('');
+  document.getElementById('demo-list').innerHTML = demos.map((d) => `
+    <a class="card" href="demo.html?d=${encodeURIComponent(d.name)}">
+      <img loading="lazy" src="demos/${d.name}/ref/slide-001.png" alt="">
+      <div class="b"><strong><span lang="zh">${esc(d.title.zh)}</span><span lang="en">${esc(d.title.en)}</span></strong>
+      <span lang="zh">${esc(d.desc.zh)}（${d.slides} 页）</span><span lang="en">${esc(d.desc.en)} (${d.slides} slides)</span></div>
+    </a>`).join('');
+  void getLang;
+</script>
+</body>
+</html>

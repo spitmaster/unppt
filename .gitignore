@@ -23,3 +23,6 @@ Thumbs.db
 
 # 字体包里的字体文件：发布前由 scripts/fetch-fonts.mjs 按 packages/fonts/fonts.json 下载并校验
 /packages/fonts/files/
+
+# 本机预览服务器配置（路径因机器而异）
+/.claude/launch.json

@@ -11,7 +11,9 @@
   "scripts": {
     "build": "node scripts/build.mjs",
     "test": "node --test \"packages/*/test/*.test.mjs\"",
-    "typecheck": "tsc -p tsconfig.json --noEmit"
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "site": "node site/build.mjs",
+    "site:publish": "node site/publish.mjs"
   },
   "devDependencies": {
     "@cornerstonejs/codec-libjpeg-turbo-8bit": "1.2.8",
