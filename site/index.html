@@ -30,7 +30,7 @@
     <p lang="en">unppt converts .pptx into static output (SVG + JSON + assets) played by an embeddable, scriptable web player — shapes, charts, SmartArt, tables, animations, transitions, audio and video. Fonts are embedded, so every viewer on Windows, Mac or phones sees exactly the same. Open source, Apache-2.0.</p>
     <a class="btn primary" href="#demos"><span lang="zh">看演示（和 PowerPoint 对照）</span><span lang="en">See demos (side by side with PowerPoint)</span></a>
     <a class="btn" href="https://github.com/spitmaster/unppt">GitHub</a>
-    <a class="btn" href="https://github.com/spitmaster/unppt/blob/main/docs/zh/test-report.md"><span lang="zh">测试报告</span><span lang="en">Test report</span></a>
+    <a class="btn" href="https://github.com/spitmaster/unppt/blob/main/docs/en/test-report.md" data-href-zh="https://github.com/spitmaster/unppt/blob/main/docs/zh/test-report.md" data-href-en="https://github.com/spitmaster/unppt/blob/main/docs/en/test-report.md"><span lang="zh">测试报告</span><span lang="en">Test report</span></a>
   </div>
 
   <section id="install">
@@ -47,7 +47,7 @@ unppt <span lang="zh">课件.pptx</span><span lang="en">slides.pptx</span>      
     <p class="t" style="color:var(--muted);font-size:14px;margin-top:10px">
       <span lang="zh">每一页都和 PowerPoint 自己导出的同一页图片比较，算出相似度（0 到 1，1 表示看起来一模一样；用的是图像比较的通用方法 <a href="https://github.com/spitmaster/unppt/blob/main/docs/zh/fidelity.md#ssim">SSIM</a>）。完整的分项统计见</span>
       <span lang="en">Every slide is compared with the image PowerPoint itself exports, giving a similarity score (0 to 1, 1 = looks identical; the standard <a href="https://github.com/spitmaster/unppt/blob/main/docs/en/fidelity.md#ssim">SSIM</a> method). Full breakdown in the</span>
-      <a href="https://github.com/spitmaster/unppt/blob/main/docs/zh/test-report.md"><span lang="zh">测试报告</span><span lang="en">test report</span></a>.
+      <a href="https://github.com/spitmaster/unppt/blob/main/docs/en/test-report.md" data-href-zh="https://github.com/spitmaster/unppt/blob/main/docs/zh/test-report.md" data-href-en="https://github.com/spitmaster/unppt/blob/main/docs/en/test-report.md"><span lang="zh">测试报告</span><span lang="en">test report</span></a>.
     </p>
   </section>
 
@@ -77,11 +77,11 @@ unppt <span lang="zh">课件.pptx</span><span lang="en">slides.pptx</span>      
 
   <footer>
     unppt · Apache-2.0 · <a href="https://github.com/spitmaster/unppt">GitHub</a> · <a href="https://www.npmjs.com/package/@unppt/unppt">npm</a>
-    · <a href="https://github.com/spitmaster/unppt/blob/main/README.md"><span lang="zh">文档</span><span lang="en">Docs</span></a>
+    · <a href="https://github.com/spitmaster/unppt/blob/main/README.md" data-href-zh="https://github.com/spitmaster/unppt/blob/main/README.zh.md" data-href-en="https://github.com/spitmaster/unppt/blob/main/README.md"><span lang="zh">文档</span><span lang="en">Docs</span></a>
   </footer>
 </div>
 <script type="module">
-  import { getLang } from './i18n.js';
+  import { getLang, applyLangLinks } from './i18n.js';
   const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
   const [demos, st] = await Promise.all([fetch('demos.json').then((r) => r.json()), fetch('stats.json').then((r) => r.json()).catch(() => ({}))]);
   const fmt = (n) => Number(n || 0).toLocaleString('en-US');
@@ -96,11 +96,12 @@ unppt <span lang="zh">课件.pptx</span><span lang="en">slides.pptx</span>      
   document.getElementById('stats').innerHTML = stats.map(([n, zh, en]) =>
     `<div class="stat"><div class="n">${esc(n)}</div><div class="t"><span lang="zh">${esc(zh)}</span><span lang="en">${esc(en)}</span></div></div>`).join('');
   document.getElementById('demo-list').innerHTML = demos.map((d) => `
-    <a class="card" href="demo.html?d=${encodeURIComponent(d.name)}">
+    <a class="card" data-demo="${encodeURIComponent(d.name)}">
       <img loading="lazy" src="demos/${d.name}/ref/slide-001.png" alt="">
       <div class="b"><strong><span lang="zh">${esc(d.title.zh)}</span><span lang="en">${esc(d.title.en)}</span></strong>
       <span lang="zh">${esc(d.desc.zh)}（${d.slides} 页）</span><span lang="en">${esc(d.desc.en)} (${d.slides} slides)</span></div>
     </a>`).join('');
+  applyLangLinks();
   void getLang;
 </script>
 </body>

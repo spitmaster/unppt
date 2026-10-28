@@ -24,10 +24,6 @@ cpSync(site, wt, { recursive: true });
 git(['add', '-A'], wt);
 if (!git(['status', '--porcelain'], wt)) { console.log('没有变化'); process.exit(0); }
 const head = git(['rev-parse', '--short', 'HEAD']);
-git(['commit', '-q', '-m', `site: 演示站（源码 ${head}）
-
-Generated with Claude Code
-
-Co-Authored-By: AI-SDLC <aisdlc@radnova.com>`], wt);
+git(['commit', '-q', '-m', `site: 演示站（源码 ${head}）`], wt);
 if (!process.argv.includes('--no-push')) git(['push', '-q', '-u', 'origin', 'gh-pages'], wt);
 console.log('已发布 gh-pages');
