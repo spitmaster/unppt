@@ -1,50 +1,51 @@
 # @unppt/unppt
 
-把 PowerPoint 课件（.pptx）一条命令转成网页：浏览器打开就能播放，动画、页面切换、音视频都保留，效果和 PowerPoint 一致；也能嵌进任何网页或 App，用代码控制翻页。
+[中文说明](https://github.com/spitmaster/unppt/blob/main/README.md)
 
-## 安装
+Convert PowerPoint decks (.pptx) into a web page with one command: open it in a browser and it plays, with animations, transitions, audio and video, looking the same as in PowerPoint. It can also be embedded in any web page or app and driven from code.
 
-需要 Node.js 20.12 或更高版本。
+## Install
+
+Requires Node.js 20.12 or later.
 
 ```bash
 npm install -g @unppt/unppt
 ```
 
-## 使用
+## Usage
 
 ```bash
-unppt 课件.pptx
+unppt slides.pptx
 ```
 
-用浏览器打开生成的 `课件/index.html` 就能播放。
+Open the generated `slides/index.html` in a browser.
 
-更多用法、参数、嵌入网页、在代码里调用 → [docs/zh/usage.md](https://github.com/spitmaster/unppt/blob/main/docs/zh/usage.md)
+More options, embedding, and the JavaScript API → [docs/en/usage.md](https://github.com/spitmaster/unppt/blob/main/docs/en/usage.md)
 
-## 特点
+## Highlights
 
-转码器是纯函数（字节进、文件出，不读写磁盘、不联网、不依赖外部程序和原生插件，可以放进云函数）；产物自带零依赖的播放器，观看只需要浏览器；
-播放时不用观看者电脑上的字体，用到的字做成子集打包进产物，所有观看者看到的一样。
+The transcoder is a pure function (bytes in, files out; no disk or network access, no external programs or native add-ons — it runs in cloud functions). The output carries a zero-dependency player, so viewers only need a browser. Viewers' own fonts are never used: the glyphs needed are subset and embedded, so every viewer sees exactly the same.
 
-## 命令行
+## Command line
 
 ```bash
-unppt 课件.pptx -o out                          # 默认按需加载：入口 HTML + 每页单独的数据文件
-unppt 课件.pptx -o out/index.html --output single # 一个自包含的 HTML
-unppt check 课件.pptx                             # 只检查字体（嵌入的 / 默认字体包的 / 被替代的 / 缺的），不输出文件
-npx @unppt/unppt 课件.pptx                        # 不安装，临时用一次
+unppt slides.pptx -o out                           # default: on-demand loading, an entry HTML plus one data file per slide
+unppt slides.pptx -o out/index.html --output single # one self-contained HTML file
+unppt check slides.pptx                            # check fonts only (embedded / default font pack / substituted / missing), no output
+npx @unppt/unppt slides.pptx                       # run once without installing
 ```
 
-| 选项 | 说明 |
+| Option | Meaning |
 |---|---|
-| `-o, --out <文件>` | 输出文件；`paged` / `pages` 形式下是输出目录 |
-| `--output <形式>` | `paged`（默认，按需加载，看当前页时预加载下一页，适合放到网上）、`single`（一个自包含的 HTML，适合当附件发送）、`pages`（paged 再加每页一个独立的 HTML） |
-| `--fonts <目录>` | 指定字体目录（可写多次）：同名时压过默认字体包，排版和显示都用它，用到的字嵌入产物 |
-| `--system-fonts` | 也用本机系统字体和 Office 字体（0.3.0 起**默认关闭**；用到的字嵌入产物，注意商业字体的分发授权） |
-| `--no-default-fonts` | 不用默认字体包（调试用） |
-| `--no-images` | 不输出整页图 `pic/` 和缩略图 `thum/`（`prop.json` 照常输出） |
-| `--stats` | 结束时显示用时和峰值内存 |
+| `-o, --out <file>` | Output file; the output directory for the `paged` / `pages` forms |
+| `--output <form>` | `paged` (default: loads slides on demand and preloads the next one, good for hosting), `single` (one self-contained HTML, good as an attachment), `pages` (`paged` plus one standalone HTML per slide) |
+| `--fonts <dir>` | Font directory (repeatable): wins over the default font pack for the same name, used for layout and display, glyphs embedded |
+| `--system-fonts` | Also use the machine's system and Office fonts (**off by default** since 0.3.0; glyphs are embedded — mind commercial font licences) |
+| `--no-default-fonts` | Do not use the default font pack (for debugging) |
+| `--no-images` | Skip page images `pic/` and thumbnails `thum/` (`prop.json` is still written) |
+| `--stats` | Print time and peak memory at the end |
 
-## 在代码里调用
+## From code
 
 ```bash
 npm install @unppt/unppt
@@ -52,65 +53,66 @@ npm install @unppt/unppt
 
 ```js
 import { convert } from '@unppt/unppt';
-import { loadFontPack } from '@unppt/unppt/node';   // Node 专用：读已安装的默认字体包
+import { loadFontPack } from '@unppt/unppt/node';   // Node only: reads the installed default font pack
 import { readFile } from 'node:fs/promises';
 
 const result = await convert(pptxBytes, {
   output: 'paged',
-  // 产物文件交给你写：index.html、prop.json、pages/…、media/…、pic/1.jpg、thum/1.jpg……
-  // data 可能是字符串、Uint8Array 或 AsyncIterable<Uint8Array>（数据流要读完，转码才会继续往下走）
-  write: async (path, data) => { /* 写到磁盘、对象存储…… */ },
-  // 默认字体包：不传时没嵌入的字体只能估算字宽、由观看者电脑上的字体显示
+  // you write the output files: index.html, prop.json, pages/…, media/…, pic/1.jpg, thum/1.jpg …
+  // data may be a string, a Uint8Array or an AsyncIterable<Uint8Array> (read streams to the end so conversion can continue)
+  write: async (path, data) => { /* to disk, object storage … */ },
+  // default font pack: without it, fonts that are not embedded can only be estimated and are drawn with the viewer's fonts
   fontPack: await loadFontPack(),
-  fonts: [fontBytes],                                   // 可选：你自己的字体文件内容，同名时压过字体包
-  // 出整页图和缩略图要用 resvg 的 wasm（包里的 dist/resvg.wasm）；不给就只输出 prop.json
+  fonts: [fontBytes],                                   // optional: your own font files, win over the pack for the same name
+  // page images and thumbnails need resvg's wasm (dist/resvg.wasm in the package); without it only prop.json is written
   rasterWasm: readFile(new URL(import.meta.resolve('@unppt/unppt/resvg.wasm'))),
 });
 console.log(result.slides, result.fontCheck, result.report.warnings);
 ```
 
-只检查字体：`checkFonts(pptxBytes, { fontPack })`。
+Fonts only: `checkFonts(pptxBytes, { fontPack })`.
 
-## 字体
+## Fonts
 
-- **产物里的字体只有两个来源**（除非用 `--fonts` / `--system-fonts` 明确指定）：PPT 里嵌入的字体，和默认字体包 `@unppt/fonts` 里的开源字体（SIL OFL 1.1）。字体包随 `@unppt/unppt` 自动安装（下载约 67MB，装好后约 100MB），只在转码的电脑上需要。
-- **排版按原字体，显示用开源字体**：没嵌入的微软雅黑、宋体、Calibri 等按原字体的度量（只有字宽等数字）排版，换行和文字位置和 PowerPoint 一致；显示用对应的开源字体（微软雅黑 → 思源黑体、Calibri → Carlito ……）。字体包也不认识的字体（包括没嵌入的思源黑体、思源宋体）和 PowerPoint 一样找替代字体。
-- **符号字体**（Wingdings 等）不改动字符：Wingdings 1~3 没嵌入时用字体包里编码兼容的开源字体显示成符号；其它符号字体没嵌入时转码报告和 `unppt check` 提示作者在 PowerPoint 里"将字体嵌入文件"。
+- **Fonts in the output come from two sources only** (unless you pass `--fonts` / `--system-fonts`): fonts embedded in the deck, and the open-source fonts of the default font pack `@unppt/fonts` (SIL OFL 1.1). The pack is installed with `@unppt/unppt` (about 67 MB download, about 100 MB installed) and is only needed on the converting machine.
+- **Laid out with the original font, displayed with an open-source font**: Microsoft YaHei, SimSun, Calibri and other fonts that are not embedded are laid out with the original font's metrics (just widths and such numbers), so line breaks and positions match PowerPoint; they are displayed with a matching open-source font (Microsoft YaHei → Noto Sans SC, Calibri → Carlito …). Fonts the pack does not know (including Source Han Sans / Serif when not embedded) are substituted the way PowerPoint does.
+- **Symbol fonts** (Wingdings and others) keep their characters: Wingdings 1–3 that are not embedded are shown with encoding-compatible open-source fonts from the pack; for other symbol fonts the conversion report and `unppt check` ask the author to embed the font in PowerPoint.
 
-大文件不必整个读进内存，传 `{ size, read(offset, length) }` 这样按位置读取的对象即可。
+Large files need not be read into memory: pass an object like `{ size, read(offset, length) }` that reads by position.
 
-## 产物
+## Output
 
-| 文件 | 说明 |
+| File | Contents |
 |---|---|
-| `index.html` | 播放页（自带播放器） |
-| `prop.json` | 页数、画面宽高（磅）、缩略图宽高、每页的整页图 / 缩略图路径、演讲者备注（纯文本，换行是 `\n`）、是否隐藏 |
-| `pic/{n}.jpg`、`thum/{n}.jpg` | 整页图（960 宽）和缩略图（216 宽），页号从 1 开始 |
-| `pages/`、`fonts/`、`media/` | 按需加载形式的每页数据、嵌入字体、图片和音视频 |
+| `index.html` | The player page (player included) |
+| `prop.json` | Slide count, slide size (points), thumbnail size, page-image / thumbnail paths per slide, speaker notes (plain text, `\n` line breaks), hidden flag |
+| `pic/{n}.jpg`, `thum/{n}.jpg` | Page image (960 wide) and thumbnail (216 wide), slides numbered from 1 |
+| `pages/`, `fonts/`, `media/` | Per-slide data, embedded fonts, images and media of the on-demand form |
 
 ```json
 { "count": 2, "picw": 960, "pich": 540, "thumw": 216, "thumh": 122,
-  "slides": [{ "index": 1, "thum": "thum/1.jpg", "pic": "pic/1.jpg", "note": "备注" },
+  "slides": [{ "index": 1, "thum": "thum/1.jpg", "pic": "pic/1.jpg", "note": "notes" },
              { "index": 2, "thum": "thum/2.jpg", "pic": "pic/2.jpg", "hidden": 1 }] }
 ```
 
-## 播放与外部控制
+## Playback and external control
 
-- URL 参数：`slide`、`step` 打开时定位（从 0 开始）；`ui=0` 隐藏自带的翻页按钮；`mode=watch` 观看模式（只接受 JS 控制，点击、键盘不翻页）；`links=0` 不打开课件里的外部链接（外部链接默认在新标签页打开）。
-- 同页 JS：`window.unppt.next()`、`window.unppt.goto({ slide, step })`、`window.unppt.on('change', fn)`；
-- iframe（可跨域）：`postMessage({ unppt: 1, id: 1, cmd: 'goto', args: { slide: 3, step: 0 } }, '*')`，播放器回复 `{ unppt: 1, re: 1, ok: true, result }`，事件 `{ unppt: 1, event: 'ready' | 'change' | 'end' | 'link', data }`。
+- URL parameters: `slide`, `step` to open at a position (0-based); `ui=0` hides the built-in navigation buttons; `mode=watch` viewer mode (JS control only, clicks and keys do not advance); `links=0` does not open the deck's external links (by default they open in a new tab).
+- Same-page JS: `window.unppt.next()`, `window.unppt.goto({ slide, step })`, `window.unppt.on('change', fn)`.
+- iframe (cross-origin): `postMessage({ unppt: 1, id: 1, cmd: 'goto', args: { slide: 3, step: 0 } }, '*')`; the player replies `{ unppt: 1, re: 1, ok: true, result }` and sends events `{ unppt: 1, event: 'ready' | 'change' | 'end' | 'link', data }`.
 
-## 文档 / Documentation
+## Documentation
 
-完整文档（中英文，含架构图、流程图）在 GitHub / Full docs (Chinese & English, with diagrams) on GitHub：
+Full documentation (English and Chinese, with diagrams) on GitHub:
 
-| 中文 | English |
+| English | 中文 |
 |---|---|
-| [快速上手](https://github.com/spitmaster/unppt/blob/main/docs/zh/getting-started.md) | [Getting started](https://github.com/spitmaster/unppt/blob/main/docs/en/getting-started.md) |
-| [命令行与 API](https://github.com/spitmaster/unppt/blob/main/docs/zh/usage.md) | [CLI & API](https://github.com/spitmaster/unppt/blob/main/docs/en/usage.md) |
-| [嵌入与外部控制](https://github.com/spitmaster/unppt/blob/main/docs/zh/embedding.md) | [Embedding & control](https://github.com/spitmaster/unppt/blob/main/docs/en/embedding.md) |
-| [架构设计](https://github.com/spitmaster/unppt/blob/main/docs/zh/architecture.md) | [Architecture](https://github.com/spitmaster/unppt/blob/main/docs/en/architecture.md) |
+| [Getting started](https://github.com/spitmaster/unppt/blob/main/docs/en/getting-started.md) | [快速上手](https://github.com/spitmaster/unppt/blob/main/docs/zh/getting-started.md) |
+| [CLI & API](https://github.com/spitmaster/unppt/blob/main/docs/en/usage.md) | [命令行与 API](https://github.com/spitmaster/unppt/blob/main/docs/zh/usage.md) |
+| [Embedding & control](https://github.com/spitmaster/unppt/blob/main/docs/en/embedding.md) | [嵌入与外部控制](https://github.com/spitmaster/unppt/blob/main/docs/zh/embedding.md) |
+| [Architecture](https://github.com/spitmaster/unppt/blob/main/docs/en/architecture.md) | [架构设计](https://github.com/spitmaster/unppt/blob/main/docs/zh/architecture.md) |
+| [Test report](https://github.com/spitmaster/unppt/blob/main/docs/en/test-report.md) | [测试报告](https://github.com/spitmaster/unppt/blob/main/docs/zh/test-report.md) |
 
-## 许可证
+## License
 
-Apache-2.0。整页图光栅化用到的 resvg（MPL-2.0）见 THIRD-PARTY-NOTICES.md。
+Apache-2.0. resvg (MPL-2.0), used for rasterizing page images, is listed in THIRD-PARTY-NOTICES.md.
