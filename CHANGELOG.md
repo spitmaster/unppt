@@ -1,5 +1,31 @@
 # 更新日志 / Changelog
 
+## 0.3.2（2026-10-28）
+
+**中文**
+
+- 整页图、缩略图：画得比原图小很多的图片（照片、截图、EMF/WMF 里的位图）先平滑缩小，不再出摩尔纹、细线和小字不再断；
+  CMYK 的 JPEG 不再空白或颜色反（播放器里也按 PowerPoint 的规则换算颜色）；图案填充不再偏深。全量课件里 5.3 万页明显变好；
+  代价是转换时间平均多约 10%，含大量图片的课件最多多三成左右。
+- 所有观看者一致：嵌入了字体时字体列表不再写原字体名（缺字时不会退到观看者电脑上的同名字体），空格也进字体子集；
+  播放器舞台对齐到设备像素（不同浏览器、高分屏上不再错开 1 像素、边缘不再有灰缝）。
+- 拱形、圆形、按钮这类沿路径排的艺术字不再按文本框宽度折行，整段沿路径排（和 PowerPoint 一致）。
+- 默认字体包：雅黑 Light 等字体的窄引号不再跑出格子；少数画法和微软字体差太多的符号（雅黑的 √ 是对勾、思源黑体是根号，
+  还有 … ≤ ≥ ○ ● 等）改用画法接近的开源字体显示。
+
+**English**
+
+- Page images and thumbnails: pictures drawn much smaller than their native size are smoothly shrunk first (no moiré, thin lines and small
+  text no longer break up); CMYK JPEGs no longer come out blank or colour-inverted (the player converts them like PowerPoint too); pattern
+  fills are no longer too dark. About 53,000 slides across the test corpus look clearly better; conversion takes about 10% longer on
+  average, up to roughly 30% for picture-heavy decks.
+- Same for every viewer: when a font is embedded the font list no longer names the original font (missing glyphs never fall back to the
+  viewer's font of that name), spaces are included in font subsets, and the player stage snaps to device pixels (no 1-pixel offset between
+  browsers or on high-DPI screens, no grey seam at the edge).
+- WordArt that follows a path (arch, circle, button) is no longer wrapped at the box width; the paragraph follows the path as in PowerPoint.
+- Default font pack: narrow quotes (e.g. Microsoft YaHei Light) no longer spill out of their cell; a few symbols drawn very differently by
+  the open-source font (YaHei's √ is a check mark, Noto's is a radical; also … ≤ ≥ ○ ● and others) use a closer open-source font.
+
 ## 0.3.1（2026-10-27）
 
 **中文**

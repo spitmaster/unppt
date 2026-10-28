@@ -66,7 +66,7 @@ flowchart LR
   index.html?slide=<slide>&step=<step>&ui=0
   ```
 
-  Why `--system-fonts`: the comparison measures whether the **layout rules** are right, so it converts with the same local fonts PowerPoint uses (since 0.3.0 this option is off by default; the comparison tool turns it on explicitly). Regular users get the fonts embedded in the PPT plus the default font pack by default; see the end of [section 8](#8-where-we-are-today-031).
+  Why `--system-fonts`: the comparison measures whether the **layout rules** are right, so it converts with the same local fonts PowerPoint uses (since 0.3.0 this option is off by default; the comparison tool turns it on explicitly). Regular users get the fonts embedded in the PPT plus the default font pack by default; see the end of [section 8](#8-where-we-are-today-032).
 
   `slide` / `step` jump straight to a slide and step (counting from 0); `ui=0` hides the player's own navigation buttons. If the reference is a "static" image (every object shown, animations ignored), `&static=1` is added so the player also shows every object as is.
 - Chromium draws text with **greyscale anti-aliasing** (launch flag `--disable-lcd-text`): PowerPoint's references are greyscale, while Chrome's default sub-pixel anti-aliasing has coloured fringes. We compare layout, not anti-aliasing style.
@@ -283,12 +283,12 @@ The rules in detail:
 
 ---
 
-## 8. Where we are today (0.3.1)
+## 8. Where we are today (0.3.2)
 
 | Test set | Size | Conversion failures | Pass rate (SSIM ≥ 0.95) | Mean SSIM |
 |---|---|---|---|---|
 | Synthetic test cases `testcases/` | 255 decks / 543 pages | 0 | **93.0%** | 0.984 |
-| Real-world decks | 5,212 decks / 168,662 pages | **0** | **70.4%** (93.5% of pages at SSIM ≥ 0.90) | 0.956 |
+| Real-world decks | 5,212 decks / 168,662 pages | **0** | **78.5%** (95.6% of pages at SSIM ≥ 0.90) | 0.965 |
 
 Breakdowns (by content, by the app that saved the deck, conversion speed, output size) are in the [test report](test-report.md).
 

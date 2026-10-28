@@ -1,8 +1,8 @@
 [中文](../zh/test-report.md)
 
-# Test report 0.3.1
+# Test report 0.3.2
 
-> Generated automatically from the full test run (2026-10-27). Totals only — nothing from any individual deck.
+> Generated automatically from the full test run (2026-10-28). Totals only — nothing from any individual deck.
 
 ## How we test
 
@@ -15,10 +15,10 @@ Every deck is converted with unppt, and each resulting slide is compared with **
 ## Results
 
 - **All 5212 real-world decks (168662 slides) convert**; 0 failures.
-- Against PowerPoint, slide by slide: **average similarity 0.956**; **70.4% of slides reach 0.95** (pass), **93.5% are above 0.90**.
-- Against the previous release 0.2.6: **1923 slides now look closer to PowerPoint, 43 look slightly worse** (all small; each cause was investigated), the other 166696 are unchanged.
+- Against PowerPoint, slide by slide: **average similarity 0.965**; **78.5% of slides reach 0.95** (pass), **95.6% are above 0.90**.
+- Against the previous release 0.2.6: **55018 slides now look closer to PowerPoint, 283 look slightly worse** (all small; each cause was investigated), the other 113361 are unchanged.
 - Feature test decks: 255 files, 543 slides, average similarity 0.984, 93.0% reach 0.95.
-- Speed: **half of the decks convert within 8.2 seconds**, typically under 0.4 s per slide (measured with several decks at once at low priority, so real use is faster).
+- Speed: **half of the decks convert within 14.9 seconds**, typically under 0.7 s per slide (measured with several decks at once at low priority, so real use is faster).
 
 ## The decks we test with
 
@@ -42,14 +42,14 @@ Real-world decks from a courseware library, tested locally and never uploaded. 9
 
 | Similarity | Slides | Share |
 |---|---|---|
-| below 0.80 | 1476 | 0.9% |
-| 0.80 ~ 0.85 | 1882 | 1.1% |
-| 0.85 ~ 0.90 | 7621 | 4.5% |
-| 0.90 ~ 0.95 | 38908 | 23.1% |
-| 0.95 ~ 0.98 | 68453 | 40.6% |
-| 0.98 or more | 50254 | 29.8% |
+| below 0.80 | 789 | 0.5% |
+| 0.80 ~ 0.85 | 1304 | 0.8% |
+| 0.85 ~ 0.90 | 5247 | 3.1% |
+| 0.90 ~ 0.95 | 28918 | 17.1% |
+| 0.95 ~ 0.98 | 63037 | 37.4% |
+| 0.98 or more | 69367 | 41.1% |
 
-Put another way: the worst 5% of slides score below 0.890, the worst 10% below 0.914, and half score above 0.967.
+Put another way: the worst 5% of slides score below 0.905, the worst 10% below 0.926, and half score above 0.975.
 
 ## How slides with different content do
 
@@ -57,41 +57,41 @@ A slide can contain several kinds of content and is counted in each row. The las
 
 | Slides with | Slides | Average similarity | Reach 0.95 | Above 0.90 | 0.2.6 |
 |---|---|---|---|---|---|
-| pictures | 106263 | 0.957 | 70.3% | 94.3% | 0.956 |
-| animations | 65040 | 0.953 | 69.0% | 92.4% | 0.953 |
-| transitions | 61533 | 0.958 | 71.6% | 94.8% | 0.958 |
-| groups | 59397 | 0.953 | 67.5% | 94.0% | 0.953 |
-| shadows | 33007 | 0.953 | 66.9% | 93.1% | 0.953 |
-| freeform shapes | 32460 | 0.955 | 69.4% | 94.7% | 0.955 |
-| text autofit | 27293 | 0.951 | 62.5% | 91.8% | 0.951 |
-| gradient fills | 17726 | 0.949 | 65.2% | 93.3% | 0.948 |
-| tables | 11856 | 0.933 | 38.2% | 84.2% | 0.932 |
-| none of these | 9353 | 0.968 | 84.7% | 96.2% | 0.968 |
-| 3-D effects | 8585 | 0.947 | 57.9% | 90.7% | 0.947 |
-| EMF/WMF pictures | 7674 | 0.943 | 52.0% | 87.3% | 0.943 |
-| SmartArt | 3627 | 0.917 | 40.2% | 73.4% | 0.917 |
-| charts | 3266 | 0.878 | 10.9% | 43.1% | 0.878 |
-| vertical text | 3063 | 0.950 | 63.1% | 91.8% | 0.950 |
-| SVG pictures | 2403 | 0.955 | 67.9% | 94.7% | 0.955 |
-| OLE objects | 2373 | 0.941 | 48.9% | 86.6% | 0.940 |
-| glow | 1164 | 0.947 | 60.7% | 90.9% | 0.947 |
-| pattern fills | 1087 | 0.916 | 36.2% | 68.7% | 0.915 |
-| audio/video | 909 | 0.967 | 84.2% | 96.6% | 0.967 |
-| WordArt warps | 881 | 0.962 | 76.0% | 95.6% | 0.962 |
-| equations | 49 | 0.917 | 32.7% | 69.4% | 0.917 |
+| pictures | 106263 | 0.968 | 81.9% | 97.1% | 0.956 |
+| animations | 65040 | 0.963 | 76.5% | 95.0% | 0.953 |
+| transitions | 61533 | 0.966 | 79.8% | 96.6% | 0.958 |
+| groups | 59397 | 0.963 | 76.4% | 96.3% | 0.953 |
+| shadows | 33007 | 0.962 | 76.2% | 95.6% | 0.953 |
+| freeform shapes | 32460 | 0.963 | 76.3% | 96.5% | 0.955 |
+| text autofit | 27293 | 0.959 | 70.6% | 94.4% | 0.951 |
+| gradient fills | 17726 | 0.961 | 73.7% | 95.4% | 0.948 |
+| tables | 11856 | 0.937 | 42.4% | 86.3% | 0.932 |
+| none of these | 9353 | 0.975 | 87.2% | 97.3% | 0.968 |
+| 3-D effects | 8585 | 0.956 | 66.5% | 93.6% | 0.947 |
+| EMF/WMF pictures | 7674 | 0.951 | 60.6% | 90.5% | 0.943 |
+| SmartArt | 3627 | 0.922 | 43.7% | 75.0% | 0.917 |
+| charts | 3266 | 0.883 | 12.4% | 45.9% | 0.878 |
+| vertical text | 3063 | 0.957 | 70.5% | 94.1% | 0.950 |
+| SVG pictures | 2403 | 0.961 | 76.3% | 96.3% | 0.955 |
+| OLE objects | 2373 | 0.948 | 58.1% | 89.2% | 0.940 |
+| glow | 1164 | 0.958 | 75.7% | 93.0% | 0.947 |
+| pattern fills | 1087 | 0.941 | 55.9% | 86.8% | 0.915 |
+| audio/video | 909 | 0.973 | 89.7% | 97.7% | 0.967 |
+| WordArt warps | 881 | 0.968 | 79.7% | 96.3% | 0.962 |
+| equations | 49 | 0.924 | 32.7% | 79.6% | 0.917 |
 
 ## By authoring app and slide ratio
 
 | Group | Slides | Average similarity | Reach 0.95 |
 |---|---|---|---|
-| PowerPoint (Windows) | 104809 | 0.954 | 67.8% |
-| WPS | 49561 | 0.959 | 74.5% |
-| PowerPoint (Mac) | 13460 | 0.963 | 75.0% |
-| other | 832 | 0.951 | 70.4% |
-| ratio 16:9 | 152044 | 0.955 | 69.5% |
-| ratio 4:3 | 12696 | 0.965 | 81.3% |
-| ratio other | 3368 | 0.954 | 66.1% |
-| ratio 16:10 | 554 | 0.968 | 82.1% |
+| PowerPoint (Windows) | 104809 | 0.963 | 75.9% |
+| WPS | 49561 | 0.969 | 82.8% |
+| PowerPoint (Mac) | 13460 | 0.970 | 82.6% |
+| other | 832 | 0.957 | 77.5% |
+| ratio 16:9 | 152044 | 0.965 | 78.0% |
+| ratio 4:3 | 12696 | 0.970 | 86.0% |
+| ratio other | 3368 | 0.959 | 73.7% |
+| ratio 16:10 | 554 | 0.973 | 84.3% |
 
 ## Conversion speed
 
@@ -99,8 +99,8 @@ Each deck converted once (including page images, thumbnails and fonts), several 
 
 | | Half | 90% | 99% | Slowest |
 |---|---|---|---|---|
-| Per deck (seconds) | 8.2 | 24.7 | 52.7 | 660.4 |
-| Per slide (seconds) | 0.38 | 1.01 | 2.69 | 44.0 |
+| Per deck (seconds) | 14.9 | 39.9 | 79.2 | 729.1 |
+| Per slide (seconds) | 0.67 | 1.76 | 5.22 | 48.6 |
 
 ## How big the output is
 
@@ -109,13 +109,13 @@ Viewers only download the slide they are on and the next one; page images and th
 
 | Part | Half of decks under (KB) | 90% of decks under (KB) | Share of total |
 |---|---|---|---|
-| fonts | 344 | 818 | 2.1% |
-| images, audio, video | 6234 | 34946 | 78.9% |
-| slide content | 298 | 1275 | 2.9% |
-| page images (for lists and previews) | 1796 | 5741 | 14.3% |
-| thumbnails | 184 | 544 | 1.4% |
+| fonts | 345 | 820 | 2.2% |
+| images, audio, video | 6038 | 34740 | 79.4% |
+| slide content | 288 | 1238 | 2.9% |
+| page images (for lists and previews) | 1689 | 5454 | 13.8% |
+| thumbnails | 183 | 542 | 1.4% |
 | other (entry page etc.) | 63 | 73 | 0.4% |
-| Total | 9641 | 41962 | 100% |
+| Total | 9429 | 41301 | 100% |
 
 ## Feature test decks
 

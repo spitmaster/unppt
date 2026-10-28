@@ -109,7 +109,7 @@ npm install -g ./unppt-fonts.tgz ./unppt.tgz
 
 On macOS / Linux, if you get a permission error (`EACCES` / `permission denied`), change the last line to `sudo npm install -g ./unppt-fonts.tgz ./unppt.tgz` and enter your login password.
 
-For a specific version, replace `latest/download/` with something like `download/v0.3.1/` (0.2.x releases have no font pack; download only `unppt.tgz`). Run `unppt -v` afterwards to check the version.
+For a specific version, replace `latest/download/` with something like `download/v0.3.2/` (0.2.x releases have no font pack; download only `unppt.tgz`). Run `unppt -v` afterwards to check the version.
 
 > Running `unppt` with no arguments prints the version and all options.
 
@@ -541,7 +541,7 @@ During development unppt compares every slide automatically against images expor
 | Test set | Size | Pass rate (SSIM ≥ 0.95) | Mean SSIM |
 |---|---|---|---|
 | Synthetic test cases | 255 decks / 543 slides | 93.0% | 0.984 |
-| Real-world decks | 5212 decks / 168662 slides, 0 conversion failures | 70.4% (93.5% of slides at SSIM ≥ 0.90) | 0.956 |
+| Real-world decks | 5212 decks / 168662 slides, 0 conversion failures | 78.5% (95.6% of slides at SSIM ≥ 0.90) | 0.965 |
 
 These numbers are measured with `--system-fonts` (the same fonts PowerPoint uses), so they measure whether the layout rules are right. With the default font pack, line breaks and text positions stay the same and only glyph shapes change to the open-source fonts; on the synthetic test cases the mean SSIM is about 0.024 lower per slide, purely from glyph shapes.
 

@@ -104,14 +104,14 @@ Key design decisions (the full picture is in [Architecture](docs/en/architecture
 
 ## Status and accuracy
 
-Current version: **0.3.1**. Full breakdown in the [test report](docs/en/test-report.md).
+Current version: **0.3.2**. Full breakdown in the [test report](docs/en/test-report.md).
 
 How we measure "looks the same": every slide unppt produces is compared with the image PowerPoint itself exports for that slide, giving a **similarity score** (0 to 1, **1 = looks identical**). **A slide passes at 0.95 or more**; the remaining differences are usually details like text a pixel or two off. The score is SSIM, a standard image-comparison method; see [Fidelity](docs/en/fidelity.md#ssim) for exactly how it is computed.
 
 | Decks tested | Size | Failures | Slides passing (≥ 0.95) | Average similarity |
 |---|---|---|---|---|
 | Feature test decks (`testcases/`) | 255 decks / 543 pages | 0 | 93.0% | 0.984 |
-| Real-world decks | 5212 decks / 168662 slides | 0 | 70.4% (93.5% above 0.90) | 0.956 |
+| Real-world decks | 5212 decks / 168662 slides | 0 | 78.5% (95.6% above 0.90) | 0.965 |
 
 Most failing pages differ only in details (text a few pixels off, one chart label in a different place) and look the same at a glance. **Line wrapping** is also compared line by line: across 991 real decks, 99.8% of about 40,000 multi-line text boxes and 99.9% of 6,051 multi-line table cells break exactly like PowerPoint. All 5,212 real decks (about 169,000 slides) convert with no failures.
 

@@ -249,7 +249,7 @@ These cases still differ visibly from PowerPoint:
 | 3D | 3D bevel under 180-degree rotation |
 | Chart category labels | truncation threshold of 45-degree labels |
 
-Overall fidelity (0.3.1): 93.0% of synthetic test pages and 70.4% of the pages of 5212 real-world decks reach SSIM ≥ 0.95 (93.5% reach 0.90); most of the rest differ only by a few pixels. Full numbers: [test report](test-report.md); how this is measured: [Fidelity](fidelity.md).
+Overall fidelity (0.3.2): 93.0% of synthetic test pages and 78.5% of the pages of 5212 real-world decks reach SSIM ≥ 0.95 (95.6% reach 0.90); most of the rest differ only by a few pixels. Full numbers: [test report](test-report.md); how this is measured: [Fidelity](fidelity.md).
 
 ---
 
@@ -303,7 +303,7 @@ Please include in the issue:
 
 ## Versioning
 
-- The current version is **0.3.1**; the npm package is `@unppt/unppt` and needs Node.js 20.12 or later;
+- The current version is **0.3.2**; the npm package is `@unppt/unppt` and needs Node.js 20.12 or later;
 - versions have the form "major.minor.patch". 0.x means early stage: interfaces and options may change between versions, so read the release notes on GitHub before upgrading;
 - every release has a matching tag on GitHub (in the form `v0.1.0`); a version number is published to npm only once;
 - to pin a version: `npm install @unppt/unppt@0.3.1`, or `npx @unppt/unppt@0.3.1 ...`; to see the latest version on npm: `npm view @unppt/unppt version`;

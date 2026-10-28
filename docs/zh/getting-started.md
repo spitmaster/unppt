@@ -109,7 +109,7 @@ npm install -g ./unppt-fonts.tgz ./unppt.tgz
 
 macOS / Linux 提示权限不足（`EACCES` / `permission denied`）时，最后一行改成 `sudo npm install -g ./unppt-fonts.tgz ./unppt.tgz`，按提示输入电脑登录密码。
 
-想装指定版本，把网址里的 `latest/download/` 换成 `download/v0.3.1/` 这样的格式（0.2.x 版本没有字体包，只下载 `unppt.tgz` 一个文件）。装好后运行 `unppt -v` 看版本号。
+想装指定版本，把网址里的 `latest/download/` 换成 `download/v0.3.2/` 这样的格式（0.2.x 版本没有字体包，只下载 `unppt.tgz` 一个文件）。装好后运行 `unppt -v` 看版本号。
 
 > 不带参数运行 `unppt`，会打印版本号和全部选项。
 
@@ -536,7 +536,7 @@ unppt demo.pptx -o out --system-fonts
 | 测试集 | 规模 | 通过率（SSIM ≥ 0.95） | 平均 SSIM |
 |---|---|---|---|
 | 合成测试用例 | 255 份 / 543 页 | 93.0% | 0.984 |
-| 真实课件 | 5212 份 / 168662 页，0 份转码失败 | 70.4%（93.5% 的页 SSIM ≥ 0.90） | 0.956 |
+| 真实课件 | 5212 份 / 168662 页，0 份转码失败 | 78.5%（95.6% 的页 SSIM ≥ 0.90） | 0.965 |
 
 上表是用 `--system-fonts`（和 PowerPoint 用同一套字体）转码测出来的，衡量的是排版规则对不对。默认用字体包时换行和文字位置不变，只是字形换成了开源字体，合成用例平均每页 SSIM 约低 0.024，全部来自字形差别。
 
