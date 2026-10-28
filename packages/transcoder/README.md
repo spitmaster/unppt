@@ -1,6 +1,6 @@
 # @unppt/unppt
 
-[中文说明](https://github.com/spitmaster/unppt/blob/main/README.md)
+[中文说明](https://github.com/spitmaster/unppt/blob/main/README.zh.md)
 
 Convert PowerPoint decks (.pptx) into a web page with one command: open it in a browser and it plays, with animations, transitions, audio and video, looking the same as in PowerPoint. It can also be embedded in any web page or app and driven from code.
 
