@@ -240,6 +240,8 @@ Key points:
 
 ### 5.1 Stage and scaling
 
+> The stage offset is snapped to **device pixels** (`offset × devicePixelRatio` is an integer): on a half pixel Chromium draws a grey seam along the slide edge and browsers end up one device pixel apart. When the device pixel ratio changes (window moved to another screen, browser zoom) the player refits.
+
 The player's DOM looks like this:
 
 ```text
