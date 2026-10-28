@@ -1,141 +1,141 @@
-[English](README.en.md) | 中文
+**English** | [简体中文](README.zh.md)
 
 # unppt
 
-把 PowerPoint 课件（.pptx）一条命令转成网页：浏览器打开就能播放，动画、页面切换、音视频都保留，效果和 PowerPoint 一致；也能嵌进任何网页或 App，用代码控制翻页。
+Convert PowerPoint decks (.pptx) into web pages with one command: open in a browser to play, with animations, transitions, audio and video kept and the look matching PowerPoint; embed them in any web page or app and control them from code.
 
 [![npm](https://img.shields.io/npm/v/@unppt/unppt)](https://www.npmjs.com/package/@unppt/unppt)
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue)](LICENSE)
 
-## 安装
+## Install
 
-需要 [Node.js](https://nodejs.org/) 20.12 或更高版本。
+Requires [Node.js](https://nodejs.org/) 20.12 or later.
 
 ```bash
 npm install -g @unppt/unppt
 ```
 
-## 使用
+## Usage
 
 ```bash
-unppt 课件.pptx
+unppt deck.pptx
 ```
 
-用浏览器打开生成的 `课件/index.html` 就能播放。
+Open the generated `deck/index.html` in a browser to play it.
 
-更多用法、参数、嵌入网页、在代码里调用 → [docs/zh/usage.md](docs/zh/usage.md)
+More usage, options, embedding in web pages, calling it from code → [docs/en/usage.md](docs/en/usage.md)
 
-## 特点
+## Features
 
-从 .pptx 到播放：
+From .pptx to playback:
 
 ```mermaid
 flowchart LR
-    A["演示文稿.pptx"] --> B["转码器<br/>(Node / 云函数)"]
-    B --> C["产物文件<br/>index.html + media/ + prop.json<br/>+ pic/ thum/ 整页图和缩略图"]
-    C --> D["播放器<br/>(内嵌在 index.html 里)"]
-    D --> E["浏览器直接打开"]
-    D --> F["iframe 嵌入任意网页"]
-    D --> G["宿主网页 / 原生 App<br/>用 JS 控制翻页"]
+    A["presentation.pptx"] --> B["Transcoder<br/>(Node / cloud function)"]
+    B --> C["Output files<br/>index.html + media/ + prop.json<br/>+ pic/ thum/ slide images and thumbnails"]
+    C --> D["Player<br/>(embedded in index.html)"]
+    D --> E["Open directly in a browser"]
+    D --> F["Embed in any page via iframe"]
+    D --> G["Host page / native app<br/>controls it with JS"]
 ```
 
-> 名词：**SVG** 是浏览器能直接显示的矢量图格式，放大不糊；**iframe** 是网页里嵌入另一个网页的标签；**转码器**指把 .pptx 变成网页文件的那段程序，**播放器**指在浏览器里把这些文件放出来的那段 JS。
+> Terms: **SVG** is a vector image format that browsers display natively and that stays sharp when zoomed; an **iframe** is the HTML tag that embeds one web page inside another; the **transcoder** is the program that turns a .pptx into web files, and the **player** is the JS that plays those files in the browser.
 
-- **效果对齐 PowerPoint**：开发时用 Microsoft PowerPoint 导出的图片作"标准答案"，逐页自动比对打分（见下面的「现状和准确度」）。
-- **打开快、适合在线看**：命令行默认输出按需加载的形式（不写 `-o` 时放进 pptx 旁边新建的同名文件夹，例如 `演示文稿/index.html`）：入口 HTML 只有几十 KB，每页的数据和图片看到那一页才加载、并预加载下一页；本地双击、静态服务器、CDN 都能用。也可以用 `--output single` 输出一个自包含的 HTML 文件，方便当附件发送。
-- **动画和切换**：进入、退出、强调、路径动画，触发器，自动换片计时，页面切换效果，音视频。
-- **可嵌入、可控制**：iframe 跨域嵌入；用 `postMessage`（浏览器里不同网页之间发消息的标准方法）、同页 `window.unppt`、原生 App 的 WebView 三种方式控制翻页，并接收翻页、播放结束等事件。
-- **直播课同步**：演绎端 / 观看端两种模式，观看端用 `sync` 指令跟上老师的进度（见 [examples/live-class.html](examples/live-class.html)）。
-- **转码器是纯函数**：字节进、文件出，不读写磁盘、不联网，不依赖外部程序和原生插件（整页图、缩略图用打包在内的 resvg WASM），可以直接放进云函数。
-- **大文件小内存**：按位置读取输入文件，1GB 级的文件也能在小内存下转码。
-- **播放器零依赖**：约 58KB（gzip 后约 21KB），支持 Chrome、Firefox、移动端 WebView。
-- **多种产物形式**：按需加载（命令行的默认，每页单独一个数据文件）、单文件 HTML（`convert()` 的默认）、每页再加一个 HTML。
+- **Matches PowerPoint**: during development, images exported by a local copy of PowerPoint are the "answer key"; every page is compared and scored automatically (see "Status and accuracy" below).
+- **Fast to open, made for online viewing**: the CLI writes the on-demand form by default (without `-o` it goes into a new folder named after the .pptx, e.g. `deck/index.html`): the entry HTML is only tens of KB and each slide's data and images load when that slide is shown, with the next one preloaded; works from a local double-click, any static server or a CDN. `--output single` gives one self-contained HTML file for sending as an attachment.
+- **Animations and transitions**: entrance, exit, emphasis and motion-path animations, triggers, automatic advance timings, slide transitions, audio and video.
+- **Embeddable and controllable**: cross-origin iframe embedding; control it via `postMessage` (the standard browser way for different pages to message each other), the same-page `window.unppt` object, or a native app's WebView, and receive events such as slide changes and end of show.
+- **Live-class sync**: presenter and watch modes; the watch side follows the teacher with the `sync` command (see [examples/live-class.html](examples/live-class.html)).
+- **The transcoder is a pure function**: bytes in, files out; it does not touch the disk or the network and needs no external programs or native add-ons (slide images and thumbnails use the bundled resvg WASM), so it runs in cloud functions as is.
+- **Big files, little memory**: the input is read by position, so 1 GB-class files convert with little memory.
+- **Zero-dependency player**: about 58 KB (about 21 KB gzipped); supports Chrome, Firefox and mobile WebViews.
+- **Several output forms**: on-demand loading (the CLI default, one data file per slide), a single HTML file (the `convert()` default), or on-demand loading plus one HTML per slide.
 
-## 效果对比
+## Side-by-side comparison
 
-下面每张图**左边是 Microsoft PowerPoint，右边是 unppt**（内容是用 PowerPoint 合成的中性测试用例）。
+In each image below **Microsoft PowerPoint is on the left and unppt on the right** (the content is a neutral test case made with PowerPoint).
 
-| 图表 | SmartArt |
+| Charts | SmartArt |
 |---|---|
-| ![图表对比](docs/images/compare-charts-basic.png) | ![SmartArt 对比](docs/images/compare-smartart.png) |
-| **文字效果** | **三维形状** |
-| ![文字效果对比](docs/images/compare-text-effects.png) | ![三维形状对比](docs/images/compare-shapes-3d.png) |
+| ![Charts comparison](docs/images/compare-charts-basic.png) | ![SmartArt comparison](docs/images/compare-smartart.png) |
+| **Text effects** | **3D shapes** |
+| ![Text effects comparison](docs/images/compare-text-effects.png) | ![3D shapes comparison](docs/images/compare-shapes-3d.png) |
 
-更多对比图：[表格样式](docs/images/compare-table-styles.png)、[图表数据标签](docs/images/compare-charts-point-labels.png)、[全部形状](docs/images/compare-shapes-all.png)。
+More: [table styles](docs/images/compare-table-styles.png), [chart data labels](docs/images/compare-charts-point-labels.png), [all shapes](docs/images/compare-shapes-all.png).
 
-播放器界面（点击、方向键、空格、触屏左右滑动都能翻页）：
+The player (click, arrow keys, space bar or swipe left/right to move on):
 
-![播放器](docs/images/player.png)
+![Player](docs/images/player.png)
 
-## 实现思路
+## How it works
 
-**一句话：能在转码时算好的，都在转码时算好；播放器只管显示和播放。** PowerPoint 的继承、排版、图表、动画规则都在转码器里按实测结果算完：每页变成一段矢量 SVG（每个字的位置都已排定），动画变成"每次点击做哪些动作"的数据。转码器和播放器只通过[产物格式](docs/zh/output-format.md)联系，可以各自部署、各自升级。
+**In one sentence: everything that can be computed at conversion time is computed at conversion time; the player only displays and plays.** PowerPoint's inheritance, text layout, chart and animation rules are all worked out in the transcoder from measured behaviour: each slide becomes a vector SVG (with every character already positioned) and animations become "what happens on each click" data. The transcoder and the player talk only through the [output format](docs/en/output-format.md), so they can be deployed and upgraded independently.
 
 ```mermaid
 flowchart LR
-  A["入口<br/>unppt 命令 / convert()"] --> B["① 读取<br/>io/"] --> C["② 文档模型<br/>model/"] --> D["③ 字体库<br/>font/"]
-  subgraph E["④ 逐页流水线（一页处理完就写出、释放内存）"]
+  A["Entry<br/>unppt CLI / convert()"] --> B["① Read<br/>io/"] --> C["② Document model<br/>model/"] --> D["③ Font library<br/>font/"]
+  subgraph E["④ Per-slide pipeline (one slide at a time)"]
     direction TB
-    E1["渲染成 SVG<br/>render/ text/ chart/ …"] --> E2["编译动画和切换<br/>anim/"] --> E3["图片、整页图<br/>media/ preview/"]
+    E1["Render to SVG<br/>render/ text/ chart/ …"] --> E2["Compile animations and transitions<br/>anim/"] --> E3["Images, slide images<br/>media/ preview/"]
   end
   D --> E
-  E --> F["⑤ 写出产物<br/>output/"] --> G["⑥ 播放器<br/>浏览器 / iframe / App"]
+  E --> F["⑤ Write the output<br/>output/"] --> G["⑥ Player<br/>browser / iframe / app"]
 ```
 
-| 步骤 | 为什么需要它 | 它做什么 | 详细 |
+| Step | Why it exists | What it does | Details |
 |---|---|---|---|
-| 入口 `cli.ts` / `convert()` | 命令行、服务器、云函数共用同一个纯函数 | 输入是字节或"按位置读取"的对象，输出全部交给 `write` 回调；转码器自己不碰磁盘、不联网 | [转码原理 3–4](docs/zh/transcoding.md#3-一次转码的全过程总览) |
-| ① 读取 `io/` | .pptx 是装满 XML 的 ZIP 包，文件可能上 GB | 只读 ZIP 目录，用到哪个部件才解压哪个；音视频从 ZIP 流式写出，不进内存 | [5](docs/zh/transcoding.md#5-第-2-步按需读取-zip-和-xml) |
-| ② 文档模型 `model/` | 一个形状的颜色、字体、位置可能写在主题、母版、版式、幻灯片任何一层 | 建主题 → 母版 → 版式 → 幻灯片的继承链，按 PowerPoint 的规则合并占位符、颜色、文字样式 | [6](docs/zh/transcoding.md#6-第-3-步演示文稿模型-presentation) |
-| ③ 字体库 `font/` | 换行位置由字宽决定，观看者电脑上又没有这些字体 | 嵌入字体 > 指定字体 > 默认字体包；排版用原字体的度量，显示用开源字体 | [11](docs/zh/transcoding.md#11-字体查找替代嵌入和子集化) |
-| ④ 渲染 `render/` 等 | 浏览器不认识 PowerPoint 的形状、效果、图表，也排不出一样的换行 | 预设形状、填充线条、阴影发光、三维、表格、图表、SmartArt 画成 SVG；文字按 PowerPoint 实测规则断行，每个字的坐标写死 | [7–9](docs/zh/transcoding.md#7-第-4-步逐页渲染成-svg) |
-| ④ 动画 `anim/` | PowerPoint 的动画是一棵很深的时间树，不该让播放器去理解 | 编译成"每次点击做哪些动作"，PowerPoint 原始的关键帧和公式原样带上 | [10](docs/zh/transcoding.md#10-动画和页面切换) |
-| ④ 媒体和出图 `media/` `preview/` | EMF / WMF / TIFF 浏览器不认；列表页、分享要预览图 | 图片转换、去重；用 resvg（WASM）把每页画成整页图和缩略图 | [12–13](docs/zh/transcoding.md#12-图片音视频) |
-| ⑤ 写出 `output/` | 有人要一个文件当附件，有人要放 CDN 按需加载 | 只把用到的字做成字体子集（HarfBuzz WASM），按产物形式写出 HTML、每页数据、`prop.json` | [14](docs/zh/transcoding.md#14-写出产物四种产物形式) |
-| ⑥ 播放器 `packages/player` | 产物要能嵌进任何网页和 App | 零依赖：显示 SVG、翻页、播动画和切换，响应宿主的指令 | [播放器原理](docs/zh/player.md) |
+| Entry `cli.ts` / `convert()` | The CLI, servers and cloud functions share one pure function | Input is bytes or a "read at offset" object; all output goes to a `write` callback; the transcoder itself never touches the disk or the network | [Transcoding 3–4](docs/en/transcoding.md#3-one-conversion-end-to-end-overview) |
+| ① Read `io/` | A .pptx is a ZIP full of XML, possibly gigabytes in size | Reads only the ZIP directory and inflates a part when it is needed; audio and video stream straight from the ZIP, never held in memory | [5](docs/en/transcoding.md#5-step-2-reading-the-zip-and-xml-lazily) |
+| ② Document model `model/` | A shape's colour, font or position may come from the theme, master, layout or slide | Builds the theme → master → layout → slide inheritance chain and merges placeholders, colours and text styles the way PowerPoint does | [6](docs/en/transcoding.md#6-step-3-the-presentation-model) |
+| ③ Font library `font/` | Line breaks depend on character widths, and viewers do not have these fonts | Embedded fonts > explicit fonts > default font pack; layout uses the original font's metrics, display uses an open-source font | [11](docs/en/transcoding.md#11-fonts-lookup-substitution-embedding-and-subsetting) |
+| ④ Render `render/` etc. | Browsers know nothing about PowerPoint shapes, effects or charts and cannot reproduce its line breaks | Draws preset shapes, fills and lines, shadows and glow, 3D, tables, charts and SmartArt as SVG; breaks text by PowerPoint's measured rules and fixes every character's position | [7–9](docs/en/transcoding.md#7-step-4-rendering-each-slide-to-svg) |
+| ④ Animations `anim/` | PowerPoint animations are a deep timing tree the player should not have to understand | Compiles them into "what happens on each click", carrying PowerPoint's original keyframes and formulas along | [10](docs/en/transcoding.md#10-animations-and-transitions) |
+| ④ Media and slide images `media/` `preview/` | Browsers cannot show EMF / WMF / TIFF; listings and sharing need previews | Converts and de-duplicates images; draws each slide as a full image and a thumbnail with resvg (WASM) | [12–13](docs/en/transcoding.md#12-images-audio-and-video) |
+| ⑤ Write `output/` | Some want one file to attach, others want on-demand loading from a CDN | Subsets fonts to the characters used (HarfBuzz WASM) and writes the HTML, per-slide data and `prop.json` for the chosen output form | [14](docs/en/transcoding.md#14-writing-the-output-four-output-forms) |
+| ⑥ Player `packages/player` | The output must embed in any web page or app | Zero dependencies: shows the SVG, pages, plays animations and transitions, responds to the host's commands | [How the player works](docs/en/player.md) |
 
-几个关键的设计决定（全貌见 [架构入门](docs/zh/architecture.md)）：
+Key design decisions (the full picture is in [Architecture](docs/en/architecture.md)):
 
-- **排版自己做，不交给浏览器**：浏览器的换行、字宽和 PowerPoint 不一样，不同浏览器之间也不一样。断行规则（标点禁则、悬挂、破折号、制表位……）都是先用 PowerPoint 实测、再实现，记在 [SPEC 第 7 节](SPEC.md#7-实测得到的-powerpoint-规则用-make-case-用例校准)。
-- **排版和显示分开用字体**：没嵌入的微软雅黑、Calibri 等，按原字体的度量（只有字宽等数字，没有字形）排版，换行和 PowerPoint 一样；字形用对应的开源字体，观看的人不用装字体，也不分发商业字体（见下面的「字体」）。
-- **纯函数、流式处理**：字节进、文件出，不依赖外部程序和原生插件，所以能放进云函数；一页一页处理、按位置读输入，1GB 的文件小内存也能转。
-- **加功能 = 加一个文件 + 注册表一行**：图表类型、图片格式、形状效果、页面切换、动画效果都是扩展点，见 [开发用架构说明](docs/architecture.md)。
-- **"和 PowerPoint 一样"靠测量**：PowerPoint 导出参考图逐页打分，自动换行另有逐行对照的专项测试；修一类问题先合成中性用例实测，改完做 A/B 对照；客户课件只在本机使用，内容不外传。见 [还原度与评测](docs/zh/fidelity.md)。
+- **Lay out text ourselves instead of leaving it to the browser**: browsers break lines and measure text differently from PowerPoint and from each other. Every line-breaking rule (CJK line-start / line-end rules, hanging punctuation, dashes, tab stops, ...) is measured in PowerPoint first and then implemented, and recorded in [SPEC section 7](SPEC.md#7-实测得到的-powerpoint-规则用-make-case-用例校准) (Chinese).
+- **Separate fonts for layout and display**: non-embedded Microsoft YaHei, Calibri and so on are laid out with the original font's metrics (numbers such as advance widths, no glyph shapes), so lines break exactly like PowerPoint; glyphs come from the matching open-source font, so viewers need no fonts installed and no commercial font is redistributed (see "Fonts" below).
+- **Pure function, streaming**: bytes in, files out, no external programs or native add-ons, so it runs in cloud functions; slides are processed one at a time and the input is read at offsets, so a 1 GB file converts in little memory.
+- **New feature = new file + one registry line**: chart types, image formats, shape effects, transitions and animation effects are all extension points; see the [developer architecture notes](docs/architecture.md) (Chinese).
+- **"Looks like PowerPoint" is measured, not eyeballed**: images exported by a local copy of PowerPoint are scored page by page, and line wrapping has its own line-by-line test; each class of problem is first reproduced with a neutral synthetic deck and measured, and every change is A/B compared; customer decks are only used on the local machine and their content never leaves it. See [Fidelity and evaluation](docs/en/fidelity.md).
 
-## 现状和准确度
+## Status and accuracy
 
-当前版本 **0.3.2**。完整的分项统计见 [测试报告](docs/zh/test-report.md)，调研记录见 [docs/zh/research](docs/zh/research/README.md)。
+Current version: **0.3.2**. Full breakdown in the [test report](docs/en/test-report.md).
 
-怎么衡量"像不像"：把 unppt 转出来的每一页，和 PowerPoint 自己导出的同一页图片放在一起比较，得到一个**相似度**（0 到 1，**1 表示看起来一模一样**）。**相似度达到 0.95 算这一页通过**，这时和 PowerPoint 的差别通常只是文字差一两个像素这类细节。相似度用的是图像比较的通用方法 SSIM，具体怎么算见 [还原度](docs/zh/fidelity.md#ssim)。
+How we measure "looks the same": every slide unppt produces is compared with the image PowerPoint itself exports for that slide, giving a **similarity score** (0 to 1, **1 = looks identical**). **A slide passes at 0.95 or more**; the remaining differences are usually details like text a pixel or two off. The score is SSIM, a standard image-comparison method; see [Fidelity](docs/en/fidelity.md#ssim) for exactly how it is computed.
 
-| 测试用的课件 | 数量 | 转换失败 | 通过的页（相似度 ≥ 0.95） | 平均相似度 |
+| Decks tested | Size | Failures | Slides passing (≥ 0.95) | Average similarity |
 |---|---|---|---|---|
-| 专门测试各项功能的课件（`testcases/`） | 255 份 / 543 页 | 0 | 93.0% | 0.984 |
-| 真实课件 | 5212 份 / 168662 页 | 0 | 78.5%（95.6% 的页在 0.90 以上） | 0.965 |
+| Feature test decks (`testcases/`) | 255 decks / 543 pages | 0 | 93.0% | 0.984 |
+| Real-world decks | 5212 decks / 168662 slides | 0 | 78.5% (95.6% above 0.90) | 0.965 |
 
-没通过的页面大多只是细节不同（文字差几个像素、某个图表标签位置不一样），整体上看不出区别。**自动换行**另外逐行对照：991 份真实课件里约 4 万个多行文本框 99.8%、6051 个多行表格单元格 99.9% 的换行和 PowerPoint 完全一致。全部 5212 份真实课件（约 16.9 万页）都能转码，失败 0。
+Most failing pages differ only in details (text a few pixels off, one chart label in a different place) and look the same at a glance. **Line wrapping** is also compared line by line: across 991 real decks, 99.8% of about 40,000 multi-line text boxes and 99.9% of 6,051 multi-line table cells break exactly like PowerPoint. All 5,212 real decks (about 169,000 slides) convert with no failures.
 
-**已知还没做好的地方**：
+**Known gaps**:
 
-- 图表日期坐标轴的时间刻度（最小值 / 最大值、按月 / 按年的间隔）；
-- 艺术字竖排（`wordArtVert`）；
-- EMF 图片里的 EMF+ 记录；
-- 部分需要重新排版的 SmartArt；
-- 旋转 180 度时的三维棱台效果；
-- 分类标签倾斜 45 度时的截断阈值。
+- time scaling on chart date axes (min / max, month / year intervals);
+- vertical WordArt text (`wordArtVert`);
+- EMF+ records inside EMF images;
+- some SmartArt that needs re-layout;
+- 3D bevel under 180-degree rotation;
+- the truncation threshold for category labels rotated 45 degrees.
 
-遇到效果不对的 PPT，欢迎提 Issue（请先确认文件可以公开，或者用中性内容重新做一份能复现问题的 PPT）。
+If a deck does not look right, please open an issue (make sure the file can be shared publicly, or rebuild a deck with neutral content that reproduces the problem).
 
-## 字体
+## Fonts
 
-- **播放时绝不用观看者电脑上的字体**：用到的每个字都做成字体子集打包进产物，Windows、Mac、安卓、iPhone 上看到的完全一样（例如直播课里几千个学生）；只有所有字体都没有的字才交给浏览器，`unppt check` 会列出来。
-- **产物里的字体只有两个来源**（除非你用 `--fonts` / `--system-fonts` 明确指定）：作者嵌入在 PPT 里的字体（原样使用），和默认字体包 `@unppt/fonts` 里的开源字体（SIL OFL 1.1：思源黑体、思源宋体、霞鹜文楷、朱雀仿宋、Carlito、Caladea、Liberation 等）。字体包只在转码的电脑上需要，观看的人不会下载它。
-- **没嵌入的字体**：按原字体的度量排版、用对应的开源字体显示（微软雅黑 → 思源黑体、Calibri → Carlito ……），换行和 PowerPoint 一样、字形略有不同；字体包也不认识的字体和 PowerPoint 一样找替代字体（没嵌入的思源黑体、思源宋体也这样处理，和没装它们的电脑上的 PowerPoint 一致）。
-- **符号字体**：不改动你的字符。Wingdings 1~3 没嵌入时用字体包里编码兼容的开源字体显示成符号；其它符号字体（Webdings、Symbol 等）没嵌入时显示成字母或方框，`unppt check` 会提示作者“将字体嵌入文件”。
+- **Playback never uses fonts on the viewer's computer**: every character used is packed into the output as a font subset, so Windows, Mac, Android and iPhone viewers see exactly the same thing (e.g. thousands of students in a live class); only characters that no font has are left to the browser, and `unppt check` lists them.
+- **Fonts in the output come from only two sources** (unless you explicitly specify fonts with `--fonts` / `--system-fonts`): fonts the author embedded in the PPT (used as-is), and open-source fonts from the default font pack `@unppt/fonts` (SIL OFL 1.1: Noto Sans SC, Noto Serif SC, LXGW WenKai, Zhuque Fangsong, Carlito, Caladea, Liberation and others). The pack is only needed on the machine that converts; viewers never download it.
+- **Non-embedded fonts**: laid out with the original font's metrics and displayed with the matching open-source font (Microsoft YaHei → Noto Sans SC, Calibri → Carlito, ...), so lines break like PowerPoint and glyph shapes differ slightly; fonts the pack does not know are substituted the way PowerPoint does (so are Source Han Sans / Serif when not embedded, matching PowerPoint on computers that do not have them).
+- **Symbol fonts**: your characters are never changed. Wingdings 1–3 that are not embedded display as symbols through code-compatible open fonts in the pack; other symbol fonts (Webdings, Symbol, ...) show as letters or boxes when not embedded, and `unppt check` tells the author to "Embed fonts in the file".
 
-详见 [快速上手第 7 节](docs/zh/getting-started.md#7-字体为什么重要以及现在怎么处理)。
+Details: [Getting started, section 7](docs/en/getting-started.md#7-fonts-why-they-matter-and-how-they-are-handled-now).
 
-## 在代码里使用（云函数等）
+## Using it from code (cloud functions etc.)
 
 ```bash
 npm install @unppt/unppt
@@ -143,21 +143,21 @@ npm install @unppt/unppt
 
 ```js
 import { convert } from '@unppt/unppt';
-import { loadFontPack } from '@unppt/unppt/node';   // Node 专用：读已安装的默认字体包
+import { loadFontPack } from '@unppt/unppt/node';   // Node only: reads the installed default font pack
 
-const fontPack = await loadFontPack();               // 服务器、云函数上不需要任何系统字体
-const result = await convert(pptxBytes, {        // pptxBytes：Uint8Array
-  // 输出交给你写：index.html、prop.json、media/xxx.mp4、pic/1.jpg ……
-  write: async (path, data) => { /* data 可能是字符串、Uint8Array 或数据流（AsyncIterable） */ },
-  fontPack,                          // 默认字体包：结果和在桌面电脑上转码一样
-  fonts: [fontBytes1],               // 可选：你自己的字体文件（ttf / otf / ttc），同名时压过字体包
+const fontPack = await loadFontPack();               // no system fonts needed on servers or cloud functions
+const result = await convert(pptxBytes, {        // pptxBytes: Uint8Array
+  // you write the output: index.html, prop.json, media/xxx.mp4, pic/1.jpg ...
+  write: async (path, data) => { /* data is a string, a Uint8Array or a stream (AsyncIterable) */ },
+  fontPack,                          // default font pack: same result as converting on a desktop
+  fonts: [fontBytes1],               // optional: your own font files (ttf / otf / ttc); win over the pack for the same name
 });
 console.log(result.slides, result.fontCheck, result.report.warnings);
 ```
 
-只检查字体、不输出文件：`checkFonts(pptxBytes, { fontPack })`，返回值和 `unppt check --json` 一样。
+To check fonts only, without writing files: `checkFonts(pptxBytes, { fontPack })`; it returns the same data as `unppt check --json`.
 
-**大文件**：不要把整个文件读进内存，传一个"按位置读取"的对象即可，转码器只读需要的部分：
+**Big files**: do not read the whole file into memory; pass an object that "reads by position" and the transcoder reads only the parts it needs:
 
 ```js
 import { open, stat } from 'node:fs/promises';
@@ -176,87 +176,87 @@ await convert(source, { write, fontPack });
 await fh.close();
 ```
 
-实测：300 页 + 800MB 视频的文件，限制 128MB 内存，1 秒左右转完，峰值内存约 120MB。
+Measured: a 300-slide file with 800 MB of video, under a 128 MB memory limit, converts in about 1 second with about 120 MB peak memory.
 
-全部选项（`output`、`images`、`rasterWasm`、`rasterPool`、`onProgress` 等）见 [使用指南](docs/zh/usage.md)。
+All options (`output`, `images`, `rasterWasm`, `rasterPool`, `onProgress`, ...) are in the [usage guide](docs/en/usage.md).
 
-## 嵌入网页与外部控制（JS bridge）
+## Embedding and external control (JS bridge)
 
 ```html
 <iframe id="ppt" src="https://cdn.example.com/deck/index.html?ui=0"></iframe>
 <script type="module">
-  import { UnpptFrame } from './host.js';      // 仓库构建产物 packages/player/dist/host.js
+  import { UnpptFrame } from './host.js';      // repository build output packages/player/dist/host.js
   const deck = new UnpptFrame(document.getElementById('ppt'));
   await deck.ready;
-  await deck.next();          // 下一步（有动画先播动画，播完再翻页）
-  await deck.goto(3, 0);      // 跳到第 4 页第 0 步（页码从 0 开始）
+  await deck.next();          // next step (plays pending animations first, then moves to the next slide)
+  await deck.goto(3, 0);      // go to slide 4, step 0 (slide numbers start at 0)
   deck.on('change', (s) => console.log(s.slide, s.step, s.slideCount, s.stepCount));
 </script>
 ```
 
-不用 `host.js` 也可以直接发消息：
+You can also post messages directly without `host.js`:
 
 ```js
 iframe.contentWindow.postMessage({ unppt: 1, id: 1, cmd: 'goto', args: { slide: 3, step: 0 } }, '*');
-// 播放器回复：{ unppt: 1, re: 1, ok: true, result: { slide, step, slideCount, stepCount } }
-// 播放器事件：{ unppt: 1, event: 'ready' | 'change' | 'end' | 'link', data: { ... } }
+// player reply: { unppt: 1, re: 1, ok: true, result: { slide, step, slideCount, stepCount } }
+// player event: { unppt: 1, event: 'ready' | 'change' | 'end' | 'link', data: { ... } }
 ```
 
-指令有 `next`、`prev`、`goto`、`sync`、`getState`；同页 JS 用 `window.unppt.next()` 等，原生 App 用 `window.unppt.handle('{"cmd":"next"}')`。常用 URL 参数：`slide`、`step`（打开时定位）、`ui=0`（隐藏自带按钮）、`timings=0/1`、`origin=`（限制消息来源）、`mode=watch`（观看模式）、`links=0`（外部链接交给宿主处理）。
+Commands are `next`, `prev`, `goto`, `sync` and `getState`; on the same page use `window.unppt.next()` and friends, and native apps call `window.unppt.handle('{"cmd":"next"}')`. Common URL parameters: `slide`, `step` (initial position), `ui=0` (hide built-in buttons), `timings=0/1`, `origin=` (restrict message origins), `mode=watch` (watch mode), `links=0` (let the host handle external links).
 
-完整说明（Android / iOS / React Native、隐藏页规则、所有 URL 参数、时序图）见 [嵌入与控制](docs/zh/embedding.md)，可运行示例见 [examples/iframe-host.html](examples/iframe-host.html) 和 [examples/live-class.html](examples/live-class.html)。
+The full reference (Android / iOS / React Native, hidden-slide rules, every URL parameter, sequence diagrams) is in [Embedding and control](docs/en/embedding.md); runnable examples are [examples/iframe-host.html](examples/iframe-host.html) and [examples/live-class.html](examples/live-class.html).
 
-## 文档地图
+## Documentation map
 
-**使用者文档**（从上往下读即可）：
+**User docs** (read top to bottom):
 
-| 文档 | 内容 |
+| Document | Contents |
 |---|---|
-| [入门](docs/zh/getting-started.md) | 从零开始：装 Node、转第一个文件、打开播放 |
-| [使用指南](docs/zh/usage.md) | 命令行和 `convert()` 的全部选项、字体、产物形式、大文件 |
-| [嵌入与控制](docs/zh/embedding.md) | iframe、postMessage、`window.unppt`、原生 App、URL 参数 |
-| [产物格式](docs/zh/output-format.md) | 转出来的每个文件是什么、`deck.json` / `prop.json` 的结构 |
-| [架构总览](docs/zh/architecture.md) | 整个程序由哪几块组成、它们怎么配合（大量图解） |
-| [转码原理](docs/zh/transcoding.md) | 从程序入口开始，一个 .pptx 是怎么一步步变成 SVG 的 |
-| [播放器原理](docs/zh/player.md) | 播放器怎么显示页面、播动画、处理翻页和外部指令 |
-| [准确度与评测](docs/zh/fidelity.md) | "和 PowerPoint 一样"的标准是什么、怎么自动比对打分 |
-| [常见问题](docs/zh/faq.md) | 字体不对、文件太大、嵌入跨域等问题 |
+| [Getting started](docs/en/getting-started.md) | From zero: install Node, convert your first file, play it |
+| [Usage guide](docs/en/usage.md) | Every CLI and `convert()` option, fonts, output forms, big files |
+| [Embedding and control](docs/en/embedding.md) | iframe, postMessage, `window.unppt`, native apps, URL parameters |
+| [Output format](docs/en/output-format.md) | What each output file is; the structure of `deck.json` / `prop.json` |
+| [Architecture overview](docs/en/architecture.md) | The parts of the program and how they fit together (lots of diagrams) |
+| [How transcoding works](docs/en/transcoding.md) | From the entry point: how a .pptx becomes SVG step by step |
+| [How the player works](docs/en/player.md) | How the player shows pages, runs animations, handles navigation and external commands |
+| [Accuracy and evaluation](docs/en/fidelity.md) | What "same as PowerPoint" means and how pages are compared and scored |
+| [FAQ](docs/en/faq.md) | Wrong fonts, large files, cross-origin embedding and more |
 
-**开发者文档**：
+**Developer docs** (in Chinese):
 
-| 文档 | 内容 |
+| Document | Contents |
 |---|---|
-| [SPEC.md](SPEC.md) | 需求真相源：已确认的决策、实测得到的 PowerPoint 规则 |
-| [docs/architecture.md](docs/architecture.md) | 开发用架构说明：模块分层、扩展点（怎么加新能力） |
-| [CONTRIBUTING.md](CONTRIBUTING.md) | 协作约定 |
-| [docs/release.md](docs/release.md) | 怎么发布到 npm |
+| [SPEC.md](SPEC.md) | Source of truth for requirements: confirmed decisions, PowerPoint rules found by measurement |
+| [docs/architecture.md](docs/architecture.md) | Developer architecture: module layers, extension points (how to add capabilities) |
+| [CONTRIBUTING.md](CONTRIBUTING.md) | Collaboration conventions |
+| [docs/release.md](docs/release.md) | How to publish to npm |
 
-## 开发
+## Development
 
 ```bash
 git clone https://github.com/spitmaster/unppt.git
 cd unppt
 npm install
-node scripts/fetch-fonts.mjs      # 只需一次：下载默认字体包的字体文件（不在 git 里）并校验 SHA-256
+node scripts/fetch-fonts.mjs      # once: download the default font pack's font files (not in git) and verify SHA-256
 npm run build
 npm test
-node packages/transcoder/dist/cli.js 演示文稿.pptx -o out/index.html
+node packages/transcoder/dist/cli.js presentation.pptx -o out/index.html
 ```
 
-| 命令 | 作用 |
+| Command | Purpose |
 |---|---|
-| `npm run build` | 构建转码器和播放器 |
-| `npm test` | 单元测试 |
-| `python tools/make-case/make.py` | 用 PowerPoint 生成测试用例（中性内容）到 `testcases/` |
-| `python tools/powerpoint/export.py run [--set testcases]` | 用 PowerPoint 导出参考图（标准答案） |
-| `python tools/compare/run.py --set testcases\|daily\|all` | 转码、截图、和 PowerPoint 比对、出报告 |
-| `python tools/check-player.py [chromium\|firefox]` | 播放器端到端测试（跨域 iframe、原生桥接等） |
-| `python tools/powerpoint/transitions.py capture 名字,... / capture-anim 名字,... / compare` | 页面切换、动画对照：PowerPoint 放映逐帧截图，和播放器同一时刻的画面比较 |
+| `npm run build` | Build the transcoder and the player |
+| `npm test` | Unit tests |
+| `python tools/make-case/make.py` | Generate test cases (neutral content) into `testcases/` with PowerPoint |
+| `python tools/powerpoint/export.py run [--set testcases]` | Export reference images (the answer key) with PowerPoint |
+| `python tools/compare/run.py --set testcases\|daily\|all` | Convert, screenshot, compare with PowerPoint, write a report |
+| `python tools/check-player.py [chromium\|firefox]` | Player end-to-end tests (cross-origin iframe, native bridge, ...) |
+| `python tools/powerpoint/transitions.py capture name,... / capture-anim name,... / compare` | Transition and animation comparison: frame-by-frame PowerPoint slideshow captures vs. the player at the same moments |
 
-开发工具需要 Windows + PowerPoint + Python（`pip install pywin32 numpy pillow playwright fonttools`）；只用转码器和播放器不需要这些。
+The development tools need Windows + PowerPoint + Python (`pip install pywin32 numpy pillow playwright fonttools`); using the transcoder and player does not.
 
-**样本安全**：真实样本放在 `samples/`（不进仓库），由样本生成的一切只放在 `.cache/`（不进仓库）。规则见 [SPEC.md](SPEC.md) 第 4 节。
+**Sample safety**: real-world samples live in `samples/` (not in the repository), and everything generated from them lives only in `.cache/` (not in the repository). See section 4 of [SPEC.md](SPEC.md).
 
-## 许可证
+## License
 
-[Apache-2.0](LICENSE)。第三方类库的许可证见 [packages/transcoder/THIRD-PARTY-NOTICES.md](packages/transcoder/THIRD-PARTY-NOTICES.md)。
+[Apache-2.0](LICENSE). Third-party library licenses are listed in [packages/transcoder/THIRD-PARTY-NOTICES.md](packages/transcoder/THIRD-PARTY-NOTICES.md).

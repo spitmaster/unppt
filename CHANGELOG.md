@@ -235,4 +235,4 @@ Fixes found by comparing three batches of real decks (11k slides) with PowerPoin
 - The transcoder is a pure function with no external programs or native addons, suitable for cloud functions; large files are read by position with little memory.
 - Fidelity (per-page SSIM against images exported by Microsoft PowerPoint, pass at ≥ 0.95): synthetic test cases 92.3% of 504 pages; 100 random real-world decks, 3527 pages: 0 conversion failures, 78.8% pass, about 95% of pages at SSIM ≥ 0.90.
 - Known gaps: chart date-axis time scaling, wordArtVert vertical text, variable fonts, EMF+, some SmartArt that needs re-layout.
-- Install: `npm install @unppt/unppt` (command `unppt`), Node.js 20.12+. Docs: [README.en](README.en.md), [docs/en](docs/en/).
+- Install: `npm install @unppt/unppt` (command `unppt`), Node.js 20.12+. Docs: [README](README.md), [docs/en](docs/en/).
