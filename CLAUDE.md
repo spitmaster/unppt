@@ -7,6 +7,7 @@
 
 ## 第零步：看当前进度
 
+0. 接手别人的工作：先读 [docs/todo/handoff.md](docs/todo/handoff.md)（未完成的事、怎么验收、规则和踩过的坑）；
 1. `git branch --show-current` 拿到分支名；
 2. 如果存在 `docs/milestones/<分支>.md`、`docs/todo/<分支>.md`（分支名里的 `/` 换成 `_`），先读它们；
 3. 先看 `SPEC.md` 的「已确认的决策」和「仍待定的事项」，避免踩到还没定的地方；
